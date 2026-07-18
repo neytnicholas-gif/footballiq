@@ -1,0 +1,20 @@
+REFDECISION - HOW TO RUN
+
+1. Open this folder in Visual Studio Code.
+2. Open Terminal > New Terminal.
+3. If npm points to the wrong registry, run:
+   npm config set registry https://registry.npmjs.org/
+4. Run:
+   npm install
+5. Run:
+   npm run dev
+6. Open this in Chrome:
+   http://localhost:3000
+
+What changed in this version:
+- Added Goalscorer Quiz.
+- Added Referee Decision Mode.
+- Added rating, streak, accuracy and level logic.
+- Added Progression System section with daily challenge, badges and community vote ideas.
+
+If npm install fails because of an old lock file, delete package-lock.json and run npm install again.
