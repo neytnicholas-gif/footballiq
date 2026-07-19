@@ -4,10 +4,18 @@ import { AuthProvider } from '@/components/auth-provider'
 import './globals.css'
 
 export const metadata: Metadata = {
-  title: 'FootballIQ — Football quiz rating platform',
+  title: {
+    default: 'FootballIQ',
+    template: '%s | FootballIQ',
+  },
   description:
-    'Sign in, create a username, play FootballIQ quizzes, build ratings and climb the leaderboard.',
-  generator: 'v0.app',
+    'FootballIQ is a football intelligence platform for quizzes, scouting decisions, predictions, streaks, XP, ratings and leaderboards.',
+  openGraph: {
+    title: 'FootballIQ',
+    description:
+      'Play football knowledge and decision challenges, improve your profile, and compete on FootballIQ leaderboards.',
+    type: 'website',
+  },
 }
 
 export const viewport: Viewport = {

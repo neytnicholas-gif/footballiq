@@ -269,18 +269,18 @@ export function RefereeDecisionQuiz() {
           <div className="rounded-[28px] border border-white/10 bg-black/20 p-6 backdrop-blur">
             <div className="flex items-center gap-2">
               <Flame className="size-5 text-primary" />
-              <h3 className="font-semibold tracking-tight text-white">Addictive loop</h3>
+              <h3 className="font-semibold tracking-tight text-white">Decision feedback</h3>
             </div>
             <p className="mt-3 text-sm leading-relaxed text-white/70">
-              Every answer updates your rating, streak and level instantly. Later this can become accounts, daily challenges and real leaderboards.
+              Every answer updates score, streak and rating feedback immediately so you can learn and adjust in the next scenario.
             </p>
           </div>
 
           <div className="rounded-[28px] border border-primary/30 bg-primary/10 p-6">
             <Trophy className="size-6 text-primary" />
-            <h3 className="mt-3 font-semibold tracking-tight text-white">Daily Challenge idea</h3>
+            <h3 className="mt-3 font-semibold tracking-tight text-white">Match control mindset</h3>
             <p className="mt-2 text-sm leading-relaxed text-white/70">
-              One scenario per day. Everyone gets the same question. Keep your streak alive and compare the community vote.
+              Focus on positioning, foul profile, advantage judgment and disciplinary consistency across the full set.
             </p>
           </div>
         </aside>

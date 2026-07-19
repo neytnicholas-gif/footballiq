@@ -1,13 +1,15 @@
-import { SiteHeader } from '@/components/site-header'
-import { GoalscorerQuiz } from '@/components/goalscorer-quiz'
-import { SiteFooter } from '@/components/site-footer'
+import { ModePage } from '@/components/mode-page'
+import { DuelHub } from '@/components/duel-hub'
 
 export default function FootballDuelsPage() {
   return (
-    <main className="relative min-h-screen bg-background">
-      <SiteHeader />
-      <GoalscorerQuiz />
-      <SiteFooter />
-    </main>
+    <ModePage
+      theme="duels"
+      eyebrow="Head-to-head • timing • composure"
+      title="Football Duels"
+      description="Choose a stat pack, compare two players, and build score, combo and rating momentum in fast rounds."
+    >
+      <DuelHub />
+    </ModePage>
   )
 }

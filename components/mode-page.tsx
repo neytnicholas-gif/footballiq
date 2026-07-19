@@ -8,9 +8,9 @@ const themeMeta: Record<ModeTheme, { label: string; icon: React.ElementType; cla
   referee: { label: 'Referee Arena', icon: ShieldCheck, className: 'mode-referee', leaderboard: 'referee-decisions' },
   scout: { label: 'Scout Vision', icon: Radar, className: 'mode-scout', leaderboard: 'scout-mode' },
   duels: { label: 'Football Duels', icon: Trophy, className: 'mode-duels', leaderboard: 'football-duels' },
-  mystery: { label: 'Mystery Room', icon: Sparkles, className: 'mode-mystery', leaderboard: 'who-am-i' },
-  career: { label: 'Career Lab', icon: BarChart3, className: 'mode-career', leaderboard: 'career-path' },
-  higher: { label: 'Streak Lab', icon: Flame, className: 'mode-higher', leaderboard: 'higher-lower' },
+  mystery: { label: 'Who Am I?', icon: Sparkles, className: 'mode-mystery', leaderboard: 'who-am-i' },
+  career: { label: 'Career Path', icon: BarChart3, className: 'mode-career', leaderboard: 'career-path' },
+  higher: { label: 'Higher or Lower', icon: Flame, className: 'mode-higher', leaderboard: 'higher-lower' },
   daily: { label: 'Daily Challenge', icon: Flame, className: 'mode-daily', leaderboard: 'daily' },
   predictions: { label: 'Prediction Centre', icon: BarChart3, className: 'mode-predictions', leaderboard: 'overall' },
 }

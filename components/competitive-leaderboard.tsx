@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { useEffect, useMemo, useState } from 'react'
 import { CalendarDays, ChevronRight, Crown, Flame, Medal, RefreshCw, Trophy } from 'lucide-react'
+import { useAuth } from '@/components/auth-provider'
 import { supabase, type Profile } from '@/lib/supabase'
 import { formatLeaderboardValue, leaderboardModes, seasonMeta, type RankedPlayer } from '@/lib/competitive'
 
@@ -19,6 +20,7 @@ const periodBoards = [
 ]
 
 export function CompetitiveLeaderboard({ initialBoard = 'overall' }: { initialBoard?: string }) {
+  const { user } = useAuth()
   const validBoards = new Set(['overall', 'daily', 'weekly', 'monthly', 'season', ...leaderboardModes.map((mode) => mode.id)])
   const [board, setBoard] = useState<Board>(validBoards.has(initialBoard) ? initialBoard : 'overall')
   const [players, setPlayers] = useState<RankedPlayer[]>([])
@@ -111,8 +113,16 @@ export function CompetitiveLeaderboard({ initialBoard = 'overall' }: { initialBo
   }
 
   const activeLabel = leaderboardModes.find((mode) => mode.id === board)?.label ?? periodBoards.find((item) => item.id === board)?.label ?? 'Leaderboard'
+  const currentUserRow = user ? players.find((player) => player.id === user.id) : undefined
+  const podium = players.slice(0, 3)
 
   return <div>
+    {!user && (
+      <div className="mb-4 rounded-2xl border border-border bg-card p-4 text-sm text-muted-foreground">
+        Sign in to highlight your row and save progress into leaderboard categories.
+      </div>
+    )}
+
     <div className="rounded-[2rem] border border-border bg-card p-6 sm:p-8">
       <div className="flex flex-wrap items-center justify-between gap-5">
         <div><p className="text-xs font-semibold uppercase tracking-[.25em] text-primary">Competitive hub</p><h1 className="mt-3 text-4xl font-bold tracking-tight sm:text-5xl">More ways to become #1</h1><p className="mt-3 max-w-2xl text-muted-foreground">Every football brain has a speciality. Climb overall, dominate one game mode, or win a fresh weekly race.</p></div>
@@ -133,9 +143,48 @@ export function CompetitiveLeaderboard({ initialBoard = 'overall' }: { initialBo
     </section>
 
     <section className="mt-8 overflow-hidden rounded-[2rem] border border-border bg-card">
-      <div className="flex items-center justify-between border-b border-border p-6"><div><p className="text-xs font-semibold uppercase tracking-wider text-primary">Live standings</p><h2 className="mt-1 text-2xl font-bold">{activeLabel}</h2></div><button onClick={() => void loadBoard(board)} className="rounded-xl border border-border p-3" aria-label="Refresh"><RefreshCw className="size-4"/></button></div>
-      {loading ? <p className="p-8 text-muted-foreground">Loading the table…</p> : error ? <div className="p-8"><p className="font-semibold">Leaderboard setup required</p><p className="mt-2 text-sm text-muted-foreground">{error}</p><p className="mt-3 text-sm text-primary">Run the included competitive-platform SQL in Supabase, then refresh.</p></div> : players.length === 0 ? <p className="p-8 text-muted-foreground">No results on this board yet. The first player can take the top spot.</p> : <div>{players.map((player, index) => <Link href={`/player/${encodeURIComponent(player.username)}`} key={`${player.id}-${index}`} className="grid grid-cols-[48px_1fr_auto] items-center gap-3 border-b border-border p-4 transition hover:bg-secondary/30 last:border-0 sm:grid-cols-[60px_1fr_auto_auto] sm:p-5"><Rank rank={index + 1}/><div className="min-w-0"><p className="truncate font-bold">{player.username}</p><p className="truncate text-xs text-muted-foreground">{player.secondary}</p></div><div className="hidden text-right sm:block"><p className="text-xs text-muted-foreground">Accuracy</p><p className="font-semibold">{player.accuracy ?? 0}%</p></div><div className="text-right"><p className="font-bold text-primary">{formatLeaderboardValue(player.value, board)}</p><p className="text-xs text-muted-foreground">View profile</p></div></Link>)}</div>}
+      <div className="flex items-center justify-between border-b border-border p-6"><div><p className="text-xs font-semibold uppercase tracking-wider text-primary">Standings</p><h2 className="mt-1 text-2xl font-bold">{activeLabel}</h2></div><button onClick={() => void loadBoard(board)} className="rounded-xl border border-border p-3" aria-label="Refresh"><RefreshCw className="size-4"/></button></div>
+      {loading ? (
+        <div className="space-y-2 p-6">
+          {[...Array(6)].map((_, i) => <div key={i} className="h-14 animate-pulse rounded-xl border border-border bg-background/60" />)}
+        </div>
+      ) : error ? (
+        <div className="p-8"><p className="font-semibold">Could not load leaderboard</p><p className="mt-2 text-sm text-muted-foreground">{error}</p></div>
+      ) : players.length === 0 ? (
+        <p className="p-8 text-muted-foreground">No entries on this board yet.</p>
+      ) : (
+        <div>
+          {podium.length > 0 && (
+            <div className="grid gap-3 border-b border-border p-4 sm:grid-cols-3 sm:p-6">
+              {podium.map((player, i) => (
+                <Link href={`/player/${encodeURIComponent(player.username)}`} key={player.id} className="rounded-2xl border border-border bg-background/70 p-4">
+                  <p className="text-xs uppercase tracking-wider text-muted-foreground">#{i + 1}</p>
+                  <p className="mt-1 truncate text-lg font-bold">{player.username}</p>
+                  <p className="mt-1 text-sm text-primary">{formatLeaderboardValue(player.value, board)}</p>
+                </Link>
+              ))}
+            </div>
+          )}
+          {players.map((player, index) => {
+            const isCurrentUser = user?.id === player.id
+            return (
+              <Link href={`/player/${encodeURIComponent(player.username)}`} key={`${player.id}-${index}`} className={`grid grid-cols-[48px_1fr_auto] items-center gap-3 border-b border-border p-4 transition hover:bg-secondary/30 last:border-0 sm:grid-cols-[60px_1fr_auto_auto] sm:p-5 ${isCurrentUser ? 'bg-primary/10' : ''}`}>
+                <Rank rank={index + 1}/>
+                <div className="min-w-0"><p className="truncate font-bold">{player.username}{isCurrentUser ? ' (you)' : ''}</p><p className="truncate text-xs text-muted-foreground">{player.secondary}</p></div>
+                <div className="hidden text-right sm:block"><p className="text-xs text-muted-foreground">Accuracy</p><p className="font-semibold">{player.accuracy ?? 0}%</p></div>
+                <div className="text-right"><p className="font-bold text-primary">{formatLeaderboardValue(player.value, board)}</p><p className="text-xs text-muted-foreground">View profile</p></div>
+              </Link>
+            )
+          })}
+        </div>
+      )}
     </section>
+
+    {currentUserRow && (
+      <section className="mt-4 rounded-2xl border border-border bg-card p-4 text-sm">
+        Your current position in {activeLabel}: <strong>{formatLeaderboardValue(currentUserRow.value, board)}</strong>
+      </section>
+    )}
   </div>
 }
 

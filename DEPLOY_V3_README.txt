@@ -6,7 +6,7 @@ IMPORTANT
 
 STEP 1 — REPLACE THE PROJECT FILES
 1. Extract this ZIP.
-2. Open the extracted folder named refdecision-v2-referee-rating.
+2. Open the extracted folder named footballiq.
 3. Copy everything inside it.
 4. Paste it into your existing FootballIQ project folder.
 5. Choose "Replace the files in the destination" when Windows asks.

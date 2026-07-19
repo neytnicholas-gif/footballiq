@@ -5,32 +5,32 @@ const loops = [
   {
     icon: Gauge,
     title: 'Football IQ Rating',
-    text: 'Start at 1000. Correct answers move you up. Mistakes pull you down. Simple, addictive, clear.',
+    text: 'Start at 1000. Correct answers move you up and mistakes pull you down.',
   },
   {
     icon: Flame,
     title: 'Streaks',
-    text: 'Daily streaks create the habit. Users come back because they do not want to lose progress.',
+    text: 'Daily streaks reward consistency across modes and challenges.',
   },
   {
     icon: Medal,
     title: 'Levels',
-    text: 'Grassroots, Regional, National, Professional and FIFA-style levels make improvement visible.',
+    text: 'Level titles show long-term progression as your XP grows.',
   },
   {
     icon: CalendarDays,
     title: 'Daily Challenge',
-    text: 'One shared question every day. Perfect for Instagram stories and football WhatsApp groups.',
+    text: 'A shared daily run gives everyone the same test and reward window.',
   },
   {
     icon: Award,
     title: 'Badges',
-    text: 'Penalty Specialist, Law 12 Expert, Streak Master and Goalscorer Brain can all become unlocks.',
+    text: 'Milestones are based on your real profile stats and quiz performance.',
   },
   {
     icon: Users,
-    title: 'Community Vote',
-    text: 'Later: compare your answer with the public, referees, scouts and coaches separately.',
+    title: 'Leaderboards',
+    text: 'Compete on overall, mode-specific and time-window boards.',
   },
 ]
 
@@ -38,12 +38,13 @@ export function PlatformLoop() {
   return (
     <section id="progression" className="relative mx-auto max-w-7xl px-4 py-24 sm:px-6">
       <Reveal className="mx-auto max-w-3xl text-center">
-        <span className="text-sm font-medium uppercase tracking-[0.3em] text-primary">Daily Challenge</span>
+        <span className="text-sm font-medium uppercase tracking-[0.3em] text-primary">Progression</span>
         <h2 className="mt-3 text-balance text-3xl font-semibold tracking-tight sm:text-4xl">
-          The part that makes people come back
+          A progression loop that rewards good decisions
         </h2>
         <p className="mt-4 text-pretty text-base leading-relaxed text-muted-foreground">
-          RefDecision should not feel like a school test. It should feel like Chess.com or Duolingo for football judgement.
+          FootballIQ combines XP, ratings, levels, streaks and leaderboard positions into one
+          clear feedback system.
         </p>
       </Reveal>
 

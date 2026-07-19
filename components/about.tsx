@@ -1,6 +1,6 @@
 import { Reveal } from '@/components/reveal'
 
-const audience = ['Fans', 'Referees', 'Scouts', 'Analysts']
+const audience = ['Fans', 'Referees', 'Scouts', 'Analysts', 'Coaches', 'Creators']
 
 export function About() {
   return (
@@ -13,16 +13,15 @@ export function About() {
         <div className="relative grid gap-10 lg:grid-cols-2 lg:items-center">
           <Reveal>
             <span className="text-sm font-medium uppercase tracking-widest text-primary">
-              About RefDecision
+              About FootballIQ
             </span>
             <h2 className="mt-3 text-balance text-3xl font-semibold tracking-tight sm:text-4xl">
-              Built for everyone who loves the details of the game
+              Football decisions, football learning, football competition
             </h2>
             <p className="mt-5 text-pretty leading-relaxed text-muted-foreground">
-              RefDecision is an educational football platform built for people who want to
-              understand the game better. Through short decision quizzes, football analysis and
-              community voting, users can test their judgement and improve how they read match
-              situations.
+              FootballIQ is built for people who care about the detail behind results. Every mode
+              tests a different skill, from referee judgement and scouting interpretation to
+              football memory and prediction discipline.
             </p>
           </Reveal>
 
@@ -33,7 +32,7 @@ export function About() {
                 className="rounded-2xl border border-border bg-background/50 p-6 text-center"
               >
                 <p className="text-lg font-semibold tracking-tight">{item}</p>
-                <p className="mt-1 text-xs text-muted-foreground">Welcome here</p>
+                <p className="mt-1 text-xs text-muted-foreground">Built for your perspective</p>
               </div>
             ))}
           </Reveal>

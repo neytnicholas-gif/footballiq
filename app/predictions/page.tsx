@@ -7,7 +7,7 @@ export default function PredictionsPage() {
       theme="predictions"
       eyebrow="Fixtures • probabilities • foresight"
       title="Prediction Centre"
-      description="Read the matchup like a live studio analyst, lock in your calls and build a record that proves your football judgement."
+      description="Evaluate each simulated fixture card, lock your 1/X/2 picks, and track prediction discipline over time."
     >
       <PredictionsGame />
     </ModePage>
