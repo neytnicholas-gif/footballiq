@@ -1,0 +1,21 @@
+FOOTBALLIQ V3 — INSTALL AND DEPLOY
+
+1. Extract this ZIP into a NEW folder.
+2. Copy your existing .env.local file from your current FootballIQ project into the new folder.
+3. Open the new folder in VS Code.
+4. In the terminal run:
+   npm install
+   npm run dev
+5. Test at http://localhost:3000
+6. In Supabase, open SQL Editor and run FOOTBALLIQ_COMPETITIVE_PLATFORM.sql once.
+7. When everything works, copy these project files into your existing Git-connected project OR replace the project folder contents while keeping its .git folder and .env.local.
+8. Then run:
+   git add .
+   git commit -m "Launch FootballIQ V3 mode identities and leaderboards"
+   git push
+9. Vercel will update the existing public URL automatically.
+
+IMPORTANT:
+- Do not upload .env.local to GitHub.
+- This package excludes node_modules, .next, .git and .env.local.
+- A production build was completed successfully before packaging.

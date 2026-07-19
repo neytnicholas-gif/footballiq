@@ -1,3 +1,3 @@
 import { ModePage } from '@/components/mode-page'
 import { WhoAmIGame } from '@/components/who-am-i-game'
-export default function Page(){return <ModePage eyebrow="Game mode" title="Who Am I?" description="Identify the player. Each extra clue makes the answer easier but reduces the reward."><WhoAmIGame/></ModePage>}
+export default function Page(){return <ModePage theme="mystery" eyebrow="Clues • deduction • speed" title="Who Am I?" description="A football identity is hiding in the shadows. Solve it early for maximum reward—or reveal one more clue and sacrifice points."><WhoAmIGame/></ModePage>}

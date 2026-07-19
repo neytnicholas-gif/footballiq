@@ -225,3 +225,55 @@ button, a {
 .animate-pulse-soft {
   animation: fiq-pulse-soft 1.4s ease-in-out infinite;
 }
+
+/* FootballIQ V3 mode identities */
+.mode-shell {
+  --mode-accent: 122 255 173;
+  --mode-accent-2: 55 190 110;
+  --mode-panel: 15 23 27;
+  position: relative;
+  overflow-x: clip;
+  background:
+    radial-gradient(circle at 15% 10%, rgb(var(--mode-accent) / .12), transparent 31rem),
+    radial-gradient(circle at 86% 34%, rgb(var(--mode-accent-2) / .10), transparent 28rem),
+    #090d11;
+}
+.mode-atmosphere { position: fixed; inset: 0; pointer-events: none; overflow: hidden; opacity: .78; }
+.mode-atmosphere span { position: absolute; border-radius: 999px; filter: blur(90px); background: rgb(var(--mode-accent) / .12); animation: fiq-drift 14s ease-in-out infinite alternate; }
+.mode-atmosphere span:nth-child(1){ width:28rem;height:28rem;left:-12rem;top:8rem; }
+.mode-atmosphere span:nth-child(2){ width:24rem;height:24rem;right:-8rem;top:30%;animation-delay:-5s;background:rgb(var(--mode-accent-2)/.11); }
+.mode-atmosphere span:nth-child(3){ width:20rem;height:20rem;left:42%;bottom:-10rem;animation-delay:-9s; }
+.mode-hero,.mode-game { border-color: rgb(var(--mode-accent)/.18); background: linear-gradient(145deg, rgb(var(--mode-panel)/.94), rgb(8 12 16/.88)); box-shadow: 0 28px 90px -45px rgb(var(--mode-accent)/.42), inset 0 1px rgb(255 255 255/.04); }
+.mode-hero { position: relative; min-height: 19rem; display:flex; align-items:flex-end; }
+.mode-game { position: relative; backdrop-filter: blur(18px); }
+.mode-pill { color: rgb(var(--mode-accent)); border-color: rgb(var(--mode-accent)/.25); background: rgb(var(--mode-accent)/.08); box-shadow: inset 0 1px rgb(255 255 255/.05); }
+.mode-action { border-color: rgb(var(--mode-accent)/.3); background: rgb(var(--mode-accent)/.1); color: rgb(var(--mode-accent)); }
+.mode-action:hover { background: rgb(var(--mode-accent)/.16); box-shadow: 0 12px 34px -18px rgb(var(--mode-accent)/.7); }
+.mode-visual { position:absolute; inset:0; overflow:hidden; opacity:.78; }
+.mode-pitch-lines { position:absolute; inset:12% -4% -30% 38%; border:1px solid rgb(var(--mode-accent)/.18); transform:perspective(700px) rotateX(58deg) rotateZ(-8deg); border-radius:2rem; background: repeating-linear-gradient(90deg,transparent 0 12%,rgb(var(--mode-accent)/.035) 12% 24%); }
+.mode-pitch-lines:before { content:""; position:absolute; inset:0; background:linear-gradient(90deg,transparent 49.7%,rgb(var(--mode-accent)/.18) 50%,transparent 50.3%); }
+.mode-pitch-lines:after { content:""; position:absolute; width:28%; aspect-ratio:1; border:1px solid rgb(var(--mode-accent)/.2); border-radius:999px; left:36%; top:30%; }
+.mode-orb { position:absolute; border-radius:999px; filter:blur(35px); }
+.mode-orb-one { width:13rem;height:13rem;right:7%;top:-4rem;background:rgb(var(--mode-accent)/.22); }
+.mode-orb-two { width:8rem;height:8rem;right:31%;bottom:-4rem;background:rgb(var(--mode-accent-2)/.18); }
+.mode-game > * { position:relative; z-index:1; }
+
+.mode-referee { --mode-accent: 250 204 21; --mode-accent-2: 239 68 68; --mode-panel: 18 20 25; background: radial-gradient(ellipse at 50% -8%,rgb(255 255 255/.18),transparent 20rem),radial-gradient(circle at 15% 15%,rgb(250 204 21/.09),transparent 28rem),linear-gradient(#07090d,#0c1016); }
+.mode-referee .mode-hero:before,.mode-referee .mode-hero:after { content:""; position:absolute; top:-5rem; width:11rem; height:18rem; background:radial-gradient(ellipse,rgb(255 255 255/.35),transparent 65%); transform:rotate(19deg); filter:blur(3px); }
+.mode-referee .mode-hero:before{left:4%}.mode-referee .mode-hero:after{right:4%;transform:rotate(-19deg)}
+.mode-scout { --mode-accent: 50 230 170; --mode-accent-2: 45 135 255; --mode-panel: 10 25 27; background-color:#071314; background-image:linear-gradient(rgb(50 230 170/.045) 1px,transparent 1px),linear-gradient(90deg,rgb(50 230 170/.045) 1px,transparent 1px),radial-gradient(circle at 85% 18%,rgb(45 135 255/.12),transparent 30rem); background-size:38px 38px,38px 38px,auto; }
+.mode-scout .mode-hero:after { content:""; position:absolute; right:8%;top:17%;width:15rem;height:15rem;border-radius:999px;background:radial-gradient(circle at 38% 35%,rgb(255 70 55/.65),rgb(250 180 30/.28) 23%,rgb(50 230 170/.12) 48%,transparent 68%);filter:blur(2px);opacity:.5; }
+.mode-duels { --mode-accent: 255 198 72; --mode-accent-2: 99 102 241; --mode-panel: 22 17 27; background:radial-gradient(circle at 50% 0,rgb(99 102 241/.23),transparent 34rem),radial-gradient(circle at 12% 36%,rgb(255 198 72/.13),transparent 28rem),#0b0910; }
+.mode-mystery { --mode-accent: 188 118 255; --mode-accent-2: 63 182 255; --mode-panel: 19 12 30; background:radial-gradient(circle at 76% 15%,rgb(188 118 255/.19),transparent 27rem),linear-gradient(145deg,#080612,#101126); }
+.mode-career { --mode-accent: 70 200 255; --mode-accent-2: 70 255 180; --mode-panel: 10 20 31; }
+.mode-higher { --mode-accent: 255 92 120; --mode-accent-2: 255 190 55; --mode-panel: 28 12 20; }
+.mode-daily { --mode-accent: 255 145 47; --mode-accent-2: 255 220 75; --mode-panel: 28 18 10; background:radial-gradient(circle at 50% 5%,rgb(255 145 47/.2),transparent 30rem),#100b08; }
+.mode-predictions { --mode-accent: 64 190 255; --mode-accent-2: 75 255 166; --mode-panel: 8 20 30; background-image:linear-gradient(rgb(64 190 255/.035) 1px,transparent 1px),linear-gradient(90deg,rgb(64 190 255/.035) 1px,transparent 1px),radial-gradient(circle at 80% 15%,rgb(64 190 255/.15),transparent 28rem);background-size:44px 44px,44px 44px,auto; }
+
+.mode-card { position:relative; overflow:hidden; isolation:isolate; }
+.mode-card:after { content:""; position:absolute; width:13rem;height:13rem;border-radius:999px;right:-6rem;top:-7rem;background:rgb(var(--card-accent)/.16);filter:blur(12px);z-index:-1;transition:transform .35s ease; }
+.mode-card:hover:after { transform:scale(1.28); }
+.mode-card-referee{--card-accent:250 204 21}.mode-card-scout{--card-accent:50 230 170}.mode-card-duels{--card-accent:255 198 72}.mode-card-mystery{--card-accent:188 118 255}.mode-card-career{--card-accent:70 200 255}.mode-card-higher{--card-accent:255 92 120}
+
+@keyframes fiq-drift { to { transform: translate3d(3rem,-2rem,0) scale(1.08); } }
+@media (prefers-reduced-motion: reduce){.mode-atmosphere span{animation:none}}

@@ -71,9 +71,9 @@ export default function FootballDuelsPage() {
   }
 
   return (
-    <main className="min-h-screen bg-background">
+    <main className="mode-shell mode-duels min-h-screen"><div className="mode-atmosphere" aria-hidden="true"><span/><span/><span/></div>
       <SiteHeader />
-      <section className="mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-12">
+      <section className="relative z-10 mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-12">
         <div className="grid gap-6 lg:grid-cols-[1fr_auto] lg:items-end">
           <div>
             <div className="inline-flex items-center gap-2 rounded-full border border-primary/25 bg-primary/10 px-3 py-1.5 text-xs font-semibold text-primary"><Sparkles className="size-3.5" /> Football Duels V2</div>
