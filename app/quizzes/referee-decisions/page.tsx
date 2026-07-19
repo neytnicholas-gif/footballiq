@@ -1,3 +1,13 @@
-import { ModePage } from '@/components/mode-page'
-import { RefereeGame } from '@/components/referee-game'
-export default function Page(){return <ModePage theme="referee" eyebrow="Laws • judgement • pressure" title="Referee Decisions" description="Step under the floodlights. Read the incident, trust your positioning and make the call before the crowd gets inside your head."><RefereeGame/></ModePage>}
+import { SiteHeader } from '@/components/site-header'
+import { RefereeDecisionQuiz } from '@/components/referee-decision-quiz'
+import { SiteFooter } from '@/components/site-footer'
+
+export default function RefereeDecisionsPage() {
+  return (
+    <main className="relative min-h-screen bg-background">
+      <SiteHeader />
+      <RefereeDecisionQuiz />
+      <SiteFooter />
+    </main>
+  )
+}

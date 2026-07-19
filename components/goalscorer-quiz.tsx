@@ -143,50 +143,46 @@ export function GoalscorerQuiz() {
   return (
     <section id="quiz" className="relative mx-auto max-w-7xl px-4 py-24 sm:px-6">
       <Reveal className="mx-auto max-w-3xl text-center">
-        <span className="text-sm font-medium uppercase tracking-widest text-primary">
-          First playable quiz
+        <span className="text-sm font-medium uppercase tracking-[0.32em] text-primary">
+          Football Duels
         </span>
         <h2 className="mt-3 text-balance text-3xl font-semibold tracking-tight sm:text-4xl">
           Who scored more Premier League goals?
         </h2>
-        <p className="mt-4 text-pretty text-muted-foreground">
-          No clips needed. Just football memory, instinct and a little bit of pain when the
-          numbers reveal the truth.
+        <p className="mt-4 text-pretty text-base leading-relaxed text-muted-foreground">
+          The duel is simple, dramatic and instantly readable: pick the player, reveal the truth and keep the streak alive.
         </p>
       </Reveal>
 
       <Reveal delay={120} className="mx-auto mt-12 max-w-5xl">
-        <div className="overflow-hidden rounded-3xl border border-border bg-card">
-          <div className="border-b border-border bg-background/40 p-5 sm:p-6">
+        <div className="overflow-hidden rounded-[32px] border border-fuchsia-400/25 bg-[radial-gradient(circle_at_top_left,_rgba(192,132,252,0.16),_transparent_30%),linear-gradient(135deg,_rgba(18,8,36,0.98),_rgba(30,13,61,0.95))] shadow-[0_25px_80px_-36px_rgba(192,132,252,0.65)]">
+          <div className="border-b border-white/10 bg-black/20 p-5 sm:p-6">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <p className="text-sm font-medium text-muted-foreground">
+                <p className="text-sm font-medium uppercase tracking-[0.28em] text-white/65">
                   Question {index + 1} of {questions.length}
                 </p>
-                <p className="mt-1 text-lg font-semibold tracking-tight">
+                <p className="mt-1 text-lg font-semibold tracking-tight text-white">
                   Pick the player with the higher Premier League goal total.
                 </p>
               </div>
               <div className="grid grid-cols-3 gap-3 text-center text-sm">
-                <div className="rounded-2xl border border-border bg-secondary/40 px-4 py-3">
-                  <p className="text-xs text-muted-foreground">Score</p>
+                <div className="rounded-2xl border border-white/10 bg-white/8 px-4 py-3 backdrop-blur">
+                  <p className="text-[11px] uppercase tracking-[0.24em] text-white/60">Score</p>
                   <p className="text-xl font-semibold text-primary">{score}</p>
                 </div>
-                <div className="rounded-2xl border border-border bg-secondary/40 px-4 py-3">
-                  <p className="text-xs text-muted-foreground">Streak</p>
-                  <p className="text-xl font-semibold">{streak}</p>
+                <div className="rounded-2xl border border-white/10 bg-white/8 px-4 py-3 backdrop-blur">
+                  <p className="text-[11px] uppercase tracking-[0.24em] text-white/60">Streak</p>
+                  <p className="text-xl font-semibold text-white">{streak}</p>
                 </div>
-                <div className="rounded-2xl border border-border bg-secondary/40 px-4 py-3">
-                  <p className="text-xs text-muted-foreground">Best</p>
-                  <p className="text-xl font-semibold">{bestStreak}</p>
+                <div className="rounded-2xl border border-white/10 bg-white/8 px-4 py-3 backdrop-blur">
+                  <p className="text-[11px] uppercase tracking-[0.24em] text-white/60">Best</p>
+                  <p className="text-xl font-semibold text-white">{bestStreak}</p>
                 </div>
               </div>
             </div>
-            <div className="mt-5 h-2 overflow-hidden rounded-full bg-secondary">
-              <div
-                className="h-full rounded-full bg-primary transition-all duration-500"
-                style={{ width: `${progress}%` }}
-              />
+            <div className="mt-5 h-2 overflow-hidden rounded-full bg-white/10">
+              <div className="h-full rounded-full bg-gradient-to-r from-fuchsia-400 via-violet-400 to-primary transition-all duration-500" style={{ width: `${progress}%` }} />
             </div>
           </div>
 
@@ -204,41 +200,31 @@ export function GoalscorerQuiz() {
                     onClick={() => answer(player.name)}
                     disabled={answered}
                     className={cn(
-                      'group relative min-h-56 overflow-hidden rounded-3xl border p-6 text-left transition-all duration-300',
-                      !answered &&
-                        'border-border bg-secondary/40 hover:-translate-y-1 hover:border-primary/50 hover:bg-secondary/70',
-                      playerIsWinner && 'border-primary bg-primary/10 glow-green',
+                      'group relative min-h-56 overflow-hidden rounded-[28px] border p-6 text-left text-white transition-all duration-300',
+                      !answered && 'border-white/10 bg-white/8 hover:-translate-y-1 hover:border-primary/50 hover:bg-white/12',
+                      playerIsWinner && 'border-primary/70 bg-primary/15 glow-green',
                       wrongPick && 'border-destructive/70 bg-destructive/10',
-                      answered && !playerIsWinner && !wrongPick && 'border-border bg-secondary/20 opacity-60',
+                      answered && !playerIsWinner && !wrongPick && 'border-white/10 bg-white/6 opacity-60',
                     )}
                   >
-                    <div
-                      aria-hidden="true"
-                      className="absolute -right-16 -top-16 size-44 rounded-full bg-primary/10 blur-3xl transition-opacity group-hover:bg-primary/20"
-                    />
+                    <div aria-hidden="true" className="pointer-events-none absolute -right-16 -top-16 size-44 rounded-full bg-primary/10 blur-3xl transition-opacity group-hover:bg-primary/20" />
                     <div className="relative flex h-full flex-col justify-between">
                       <div>
-                        <p className="text-xs font-medium uppercase tracking-widest text-muted-foreground">
+                        <p className="text-[11px] font-medium uppercase tracking-[0.28em] text-white/60">
                           Player option
                         </p>
-                        <h3 className="mt-4 text-balance text-3xl font-semibold tracking-tight">
-                          {player.name}
-                        </h3>
-                        <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
-                          {player.clubs}
-                        </p>
+                        <h3 className="mt-4 text-balance text-3xl font-semibold tracking-tight">{player.name}</h3>
+                        <p className="mt-3 text-sm leading-relaxed text-white/70">{player.clubs}</p>
                       </div>
 
                       <div className="mt-8 flex items-end justify-between">
-                        <span className="rounded-full border border-border bg-background/50 px-3 py-1 text-xs text-muted-foreground">
+                        <span className="rounded-full border border-white/10 bg-black/20 px-3 py-1 text-xs text-white/70">
                           Tap to choose
                         </span>
                         {answered && (
                           <div className="text-right">
-                            <p className="text-4xl font-semibold tracking-tight text-primary">
-                              {player.goals}
-                            </p>
-                            <p className="text-xs text-muted-foreground">PL goals</p>
+                            <p className="text-4xl font-semibold tracking-tight text-primary">{player.goals}</p>
+                            <p className="text-xs text-white/60">PL goals</p>
                           </div>
                         )}
                       </div>
@@ -248,47 +234,31 @@ export function GoalscorerQuiz() {
               })}
 
               <div className="flex items-center justify-center">
-                <div className="flex size-14 items-center justify-center rounded-full border border-border bg-background text-sm font-semibold text-muted-foreground">
+                <div className="flex size-14 items-center justify-center rounded-full border border-white/10 bg-black/20 text-sm font-semibold text-white/70">
                   VS
                 </div>
               </div>
             </div>
 
-            <div
-              className={cn(
-                'grid transition-all duration-500 ease-out',
-                answered ? 'mt-6 grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0',
-              )}
-            >
+            <div className={cn('grid transition-all duration-500 ease-out', answered ? 'mt-6 grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0')}>
               <div className="overflow-hidden">
-                <div
-                  className={cn(
-                    'rounded-2xl border p-6',
-                    isCorrect ? 'border-primary/40 bg-primary/5' : 'border-destructive/40 bg-destructive/10',
-                  )}
-                >
+                <div className={cn('rounded-[24px] border p-6', isCorrect ? 'border-primary/40 bg-primary/10' : 'border-destructive/40 bg-destructive/10')}>
                   <div className="flex items-start gap-3">
-                    <span
-                      className={cn(
-                        'mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-full',
-                        isCorrect ? 'bg-primary text-primary-foreground' : 'bg-destructive text-white',
-                      )}
-                    >
+                    <span className={cn('mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-full', isCorrect ? 'bg-primary text-primary-foreground' : 'bg-destructive text-white')}>
                       {isCorrect ? <Check className="size-4" /> : <X className="size-4" />}
                     </span>
                     <div>
-                      <p className="font-semibold tracking-tight">
+                      <p className="font-semibold tracking-tight text-white">
                         {isCorrect ? 'Correct.' : 'Wrong one.'} {winner.name} has more.
                       </p>
-                      <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-                        {question.note} Final answer: {question.left.name} {question.left.goals} —{' '}
-                        {question.right.name} {question.right.goals}.
+                      <p className="mt-2 text-sm leading-relaxed text-white/70">
+                        {question.note} Final answer: {question.left.name} {question.left.goals} — {question.right.name} {question.right.goals}.
                       </p>
                     </div>
                   </div>
 
                   <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <div className="flex items-center gap-2 text-sm text-white/60">
                       <Target className="size-4 text-primary" />
                       <span>Data set: Premier League all-time goals, updated after 2025/26.</span>
                     </div>
@@ -309,14 +279,11 @@ export function GoalscorerQuiz() {
             </div>
 
             {finished && (
-              <div className="mt-6 rounded-3xl border border-primary/30 bg-primary/5 p-6 text-center">
+              <div className="mt-6 rounded-[28px] border border-primary/30 bg-primary/10 p-6 text-center">
                 <Trophy className="mx-auto size-9 text-primary" />
-                <h3 className="mt-3 text-2xl font-semibold tracking-tight">
-                  Final score: {score}/{questions.length}
-                </h3>
-                <p className="mx-auto mt-2 max-w-lg text-sm text-muted-foreground">
-                  This is the first RefDecision format that can launch without images or videos:
-                  fast, shareable and easy to expand with hundreds of football duels.
+                <h3 className="mt-3 text-2xl font-semibold tracking-tight text-white">Final score: {score}/{questions.length}</h3>
+                <p className="mx-auto mt-2 max-w-lg text-sm text-white/70">
+                  This is the first RefDecision format that can launch without images or videos: fast, shareable and easy to expand with hundreds of football duels.
                 </p>
               </div>
             )}

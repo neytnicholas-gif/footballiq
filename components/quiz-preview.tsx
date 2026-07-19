@@ -43,7 +43,7 @@ export function QuizPreview() {
               alt="Match situation clip"
               className="size-full object-cover opacity-70"
             />
-            <div className="absolute inset-0 flex items-center justify-center bg-background/40">
+            <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-background/40">
               <button
                 type="button"
                 aria-label="Play clip"

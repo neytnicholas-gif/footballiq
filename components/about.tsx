@@ -8,7 +8,7 @@ export function About() {
       <div className="relative overflow-hidden rounded-3xl border border-border bg-card p-8 sm:p-14">
         <div
           aria-hidden="true"
-          className="absolute -right-20 -top-20 size-72 rounded-full bg-primary/10 blur-[120px]"
+          className="pointer-events-none absolute -right-20 -top-20 size-72 rounded-full bg-primary/10 blur-[120px]"
         />
         <div className="relative grid gap-10 lg:grid-cols-2 lg:items-center">
           <Reveal>

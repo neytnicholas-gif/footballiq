@@ -145,43 +145,43 @@ export function RefereeDecisionQuiz() {
   return (
     <section id="referee" className="relative mx-auto max-w-7xl px-4 py-24 sm:px-6">
       <Reveal className="mx-auto max-w-3xl text-center">
-        <span className="text-sm font-medium uppercase tracking-widest text-primary">
-          Referee mode
+        <span className="text-sm font-medium uppercase tracking-[0.32em] text-primary">
+          Referee Arena
         </span>
         <h2 className="mt-3 text-balance text-3xl font-semibold tracking-tight sm:text-4xl">
-          Text scenarios that already feel like a game
+          Night-stadium decisions with VAR energy.
         </h2>
-        <p className="mt-4 text-pretty text-muted-foreground">
-          No clips needed yet. Read the situation, make the decision, learn the law and build your RefDecision rating.
+        <p className="mt-4 text-pretty text-base leading-relaxed text-muted-foreground">
+          The match-day atmosphere is dramatic, but the decision loop stays clear: read, choose, learn and climb.
         </p>
       </Reveal>
 
       <Reveal delay={120} className="mx-auto mt-12 grid max-w-6xl gap-6 lg:grid-cols-[1fr_360px]">
-        <div className="overflow-hidden rounded-3xl border border-border bg-card">
-          <div className="border-b border-border bg-background/40 p-5 sm:p-6">
+        <div className="overflow-hidden rounded-[32px] border border-amber-400/20 bg-[radial-gradient(circle_at_top_left,_rgba(247,212,75,0.16),_transparent_30%),linear-gradient(135deg,_rgba(7,9,18,0.98),_rgba(16,24,42,0.95))] shadow-[0_25px_80px_-36px_rgba(247,212,75,0.55)]">
+          <div className="border-b border-white/10 bg-black/20 p-5 sm:p-6">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <div className="flex flex-wrap items-center gap-2 text-xs font-medium uppercase tracking-widest text-muted-foreground">
+                <div className="flex flex-wrap items-center gap-2 text-xs font-medium uppercase tracking-[0.28em] text-white/60">
                   <span>{scenario.category}</span>
                   <span className="text-primary">•</span>
                   <span>{scenario.difficulty}</span>
                   <span className="text-primary">•</span>
                   <span>Question {index + 1}/{scenarios.length}</span>
                 </div>
-                <h3 className="mt-3 text-2xl font-semibold tracking-tight">{scenario.title}</h3>
+                <h3 className="mt-3 text-2xl font-semibold tracking-tight text-white">{scenario.title}</h3>
               </div>
-              <div className="rounded-2xl border border-primary/30 bg-primary/10 px-4 py-3 text-center">
-                <p className="text-xs text-muted-foreground">Rating</p>
-                <p className="text-2xl font-semibold text-primary">{rating}</p>
+              <div className="rounded-2xl border border-amber-400/30 bg-amber-400/10 px-4 py-3 text-center backdrop-blur">
+                <p className="text-[11px] uppercase tracking-[0.24em] text-white/60">Rating</p>
+                <p className="text-2xl font-semibold text-amber-300">{rating}</p>
               </div>
             </div>
-            <div className="mt-5 h-2 overflow-hidden rounded-full bg-secondary">
-              <div className="h-full rounded-full bg-primary transition-all duration-500" style={{ width: `${progress}%` }} />
+            <div className="mt-5 h-2 overflow-hidden rounded-full bg-white/10">
+              <div className="h-full rounded-full bg-gradient-to-r from-amber-400 via-orange-400 to-red-500 transition-all duration-500" style={{ width: `${progress}%` }} />
             </div>
           </div>
 
           <div className="p-6 sm:p-8">
-            <div className="rounded-2xl border border-border bg-secondary/30 p-5 text-base leading-relaxed text-muted-foreground">
+            <div className="rounded-[24px] border border-white/10 bg-black/20 p-5 text-base leading-relaxed text-white/75">
               {scenario.situation}
             </div>
 
@@ -197,11 +197,11 @@ export function RefereeDecisionQuiz() {
                     onClick={() => choose(option)}
                     disabled={answered}
                     className={cn(
-                      'rounded-2xl border p-4 text-left font-medium transition-all duration-300',
-                      !answered && 'border-border bg-background/50 hover:-translate-y-0.5 hover:border-primary/50 hover:bg-secondary/60',
+                      'rounded-[20px] border p-4 text-left font-medium text-white transition-all duration-300',
+                      !answered && 'border-white/10 bg-white/8 hover:-translate-y-0.5 hover:border-amber-400/40 hover:bg-white/12',
                       correctAnswer && 'border-primary bg-primary/10 text-primary',
                       wrongPick && 'border-destructive/70 bg-destructive/10 text-destructive',
-                      answered && !correctAnswer && !wrongPick && 'border-border bg-secondary/20 opacity-60',
+                      answered && !correctAnswer && !wrongPick && 'border-white/10 bg-white/6 opacity-60',
                     )}
                   >
                     {option}
@@ -211,16 +211,16 @@ export function RefereeDecisionQuiz() {
             </div>
 
             {answered && (
-              <div className={cn('mt-6 rounded-2xl border p-5', isCorrect ? 'border-primary/40 bg-primary/5' : 'border-destructive/40 bg-destructive/10')}>
+              <div className={cn('mt-6 rounded-[24px] border p-5', isCorrect ? 'border-primary/40 bg-primary/10' : 'border-destructive/40 bg-destructive/10')}>
                 <div className="flex items-start gap-3">
                   <span className={cn('mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-full', isCorrect ? 'bg-primary text-primary-foreground' : 'bg-destructive text-white')}>
                     {isCorrect ? <BadgeCheck className="size-4" /> : <X className="size-4" />}
                   </span>
                   <div>
-                    <p className="font-semibold tracking-tight">
+                    <p className="font-semibold tracking-tight text-white">
                       {isCorrect ? 'Correct decision.' : 'Not the best decision.'} Answer: {scenario.answer}
                     </p>
-                    <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{scenario.explanation}</p>
+                    <p className="mt-2 text-sm leading-relaxed text-white/70">{scenario.explanation}</p>
                   </div>
                 </div>
                 <div className="mt-5 flex justify-end">
@@ -240,46 +240,46 @@ export function RefereeDecisionQuiz() {
         </div>
 
         <aside className="space-y-4">
-          <div className="rounded-3xl border border-border bg-card p-6">
+          <div className="rounded-[28px] border border-white/10 bg-black/20 p-6 backdrop-blur">
             <div className="flex items-center gap-3">
               <span className="flex size-11 items-center justify-center rounded-2xl bg-primary/10 text-primary ring-1 ring-primary/20">
                 <ShieldCheck className="size-5" />
               </span>
               <div>
-                <p className="text-sm text-muted-foreground">Current level</p>
-                <p className="font-semibold tracking-tight">{level}</p>
+                <p className="text-sm text-white/60">Current level</p>
+                <p className="font-semibold tracking-tight text-white">{level}</p>
               </div>
             </div>
             <div className="mt-5 grid grid-cols-3 gap-3 text-center text-sm">
-              <div className="rounded-2xl border border-border bg-secondary/30 px-3 py-3">
-                <p className="text-xs text-muted-foreground">Accuracy</p>
+              <div className="rounded-2xl border border-white/10 bg-white/8 px-3 py-3">
+                <p className="text-[11px] uppercase tracking-[0.24em] text-white/60">Accuracy</p>
                 <p className="text-xl font-semibold text-primary">{accuracy}%</p>
               </div>
-              <div className="rounded-2xl border border-border bg-secondary/30 px-3 py-3">
-                <p className="text-xs text-muted-foreground">Streak</p>
-                <p className="text-xl font-semibold">{streak}</p>
+              <div className="rounded-2xl border border-white/10 bg-white/8 px-3 py-3">
+                <p className="text-[11px] uppercase tracking-[0.24em] text-white/60">Streak</p>
+                <p className="text-xl font-semibold text-white">{streak}</p>
               </div>
-              <div className="rounded-2xl border border-border bg-secondary/30 px-3 py-3">
-                <p className="text-xs text-muted-foreground">Best</p>
-                <p className="text-xl font-semibold">{bestStreak}</p>
+              <div className="rounded-2xl border border-white/10 bg-white/8 px-3 py-3">
+                <p className="text-[11px] uppercase tracking-[0.24em] text-white/60">Best</p>
+                <p className="text-xl font-semibold text-white">{bestStreak}</p>
               </div>
             </div>
           </div>
 
-          <div className="rounded-3xl border border-border bg-card p-6">
+          <div className="rounded-[28px] border border-white/10 bg-black/20 p-6 backdrop-blur">
             <div className="flex items-center gap-2">
               <Flame className="size-5 text-primary" />
-              <h3 className="font-semibold tracking-tight">Addictive loop</h3>
+              <h3 className="font-semibold tracking-tight text-white">Addictive loop</h3>
             </div>
-            <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
+            <p className="mt-3 text-sm leading-relaxed text-white/70">
               Every answer updates your rating, streak and level instantly. Later this can become accounts, daily challenges and real leaderboards.
             </p>
           </div>
 
-          <div className="rounded-3xl border border-primary/30 bg-primary/5 p-6">
+          <div className="rounded-[28px] border border-primary/30 bg-primary/10 p-6">
             <Trophy className="size-6 text-primary" />
-            <h3 className="mt-3 font-semibold tracking-tight">Daily Challenge idea</h3>
-            <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+            <h3 className="mt-3 font-semibold tracking-tight text-white">Daily Challenge idea</h3>
+            <p className="mt-2 text-sm leading-relaxed text-white/70">
               One scenario per day. Everyone gets the same question. Keep your streak alive and compare the community vote.
             </p>
           </div>
