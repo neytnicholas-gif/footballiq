@@ -34,7 +34,7 @@ function gradeFor(score: number, total: number) {
 
 export function DuelQuiz({ pack, onComplete }: { pack: DuelPack; onComplete?: (packId: string, score: number) => void }) {
   const { user, profile, refreshProfile } = useAuth()
-  const [questions, setQuestions] = useState(() => shuffledQuestions(pack.questions))
+  const [questions, setQuestions] = useState(() => [...pack.questions])
   const [index, setIndex] = useState(0)
   const [selected, setSelected] = useState<Choice | 'timeout' | null>(null)
   const [score, setScore] = useState(0)
@@ -57,6 +57,20 @@ export function DuelQuiz({ pack, onComplete }: { pack: DuelPack; onComplete?: (p
   const isCorrect = selected === answer
   const isLast = index === questions.length - 1
   const progress = Math.round(((index + (answered ? 1 : 0)) / questions.length) * 100)
+
+  useEffect(() => {
+    setQuestions(shuffledQuestions(pack.questions))
+    setIndex(0)
+    setSelected(null)
+    setScore(0)
+    setPoints(0)
+    setCombo(0)
+    setBestCombo(0)
+    setTimeLeft(15)
+    setShowResults(false)
+    setSaved(false)
+    setCopied(false)
+  }, [pack])
 
   useEffect(() => {
     try {

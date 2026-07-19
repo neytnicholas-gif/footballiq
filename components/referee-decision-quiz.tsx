@@ -3,7 +3,6 @@
 import { useMemo, useState } from 'react'
 import { ArrowRight, BadgeCheck, Flame, RotateCcw, ShieldCheck, Trophy, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Reveal } from '@/components/reveal'
 import { cn } from '@/lib/utils'
 
 type Scenario = {
@@ -15,12 +14,15 @@ type Scenario = {
   options: string[]
   answer: string
   explanation: string
+  restart: string
+  sanction: string
+  ifab: string
 }
 
 const scenarios: Scenario[] = [
   {
     id: 1,
-    category: 'Restart',
+    category: 'Goalkeeper handling',
     difficulty: 'Easy',
     title: 'Goalkeeper handles a deliberate pass',
     situation:
@@ -28,55 +30,220 @@ const scenarios: Scenario[] = [
     options: ['Play on', 'Indirect free kick', 'Direct free kick', 'Dropped ball'],
     answer: 'Indirect free kick',
     explanation:
-      'When a goalkeeper handles a deliberate kick from a teammate, the restart is an indirect free kick from where the handling occurred, subject to the goal-area exception.',
+      'The goalkeeper cannot handle a ball deliberately kicked to him by a teammate. This is a technical offense by the goalkeeper.',
+    restart: 'Indirect free kick to the opponents from where the goalkeeper handled (goal-area positioning exception applies).',
+    sanction: 'No card unless it also delays a restart or shows unsporting behavior.',
+    ifab: 'Law 12: goalkeeper handling restrictions for deliberate kick from a teammate.',
   },
   {
     id: 2,
-    category: 'Disciplinary',
-    difficulty: 'Medium',
+    category: 'SPA',
+    difficulty: 'Easy',
     title: 'Stopping a promising attack',
     situation:
       'An attacker breaks through midfield with two teammates ahead. A defender pulls his shirt and stops the attack before he can release the pass.',
     options: ['No card', 'Yellow card', 'Red card', 'Second whistle only'],
     answer: 'Yellow card',
     explanation:
-      'This is normally SPA: stopping a promising attack. It is usually a caution unless the criteria for DOGSO are clearly present.',
+      'The tactical hold breaks up a promising attack without meeting all DOGSO criteria. This is unsporting behavior (SPA).',
+    restart: 'Direct free kick to attackers from the foul location.',
+    sanction: 'Caution (yellow card) for SPA.',
+    ifab: 'Law 12: unsporting behavior includes stopping a promising attack by a foul.',
   },
   {
     id: 3,
+    category: 'Simulation',
+    difficulty: 'Easy',
+    title: 'Attacker exaggerates no-contact challenge',
+    situation:
+      'Inside the penalty area, an attacker throws himself to ground with no contact while appealing loudly for a penalty.',
+    options: ['Award penalty', 'Play on only', 'Indirect free kick + yellow to attacker', 'Dropped ball'],
+    answer: 'Indirect free kick + yellow to attacker',
+    explanation:
+      'Attempting to deceive the referee by feigning contact is simulation and a cautionable act.',
+    restart: 'Indirect free kick to the defending team from where simulation occurred.',
+    sanction: 'Caution (yellow card) to attacker for unsporting behavior (attempt to deceive).',
+    ifab: 'Law 12: simulation/attempt to deceive is cautionable and punished with an IFK.',
+  },
+  {
+    id: 4,
+    category: 'Handball',
+    difficulty: 'Medium',
+    title: 'Arm above shoulder blocks cross',
+    situation:
+      'A defender jumps to block a cross. The ball hits his raised arm clearly above shoulder height, making the body unnaturally bigger.',
+    options: ['No handball because ball was crossed', 'Handball: direct free kick', 'Indirect free kick only', 'Dropped ball'],
+    answer: 'Handball: direct free kick',
+    explanation:
+      'An arm above shoulder level that makes the body unnaturally bigger is normally punishable handball unless a specific exemption applies.',
+    restart: 'Direct free kick (or penalty if in defender’s own penalty area).',
+    sanction: 'Usually no card unless handball is tactical SPA/DOGSO or clearly unsporting.',
+    ifab: 'Law 12 handball interpretation: unnaturally bigger body with high arm position.',
+  },
+  {
+    id: 5,
+    category: 'Reckless challenge',
+    difficulty: 'Medium',
+    title: 'Late slide, clear contact, no brutality',
+    situation:
+      'A defender arrives late and slides through an opponent’s ankle with moderate force, missing the ball.',
+    options: ['No foul', 'Direct free kick only', 'Direct free kick + yellow', 'Direct free kick + red'],
+    answer: 'Direct free kick + yellow',
+    explanation:
+      'The challenge is careless-to-reckless with disregard for opponent safety, but not excessive force.',
+    restart: 'Direct free kick to the fouled team.',
+    sanction: 'Caution (yellow card) for a reckless challenge.',
+    ifab: 'Law 12: reckless = caution; excessive force = send-off.',
+  },
+  {
+    id: 6,
+    category: 'Advantage',
+    difficulty: 'Medium',
+    title: 'Advantage with later caution',
+    situation:
+      'A midfielder is tripped in transition, but the ball runs to his teammate who now attacks 3v2 into open space.',
+    options: ['Stop immediately and book now', 'Play advantage, caution at next stoppage', 'Dropped ball', 'Play on with no misconduct'],
+    answer: 'Play advantage, caution at next stoppage',
+    explanation:
+      'Advantage can be applied when there is a clear tactical benefit, while disciplinary action for the original foul is still taken later.',
+    restart: 'No immediate restart because advantage is played; restart depends on next natural stoppage.',
+    sanction: 'Caution at next stoppage if original foul was SPA/reckless.',
+    ifab: 'Law 5 and Law 12: advantage plus delayed disciplinary sanction.',
+  },
+  {
+    id: 7,
     category: 'DOGSO',
-    difficulty: 'Hard',
+    difficulty: 'Medium',
     title: 'Penalty plus card decision',
     situation:
       'A striker is one-on-one with the goalkeeper inside the penalty area. A defender makes no attempt to play the ball and pulls him down from behind.',
     options: ['Penalty only', 'Penalty + yellow', 'Penalty + red', 'Indirect free kick + yellow'],
     answer: 'Penalty + red',
     explanation:
-      'If DOGSO occurs in the penalty area and there is no genuine attempt to play the ball, the punishment remains a red card plus penalty.',
+      'Inside the penalty area, DOGSO remains a send-off when there is no genuine attempt to play the ball.',
+    restart: 'Penalty kick.',
+    sanction: 'Send-off (red card) for DOGSO with no attempt to play the ball.',
+    ifab: 'Law 12 DOGSO “double jeopardy” exception does not apply when no ball-playing attempt exists.',
   },
   {
-    id: 4,
-    category: 'Advantage',
-    difficulty: 'Medium',
-    title: 'Advantage or whistle?',
-    situation:
-      'A midfielder is fouled, but the ball immediately rolls to his teammate who has space to attack with numbers forward.',
-    options: ['Stop play immediately', 'Play advantage', 'Dropped ball', 'Book the fouled player'],
-    answer: 'Play advantage',
-    explanation:
-      'If the non-offending team has a clear attacking benefit, playing advantage is usually the better decision. The referee can still return to caution the offender later if needed.',
-  },
-  {
-    id: 5,
-    category: 'Handball',
+    id: 8,
+    category: 'Offside involvement',
     difficulty: 'Hard',
-    title: 'Arm above shoulder',
+    title: 'Offside player blocks goalkeeper vision',
     situation:
-      'A defender jumps to block a cross. The ball hits his arm, which is raised clearly above shoulder height and makes his body bigger.',
-    options: ['No handball', 'Handball', 'Indirect free kick', 'Only handball if intentional'],
-    answer: 'Handball',
+      'At a free kick, an attacker in an offside position stands in front of the goalkeeper and clearly blocks line of sight as a teammate scores from distance.',
+    options: ['Goal stands', 'Indirect free kick for offside interference', 'Retake free kick', 'Penalty to defenders'],
+    answer: 'Indirect free kick for offside interference',
     explanation:
-      'An arm above shoulder height that makes the body bigger is usually punishable unless the player has a very clear footballing justification for that movement.',
+      'An offside-positioned player who interferes with an opponent by obstructing vision commits an offside offense.',
+    restart: 'Indirect free kick to defending team from offside offense location.',
+    sanction: 'No card by default.',
+    ifab: 'Law 11: interfering with an opponent includes impacting ability to play/see the ball.',
+  },
+  {
+    id: 9,
+    category: 'Dissent',
+    difficulty: 'Hard',
+    title: 'Public protest after caution',
+    situation:
+      'After being cautioned, a player aggressively applauds the referee, shouts dissenting remarks, and refuses to retreat for the restart.',
+    options: ['Verbal warning only', 'Second yellow then red', 'Straight red for violent conduct', 'No action'],
+    answer: 'Second yellow then red',
+    explanation:
+      'Persistent and demonstrative dissent after an initial caution is another cautionable offense, which leads to a second yellow and send-off.',
+    restart: 'Restart remains according to original stoppage (for example, free kick).',
+    sanction: 'Second caution followed by red card.',
+    ifab: 'Law 12: dissent by word/action is cautionable; second caution requires send-off.',
+  },
+  {
+    id: 10,
+    category: 'Delaying restart',
+    difficulty: 'Hard',
+    title: 'Kicking ball away after whistle',
+    situation:
+      'Defenders concede a free kick near halfway. One defender, frustrated, boots the ball 30 meters away to stop a quick restart.',
+    options: ['No card, just ask for ball', 'Yellow card for delaying restart', 'Red card', 'Indirect free kick'],
+    answer: 'Yellow card for delaying restart',
+    explanation:
+      'Deliberately delaying the restart by kicking the ball away is a standard caution.',
+    restart: 'Original free kick to attacking team.',
+    sanction: 'Caution (yellow card) for delaying the restart of play.',
+    ifab: 'Law 12: delaying restart is cautionable unsporting behavior.',
+  },
+  {
+    id: 11,
+    category: 'Serious foul play',
+    difficulty: 'Hard',
+    title: 'Studs high with excessive force',
+    situation:
+      'A player lunges with straight leg and exposed studs, making forceful contact above the opponent’s ankle while contesting the ball.',
+    options: ['Direct free kick only', 'Direct free kick + yellow', 'Direct free kick + red for SFP', 'Indirect free kick'],
+    answer: 'Direct free kick + red for SFP',
+    explanation:
+      'The challenge endangers opponent safety with excessive force while challenging for the ball: serious foul play.',
+    restart: 'Direct free kick (or penalty if by defender inside own penalty area).',
+    sanction: 'Send-off (red card) for serious foul play.',
+    ifab: 'Law 12: serious foul play = challenge for ball using excessive force/endangering safety.',
+  },
+  {
+    id: 12,
+    category: 'Violent conduct',
+    difficulty: 'Hard',
+    title: 'Off-the-ball strike during stoppage',
+    situation:
+      'Play is stopped for a throw-in. Away from the ball, one player strikes an opponent in the chest with force.',
+    options: ['Yellow to both players', 'Red for violent conduct', 'Dropped ball and warning', 'No action if ball not in play'],
+    answer: 'Red for violent conduct',
+    explanation:
+      'Using or attempting excessive force/ brutality against an opponent when not challenging for the ball is violent conduct.',
+    restart: 'Because ball was out for throw-in, restart is still the original throw-in.',
+    sanction: 'Send-off (red card) for violent conduct.',
+    ifab: 'Law 12: violent conduct applies whether ball is in or out of play.',
+  },
+  {
+    id: 13,
+    category: 'DOGSO outside area',
+    difficulty: 'Hard',
+    title: 'Last defender clips attacker outside penalty area',
+    situation:
+      'An attacker takes a heavy touch beyond the last defender just outside the penalty area. The defender clips his heel and brings him down with no covering defenders.',
+    options: ['Direct free kick only', 'Direct free kick + yellow for SPA', 'Direct free kick + red for DOGSO', 'Indirect free kick + red'],
+    answer: 'Direct free kick + red for DOGSO',
+    explanation:
+      'All DOGSO criteria are present (distance, direction, likelihood of control, and defenders). Outside the area there is no double-jeopardy mitigation.',
+    restart: 'Direct free kick from foul location.',
+    sanction: 'Send-off (red card) for DOGSO.',
+    ifab: 'Law 12 DOGSO criteria and disciplinary consequences.',
+  },
+  {
+    id: 14,
+    category: 'Second-yellow management',
+    difficulty: 'Hard',
+    title: 'Advantage after cautionable tactical foul by already-booked player',
+    situation:
+      'A player already on a yellow shirt-pulls to stop transition, but the attack continues with clear advantage and then ends with a shot over.',
+    options: ['No card because advantage was played', 'Second yellow at next stoppage', 'Straight red at next stoppage', 'Only team warning'],
+    answer: 'Second yellow at next stoppage',
+    explanation:
+      'Playing advantage does not cancel misconduct. If the foul is cautionable and the player is already booked, the second caution is still shown at next stoppage.',
+    restart: 'Restart follows the natural stoppage that ended advantage (goal kick in this case).',
+    sanction: 'Second caution, then red card.',
+    ifab: 'Law 5 advantage and Law 12 disciplinary consequences remain in force.',
+  },
+  {
+    id: 15,
+    category: 'VAR protocol',
+    difficulty: 'Hard',
+    title: 'Post-goal review finds attacker handball in APP',
+    situation:
+      'A goal is scored. During the check, VAR identifies that the scorer controlled the ball with hand immediately before finishing.',
+    options: ['Goal stands because handball was accidental', 'Disallow goal and restart with direct free kick to defenders', 'Retake kickoff', 'Dropped ball to goalkeeper'],
+    answer: 'Disallow goal and restart with direct free kick to defenders',
+    explanation:
+      'A goal cannot be awarded if the scoring player commits handball immediately before scoring, even if accidental.',
+    restart: 'Direct free kick to defending team from handball offense spot (or penalty if applicable, though here it is attacking handball).',
+    sanction: 'Usually no card unless handball was tactical/unsporting beyond the scoring offense.',
+    ifab: 'Law 12 attacking handball offense and VAR protocol for reviewing goal incidents in the APP.',
   },
 ]
 
@@ -143,20 +310,8 @@ export function RefereeDecisionQuiz() {
   }
 
   return (
-    <section id="referee" className="relative mx-auto max-w-7xl px-4 py-24 sm:px-6">
-      <Reveal className="mx-auto max-w-3xl text-center">
-        <span className="text-sm font-medium uppercase tracking-[0.32em] text-primary">
-          Referee Arena
-        </span>
-        <h2 className="mt-3 text-balance text-3xl font-semibold tracking-tight sm:text-4xl">
-          Night-stadium decisions with VAR energy.
-        </h2>
-        <p className="mt-4 text-pretty text-base leading-relaxed text-muted-foreground">
-          The match-day atmosphere is dramatic, but the decision loop stays clear: read, choose, learn and climb.
-        </p>
-      </Reveal>
-
-      <Reveal delay={120} className="mx-auto mt-12 grid max-w-6xl gap-6 lg:grid-cols-[1fr_360px]">
+    <section id="referee" className="relative mx-auto max-w-6xl px-1 py-0 sm:px-2">
+      <div className="mx-auto grid max-w-6xl gap-6 lg:grid-cols-[1fr_360px]">
         <div className="overflow-hidden rounded-[32px] border border-amber-400/20 bg-[radial-gradient(circle_at_top_left,_rgba(247,212,75,0.16),_transparent_30%),linear-gradient(135deg,_rgba(7,9,18,0.98),_rgba(16,24,42,0.95))] shadow-[0_25px_80px_-36px_rgba(247,212,75,0.55)]">
           <div className="border-b border-white/10 bg-black/20 p-5 sm:p-6">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -221,6 +376,9 @@ export function RefereeDecisionQuiz() {
                       {isCorrect ? 'Correct decision.' : 'Not the best decision.'} Answer: {scenario.answer}
                     </p>
                     <p className="mt-2 text-sm leading-relaxed text-white/70">{scenario.explanation}</p>
+                    <p className="mt-2 text-sm leading-relaxed text-white/70"><strong className="text-white">Restart:</strong> {scenario.restart}</p>
+                    <p className="mt-1 text-sm leading-relaxed text-white/70"><strong className="text-white">Disciplinary sanction:</strong> {scenario.sanction}</p>
+                    <p className="mt-1 text-sm leading-relaxed text-white/70"><strong className="text-white">IFAB reasoning:</strong> {scenario.ifab}</p>
                   </div>
                 </div>
                 <div className="mt-5 flex justify-end">
@@ -284,7 +442,7 @@ export function RefereeDecisionQuiz() {
             </p>
           </div>
         </aside>
-      </Reveal>
+      </div>
     </section>
   )
 }

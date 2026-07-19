@@ -17,8 +17,9 @@ const links = [
 
 export function SiteHeader() {
   const pathname = usePathname()
-  const { user, profile, loading, signOut } = useAuth()
+  const { user, profile, loading, profileLoading, signOut } = useAuth()
   const [open, setOpen] = useState(false)
+  const authResolved = !loading && !profileLoading
 
   const isActive = (href: string) => {
     if (href === '/') return pathname === '/'
@@ -42,17 +43,19 @@ export function SiteHeader() {
         </nav>
 
         <div className="flex items-center gap-2">
-          {!loading && !user && (
+          {!authResolved && <div className="hidden h-9 w-[132px] rounded-xl border border-border/60 bg-secondary/40 sm:block" aria-hidden="true" />}
+
+          {authResolved && !user && (
             <Link href="/login" className="hidden rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground sm:inline-flex">
               Sign in
             </Link>
           )}
-          {!loading && user && !profile?.username && (
+          {authResolved && user && !profile?.username && (
             <Link href="/username" className="hidden rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground sm:inline-flex">
               Choose username
             </Link>
           )}
-          {!loading && user && profile?.username && (
+          {authResolved && user && profile?.username && (
             <div className="flex items-center gap-2">
               <Link href="/profile" className="hidden rounded-xl border border-border px-4 py-2 text-sm sm:inline-flex sm:items-center">
                 <span className="mr-2 rounded-full bg-primary px-2 py-1 text-xs text-primary-foreground">{Math.max(1, Math.floor(profile.xp / 250) + 1)}</span>
@@ -90,17 +93,19 @@ export function SiteHeader() {
               </Link>
             ))}
 
-            {!loading && !user && (
+            {!authResolved && <div className="mt-2 h-10 rounded-lg border border-border/60 bg-secondary/40" aria-hidden="true" />}
+
+            {authResolved && !user && (
               <Link href="/login" onClick={() => setOpen(false)} className="mt-2 rounded-lg bg-primary px-3 py-2 text-center text-sm font-semibold text-primary-foreground">
                 Sign in
               </Link>
             )}
-            {!loading && user && !profile?.username && (
+            {authResolved && user && !profile?.username && (
               <Link href="/username" onClick={() => setOpen(false)} className="mt-2 rounded-lg bg-primary px-3 py-2 text-center text-sm font-semibold text-primary-foreground">
                 Choose username
               </Link>
             )}
-            {!loading && user && profile?.username && (
+            {authResolved && user && profile?.username && (
               <>
                 <Link href="/profile" onClick={() => setOpen(false)} className="mt-2 rounded-lg border border-border px-3 py-2 text-sm">
                   Profile
