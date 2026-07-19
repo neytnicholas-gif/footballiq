@@ -1,5 +1,5 @@
 export type DuelOption = { name: string; value: number; detail: string }
-export type DuelQuestion = { left: DuelOption; right: DuelOption }
+export type DuelQuestion = { left: DuelOption; right: DuelOption; statLabel?: string }
 export type DuelDifficulty = 'Starter' | 'Sharp' | 'Expert'
 export type DuelCategory = 'League' | 'Europe' | 'International' | 'Trophies'
 export type DuelPack = {

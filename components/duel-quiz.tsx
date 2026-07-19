@@ -1,10 +1,11 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Check, Clock3, Copy, Flame, RotateCcw, Sparkles, Trophy, X } from 'lucide-react'
+import { Check, Clock3, Copy, Flame, RotateCcw, Sparkles, Trophy, X, Zap } from 'lucide-react'
 import type { DuelPack, DuelQuestion } from '@/lib/duel-packs'
 import { useAuth } from '@/components/auth-provider'
 import { supabase } from '@/lib/supabase'
+import { calculateDuelXp, getRankProgress } from '@/lib/progression'
 
 type Choice = 'left' | 'right' | 'same'
 type Speed = 'relaxed' | 'timed'
@@ -46,10 +47,12 @@ export function DuelQuiz({ pack, onComplete }: { pack: DuelPack; onComplete?: (p
   const [saved, setSaved] = useState(false)
   const [saving, setSaving] = useState(false)
   const [copied, setCopied] = useState(false)
+  const [rewardFlash, setRewardFlash] = useState<number | null>(null)
   const [personalBest, setPersonalBest] = useState<StoredBest | null>(null)
 
   const question = questions[index]
   const answer = correctChoice(question)
+  const currentStatLabel = question.statLabel ?? pack.statLabel
   const answered = selected !== null
   const isCorrect = selected === answer
   const isLast = index === questions.length - 1
@@ -71,7 +74,10 @@ export function DuelQuiz({ pack, onComplete }: { pack: DuelPack; onComplete?: (p
       const speedBonus = speed === 'timed' ? timeLeft * 5 : 0
       const comboBonus = Math.min(200, combo * 25)
       setScore((value) => value + 1)
-      setPoints((value) => value + 100 + speedBonus + comboBonus)
+      const questionPoints = 100 + speedBonus + comboBonus
+      setPoints((value) => value + questionPoints)
+      setRewardFlash(12 + Math.min(combo, 4) * 2 + (speed === 'timed' && timeLeft >= 10 ? 4 : 0))
+      window.setTimeout(() => setRewardFlash(null), 900)
       setCombo(nextCombo)
       setBestCombo((value) => Math.max(value, nextCombo))
     } else {
@@ -104,7 +110,7 @@ export function DuelQuiz({ pack, onComplete }: { pack: DuelPack; onComplete?: (p
     if (!user || !profile || saved || saving) return
     setSaving(true)
     const perfect = score === questions.length
-    const xpEarned = 30 + score * 12 + Math.min(bestCombo, 5) * 5 + (perfect ? 50 : 0)
+    const xpEarned = calculateDuelXp(score, questions.length, bestCombo, points)
     const today = new Date().toISOString().slice(0, 10)
     const { error } = await supabase.rpc('complete_quiz', {
       p_quiz_id: pack.id,
@@ -143,6 +149,17 @@ export function DuelQuiz({ pack, onComplete }: { pack: DuelPack; onComplete?: (p
     setTimeLeft(15)
   }
 
+  useEffect(() => {
+    if (!answered || showResults) return
+    const timer = window.setTimeout(() => {
+      if (isLast) finish()
+      else next()
+    }, isLast ? 1450 : 1050)
+    return () => window.clearTimeout(timer)
+  // The game intentionally advances automatically after feedback.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [answered, isLast, showResults])
+
   function restart() {
     setQuestions(shuffledQuestions(pack.questions))
     setIndex(0)
@@ -177,6 +194,8 @@ export function DuelQuiz({ pack, onComplete }: { pack: DuelPack; onComplete?: (p
 
   if (showResults) {
     const grade = gradeFor(score, questions.length)
+    const xpEarned = calculateDuelXp(score, questions.length, bestCombo, points)
+    const rankProgress = getRankProgress((profile?.xp ?? 0) + xpEarned)
     const isNewBest = score >= (personalBest?.score ?? 0)
     return (
       <div className="overflow-hidden rounded-[2rem] border border-border bg-card">
@@ -188,12 +207,14 @@ export function DuelQuiz({ pack, onComplete }: { pack: DuelPack; onComplete?: (p
           <div className="mt-7 flex items-end justify-center gap-2"><span className="text-7xl font-bold text-primary">{score}</span><span className="pb-2 text-2xl text-muted-foreground">/{questions.length}</span></div>
         </div>
         <div className="p-6 sm:p-8">
-          <div className="grid gap-3 sm:grid-cols-3">
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             <ResultStat icon={<Sparkles className="size-5" />} label="Points" value={points.toLocaleString()} />
             <ResultStat icon={<Flame className="size-5" />} label="Best combo" value={`${bestCombo}x`} />
             <ResultStat icon={<Trophy className="size-5" />} label="Personal best" value={`${personalBest?.score ?? score}/${questions.length}`} />
+            <ResultStat icon={<Zap className="size-5" />} label="XP earned" value={`+${xpEarned}`} />
           </div>
           {isNewBest && <div className="mt-4 rounded-2xl border border-primary/30 bg-primary/10 px-5 py-4 text-sm text-primary">New personal best recorded on this device.</div>}
+          {user && <div className="mt-4 rounded-2xl border border-border bg-background p-5"><div className="flex items-center justify-between gap-3"><div><p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">New rank progress</p><p className="mt-1 text-lg font-bold">{rankProgress.current.emoji} {rankProgress.current.title}</p></div><p className="text-sm text-primary">{rankProgress.next ? `${rankProgress.remaining} XP to ${rankProgress.next.title}` : 'Maximum rank reached'}</p></div><div className="mt-3 h-2 overflow-hidden rounded-full bg-secondary"><div className="h-full rounded-full bg-primary transition-all" style={{width:`${rankProgress.percent}%`}} /></div></div>}
           <div className="mt-6 flex flex-wrap gap-3">
             <button onClick={restart} className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-primary px-5 py-3 font-semibold text-primary-foreground"><RotateCcw className="size-4" /> Play again</button>
             <button onClick={() => void shareResult()} className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl border border-border px-5 py-3 font-semibold"><Copy className="size-4" /> {copied ? 'Copied!' : 'Share score'}</button>
@@ -226,20 +247,21 @@ export function DuelQuiz({ pack, onComplete }: { pack: DuelPack; onComplete?: (p
 
       <div className="p-5 sm:p-7">
         <div className="grid items-stretch gap-4 md:grid-cols-[1fr_auto_1fr]">
-          <PlayerChoice side="left" option={question.left} selected={selected} answer={answer} answered={answered} statLabel={pack.statLabel} onChoose={lockAnswer} />
+          <PlayerChoice side="left" option={question.left} selected={selected} answer={answer} answered={answered} statLabel={currentStatLabel} onChoose={lockAnswer} />
           <button onClick={() => lockAnswer('same')} disabled={answered} className={`self-center rounded-2xl border px-5 py-3 text-sm font-bold transition md:px-4 ${answered && answer === 'same' ? 'border-primary bg-primary text-primary-foreground' : answered && selected === 'same' ? 'border-destructive bg-destructive/10 text-destructive' : 'border-border bg-secondary hover:border-primary hover:text-primary'}`}><span className="md:hidden">Same total</span><span className="hidden md:block">SAME</span><span className="ml-2 text-[10px] opacity-60">2</span></button>
-          <PlayerChoice side="right" option={question.right} selected={selected} answer={answer} answered={answered} statLabel={pack.statLabel} onChoose={lockAnswer} />
+          <PlayerChoice side="right" option={question.right} selected={selected} answer={answer} answered={answered} statLabel={currentStatLabel} onChoose={lockAnswer} />
         </div>
 
         {!answered && <p className="mt-5 text-center text-xs text-muted-foreground">Click a player, choose Same, or use keyboard keys 1 • 2 • 3</p>}
+        {rewardFlash !== null && <div className="pointer-events-none fixed left-1/2 top-28 z-50 -translate-x-1/2 animate-bounce rounded-full border border-primary/30 bg-background/95 px-5 py-2 font-bold text-primary shadow-2xl">⚡ +{rewardFlash} XP</div>}
         {answered && (
           <div className={`mt-6 rounded-2xl border p-5 ${isCorrect ? 'border-primary/35 bg-primary/10' : 'border-destructive/35 bg-destructive/10'}`}>
             <div className="flex flex-wrap items-center justify-between gap-4">
               <div className="flex items-start gap-3">
                 <span className={`mt-0.5 flex size-8 items-center justify-center rounded-full ${isCorrect ? 'bg-primary text-primary-foreground' : 'bg-destructive text-white'}`}>{isCorrect ? <Check className="size-5" /> : <X className="size-5" />}</span>
-                <div><p className="font-bold">{outcomeCopy}</p><p className="mt-1 text-sm text-muted-foreground">{question.left.name}: {question.left.value} • {question.right.name}: {question.right.value} {pack.statLabel}</p></div>
+                <div><p className="font-bold">{outcomeCopy}</p><p className="mt-1 text-sm text-muted-foreground">{question.left.name}: {question.left.value} • {question.right.name}: {question.right.value} {currentStatLabel}</p></div>
               </div>
-              <button onClick={next} className="w-full rounded-xl bg-primary px-6 py-3 font-semibold text-primary-foreground sm:w-auto">{isLast ? 'See results' : 'Next duel'} →</button>
+              <div className="w-full rounded-xl border border-primary/25 bg-background/70 px-5 py-3 text-center text-sm font-semibold text-primary sm:w-auto">{isLast ? 'Calculating results…' : 'Next duel loading…'}</div>
             </div>
           </div>
         )}

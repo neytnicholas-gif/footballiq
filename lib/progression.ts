@@ -1,81 +1,48 @@
-/**
- * Progression system utilities
- * XP-based leveling with infinite progression
- */
-
-/**
- * Calculate total XP required to reach a specific level
- * Formula: 100 * (level - 1) * level / 2
- */
-export function totalXpForLevel(level: number): number {
-  return (100 * (level - 1) * level) / 2
+export type Rank = {
+  title: string
+  minXp: number
+  emoji: string
+  nextTitle?: string
 }
 
-/**
- * Get current level from total XP
- */
-export function getLevelFromXp(totalXp: number): number {
-  let level = 1
-  while (totalXpForLevel(level + 1) <= totalXp) {
-    level++
-  }
-  return level
+export const ranks: Rank[] = [
+  { title: 'Football Fan', minXp: 0, emoji: '⚽', nextTitle: 'Sunday Player' },
+  { title: 'Sunday Player', minXp: 250, emoji: '👟', nextTitle: 'Academy Prospect' },
+  { title: 'Academy Prospect', minXp: 750, emoji: '🌱', nextTitle: 'Talent Scout' },
+  { title: 'Talent Scout', minXp: 1500, emoji: '🔎', nextTitle: 'Elite Scout' },
+  { title: 'Elite Scout', minXp: 3000, emoji: '🎯', nextTitle: 'Head Scout' },
+  { title: 'Head Scout', minXp: 5500, emoji: '📋', nextTitle: 'Sporting Director' },
+  { title: 'Sporting Director', minXp: 9000, emoji: '🧠', nextTitle: 'Football Genius' },
+  { title: 'Football Genius', minXp: 14000, emoji: '✨', nextTitle: 'Legend' },
+  { title: 'Legend', minXp: 22000, emoji: '👑' },
+]
+
+export function getRank(xp: number) {
+  return [...ranks].reverse().find((rank) => xp >= rank.minXp) ?? ranks[0]
 }
 
-/**
- * Get XP earned in the current level
- */
-export function getXpInCurrentLevel(totalXp: number): number {
-  const currentLevel = getLevelFromXp(totalXp)
-  const xpForCurrentLevel = totalXpForLevel(currentLevel)
-  return totalXp - xpForCurrentLevel
+export function getNextRank(xp: number) {
+  return ranks.find((rank) => rank.minXp > xp) ?? null
 }
 
-/**
- * Get XP required for next level
- */
-export function getXpForNextLevel(totalXp: number): number {
-  const currentLevel = getLevelFromXp(totalXp)
-  const xpForCurrentLevel = totalXpForLevel(currentLevel)
-  const xpForNextLevel = totalXpForLevel(currentLevel + 1)
-  return xpForNextLevel - xpForCurrentLevel
-}
-
-/**
- * Get progress percentage to next level (0-100)
- */
-export function getProgressPercentage(totalXp: number): number {
-  const xpInLevel = getXpInCurrentLevel(totalXp)
-  const xpNeeded = getXpForNextLevel(totalXp)
-  return Math.floor((xpInLevel / xpNeeded) * 100)
-}
-
-/**
- * Get deterministic HSL color for a level
- * Uses golden angle (137.508°) for good color distribution
- */
-export function getLevelColor(level: number): string {
-  const hue = (level * 137.508) % 360
-  return `hsl(${hue}, 70%, 60%)`
-}
-
-/**
- * Get level info object
- */
-export function getLevelInfo(totalXp: number) {
-  const level = getLevelFromXp(totalXp)
-  const xpInLevel = getXpInCurrentLevel(totalXp)
-  const xpNeeded = getXpForNextLevel(totalXp)
-  const progressPercentage = getProgressPercentage(totalXp)
-  const color = getLevelColor(level)
-
+export function getRankProgress(xp: number) {
+  const current = getRank(xp)
+  const next = getNextRank(xp)
+  if (!next) return { current, next: null, percent: 100, remaining: 0 }
+  const span = next.minXp - current.minXp
+  const gained = xp - current.minXp
   return {
-    level,
-    totalXp,
-    xpInLevel,
-    xpNeeded,
-    xpToNextLevel: xpNeeded - xpInLevel,
-    progressPercentage,
-    color,
+    current,
+    next,
+    percent: Math.max(0, Math.min(100, Math.round((gained / span) * 100))),
+    remaining: Math.max(0, next.minXp - xp),
   }
+}
+
+export function calculateDuelXp(score: number, total: number, bestCombo: number, points: number) {
+  const perfect = score === total
+  const accuracyBonus = Math.round((score / total) * 40)
+  const comboBonus = Math.min(bestCombo, 5) * 5
+  const speedBonus = Math.min(30, Math.floor(points / 500) * 3)
+  return 20 + score * 10 + accuracyBonus + comboBonus + speedBonus + (perfect ? 60 : 0)
 }
