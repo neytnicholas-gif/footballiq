@@ -150,7 +150,13 @@ export function DailyChallenge() {
       return
     }
 
-    const { error } = await saveQuizResult({ quizId, score, total: items.length, xp: xpFor(score, items.length) })
+    const { error } = await saveQuizResult({
+      quizId,
+      score,
+      total: items.length,
+      xp: xpFor(score, items.length),
+      activityDate: dailyKey,
+    })
     if (error) {
       setSaveMessage('Reward save failed. Please retry.')
       setSavingReward(false)
