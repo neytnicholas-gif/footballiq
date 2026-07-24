@@ -43,7 +43,7 @@ export function PlatformLoop() {
           The part that makes people come back
         </h2>
         <p className="mt-4 text-pretty text-muted-foreground">
-          RefDecision should not feel like a school test. It should feel like Chess.com or Duolingo for football judgement.
+          FootballIQ should not feel like a school test. It should feel like Chess.com or Duolingo for football judgement.
         </p>
       </Reveal>
 

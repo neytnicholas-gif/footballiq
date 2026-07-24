@@ -13,13 +13,13 @@ export function About() {
         <div className="relative grid gap-10 lg:grid-cols-2 lg:items-center">
           <Reveal>
             <span className="text-sm font-medium uppercase tracking-widest text-primary">
-              About RefDecision
+              About FootballIQ
             </span>
             <h2 className="mt-3 text-balance text-3xl font-semibold tracking-tight sm:text-4xl">
               Built for everyone who loves the details of the game
             </h2>
             <p className="mt-5 text-pretty leading-relaxed text-muted-foreground">
-              RefDecision is an educational football platform built for people who want to
+              FootballIQ is an educational football platform built for people who want to
               understand the game better. Through short decision quizzes, football analysis and
               community voting, users can test their judgement and improve how they read match
               situations.

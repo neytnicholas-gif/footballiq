@@ -1,18 +1,45 @@
 import { Analytics } from '@vercel/analytics/next'
 import type { Metadata, Viewport } from 'next'
 import { AuthProvider } from '@/components/auth-provider'
+import { BRAND } from '@/lib/brand'
 import './globals.css'
 
 export const metadata: Metadata = {
-  title: 'FootballIQ — Football quiz rating platform',
-  description:
-    'Sign in, create a username, play FootballIQ quizzes, build ratings and climb the leaderboard.',
+  metadataBase: new URL(BRAND.siteUrl),
+  title: {
+    default: 'FootballIQ - Train football knowledge and judgement',
+    template: '%s | FootballIQ',
+  },
+  description: BRAND.description,
   generator: 'v0.app',
+  manifest: '/manifest.webmanifest',
+  openGraph: {
+    title: 'FootballIQ - Train football knowledge and judgement',
+    description: BRAND.description,
+    url: BRAND.siteUrl,
+    siteName: BRAND.name,
+    images: [
+      {
+        url: BRAND.socialImage,
+        width: 1200,
+        height: 630,
+        alt: 'FootballIQ platform preview',
+      },
+    ],
+    locale: 'en_GB',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'FootballIQ - Train football knowledge and judgement',
+    description: BRAND.description,
+    images: [BRAND.socialImage],
+  },
 }
 
 export const viewport: Viewport = {
   colorScheme: 'dark',
-  themeColor: '#0b0d10',
+  themeColor: BRAND.themeColor,
 }
 
 export default function RootLayout({

@@ -152,7 +152,7 @@ export function RefereeDecisionQuiz() {
           Text scenarios that already feel like a game
         </h2>
         <p className="mt-4 text-pretty text-muted-foreground">
-          No clips needed yet. Read the situation, make the decision, learn the law and build your RefDecision rating.
+          No clips needed yet. Read the situation, make the decision, learn the law and build your FootballIQ rating.
         </p>
       </Reveal>
 

@@ -1,6 +1,7 @@
 import { Mail } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Logo } from '@/components/logo'
+import { BRAND } from '@/lib/brand'
 
 const navLinks = [
   { label: 'Home', href: '#home' },
@@ -74,7 +75,7 @@ export function SiteFooter() {
                 size="lg"
                 variant="outline"
                 nativeButton={false}
-                render={<a href="mailto:hello@refdecision.com" />}
+                render={<a href={`mailto:${BRAND.supportEmail}`} />}
                 className="h-12 rounded-xl border-border bg-transparent px-7 font-medium hover:bg-secondary"
               >
                 <Mail className="size-4" />
@@ -131,7 +132,7 @@ export function SiteFooter() {
         </div>
 
         <div className="mt-12 flex flex-col items-center justify-between gap-3 border-t border-border pt-6 text-sm text-muted-foreground sm:flex-row">
-          <p>© RefDecision</p>
+          <p>© FootballIQ</p>
           <p>Made for football minds worldwide.</p>
         </div>
       </div>
