@@ -71,7 +71,7 @@ export default function HomePage() {
       <section className="relative overflow-hidden border-b border-border">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_15%_15%,rgba(55,220,130,.16),transparent_30rem),radial-gradient(circle_at_82%_20%,rgba(77,120,255,.13),transparent_28rem)]" />
         <div className="relative mx-auto max-w-7xl px-4 py-14 sm:px-6 sm:py-20">
-          {!loading && !user ? (
+          {loading ? (
             <div className="max-w-4xl">
               <div className="inline-flex items-center gap-2 rounded-full border border-primary/25 bg-primary/10 px-3 py-1.5 text-xs font-bold uppercase tracking-[.18em] text-primary">
                 <Sparkles className="size-4" />
@@ -93,7 +93,29 @@ export default function HomePage() {
                 </Link>
               </div>
             </div>
-          ) : !loading && user && !profile?.username ? (
+          ) : !user ? (
+            <div className="max-w-4xl">
+              <div className="inline-flex items-center gap-2 rounded-full border border-primary/25 bg-primary/10 px-3 py-1.5 text-xs font-bold uppercase tracking-[.18em] text-primary">
+                <Sparkles className="size-4" />
+                The football brain game
+              </div>
+              <h1 className="mt-6 text-5xl font-black tracking-[-.05em] sm:text-7xl lg:text-8xl">
+                Train football knowledge and <span className="text-primary text-glow">judgement.</span>
+              </h1>
+              <p className="mt-6 max-w-2xl text-lg leading-relaxed text-muted-foreground sm:text-xl">
+                Scout Vision leads the platform: analyse evidence like a professional scout. Then sharpen your edge in Referee Arena, Duels, predictions and specialist quiz modes.
+              </p>
+              <div className="mt-9 flex flex-wrap gap-3">
+                <Link href="/quizzes/would-you-scout-him" className="inline-flex h-12 items-center gap-2 rounded-xl bg-primary px-6 font-bold text-primary-foreground">
+                  Think like a scout
+                  <ArrowRight className="size-4" />
+                </Link>
+                <Link href="/quizzes" className="inline-flex h-12 items-center rounded-xl border border-border bg-card/70 px-6 font-semibold">
+                  Explore all modes
+                </Link>
+              </div>
+            </div>
+          ) : user && !profile?.username ? (
             <div className="rounded-3xl border border-border bg-card p-8">
               <h1 className="text-3xl font-bold">Finish your FootballIQ profile</h1>
               <p className="mt-3 text-muted-foreground">Choose your public username before you start playing.</p>
@@ -131,7 +153,7 @@ export default function HomePage() {
                   <Stat label="Streak" value={profile?.current_streak ?? 0} />
                   <Stat label="Accuracy" value={`${accuracy}%`} />
                 </div>
-                <Link href="/leaderboard" className="mt-5 block text-sm font-bold text-primary">Explore all leaderboards -></Link>
+                <Link href="/leaderboard" className="mt-5 block text-sm font-bold text-primary">Explore all leaderboards &rarr;</Link>
               </div>
             </div>
           )}
@@ -144,7 +166,7 @@ export default function HomePage() {
             <p className="text-xs font-bold uppercase tracking-[.22em] text-primary">Flagship judgement modes</p>
             <h2 className="mt-3 text-3xl font-black sm:text-5xl">Think like a scout. Judge like a referee.</h2>
           </div>
-          <Link href="/leaderboard" className="text-sm font-bold text-primary">See competitive hub -></Link>
+          <Link href="/leaderboard" className="text-sm font-bold text-primary">See competitive hub &rarr;</Link>
         </div>
 
         <div className="mt-8 grid gap-4 lg:grid-cols-2">
