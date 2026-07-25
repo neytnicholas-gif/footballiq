@@ -6,6 +6,7 @@ import { useAuth } from '@/components/auth-provider'
 
 const links = [
   ['Home', '/'],
+  ['Market', '/market'],
   ['Quizzes', '/quizzes'],
   ['Predictions', '/predictions'],
   ['Daily', '/daily'],

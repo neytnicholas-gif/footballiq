@@ -1,19 +1,27 @@
 'use client'
 
 import Link from 'next/link'
-import { ArrowRight, Brain, Flag, GitBranch, Search, Sparkles, TrendingUp, Trophy } from 'lucide-react'
+import { ArrowRight, BarChart3, Brain, Flag, GitBranch, Search, Sparkles, TrendingUp, Trophy } from 'lucide-react'
 import { SiteHeader } from '@/components/site-header'
 import { useAuth } from '@/components/auth-provider'
 import { getRankProgress } from '@/lib/progression'
 
 const featuredModes = [
   {
+    theme: 'duels',
+    title: 'Player Market',
+    desc: 'Build an eight-player portfolio, manage FootballIQ Credits, and trade within daily limits to climb market leaderboards.',
+    href: '/market',
+    icon: BarChart3,
+    tag: 'Flagship',
+  },
+  {
     theme: 'scout',
     title: 'Scout Vision',
     desc: 'Think like a scout. Review evidence, balance potential and risk, and compare your decision with structured scouting reasoning.',
     href: '/quizzes/would-you-scout-him',
     icon: Brain,
-    tag: 'Flagship',
+    tag: 'Pro Mode',
   },
   {
     theme: 'referee',
@@ -21,7 +29,7 @@ const featuredModes = [
     desc: 'Professional judgement under pressure: laws, context, and decision quality.',
     href: '/quizzes/referee-decisions',
     icon: Flag,
-    tag: 'Pro Mode',
+    tag: 'Supporting Mode',
   },
 ]
 
@@ -81,15 +89,15 @@ export default function HomePage() {
                 Train football knowledge and <span className="text-primary text-glow">judgement.</span>
               </h1>
               <p className="mt-6 max-w-2xl text-lg leading-relaxed text-muted-foreground sm:text-xl">
-                Scout Vision leads the platform: analyse evidence like a professional scout. Then sharpen your edge in Referee Arena, Duels, predictions and specialist quiz modes.
+                Player Market leads the platform: build an eight-player portfolio, track market values and prove your football judgement. Quizzes remain your supporting training ground.
               </p>
               <div className="mt-9 flex flex-wrap gap-3">
-                <Link href="/quizzes/would-you-scout-him" className="inline-flex h-12 items-center gap-2 rounded-xl bg-primary px-6 font-bold text-primary-foreground">
-                  Think like a scout
+                <Link href="/market" className="inline-flex h-12 items-center gap-2 rounded-xl bg-primary px-6 font-bold text-primary-foreground">
+                  Open Player Market
                   <ArrowRight className="size-4" />
                 </Link>
                 <Link href="/quizzes" className="inline-flex h-12 items-center rounded-xl border border-border bg-card/70 px-6 font-semibold">
-                  Explore all modes
+                  Explore supporting modes
                 </Link>
               </div>
             </div>
@@ -103,15 +111,15 @@ export default function HomePage() {
                 Train football knowledge and <span className="text-primary text-glow">judgement.</span>
               </h1>
               <p className="mt-6 max-w-2xl text-lg leading-relaxed text-muted-foreground sm:text-xl">
-                Scout Vision leads the platform: analyse evidence like a professional scout. Then sharpen your edge in Referee Arena, Duels, predictions and specialist quiz modes.
+                Player Market leads the platform: build an eight-player portfolio, track market values and prove your football judgement. Quizzes remain your supporting training ground.
               </p>
               <div className="mt-9 flex flex-wrap gap-3">
-                <Link href="/quizzes/would-you-scout-him" className="inline-flex h-12 items-center gap-2 rounded-xl bg-primary px-6 font-bold text-primary-foreground">
-                  Think like a scout
+                <Link href="/market" className="inline-flex h-12 items-center gap-2 rounded-xl bg-primary px-6 font-bold text-primary-foreground">
+                  Open Player Market
                   <ArrowRight className="size-4" />
                 </Link>
                 <Link href="/quizzes" className="inline-flex h-12 items-center rounded-xl border border-border bg-card/70 px-6 font-semibold">
-                  Explore all modes
+                  Explore supporting modes
                 </Link>
               </div>
             </div>
@@ -128,10 +136,10 @@ export default function HomePage() {
               <div className="rounded-[2rem] border border-primary/20 bg-[radial-gradient(circle_at_top_right,rgba(55,220,130,.16),transparent_45%),rgba(20,25,28,.8)] p-8 sm:p-11">
                 <p className="text-xs font-bold uppercase tracking-[.22em] text-primary">Your football hub</p>
                 <h1 className="mt-4 text-4xl font-black tracking-tight sm:text-6xl">Welcome back, {profile?.username ?? 'player'}.</h1>
-                <p className="mt-4 max-w-xl text-lg text-muted-foreground">Start with today&rsquo;s scout judgement dossier or defend your streak in the daily challenge.</p>
+                <p className="mt-4 max-w-xl text-lg text-muted-foreground">Open your Player Market desk, then sharpen decision-making in quiz modes and daily challenges.</p>
                 <div className="mt-8 flex flex-wrap gap-3">
-                  <Link href="/quizzes/would-you-scout-him" className="rounded-xl bg-primary px-6 py-3 font-bold text-primary-foreground">
-                    Open Scout Vision
+                  <Link href="/market" className="rounded-xl bg-primary px-6 py-3 font-bold text-primary-foreground">
+                    Open Player Market
                   </Link>
                   <Link href="/daily" className="rounded-xl border border-border bg-background/40 px-6 py-3 font-semibold">
                     Play today&apos;s challenge
@@ -163,13 +171,13 @@ export default function HomePage() {
       <section className="mx-auto max-w-7xl px-4 py-14 sm:px-6 sm:py-18">
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
-            <p className="text-xs font-bold uppercase tracking-[.22em] text-primary">Flagship judgement modes</p>
-            <h2 className="mt-3 text-3xl font-black sm:text-5xl">Think like a scout. Judge like a referee.</h2>
+            <p className="text-xs font-bold uppercase tracking-[.22em] text-primary">Flagship mode</p>
+            <h2 className="mt-3 text-3xl font-black sm:text-5xl">Build your eight-player portfolio.</h2>
           </div>
-          <Link href="/leaderboard" className="text-sm font-bold text-primary">See competitive hub &rarr;</Link>
+          <Link href="/market/leaderboard" className="text-sm font-bold text-primary">See market rankings &rarr;</Link>
         </div>
 
-        <div className="mt-8 grid gap-4 lg:grid-cols-2">
+        <div className="mt-8 grid gap-4 lg:grid-cols-3">
           {featuredModes.map((mode) => {
             const Icon = mode.icon
             return (
@@ -193,7 +201,7 @@ export default function HomePage() {
         </div>
 
         <div className="mt-8">
-          <p className="text-xs font-bold uppercase tracking-[.22em] text-primary">Support modes</p>
+          <p className="text-xs font-bold uppercase tracking-[.22em] text-primary">Supporting modes</p>
           <div className="mt-4 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
             {modes.map((mode) => {
               const Icon = mode.icon

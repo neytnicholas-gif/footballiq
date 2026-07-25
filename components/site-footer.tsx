@@ -5,6 +5,7 @@ import { BRAND } from '@/lib/brand'
 
 const navLinks = [
   { label: 'Home', href: '/' },
+  { label: 'Player Market', href: '/market' },
   { label: 'Quizzes', href: '/quizzes' },
   { label: 'Daily Challenge', href: '/daily' },
   { label: 'Predictions', href: '/predictions' },
@@ -60,16 +61,16 @@ export function SiteFooter() {
               Ready to test your football brain?
             </h2>
             <p className="mx-auto mt-3 max-w-md text-pretty text-muted-foreground">
-              Jump into Scout Vision, Referee Arena, Football Duels and more to sharpen your judgement.
+              Build your eight-player portfolio in Player Market, then sharpen your judgement in Scout Vision, Referee Arena and Football Duels.
             </p>
             <div className="mt-7 flex flex-col justify-center gap-3 sm:flex-row">
               <Button
                 size="lg"
                 nativeButton={false}
-                render={<a href="/quizzes" />}
+                render={<a href="/market" />}
                 className="h-12 rounded-xl px-7 font-medium glow-green"
               >
-                Explore quiz modes
+                Open Player Market
               </Button>
               <Button
                 size="lg"
