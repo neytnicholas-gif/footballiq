@@ -13,6 +13,7 @@ export type MarketPlayer = {
   short_name: string | null
   club_name: string
   position: MarketPosition
+  age?: number | null
   nationality: string | null
   active: boolean
   current_value: number
@@ -158,6 +159,44 @@ export type MarketFriendLeagueLeaderboardRow = {
   realized_profit_loss: number
   portfolio_value: number
   rank: number
+}
+
+export type MarketMatchweekRun = {
+  id: number
+  initiated_by: string
+  week_number: number
+  week_label: string
+  processed_players: number
+  biggest_winner_player_id: number | null
+  biggest_winner_delta: number
+  biggest_loser_player_id: number | null
+  biggest_loser_delta: number
+  weekly_portfolio_gain: number
+  current_roi_pct: number
+  total_profit_since_start: number
+  created_at: string
+}
+
+export type MarketMatchweekApplyResult = {
+  ok: boolean
+  week_number: number
+  week_label: string
+  processed_players: number
+  biggest_winner: {
+    player_id: number | null
+    player_name: string | null
+    delta: number
+  }
+  biggest_loser: {
+    player_id: number | null
+    player_name: string | null
+    delta: number
+  }
+  weekly_portfolio_gain: number
+  current_roi_pct: number
+  total_profit_since_start: number
+  portfolio_before: number
+  portfolio_after: number
 }
 
 export type MarketStatsInput = {

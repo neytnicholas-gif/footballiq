@@ -3,13 +3,17 @@
 import Link from 'next/link'
 import { useEffect, useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
-import { ArrowRight, BarChart3, Coins, Lock, TrendingDown, TrendingUp, Wallet } from 'lucide-react'
+import { ArrowRight, BarChart3, Coins, Lock, PlayCircle, Trophy, TrendingDown, TrendingUp, Users, Wallet } from 'lucide-react'
+import { countFormation } from '@/lib/market/formation'
 import { useAuth } from '@/components/auth-provider'
 import { MarketDisclaimer } from '@/components/market/market-disclaimer'
 import { MarketPlayerChip } from '@/components/market/market-player-chip'
 import {
+  applySimulatedMatchweek,
   calculateTradesRemaining,
+  loadLatestMatchweekRun,
   loadMarketPlayers,
+  loadMarketSeasonStats,
   loadMyPortfolioData,
   refreshMyMarketPortfolio,
 } from '@/lib/market/client'
@@ -21,14 +25,19 @@ import {
   MARKET_DAILY_SELL_LIMIT,
   MARKET_MAX_PORTFOLIO_SIZE,
 } from '@/lib/market/format'
-import type { MarketHolding, MarketPlayer, MarketPortfolio } from '@/lib/market/types'
+import { MARKET_SIMULATION_METHOD_VERSION, seedMatchweekProvider } from '@/lib/market/simulation'
+import type { MarketHolding, MarketMatchweekApplyResult, MarketMatchweekRun, MarketPlayer, MarketPortfolio, MarketSeasonStats } from '@/lib/market/types'
 
 export function PlayerMarketHome() {
-  const { user, profile } = useAuth()
+  const { user } = useAuth()
   const [players, setPlayers] = useState<MarketPlayer[]>([])
   const [portfolio, setPortfolio] = useState<MarketPortfolio | null>(null)
   const [holdings, setHoldings] = useState<MarketHolding[]>([])
+  const [latestStatsByPlayerId, setLatestStatsByPlayerId] = useState<Map<number, MarketSeasonStats | undefined>>(new Map())
+  const [lastRun, setLastRun] = useState<MarketMatchweekRun | null>(null)
+  const [latestResult, setLatestResult] = useState<MarketMatchweekApplyResult | null>(null)
   const [tradesMessage, setTradesMessage] = useState('')
+  const [simulating, setSimulating] = useState(false)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
@@ -36,12 +45,14 @@ export function PlayerMarketHome() {
     setLoading(true)
     setError('')
 
-    const [{ data: playerRows, error: playerError }, portfolioData] = await Promise.all([
+    const [{ data: playerRows, error: playerError }, { data: seasonStatsRows, error: seasonStatsError }, portfolioData, latestRunData] = await Promise.all([
       loadMarketPlayers(),
+      loadMarketSeasonStats(),
       user ? (async () => {
         await refreshMyMarketPortfolio()
         return loadMyPortfolioData()
       })() : Promise.resolve({ error: null, portfolio: null, holdings: [], transactions: [], watchlist: [] as number[] }),
+      user ? loadLatestMatchweekRun() : Promise.resolve({ data: null, error: null }),
     ])
 
     if (playerError) {
@@ -52,9 +63,24 @@ export function PlayerMarketHome() {
       setError(portfolioData.error.message)
     }
 
+    if (seasonStatsError) {
+      setError(seasonStatsError.message)
+    }
+
+    if (latestRunData.error) {
+      setError(latestRunData.error.message)
+    }
+
     setPlayers(playerRows)
     setPortfolio(portfolioData.portfolio)
     setHoldings(portfolioData.holdings)
+    setLastRun(latestRunData.data)
+
+    const statsMap = new Map<number, MarketSeasonStats | undefined>()
+    for (const row of seasonStatsRows) {
+      if (!statsMap.has(row.player_id)) statsMap.set(row.player_id, row)
+    }
+    setLatestStatsByPlayerId(statsMap)
 
     if (user) {
       const remaining = calculateTradesRemaining(portfolioData.transactions)
@@ -62,6 +88,41 @@ export function PlayerMarketHome() {
     }
 
     setLoading(false)
+  }
+
+  async function handleSimulateMatchweek() {
+    if (!user) {
+      setError('Sign in to run the matchweek simulator.')
+      return
+    }
+
+    const hasValidFormation = formation.GK === 1 && formation.DEF === 4 && formation.MID === 3 && formation.FWD === 3
+    if (!hasValidFormation) {
+      setError('Complete a valid 1-4-3-3 squad before simulating a matchweek.')
+      return
+    }
+
+    setSimulating(true)
+    setError('')
+
+    const nextWeek = (lastRun?.week_number ?? 0) + 1
+    const weekLabel = `Matchweek ${nextWeek}`
+    const payload = seedMatchweekProvider.simulateMatchweek({
+      players,
+      latestStatsByPlayerId,
+      weekSeed: `${weekLabel}-${MARKET_SIMULATION_METHOD_VERSION}`,
+    })
+
+    const { data, error: simulateError } = await applySimulatedMatchweek(weekLabel, payload)
+    if (simulateError || !data) {
+      setError(simulateError?.message ?? 'Matchweek simulation failed')
+      setSimulating(false)
+      return
+    }
+
+    setLatestResult(data)
+    await load()
+    setSimulating(false)
   }
 
   useEffect(() => {
@@ -83,6 +144,10 @@ export function PlayerMarketHome() {
     return map
   }, [holdings])
 
+  const playersById = useMemo(() => new Map(players.map((entry) => [entry.id, entry])), [players])
+  const formation = useMemo(() => countFormation(holdings, playersById), [holdings, playersById])
+  const isValidSquad = formation.GK === 1 && formation.DEF === 4 && formation.MID === 3 && formation.FWD === 3
+
   return (
     <div className="space-y-6">
       <section className="rounded-[2rem] border border-border bg-card p-6 sm:p-8">
@@ -91,7 +156,7 @@ export function PlayerMarketHome() {
             <p className="text-xs font-semibold uppercase tracking-[.25em] text-primary">FootballIQ flagship</p>
             <h1 className="mt-3 text-4xl font-black tracking-tight sm:text-5xl">FootballIQ Player Market</h1>
             <p className="mt-3 text-muted-foreground">
-              Build your eight-player portfolio. Read the market. Prove your football judgement.
+              Build a complete 11-player 1-4-3-3 squad. Read movement. Time entries and exits. Prove your football judgement.
             </p>
           </div>
           <Link href="/market/players" className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground">
@@ -103,9 +168,15 @@ export function PlayerMarketHome() {
         <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <SummaryCard icon={<Wallet className="size-5" />} label="Total account value" value={portfolio ? formatFiqCompact(portfolio.total_account_value) : '100.0m FIQ'} sub={portfolio ? formatFiqLong(portfolio.total_account_value) : 'Create an account to track your market account'} />
           <SummaryCard icon={<Coins className="size-5" />} label="Available balance" value={portfolio ? formatFiqCompact(portfolio.available_balance) : '100.0m FIQ'} sub={portfolio ? `Starting balance ${formatFiqCompact(portfolio.starting_balance)}` : 'No cash purchases. No withdrawals.'} />
-          <SummaryCard icon={<BarChart3 className="size-5" />} label="Portfolio value" value={portfolio ? formatFiqCompact(portfolio.portfolio_value) : '0.0m FIQ'} sub={portfolio ? `${holdings.length}/${MARKET_MAX_PORTFOLIO_SIZE} slots used` : 'Up to eight players'} />
+          <SummaryCard icon={<BarChart3 className="size-5" />} label="Portfolio value" value={portfolio ? formatFiqCompact(portfolio.portfolio_value) : '0.0m FIQ'} sub={portfolio ? `${holdings.length}/${MARKET_MAX_PORTFOLIO_SIZE} slots used` : '11-player squad target'} />
           <SummaryCard icon={<TrendingUp className="size-5" />} label="Realised profit/loss" value={portfolio ? formatChange(portfolio.realized_profit_loss) : '0'} sub={user ? tradesMessage : 'Sign in to start trading'} />
         </div>
+
+        {user ? (
+          <div className="mt-3 rounded-xl border border-border bg-background/60 px-4 py-3 text-xs text-muted-foreground">
+            Formation status: GK {formation.GK}/1 · DEF {formation.DEF}/4 · MID {formation.MID}/3 · FWD {formation.FWD}/3
+          </div>
+        ) : null}
 
         <div className="mt-5">
           <MarketDisclaimer />
@@ -116,6 +187,43 @@ export function PlayerMarketHome() {
         <div className="rounded-2xl border border-destructive/30 bg-destructive/10 p-4 text-sm text-destructive">
           {error}
         </div>
+      ) : null}
+
+      {user ? (
+        <section className="rounded-[2rem] border border-border bg-card p-6 sm:p-8">
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[.2em] text-primary">First playable loop</p>
+              <h2 className="mt-1 text-2xl font-black">Matchweek simulator</h2>
+              <p className="mt-2 text-sm text-muted-foreground">Generate realistic sample performances, revalue the market, and roll straight into your next buy/sell cycle.</p>
+            </div>
+            <button
+              onClick={() => void handleSimulateMatchweek()}
+              disabled={simulating || loading || !isValidSquad}
+              className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground disabled:opacity-45"
+            >
+              <PlayCircle className="size-4" />
+              {simulating ? 'Simulating…' : 'Simulate Matchweek'}
+            </button>
+          </div>
+          {!isValidSquad ? <p className="mt-3 text-xs text-amber-200">Build a complete 1-4-3-3 squad to unlock simulation.</p> : null}
+
+          {latestResult ? (
+            <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+              <SummaryCard icon={<TrendingUp className="size-5" />} label="Biggest winner" value={latestResult.biggest_winner.player_name ?? 'N/A'} sub={`${latestResult.biggest_winner.delta >= 0 ? '+' : ''}${formatFiqCompact(Math.abs(latestResult.biggest_winner.delta))}`} />
+              <SummaryCard icon={<TrendingDown className="size-5" />} label="Biggest loser" value={latestResult.biggest_loser.player_name ?? 'N/A'} sub={`-${formatFiqCompact(Math.abs(latestResult.biggest_loser.delta))}`} />
+              <SummaryCard icon={<BarChart3 className="size-5" />} label="Weekly gain/loss" value={`${latestResult.weekly_portfolio_gain >= 0 ? '+' : ''}${formatFiqCompact(Math.abs(latestResult.weekly_portfolio_gain))}`} sub={latestResult.week_label} />
+              <SummaryCard icon={<Trophy className="size-5" />} label="Current ROI" value={`${latestResult.current_roi_pct >= 0 ? '+' : ''}${latestResult.current_roi_pct.toFixed(2)}%`} sub="Since starting balance" />
+              <SummaryCard icon={<Coins className="size-5" />} label="Total profit since start" value={`${latestResult.total_profit_since_start >= 0 ? '+' : ''}${formatFiqCompact(Math.abs(latestResult.total_profit_since_start))}`} sub={`${formatFiqCompact(latestResult.portfolio_after)} total`} />
+            </div>
+          ) : lastRun ? (
+            <div className="mt-4 rounded-xl border border-border bg-background/60 px-4 py-3 text-sm text-muted-foreground">
+              Latest run: {lastRun.week_label} · Weekly {lastRun.weekly_portfolio_gain >= 0 ? '+' : ''}{formatFiqCompact(Math.abs(lastRun.weekly_portfolio_gain))} · ROI {lastRun.current_roi_pct.toFixed(2)}%
+            </div>
+          ) : (
+            <div className="mt-4 rounded-xl border border-border bg-background/60 px-4 py-3 text-sm text-muted-foreground">No matchweek simulated yet. Build your squad and run your first week.</div>
+          )}
+        </section>
       ) : null}
 
       {!user ? (
@@ -139,7 +247,7 @@ export function PlayerMarketHome() {
       {user && !loading && holdings.length === 0 ? (
         <section className="rounded-[2rem] border border-primary/25 bg-primary/10 p-6 sm:p-8">
           <h2 className="text-2xl font-black">Fast start: place your first Back in under 30 seconds</h2>
-          <p className="mt-2 text-sm text-muted-foreground">No formation constraints. Pick any player card, review movement and lock status, then Back to start your portfolio.</p>
+          <p className="mt-2 text-sm text-muted-foreground">Formation is strict: 1 GK, 4 DEF, 3 MID, 3 FWD. Start with your GK and core defenders, then build midfield and attack.</p>
           <div className="mt-4 flex flex-wrap gap-3">
             <Link href="/market/players" className="rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground">Open player marketplace</Link>
             <Link href="/market/portfolio" className="rounded-xl border border-border px-4 py-2 text-sm font-semibold">View empty portfolio</Link>
@@ -153,7 +261,7 @@ export function PlayerMarketHome() {
             <h2 className="text-xl font-bold">Current holdings</h2>
             <Link href="/market/portfolio" className="text-sm font-semibold text-primary">Open portfolio</Link>
           </div>
-          {loading ? <p className="text-sm text-muted-foreground">Loading holdings…</p> : holdings.length === 0 ? <p className="text-sm text-muted-foreground">No holdings yet. Build your first eight-player portfolio.</p> : (
+          {loading ? <p className="text-sm text-muted-foreground">Loading holdings…</p> : holdings.length === 0 ? <p className="text-sm text-muted-foreground">No holdings yet. Build your first 11-player squad.</p> : (
             <div className="space-y-3">
               {holdings.map((holding) => {
                 const player = players.find((candidate) => candidate.id === holding.player_id)
@@ -203,6 +311,21 @@ export function PlayerMarketHome() {
               </div>
             </div>
           </div>
+        </div>
+      </section>
+
+      <section className="rounded-[2rem] border border-border bg-card p-6">
+        <div className="mb-4 flex items-center justify-between">
+          <h2 className="text-xl font-bold">Social pulse</h2>
+          <Link href="/market/leaderboard" className="text-sm font-semibold text-primary">See leaderboard</Link>
+        </div>
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          <SocialStub icon={<Trophy className="size-4" />} title="Top Traders" value="Coming live in Phase 2" hint="Highest average return over last 14 days" />
+          <SocialStub icon={<Wallet className="size-4" />} title="Highest Portfolio" value="Coming live in Phase 2" hint="Largest total account value this week" />
+          <SocialStub icon={<TrendingUp className="size-4" />} title="Biggest Weekly Gain" value="Coming live in Phase 2" hint="Strongest week-on-week performance" />
+          <SocialStub icon={<Coins className="size-4" />} title="Most Profitable Trade" value="Coming live in Phase 2" hint="Single highest realized sell profit" />
+          <SocialStub icon={<Users className="size-4" />} title="Friends" value="Coming live in Phase 2" hint="Invite friends and build private leagues" />
+          <SocialStub icon={<BarChart3 className="size-4" />} title="Market Leaderboard" value="Live now" hint="Track daily, weekly and season performance" />
         </div>
       </section>
 
@@ -268,5 +391,15 @@ function MoverRow({ player, positive }: { player: MarketPlayer; positive: boolea
         {delta >= 0 ? '+' : ''}{formatFiqCompact(Math.abs(delta))}
       </span>
     </Link>
+  )
+}
+
+function SocialStub({ icon, title, value, hint }: { icon: ReactNode; title: string; value: string; hint: string }) {
+  return (
+    <div className="rounded-2xl border border-border bg-background/60 p-3">
+      <p className="inline-flex items-center gap-2 text-xs uppercase tracking-[.16em] text-muted-foreground">{icon}{title}</p>
+      <p className="mt-2 text-sm font-semibold text-primary">{value}</p>
+      <p className="mt-1 text-xs text-muted-foreground">{hint}</p>
+    </div>
   )
 }

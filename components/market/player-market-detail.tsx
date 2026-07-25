@@ -7,10 +7,12 @@ import { AlertCircle, CheckCircle2, Clock3, Star } from 'lucide-react'
 import { useAuth } from '@/components/auth-provider'
 import { MarketPlayerChip } from '@/components/market/market-player-chip'
 import { buyMarketPlayer, sellMarketPlayer, toggleMarketWatchlist } from '@/lib/market/client'
+import { canBuyPosition, countFormation } from '@/lib/market/formation'
 import { formatFiqCompact, MARKET_MAX_PORTFOLIO_SIZE } from '@/lib/market/format'
 import type { MarketHolding, MarketPlayer, MarketSeasonStats, MarketValueHistoryPoint } from '@/lib/market/types'
 
 export function PlayerMarketDetail({
+  players,
   player,
   stats,
   history,
@@ -20,6 +22,7 @@ export function PlayerMarketDetail({
   salesRemaining,
   onRefresh,
 }: {
+  players: MarketPlayer[]
   player: MarketPlayer
   stats: MarketSeasonStats[]
   history: MarketValueHistoryPoint[]
@@ -39,6 +42,16 @@ export function PlayerMarketDetail({
   const trend = player.current_value - player.previous_value
   const lockActive = player.is_trade_locked && (!player.trade_lock_ends_at || new Date(player.trade_lock_ends_at).getTime() > Date.now())
   const lockReason = player.trade_lock_reason ?? 'market review in progress'
+  const playersById = useMemo(() => new Map(players.map((entry) => [entry.id, entry])), [players])
+  const formation = useMemo(() => countFormation(holdings, playersById), [holdings, playersById])
+  const hasPositionSlot = canBuyPosition(player.position, formation)
+  const canBuy = player.active
+    && !owned
+    && buysRemaining > 0
+    && busy === null
+    && !lockActive
+    && holdings.length < MARKET_MAX_PORTFOLIO_SIZE
+    && hasPositionSlot
 
   async function handleBuy() {
     if (!user) {
@@ -131,10 +144,10 @@ export function PlayerMarketDetail({
             <div className="mt-3 space-y-2">
               <button
                 onClick={() => void handleBuy()}
-                disabled={!player.active || owned || buysRemaining <= 0 || busy !== null || lockActive}
+                disabled={!canBuy}
                 className="w-full rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground disabled:opacity-50"
               >
-                {busy === 'buy' ? 'Backing…' : !user ? 'Sign in to back' : lockActive ? 'Temporarily locked' : owned ? 'Already owned' : 'Back'}
+                {busy === 'buy' ? 'Backing…' : !user ? 'Sign in to back' : lockActive ? 'Temporarily locked' : owned ? 'Already owned' : !hasPositionSlot ? `${player.position} slot full` : holdings.length >= MARKET_MAX_PORTFOLIO_SIZE ? 'Squad full (11/11)' : 'Back'}
               </button>
               <button
                 onClick={() => void handleSell()}
@@ -152,8 +165,11 @@ export function PlayerMarketDetail({
               </button>
             </div>
             <p className="mt-3 text-xs text-muted-foreground">
-              Daily limits: {buysRemaining} buys left, {salesRemaining} sales left. Portfolio limit: {MARKET_MAX_PORTFOLIO_SIZE} players.
+              Daily limits: {buysRemaining} buys left, {salesRemaining} sales left. Squad limit: {MARKET_MAX_PORTFOLIO_SIZE} players.
             </p>
+            <p className="mt-2 text-xs text-muted-foreground">Formation occupancy: GK {formation.GK}/1 · DEF {formation.DEF}/4 · MID {formation.MID}/3 · FWD {formation.FWD}/3</p>
+            {!owned && !hasPositionSlot ? <p className="mt-2 text-xs text-amber-200">No {player.position} slots left. Sell an existing {player.position} first to replace.</p> : null}
+            {!owned && holdings.length >= MARKET_MAX_PORTFOLIO_SIZE ? <p className="mt-2 text-xs text-amber-200">Squad is full. Sell one player before any new buy.</p> : null}
             {lockActive ? (
               <p className="mt-2 rounded-lg border border-amber-300/30 bg-amber-200/10 px-2.5 py-2 text-xs text-amber-200">
                 Trading lock active: {lockReason}{player.trade_lock_ends_at ? ` (until ${new Date(player.trade_lock_ends_at).toLocaleString()})` : ''}.

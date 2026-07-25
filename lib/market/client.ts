@@ -11,6 +11,8 @@ import type {
   MarketFriendLeagueMember,
   MarketHolding,
   MarketLeaderboardRow,
+  MarketMatchweekApplyResult,
+  MarketMatchweekRun,
   MarketPlayer,
   MarketPortfolio,
   MarketSeasonStats,
@@ -64,6 +66,18 @@ export async function loadPlayerSeasonStats(playerId: number) {
     .from('player_season_stats')
     .select('*')
     .eq('player_id', playerId)
+    .order('season', { ascending: false })
+
+  return {
+    data: (data as MarketSeasonStats[] | null) ?? [],
+    error: error as Error | null,
+  }
+}
+
+export async function loadMarketSeasonStats() {
+  const { data, error } = await supabase
+    .from('player_season_stats')
+    .select('*')
     .order('season', { ascending: false })
 
   return {
@@ -239,6 +253,33 @@ export async function leaveFriendLeague(leagueId: number) {
 
   return {
     data: (data as Record<string, unknown> | null) ?? null,
+    error: error as Error | null,
+  }
+}
+
+export async function applySimulatedMatchweek(weekLabel: string, playerUpdates: Array<Record<string, unknown>>) {
+  const { data, error } = await (supabase as any).rpc('market_apply_simulated_matchweek', {
+    p_week_label: weekLabel,
+    p_player_updates: playerUpdates,
+    p_methodology_version: 'v1.0.0-sim-v1',
+  })
+
+  return {
+    data: (data as MarketMatchweekApplyResult | null) ?? null,
+    error: error as Error | null,
+  }
+}
+
+export async function loadLatestMatchweekRun() {
+  const { data, error } = await (supabase as any)
+    .from('market_matchweek_runs')
+    .select('*')
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+
+  return {
+    data: (data as MarketMatchweekRun | null) ?? null,
     error: error as Error | null,
   }
 }

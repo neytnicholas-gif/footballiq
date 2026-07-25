@@ -90,6 +90,7 @@ export default function PlayerMarketDetailPage() {
         {error ? <p className="mb-4 rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">{error}</p> : null}
         {loading ? <p className="text-sm text-muted-foreground">Loading player card…</p> : !player ? <p className="text-sm text-muted-foreground">Player not found.</p> : (
           <PlayerMarketDetail
+            players={players}
             player={player}
             stats={stats}
             history={history}

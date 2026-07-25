@@ -5,6 +5,7 @@ import { useMemo } from 'react'
 import type { ReactNode } from 'react'
 import { ArrowUpRight, Wallet } from 'lucide-react'
 import { MarketPlayerChip } from '@/components/market/market-player-chip'
+import { countFormation } from '@/lib/market/formation'
 import { formatFiqCompact, MARKET_MAX_PORTFOLIO_SIZE } from '@/lib/market/format'
 import type { MarketHolding, MarketPlayer, MarketPortfolio, MarketTransaction } from '@/lib/market/types'
 
@@ -24,6 +25,25 @@ export function PlayerMarketPortfolio({
   salesRemaining: number
 }) {
   const playersById = useMemo(() => new Map(players.map((player) => [player.id, player])), [players])
+  const formation = useMemo(() => countFormation(holdings, playersById), [holdings, playersById])
+  const bestHolding = useMemo(
+    () => holdings.reduce<MarketHolding | null>((best, row) => (!best || row.unrealized_profit_loss > best.unrealized_profit_loss ? row : best), null),
+    [holdings],
+  )
+  const worstHolding = useMemo(
+    () => holdings.reduce<MarketHolding | null>((worst, row) => (!worst || row.unrealized_profit_loss < worst.unrealized_profit_loss ? row : worst), null),
+    [holdings],
+  )
+  const todayMovement = useMemo(() => holdings.reduce((sum, row) => sum + (row.current_value_snapshot - row.acquisition_value), 0), [holdings])
+  const seasonMovement = useMemo(() => {
+    let movement = 0
+    for (const holding of holdings) {
+      const player = playersById.get(holding.player_id)
+      if (!player) continue
+      movement += player.current_value - player.opening_season_value
+    }
+    return movement
+  }, [holdings, playersById])
 
   if (!portfolio) {
     return (
@@ -39,7 +59,7 @@ export function PlayerMarketPortfolio({
     <div className="space-y-5">
       <section className="rounded-[2rem] border border-border bg-card p-6 sm:p-8">
         <h1 className="text-3xl font-black">Portfolio</h1>
-        <p className="mt-2 text-sm text-muted-foreground">Eight available slots. Balance and valuation tracked from authoritative market prices.</p>
+        <p className="mt-2 text-sm text-muted-foreground">Exact 11-player squad required: 1 GK, 4 DEF, 3 MID, 3 FWD.</p>
 
         <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <Metric label="Total account value" value={formatFiqCompact(portfolio.total_account_value)} />
@@ -48,15 +68,31 @@ export function PlayerMarketPortfolio({
           <Metric label="Realised profit/loss" value={`${portfolio.realized_profit_loss >= 0 ? '+' : ''}${formatFiqCompact(Math.abs(portfolio.realized_profit_loss))}`} tone={portfolio.realized_profit_loss >= 0 ? 'positive' : 'negative'} />
         </div>
 
+        <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <Metric label="Today movement" value={`${todayMovement >= 0 ? '+' : ''}${formatFiqCompact(Math.abs(todayMovement))}`} tone={todayMovement >= 0 ? 'positive' : 'negative'} />
+          <Metric label="Season movement" value={`${seasonMovement >= 0 ? '+' : ''}${formatFiqCompact(Math.abs(seasonMovement))}`} tone={seasonMovement >= 0 ? 'positive' : 'negative'} />
+          <Metric
+            label="Best investment"
+            value={bestHolding ? formatFiqCompact(bestHolding.unrealized_profit_loss) : 'N/A'}
+            tone={bestHolding && bestHolding.unrealized_profit_loss >= 0 ? 'positive' : 'default'}
+          />
+          <Metric
+            label="Worst investment"
+            value={worstHolding ? `-${formatFiqCompact(Math.abs(worstHolding.unrealized_profit_loss))}` : 'N/A'}
+            tone={worstHolding && worstHolding.unrealized_profit_loss < 0 ? 'negative' : 'default'}
+          />
+        </div>
+
         <div className="mt-4 rounded-xl border border-border bg-background/60 px-4 py-3 text-sm text-muted-foreground">
           Daily limits: {buysRemaining} buys remaining · {salesRemaining} sales remaining
+          <span className="ml-2">· Formation occupancy: GK {formation.GK}/1, DEF {formation.DEF}/4, MID {formation.MID}/3, FWD {formation.FWD}/3</span>
         </div>
       </section>
 
       <section className="rounded-[2rem] border border-border bg-card p-6">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-xl font-bold">Current holdings ({holdings.length}/{MARKET_MAX_PORTFOLIO_SIZE})</h2>
-          <Link href="/market/players" className="text-sm font-semibold text-primary">Back more</Link>
+          <Link href="/market/players" className="text-sm font-semibold text-primary">Browse more</Link>
         </div>
         {holdings.length === 0 ? <p className="text-sm text-muted-foreground">No active holdings yet.</p> : (
           <div className="grid gap-3">
