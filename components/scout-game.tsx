@@ -1,7 +1,9 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useAuth } from '@/components/auth-provider'
+import { QuizProgressBanner } from '@/components/quiz-progress-banner'
+import { clearQuizProgress, loadQuizProgress, saveQuizProgress } from '@/lib/quiz-progress'
 import { saveQuizResult } from '@/lib/quiz-save'
 import { scoutQuestions, type ScoutDecision } from '@/lib/game-data'
 
@@ -13,6 +15,9 @@ export function ScoutGame() {
   const [selected, setSelected] = useState<ScoutDecision | null>(null)
   const [score, setScore] = useState(0)
   const [saved, setSaved] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [resumeState, setResumeState] = useState<{ index: number; selected: ScoutDecision | null; score: number } | null>(null)
+  const [checkingProgress, setCheckingProgress] = useState(Boolean(user))
 
   const dossier = scoutQuestions[index]
   const isLast = index === scoutQuestions.length - 1
@@ -27,25 +32,75 @@ export function ScoutGame() {
     return { label: 'Weaker recommendation for this evidence set', tone: 'risk', points: 0 }
   }, [selected, dossier])
 
+  useEffect(() => {
+    let active = true
+
+    if (!user) {
+      setResumeState(null)
+      setCheckingProgress(false)
+      return
+    }
+
+    setCheckingProgress(true)
+    void (async () => {
+      const progress = await loadQuizProgress('would-you-scout-1')
+      if (!active) return
+      const savedState = progress?.progress as { index?: number; selected?: ScoutDecision | null; score?: number } | undefined
+      if (progress && progress.status === 'in_progress' && savedState && Number.isInteger(savedState.index) && savedState.index >= 0 && savedState.index < scoutQuestions.length) {
+        setResumeState({
+          index: savedState.index,
+          selected: typeof savedState.selected === 'string' ? (savedState.selected as ScoutDecision) : null,
+          score: typeof savedState.score === 'number' ? savedState.score : progress.score,
+        })
+      } else {
+        setResumeState(null)
+      }
+      setCheckingProgress(false)
+    })()
+
+    return () => {
+      active = false
+    }
+  }, [user])
+
   function choose(decision: ScoutDecision) {
     if (selected) return
+    const nextScore = score + (decision === dossier.strongestDecision ? 2 : dossier.defensibleAlternative === decision ? 1 : 0)
     setSelected(decision)
-    setScore((value) => value + (decision === dossier.strongestDecision ? 2 : dossier.defensibleAlternative === decision ? 1 : 0))
+    setScore(nextScore)
+    void saveQuizProgress({
+      quizId: 'would-you-scout-1',
+      currentIndex: index,
+      score: nextScore,
+      total: scoutQuestions.length * 2,
+      progress: { index, selected: decision, score: nextScore },
+    })
   }
 
   function nextDossier() {
+    const nextIndex = index + 1
     setSelected(null)
-    setIndex((value) => value + 1)
+    setIndex(nextIndex)
+    void saveQuizProgress({
+      quizId: 'would-you-scout-1',
+      currentIndex: nextIndex,
+      score,
+      total: scoutQuestions.length * 2,
+      progress: { index: nextIndex, selected: null, score },
+    })
   }
 
   async function saveResult() {
-    if (!user || saved) return
+    if (!user || saved || saving) return
+    setSaving(true)
     const xp = 30 + score * 6
-    const { error } = await saveQuizResult({ quizId: 'would-you-scout-1', score, total: scoutQuestions.length * 2, xp })
+    const { error, alreadyCompleted } = await saveQuizResult({ quizId: 'would-you-scout-1', score, total: scoutQuestions.length * 2, xp })
     if (!error) {
       setSaved(true)
-      await refreshProfile()
+      void clearQuizProgress('would-you-scout-1')
+      if (!alreadyCompleted) await refreshProfile()
     }
+    setSaving(false)
   }
 
   function restart() {
@@ -53,6 +108,16 @@ export function ScoutGame() {
     setSelected(null)
     setScore(0)
     setSaved(false)
+    setResumeState(null)
+    void clearQuizProgress('would-you-scout-1')
+  }
+
+  function continueProgress() {
+    if (!resumeState) return
+    setIndex(resumeState.index)
+    setSelected(resumeState.selected)
+    setScore(resumeState.score)
+    setResumeState(null)
   }
 
   return (
@@ -108,44 +173,45 @@ export function ScoutGame() {
         </section>
 
         <section className="rounded-2xl border border-border bg-[linear-gradient(180deg,rgba(50,230,170,.08),rgba(10,18,21,.65))] p-5">
+          {checkingProgress ? <div className="rounded-xl border border-border bg-background/70 p-4 text-sm text-muted-foreground">Checking saved progress…</div> : resumeState && !saved ? <div className="mb-4"><QuizProgressBanner title="Resume your quiz?" copy={`You left off at dossier ${resumeState.index + 1} of ${scoutQuestions.length}.`} onContinue={continueProgress} onStartAgain={restart} /></div> : null}
           {!selected ? (
             <div className="h-full rounded-xl border border-dashed border-border p-4 text-sm text-muted-foreground">
               Select a scouting recommendation to reveal the structured report: observation, interpretation, strengths, concerns, missing information, and next step.
             </div>
           ) : (
-            <div className="space-y-3 text-sm">
+            <div className="space-y-4 text-sm">
               <p className={`rounded-xl border px-3 py-2 font-semibold ${verdict?.tone === 'good' ? 'border-primary/45 bg-primary/10 text-primary' : verdict?.tone === 'ok' ? 'border-sky-400/35 bg-sky-500/10 text-sky-200' : 'border-orange-400/35 bg-orange-500/10 text-orange-200'}`}>
                 {verdict?.label}
               </p>
-              <ReportItem label="Observation" text={dossier.observation} />
-              <ReportItem label="Interpretation" text={dossier.interpretation} />
-              <ReportItem label="Strengths" text={dossier.strengths} />
-              <ReportItem label="Concerns" text={dossier.concerns} />
-              <ReportItem label="Missing information" text={dossier.missingInformation} />
-              <ReportItem label="Alternative view" text={dossier.alternativeView} />
-              <ReportItem label="Recommended action" text={dossier.recommendedAction} />
-              <ReportItem label="Next scouting step" text={dossier.nextScoutingStep} />
-              <ReportItem label="Confidence" text={`${dossier.confidence} — ${dossier.confidenceReason}`} />
-              <ReportItem label="Why weaker alternatives are weaker" text={dossier.weakerAlternatives} />
+              {!isLast ? (
+                <button onClick={nextDossier} className="w-full rounded-xl bg-primary px-5 py-2.5 font-semibold text-primary-foreground">
+                  Next dossier
+                </button>
+              ) : (
+                <div className="flex flex-wrap gap-3">
+                  <button onClick={() => void saveResult()} disabled={!user || saved || saving} className="rounded-xl bg-primary px-5 py-2.5 font-semibold text-primary-foreground disabled:opacity-50">
+                    {!user ? 'Sign in to save Scout XP' : saving ? 'Saving...' : saved ? 'Saved' : 'Finish and save Scout XP'}
+                  </button>
+                  <button onClick={restart} className="rounded-xl border border-border px-5 py-2.5 font-semibold">Run dossiers again</button>
+                </div>
+              )}
+
+              <div className="space-y-3">
+                <ReportItem label="Observation" text={dossier.observation} />
+                <ReportItem label="Interpretation" text={dossier.interpretation} />
+                <ReportItem label="Strengths" text={dossier.strengths} />
+                <ReportItem label="Concerns" text={dossier.concerns} />
+                <ReportItem label="Missing information" text={dossier.missingInformation} />
+                <ReportItem label="Alternative view" text={dossier.alternativeView} />
+                <ReportItem label="Recommended action" text={dossier.recommendedAction} />
+                <ReportItem label="Next scouting step" text={dossier.nextScoutingStep} />
+                <ReportItem label="Confidence" text={`${dossier.confidence} — ${dossier.confidenceReason}`} />
+                <ReportItem label="Why weaker alternatives are weaker" text={dossier.weakerAlternatives} />
+              </div>
             </div>
           )}
         </section>
       </div>
-
-      {selected && (
-        <div className="border-t border-border bg-background/70 p-5 sm:p-6">
-          {!isLast ? (
-            <button onClick={nextDossier} className="rounded-xl bg-primary px-5 py-2.5 font-semibold text-primary-foreground">Next dossier</button>
-          ) : (
-            <div className="flex flex-wrap gap-3">
-              <button onClick={() => void saveResult()} disabled={!user || saved} className="rounded-xl bg-primary px-5 py-2.5 font-semibold text-primary-foreground disabled:opacity-50">
-                {!user ? 'Sign in to save Scout XP' : saved ? 'Saved' : 'Finish and save Scout XP'}
-              </button>
-              <button onClick={restart} className="rounded-xl border border-border px-5 py-2.5 font-semibold">Run dossiers again</button>
-            </div>
-          )}
-        </div>
-      )}
     </div>
   )
 }

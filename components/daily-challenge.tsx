@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { useEffect, useMemo, useState } from 'react'
 import { useAuth } from '@/components/auth-provider'
+import { QuizProgressBanner } from '@/components/quiz-progress-banner'
 import { refereeQuestions } from '@/lib/game-data'
 import {
   formatCountdown,
@@ -11,6 +12,7 @@ import {
   getDailySeedFromKey,
   getSecondsUntilBrusselsMidnight,
 } from '@/lib/daily'
+import { clearQuizProgress, loadQuizProgress, saveQuizProgress } from '@/lib/quiz-progress'
 import { saveQuizResult } from '@/lib/quiz-save'
 import { supabase } from '@/lib/supabase'
 
@@ -61,10 +63,62 @@ export function DailyChallenge() {
   const [saveMessage, setSaveMessage] = useState('')
   const [copied, setCopied] = useState(false)
   const [history, setHistory] = useState<Record<string, DailyHistoryEntry>>({})
+  const [resumeState, setResumeState] = useState<{ dailyKey: string; index: number; selected: number | null; score: number; completed: boolean } | null>(null)
+  const [checkingProgress, setCheckingProgress] = useState(Boolean(user))
+
+  const items = useMemo(() => {
+    const seed = getDailySeedFromKey(dailyKey)
+    return Array.from({ length: 5 }, (_, i) => {
+      const question = refereeQuestions[(seed + i * 3) % refereeQuestions.length]
+      return {
+        prompt: question.scenario,
+        options: question.options,
+        answer: question.answer,
+        explanation: question.explanation,
+      }
+    })
+  }, [dailyKey])
+
+  const item = items[index]
+  const finished = selected !== null && index === items.length - 1
+  const quizId = `daily-${dailyKey}`
 
   useEffect(() => {
     setHistory(loadDailyHistory())
   }, [])
+
+  useEffect(() => {
+    let active = true
+
+    if (!user) {
+      setResumeState(null)
+      setCheckingProgress(false)
+      return
+    }
+
+    setCheckingProgress(true)
+    void (async () => {
+      const progress = await loadQuizProgress(`daily-${dailyKey}`)
+      if (!active) return
+      const savedState = progress?.progress as { dailyKey?: string; index?: number; selected?: number | null; score?: number; completed?: boolean } | undefined
+      if (progress && progress.status === 'in_progress' && savedState && savedState.dailyKey === dailyKey && Number.isInteger(savedState.index) && savedState.index >= 0 && savedState.index < items.length) {
+        setResumeState({
+          dailyKey,
+          index: savedState.index,
+          selected: typeof savedState.selected === 'number' ? savedState.selected : null,
+          score: typeof savedState.score === 'number' ? savedState.score : progress.score,
+          completed: Boolean(savedState.completed),
+        })
+      } else {
+        setResumeState(null)
+      }
+      setCheckingProgress(false)
+    })()
+
+    return () => {
+      active = false
+    }
+  }, [dailyKey, items.length, user])
 
   useEffect(() => {
     const today = history[dailyKey]
@@ -94,35 +148,32 @@ export function DailyChallenge() {
     return () => window.clearInterval(timer)
   }, [])
 
-  const items = useMemo(() => {
-    const seed = getDailySeedFromKey(dailyKey)
-    return Array.from({ length: 5 }, (_, i) => {
-      const question = refereeQuestions[(seed + i * 3) % refereeQuestions.length]
-      return {
-        prompt: question.scenario,
-        options: question.options,
-        answer: question.answer,
-        explanation: question.explanation,
-      }
-    })
-  }, [dailyKey])
-
-  const item = items[index]
-  const finished = selected !== null && index === items.length - 1
-  const quizId = `daily-${dailyKey}`
-
   function choose(optionIndex: number) {
     if (selected !== null || completed) return
+    const nextScore = optionIndex === item.answer ? score + 1 : score
     setSelected(optionIndex)
-    if (optionIndex === item.answer) {
-      setScore((value) => value + 1)
-    }
+    setScore(nextScore)
+    void saveQuizProgress({
+      quizId,
+      currentIndex: index,
+      score: nextScore,
+      total: items.length,
+      progress: { dailyKey, index, selected: optionIndex, score: nextScore, completed: false },
+    })
   }
 
   function next() {
     if (index >= items.length - 1) return
-    setIndex((value) => value + 1)
+    const nextIndex = index + 1
+    setIndex(nextIndex)
     setSelected(null)
+    void saveQuizProgress({
+      quizId,
+      currentIndex: nextIndex,
+      score,
+      total: items.length,
+      progress: { dailyKey, index: nextIndex, selected: null, score, completed: false },
+    })
   }
 
   async function saveRewardOnce() {
@@ -166,6 +217,7 @@ export function DailyChallenge() {
     await refreshProfile()
     setSavedReward(true)
     setSaveMessage('Today’s reward has been saved to your account.')
+    void clearQuizProgress(quizId)
     setSavingReward(false)
   }
 
@@ -207,6 +259,7 @@ export function DailyChallenge() {
     setHistory(nextHistory)
     saveDailyHistory(nextHistory)
     setCompleted(true)
+    void clearQuizProgress(quizId)
   }
 
   function practiceAgain() {
@@ -216,6 +269,32 @@ export function DailyChallenge() {
     setCompleted(false)
     setSavedReward(false)
     setSaveMessage('Practice run active. Daily account reward remains once per day.')
+    void saveQuizProgress({
+      quizId,
+      currentIndex: 0,
+      score: 0,
+      total: items.length,
+      progress: { dailyKey, index: 0, selected: null, score: 0, completed: false },
+    })
+  }
+
+  function continueProgress() {
+    if (!resumeState) return
+    setIndex(resumeState.index)
+    setSelected(resumeState.selected)
+    setScore(resumeState.score)
+    setCompleted(resumeState.completed)
+    setResumeState(null)
+  }
+
+  function restartProgress() {
+    setIndex(0)
+    setSelected(null)
+    setScore(0)
+    setCompleted(false)
+    setSavedReward(false)
+    setResumeState(null)
+    void clearQuizProgress(quizId)
   }
 
   return (
@@ -230,6 +309,8 @@ export function DailyChallenge() {
           Score <strong className="ml-2 text-primary">{score}</strong>
         </div>
       </div>
+
+      {checkingProgress ? <div className="mt-5 rounded-2xl border border-border bg-secondary/30 p-4 text-sm text-muted-foreground">Checking saved progress…</div> : resumeState && !completed ? <div className="mt-5"><QuizProgressBanner title="Resume your quiz?" copy={`You left off at question ${resumeState.index + 1} of ${items.length} for today’s Daily Challenge.`} onContinue={continueProgress} onStartAgain={restartProgress} /></div> : null}
 
       {completed ? (
         <div className="mt-7 space-y-4">

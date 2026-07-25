@@ -18,6 +18,36 @@ const periodBoards = [
   { id: 'season', label: 'Season', emoji: '👑' },
 ]
 
+function periodRangeUtc(period: 'daily' | 'weekly' | 'monthly', now = new Date()) {
+  const year = now.getUTCFullYear()
+  const month = now.getUTCMonth()
+  const day = now.getUTCDate()
+
+  if (period === 'daily') {
+    const start = new Date(Date.UTC(year, month, day, 0, 0, 0, 0))
+    const end = new Date(start)
+    end.setUTCDate(end.getUTCDate() + 1)
+    return { start, end }
+  }
+
+  if (period === 'weekly') {
+    const weekday = (now.getUTCDay() + 6) % 7
+    const start = new Date(Date.UTC(year, month, day, 0, 0, 0, 0))
+    start.setUTCDate(start.getUTCDate() - weekday)
+    const end = new Date(start)
+    end.setUTCDate(end.getUTCDate() + 7)
+    return { start, end }
+  }
+
+  const start = new Date(Date.UTC(year, month, 1, 0, 0, 0, 0))
+  const end = new Date(Date.UTC(year, month + 1, 1, 0, 0, 0, 0))
+  return { start, end }
+}
+
+function formatDaysRemaining(days: number) {
+  return `${days} day${days === 1 ? '' : 's'} remaining`
+}
+
 export function CompetitiveLeaderboard({ initialBoard = 'overall' }: { initialBoard?: string }) {
   const validBoards = new Set(['overall', 'daily', 'weekly', 'monthly', 'season', ...leaderboardModes.map((mode) => mode.id)])
   const [board, setBoard] = useState<Board>(validBoards.has(initialBoard) ? initialBoard : 'overall')
@@ -50,12 +80,14 @@ export function CompetitiveLeaderboard({ initialBoard = 'overall' }: { initialBo
           quizzes: profile.quizzes_completed,
         })))
       } else if (selected === 'daily' || selected === 'weekly' || selected === 'monthly') {
-        const now = new Date()
-        const start = new Date(now)
-        if (selected === 'daily') start.setHours(0, 0, 0, 0)
-        if (selected === 'weekly') { const day = (start.getDay() + 6) % 7; start.setDate(start.getDate() - day); start.setHours(0, 0, 0, 0) }
-        if (selected === 'monthly') { start.setDate(1); start.setHours(0, 0, 0, 0) }
-        const { data, error: queryError } = await supabase.from('quiz_results').select('user_id,score,total,xp_earned,completed_at').gte('completed_at', start.toISOString()).limit(2000)
+        const { start, end } = periodRangeUtc(selected)
+        const { data, error: queryError } = await supabase
+          .from('quiz_results')
+          .select('user_id,score,total,xp_earned,completed_at')
+          .gte('completed_at', start.toISOString())
+          .lt('completed_at', end.toISOString())
+          .order('completed_at', { ascending: false })
+          .limit(2000)
         if (queryError) throw queryError
         const totals = new Map<string, { xp: number; correct: number; total: number; quizzes: number }>()
         for (const result of (data as QuizResult[]) ?? []) {
@@ -116,7 +148,7 @@ export function CompetitiveLeaderboard({ initialBoard = 'overall' }: { initialBo
     <div className="rounded-[2rem] border border-border bg-card p-6 sm:p-8">
       <div className="flex flex-wrap items-center justify-between gap-5">
         <div><p className="text-xs font-semibold uppercase tracking-[.25em] text-primary">Competitive hub</p><h1 className="mt-3 text-4xl font-bold tracking-tight sm:text-5xl">More ways to become #1</h1><p className="mt-3 max-w-2xl text-muted-foreground">Every football brain has a speciality. Climb overall, dominate one game mode, or win a fresh weekly race.</p></div>
-        <div className="rounded-2xl border border-primary/25 bg-primary/10 px-5 py-4"><p className="text-xs uppercase tracking-wider text-muted-foreground">{season.label}</p><p className="mt-1 font-bold text-primary">{season.daysLeft} days remaining</p></div>
+        <div className="rounded-2xl border border-primary/25 bg-primary/10 px-5 py-4"><p className="text-xs uppercase tracking-wider text-muted-foreground">{season.label}</p><p className="mt-1 font-bold text-primary">{formatDaysRemaining(season.daysLeft)}</p></div>
       </div>
     </div>
 

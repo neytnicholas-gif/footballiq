@@ -1,6 +1,7 @@
 import { Analytics } from '@vercel/analytics/next'
 import type { Metadata, Viewport } from 'next'
 import { AuthProvider } from '@/components/auth-provider'
+import { AccountPrompt } from '@/components/account-prompt'
 import { BRAND } from '@/lib/brand'
 import './globals.css'
 
@@ -50,7 +51,10 @@ export default function RootLayout({
   return (
     <html lang="en" className="dark">
       <body className="bg-background font-sans antialiased">
-        <AuthProvider>{children}</AuthProvider>
+        <AuthProvider>
+          {children}
+          <AccountPrompt />
+        </AuthProvider>
         {process.env.NODE_ENV === 'production' && <Analytics />}
       </body>
     </html>

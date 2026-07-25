@@ -8,6 +8,10 @@ import { SiteHeader } from '@/components/site-header'
 import { useAuth } from '@/components/auth-provider'
 import { getRankProgress } from '@/lib/progression'
 
+function formatDays(value: number) {
+  return `${value} day${value === 1 ? '' : 's'}`
+}
+
 export default function ProfilePage() {
   const router = useRouter()
   const { user, profile, loading } = useAuth()
@@ -41,8 +45,8 @@ export default function ProfilePage() {
             <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               <Stat icon={<Gauge className="size-5" />} label="Rating" value={profile.rating.toLocaleString()} />
               <Stat icon={<Target className="size-5" />} label="Accuracy" value={`${accuracy}%`} />
-              <Stat icon={<Flame className="size-5" />} label="Current streak" value={`${profile.current_streak} days`} />
-              <Stat icon={<Trophy className="size-5" />} label="Longest streak" value={`${profile.longest_streak} days`} />
+              <Stat icon={<Flame className="size-5" />} label="Current streak" value={formatDays(profile.current_streak)} />
+              <Stat icon={<Trophy className="size-5" />} label="Longest streak" value={formatDays(profile.longest_streak)} />
               <Stat icon={<Sparkles className="size-5" />} label="Quizzes completed" value={profile.quizzes_completed.toLocaleString()} />
               <Stat icon={<Medal className="size-5" />} label="Perfect quizzes" value={profile.perfect_quizzes.toLocaleString()} />
             </div>

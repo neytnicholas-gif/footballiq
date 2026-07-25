@@ -4,8 +4,8 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Check, Clock3, Copy, Flame, RotateCcw, Sparkles, Trophy, X, Zap } from 'lucide-react'
 import type { DuelPack, DuelQuestion } from '@/lib/duel-packs'
 import { useAuth } from '@/components/auth-provider'
-import { supabase } from '@/lib/supabase'
 import { calculateDuelXp, getRankProgress } from '@/lib/progression'
+import { saveQuizResult } from '@/lib/quiz-save'
 
 type Choice = 'left' | 'right' | 'same'
 type Speed = 'relaxed' | 'timed'
@@ -109,19 +109,16 @@ export function DuelQuiz({ pack, onComplete }: { pack: DuelPack; onComplete?: (p
   async function saveResult() {
     if (!user || !profile || saved || saving) return
     setSaving(true)
-    const perfect = score === questions.length
     const xpEarned = calculateDuelXp(score, questions.length, bestCombo, points)
-    const today = new Date().toISOString().slice(0, 10)
-    const { error } = await supabase.rpc('complete_quiz', {
-      p_quiz_id: pack.id,
-      p_score: score,
-      p_total: questions.length,
-      p_xp: xpEarned,
-      p_activity_date: today,
+    const { error, alreadyCompleted } = await saveQuizResult({
+      quizId: pack.id,
+      score,
+      total: questions.length,
+      xp: xpEarned,
     })
     if (!error) {
       setSaved(true)
-      await refreshProfile()
+      if (!alreadyCompleted) await refreshProfile()
     }
     setSaving(false)
   }
