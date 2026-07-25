@@ -49,23 +49,23 @@
 
 :root {
   color-scheme: dark;
-  --background: oklch(0.15 0.01 260);
+  --background: oklch(0.18 0.012 258);
   --foreground: oklch(0.98 0 0);
-  --card: oklch(0.2 0.01 260);
+  --card: oklch(0.24 0.015 250);
   --card-foreground: oklch(0.98 0 0);
-  --popover: oklch(0.18 0.01 260);
+  --popover: oklch(0.22 0.015 252);
   --popover-foreground: oklch(0.98 0 0);
   --primary: oklch(0.74 0.19 152);
   --primary-foreground: oklch(0.13 0.02 160);
-  --secondary: oklch(0.25 0.01 260);
+  --secondary: oklch(0.29 0.012 252);
   --secondary-foreground: oklch(0.98 0 0);
-  --muted: oklch(0.25 0.01 260);
-  --muted-foreground: oklch(0.72 0.01 260);
+  --muted: oklch(0.27 0.01 252);
+  --muted-foreground: oklch(0.76 0.012 254);
   --accent: oklch(0.74 0.19 152);
   --accent-foreground: oklch(0.13 0.02 160);
   --destructive: oklch(0.62 0.22 25);
-  --border: oklch(1 0 0 / 12%);
-  --input: oklch(1 0 0 / 14%);
+  --border: oklch(1 0 0 / 16%);
+  --input: oklch(1 0 0 / 18%);
   --ring: oklch(0.74 0.19 152);
   --chart-1: oklch(0.74 0.19 152);
   --chart-2: oklch(0.6 0.14 152);
@@ -85,23 +85,23 @@
 
 .dark {
   color-scheme: dark;
-  --background: oklch(0.15 0.01 260);
+  --background: oklch(0.18 0.012 258);
   --foreground: oklch(0.98 0 0);
-  --card: oklch(0.2 0.01 260);
+  --card: oklch(0.24 0.015 250);
   --card-foreground: oklch(0.98 0 0);
-  --popover: oklch(0.18 0.01 260);
+  --popover: oklch(0.22 0.015 252);
   --popover-foreground: oklch(0.98 0 0);
   --primary: oklch(0.74 0.19 152);
   --primary-foreground: oklch(0.13 0.02 160);
-  --secondary: oklch(0.25 0.01 260);
+  --secondary: oklch(0.29 0.012 252);
   --secondary-foreground: oklch(0.98 0 0);
-  --muted: oklch(0.25 0.01 260);
-  --muted-foreground: oklch(0.72 0.01 260);
+  --muted: oklch(0.27 0.01 252);
+  --muted-foreground: oklch(0.76 0.012 254);
   --accent: oklch(0.74 0.19 152);
   --accent-foreground: oklch(0.13 0.02 160);
   --destructive: oklch(0.62 0.22 25);
-  --border: oklch(1 0 0 / 12%);
-  --input: oklch(1 0 0 / 14%);
+  --border: oklch(1 0 0 / 16%);
+  --input: oklch(1 0 0 / 18%);
   --ring: oklch(0.74 0.19 152);
   --chart-1: oklch(0.74 0.19 152);
   --chart-2: oklch(0.6 0.14 152);
@@ -121,23 +121,23 @@
 @media (prefers-color-scheme: dark) {
   :root:not(.light) {
     color-scheme: dark;
-    --background: oklch(0.15 0.01 260);
+    --background: oklch(0.18 0.012 258);
     --foreground: oklch(0.98 0 0);
-    --card: oklch(0.2 0.01 260);
+    --card: oklch(0.24 0.015 250);
     --card-foreground: oklch(0.98 0 0);
-    --popover: oklch(0.18 0.01 260);
+    --popover: oklch(0.22 0.015 252);
     --popover-foreground: oklch(0.98 0 0);
     --primary: oklch(0.74 0.19 152);
     --primary-foreground: oklch(0.13 0.02 160);
-    --secondary: oklch(0.25 0.01 260);
+    --secondary: oklch(0.29 0.012 252);
     --secondary-foreground: oklch(0.98 0 0);
-    --muted: oklch(0.25 0.01 260);
-    --muted-foreground: oklch(0.72 0.01 260);
+    --muted: oklch(0.27 0.01 252);
+    --muted-foreground: oklch(0.76 0.012 254);
     --accent: oklch(0.74 0.19 152);
     --accent-foreground: oklch(0.13 0.02 160);
     --destructive: oklch(0.62 0.22 25);
-    --border: oklch(1 0 0 / 12%);
-    --input: oklch(1 0 0 / 14%);
+    --border: oklch(1 0 0 / 16%);
+    --input: oklch(1 0 0 / 18%);
     --ring: oklch(0.74 0.19 152);
     --chart-1: oklch(0.74 0.19 152);
     --chart-2: oklch(0.6 0.14 152);
@@ -162,9 +162,10 @@
   body {
     @apply bg-background text-foreground;
     background-image:
-      radial-gradient(circle at 50% 0%, rgb(50 230 170 / 0.08), transparent 32rem),
-      radial-gradient(circle at 90% 10%, rgb(64 190 255 / 0.06), transparent 28rem),
-      linear-gradient(180deg, color-mix(in oklch, var(--background) 92%, white 3%), var(--background));
+      radial-gradient(circle at 14% -8%, rgb(50 230 170 / 0.13), transparent 30rem),
+      radial-gradient(circle at 86% 10%, rgb(64 190 255 / 0.11), transparent 28rem),
+      radial-gradient(circle at 50% 120%, rgb(255 255 255 / 0.05), transparent 46rem),
+      linear-gradient(180deg, color-mix(in oklch, var(--background) 88%, white 8%), var(--background));
     background-attachment: fixed;
   }
 }
@@ -220,6 +221,11 @@
 
 button, a {
   -webkit-tap-highlight-color: transparent;
+}
+
+:focus-visible {
+  outline: 2px solid color-mix(in oklch, var(--primary) 65%, white 15%);
+  outline-offset: 2px;
 }
 
 @keyframes fiq-pulse-soft {

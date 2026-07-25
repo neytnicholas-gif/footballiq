@@ -58,7 +58,8 @@ alter table public.quiz_results enable row level security;
 alter table public.predictions enable row level security;
 
 drop policy if exists "Profiles are readable by everyone" on public.profiles;
-create policy "Profiles are readable by everyone" on public.profiles for select using (true);
+drop policy if exists "Users can read their own profile" on public.profiles;
+create policy "Users can read their own profile" on public.profiles for select using (auth.uid() = id);
 drop policy if exists "Users can insert their own profile" on public.profiles;
 create policy "Users can insert their own profile" on public.profiles for insert with check (auth.uid() = id);
 drop policy if exists "Users can update their own profile" on public.profiles;
@@ -149,3 +150,22 @@ end;
 $$;
 
 grant execute on function public.complete_quiz(text, integer, integer, integer, date) to authenticated;
+
+create or replace view public.public_leaderboard_profiles as
+select
+  id,
+  username,
+  rating,
+  xp,
+  quizzes_completed,
+  correct_answers,
+  total_answers,
+  perfect_quizzes,
+  current_streak,
+  longest_streak,
+  created_at
+from public.profiles
+where username is not null;
+
+grant select on public.public_leaderboard_profiles to anon;
+grant select on public.public_leaderboard_profiles to authenticated;

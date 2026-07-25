@@ -3,13 +3,16 @@
 import Link from 'next/link'
 import { useEffect, useMemo, useState } from 'react'
 import { CalendarDays, ChevronRight, Crown, Flame, Medal, RefreshCw, Trophy } from 'lucide-react'
-import { supabase, type Profile } from '@/lib/supabase'
+import { supabase } from '@/lib/supabase'
+import type { Database } from '@/lib/supabase/types'
 import { formatLeaderboardValue, leaderboardModes, seasonMeta, type RankedPlayer } from '@/lib/competitive'
+import { getBrusselsDateKey } from '@/lib/daily'
 
 type Board = 'overall' | 'daily' | 'weekly' | 'monthly' | 'season' | string
 type ModeStat = { user_id: string; mode: string; rating: number; xp: number; quizzes_completed: number; correct_answers: number; total_answers: number }
-type QuizResult = { user_id: string; score: number; total: number; xp_earned: number; completed_at: string }
+type QuizResult = { user_id: string; score: number; total: number; xp_earned: number; activity_date: string | null; completed_at: string }
 type SeasonStat = { user_id: string; season_id: string; rating: number; xp: number; quizzes_completed: number; correct_answers: number; total_answers: number }
+type PublicProfile = Database['public']['Views']['public_leaderboard_profiles']['Row']
 
 const periodBoards = [
   { id: 'daily', label: 'Today', emoji: '☀️' },
@@ -18,30 +21,50 @@ const periodBoards = [
   { id: 'season', label: 'Season', emoji: '👑' },
 ]
 
-function periodRangeUtc(period: 'daily' | 'weekly' | 'monthly', now = new Date()) {
-  const year = now.getUTCFullYear()
-  const month = now.getUTCMonth()
-  const day = now.getUTCDate()
+function formatUtcDateKey(date: Date) {
+  const year = date.getUTCFullYear()
+  const month = String(date.getUTCMonth() + 1).padStart(2, '0')
+  const day = String(date.getUTCDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
+function periodRangeBrussels(period: 'daily' | 'weekly' | 'monthly', now = new Date()) {
+  const dailyKey = getBrusselsDateKey(now)
+  const [yearString, monthString, dayString] = dailyKey.split('-')
+  const year = Number(yearString)
+  const month = Number(monthString)
+  const day = Number(dayString)
+
+  if (!Number.isFinite(year) || !Number.isFinite(month) || !Number.isFinite(day)) {
+    const start = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 0, 0, 0, 0))
+    const end = new Date(start)
+    if (period === 'daily') end.setUTCDate(end.getUTCDate() + 1)
+    if (period === 'weekly') end.setUTCDate(end.getUTCDate() + 7)
+    if (period === 'monthly') end.setUTCMonth(end.getUTCMonth() + 1)
+    return { startKey: formatUtcDateKey(start), endKey: formatUtcDateKey(end) }
+  }
+
+  const anchorUtc = new Date(Date.UTC(year, month - 1, day, 12, 0, 0, 0))
+  const localWeekday = (anchorUtc.getUTCDay() + 6) % 7
 
   if (period === 'daily') {
-    const start = new Date(Date.UTC(year, month, day, 0, 0, 0, 0))
+    const start = new Date(Date.UTC(year, month - 1, day, 0, 0, 0, 0))
     const end = new Date(start)
     end.setUTCDate(end.getUTCDate() + 1)
-    return { start, end }
+    return { startKey: formatUtcDateKey(start), endKey: formatUtcDateKey(end) }
   }
 
   if (period === 'weekly') {
-    const weekday = (now.getUTCDay() + 6) % 7
-    const start = new Date(Date.UTC(year, month, day, 0, 0, 0, 0))
-    start.setUTCDate(start.getUTCDate() - weekday)
+    const start = new Date(Date.UTC(year, month - 1, day, 0, 0, 0, 0))
+    start.setUTCDate(start.getUTCDate() - localWeekday)
     const end = new Date(start)
     end.setUTCDate(end.getUTCDate() + 7)
-    return { start, end }
+    return { startKey: formatUtcDateKey(start), endKey: formatUtcDateKey(end) }
   }
 
-  const start = new Date(Date.UTC(year, month, 1, 0, 0, 0, 0))
-  const end = new Date(Date.UTC(year, month + 1, 1, 0, 0, 0, 0))
-  return { start, end }
+  const start = new Date(Date.UTC(year, month - 1, 1, 0, 0, 0, 0))
+  const end = new Date(Date.UTC(year, month, 1, 0, 0, 0, 0))
+  return { startKey: formatUtcDateKey(start), endKey: formatUtcDateKey(end) }
 }
 
 function formatDaysRemaining(days: number) {
@@ -58,10 +81,42 @@ export function CompetitiveLeaderboard({ initialBoard = 'overall' }: { initialBo
 
   useEffect(() => { void loadBoard(board) }, [board])
 
+  async function getPublicProfiles(ids?: string[]) {
+    let query = supabase
+      .from('public_leaderboard_profiles')
+      .select('id,username,rating,xp,quizzes_completed,correct_answers,total_answers,perfect_quizzes,current_streak,longest_streak,created_at')
+
+    if (ids && ids.length > 0) {
+      query = query.in('id', ids)
+    }
+
+    const publicResult = await query
+    if (!publicResult.error) {
+      return (publicResult.data as PublicProfile[] | null) ?? []
+    }
+
+    // Fallback for environments where the hardened SQL view has not been applied yet.
+    let fallbackQuery = supabase
+      .from('profiles')
+      .select('id,username,rating,xp,quizzes_completed,correct_answers,total_answers,perfect_quizzes,current_streak,longest_streak,created_at')
+      .not('username', 'is', null)
+
+    if (ids && ids.length > 0) {
+      fallbackQuery = fallbackQuery.in('id', ids)
+    }
+
+    const fallbackResult = await fallbackQuery
+    if (fallbackResult.error) {
+      throw fallbackResult.error
+    }
+
+    return (fallbackResult.data as PublicProfile[] | null) ?? []
+  }
+
   async function usernamesFor(ids: string[]) {
     if (!ids.length) return new Map<string, string>()
-    const { data } = await supabase.from('profiles').select('id,username').in('id', ids)
-    return new Map((data ?? []).map((profile) => [profile.id as string, (profile.username as string | null) ?? 'Anonymous']))
+    const rows = await getPublicProfiles(ids)
+    return new Map(rows.map((profile) => [profile.id, profile.username ?? 'Anonymous']))
   }
 
   async function loadBoard(selected: Board) {
@@ -69,9 +124,9 @@ export function CompetitiveLeaderboard({ initialBoard = 'overall' }: { initialBo
     setError('')
     try {
       if (selected === 'overall') {
-        const { data, error: queryError } = await supabase.from('profiles').select('*').not('username', 'is', null).order('xp', { ascending: false }).limit(100)
-        if (queryError) throw queryError
-        setPlayers(((data as Profile[]) ?? []).map((profile) => ({
+        const rows = await getPublicProfiles()
+        rows.sort((a, b) => b.xp - a.xp)
+        setPlayers(rows.slice(0, 100).map((profile) => ({
           id: profile.id,
           username: profile.username ?? 'Anonymous',
           value: profile.xp,
@@ -80,14 +135,39 @@ export function CompetitiveLeaderboard({ initialBoard = 'overall' }: { initialBo
           quizzes: profile.quizzes_completed,
         })))
       } else if (selected === 'daily' || selected === 'weekly' || selected === 'monthly') {
-        const { start, end } = periodRangeUtc(selected)
-        const { data, error: queryError } = await supabase
-          .from('quiz_results')
-          .select('user_id,score,total,xp_earned,completed_at')
-          .gte('completed_at', start.toISOString())
-          .lt('completed_at', end.toISOString())
+        const { startKey, endKey } = periodRangeBrussels(selected)
+        let { data, error: queryError } = await supabase
+          .from('public_leaderboard_quiz_results')
+          .select('user_id,score,total,xp_earned,activity_date,completed_at')
+          .gte('activity_date', startKey)
+          .lt('activity_date', endKey)
           .order('completed_at', { ascending: false })
           .limit(2000)
+
+        if (queryError) {
+          const fallback = await supabase
+            .from('quiz_results')
+            .select('user_id,score,total,xp_earned,activity_date,completed_at')
+            .gte('activity_date', startKey)
+            .lt('activity_date', endKey)
+            .order('completed_at', { ascending: false })
+            .limit(2000)
+          data = fallback.data
+          queryError = fallback.error
+        }
+
+        if (queryError && queryError.message.toLowerCase().includes('activity_date')) {
+          const fallbackUtc = await supabase
+            .from('quiz_results')
+            .select('user_id,score,total,xp_earned,completed_at')
+            .gte('completed_at', `${startKey}T00:00:00.000Z`)
+            .lt('completed_at', `${endKey}T00:00:00.000Z`)
+            .order('completed_at', { ascending: false })
+            .limit(2000)
+          data = fallbackUtc.data as QuizResult[] | null
+          queryError = fallbackUtc.error
+        }
+
         if (queryError) throw queryError
         const totals = new Map<string, { xp: number; correct: number; total: number; quizzes: number }>()
         for (const result of (data as QuizResult[]) ?? []) {

@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase'
+import type { Database } from '@/lib/supabase/types'
 
 export type QuizProgressStatus = 'in_progress' | 'completed'
 
@@ -14,6 +15,9 @@ export type QuizProgressRecord = {
   updated_at: string
 }
 
+type QuizProgressRow = Database['public']['Tables']['quiz_progress']['Row']
+type QuizProgressInsert = Database['public']['Tables']['quiz_progress']['Insert']
+
 type SaveQuizProgressInput = {
   quizId: string
   currentIndex: number
@@ -24,7 +28,11 @@ type SaveQuizProgressInput = {
 }
 
 export async function loadQuizProgress(quizId: string) {
-  const { data: userData } = await supabase.auth.getUser()
+  const { data: userData, error: userError } = await supabase.auth.getUser()
+  if (userError) {
+    console.error('Quiz progress auth error:', userError.message)
+    return null
+  }
   const user = userData.user
   if (!user) return null
 
@@ -40,17 +48,20 @@ export async function loadQuizProgress(quizId: string) {
     return null
   }
 
-  return (data as QuizProgressRecord | null) ?? null
+  return (data as QuizProgressRow | null) ?? null
 }
 
 export async function saveQuizProgress({ quizId, currentIndex, score, total, progress, status = 'in_progress' }: SaveQuizProgressInput) {
-  const { data: userData } = await supabase.auth.getUser()
+  const { data: userData, error: userError } = await supabase.auth.getUser()
+  if (userError) {
+    return { error: userError }
+  }
   const user = userData.user
   if (!user) {
     return { error: null }
   }
 
-  const payload = {
+  const payload: QuizProgressInsert = {
     user_id: user.id,
     quiz_id: quizId,
     current_index: currentIndex,
@@ -67,7 +78,10 @@ export async function saveQuizProgress({ quizId, currentIndex, score, total, pro
 }
 
 export async function clearQuizProgress(quizId: string) {
-  const { data: userData } = await supabase.auth.getUser()
+  const { data: userData, error: userError } = await supabase.auth.getUser()
+  if (userError) {
+    return { error: userError }
+  }
   const user = userData.user
   if (!user) return { error: null }
 

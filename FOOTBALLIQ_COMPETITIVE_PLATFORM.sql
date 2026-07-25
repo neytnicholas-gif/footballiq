@@ -29,6 +29,9 @@ create table if not exists public.season_stats (
   primary key (user_id, season_id)
 );
 
+alter table public.quiz_results add column if not exists attempt_id text;
+alter table public.quiz_results add column if not exists activity_date date;
+
 alter table public.mode_stats enable row level security;
 alter table public.season_stats enable row level security;
 
@@ -38,14 +41,30 @@ create policy "Mode stats are publicly readable" on public.mode_stats for select
 drop policy if exists "Season stats are publicly readable" on public.season_stats;
 create policy "Season stats are publicly readable" on public.season_stats for select using (true);
 
--- Period leaderboards aggregate result history.
-drop policy if exists "Quiz results are publicly readable" on public.quiz_results;
-create policy "Quiz results are publicly readable" on public.quiz_results for select using (true);
+-- Period leaderboards aggregate from a restricted public view, not raw private rows.
+create or replace view public.public_leaderboard_quiz_results as
+select
+  user_id,
+  quiz_id,
+  score,
+  total,
+  xp_earned,
+  activity_date,
+  completed_at
+from public.quiz_results;
 
--- Replays should count as new competitive attempts. Remove the old first-completion-only rule.
-drop index if exists public.quiz_results_first_completion;
+grant select on public.public_leaderboard_quiz_results to anon;
+grant select on public.public_leaderboard_quiz_results to authenticated;
+
+-- Preserve one-reward-per-quiz integrity.
+create unique index if not exists quiz_results_first_completion
+on public.quiz_results(user_id, quiz_id);
+create unique index if not exists quiz_results_attempt_once
+on public.quiz_results(user_id, quiz_id, attempt_id)
+where attempt_id is not null;
 create index if not exists quiz_results_user_completed_idx on public.quiz_results(user_id, completed_at desc);
 create index if not exists quiz_results_completed_idx on public.quiz_results(completed_at desc);
+create index if not exists quiz_results_activity_date_idx on public.quiz_results(activity_date desc);
 create index if not exists mode_stats_mode_rating_idx on public.mode_stats(mode, rating desc);
 create index if not exists season_stats_season_rating_idx on public.season_stats(season_id, rating desc);
 
@@ -67,18 +86,23 @@ returns text language sql immutable as $$
   select extract(year from p_date)::int::text || '-S' || (extract(quarter from p_date)::int)::text
 $$;
 
+drop function if exists public.complete_quiz(text, integer, integer, integer, date);
+drop function if exists public.complete_quiz(text, integer, integer, integer, date, text);
+
 create or replace function public.complete_quiz(
   p_quiz_id text,
   p_score integer,
   p_total integer,
   p_xp integer,
-  p_activity_date date
+  p_activity_date date,
+  p_attempt_id text default null
 )
 returns void language plpgsql security definer set search_path = public as $$
 declare
   uid uuid := auth.uid();
   previous_date date;
   next_streak integer;
+  inserted_count integer;
   mode_name text;
   season_name text;
   rating_change integer;
@@ -92,8 +116,14 @@ begin
 
   insert into public.profiles (id) values (uid) on conflict (id) do nothing;
 
-  insert into public.quiz_results(user_id, quiz_id, score, total, xp_earned)
-  values (uid, p_quiz_id, p_score, p_total, p_xp);
+  insert into public.quiz_results(user_id, quiz_id, score, total, xp_earned, attempt_id, activity_date)
+  values (uid, p_quiz_id, p_score, p_total, p_xp, p_attempt_id, p_activity_date)
+  on conflict (user_id, quiz_id) do nothing;
+
+  get diagnostics inserted_count = row_count;
+  if inserted_count = 0 then
+    return;
+  end if;
 
   select last_activity_date, current_streak into previous_date, next_streak from public.profiles where id = uid for update;
   if previous_date = p_activity_date then next_streak := greatest(next_streak, 1);
@@ -139,4 +169,4 @@ begin
 end;
 $$;
 
-grant execute on function public.complete_quiz(text, integer, integer, integer, date) to authenticated;
+grant execute on function public.complete_quiz(text, integer, integer, integer, date, text) to authenticated;

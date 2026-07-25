@@ -49,9 +49,10 @@ export function CareerPathGame() {
       const progress = await loadQuizProgress('career-path-1')
       if (!active) return
       const savedState = progress?.progress as { index?: number; selected?: string | null; score?: number; shuffleSeed?: number } | undefined
-      if (progress && progress.status === 'in_progress' && savedState && Number.isInteger(savedState.index) && savedState.index >= 0 && savedState.index < careerQuestions.length) {
+      const savedIndex = typeof savedState?.index === 'number' && Number.isInteger(savedState.index) ? savedState.index : null
+      if (progress && progress.status === 'in_progress' && savedState && savedIndex !== null && savedIndex >= 0 && savedIndex < careerQuestions.length) {
         setResumeState({
-          index: savedState.index,
+          index: savedIndex,
           selected: typeof savedState.selected === 'string' ? savedState.selected : null,
           score: typeof savedState.score === 'number' ? savedState.score : progress.score,
           shuffleSeed: typeof savedState.shuffleSeed === 'number' ? savedState.shuffleSeed : shuffleSeed,

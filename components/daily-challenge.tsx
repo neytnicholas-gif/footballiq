@@ -14,7 +14,6 @@ import {
 } from '@/lib/daily'
 import { clearQuizProgress, loadQuizProgress, saveQuizProgress } from '@/lib/quiz-progress'
 import { saveQuizResult } from '@/lib/quiz-save'
-import { supabase } from '@/lib/supabase'
 
 type DailyHistoryEntry = {
   key: string
@@ -101,10 +100,11 @@ export function DailyChallenge() {
       const progress = await loadQuizProgress(`daily-${dailyKey}`)
       if (!active) return
       const savedState = progress?.progress as { dailyKey?: string; index?: number; selected?: number | null; score?: number; completed?: boolean } | undefined
-      if (progress && progress.status === 'in_progress' && savedState && savedState.dailyKey === dailyKey && Number.isInteger(savedState.index) && savedState.index >= 0 && savedState.index < items.length) {
+      const savedIndex = typeof savedState?.index === 'number' && Number.isInteger(savedState.index) ? savedState.index : null
+      if (progress && progress.status === 'in_progress' && savedState && savedState.dailyKey === dailyKey && savedIndex !== null && savedIndex >= 0 && savedIndex < items.length) {
         setResumeState({
           dailyKey,
-          index: savedState.index,
+          index: savedIndex,
           selected: typeof savedState.selected === 'number' ? savedState.selected : null,
           score: typeof savedState.score === 'number' ? savedState.score : progress.score,
           completed: Boolean(savedState.completed),
@@ -181,42 +181,28 @@ export function DailyChallenge() {
     setSavingReward(true)
     setSaveMessage('')
 
-    const { data: existing, error: existingError } = await supabase
-      .from('quiz_results')
-      .select('id')
-      .eq('user_id', user.id)
-      .eq('quiz_id', quizId)
-      .limit(1)
-
-    if (existingError) {
-      setSaveMessage('Could not verify today’s reward yet. Please try again.')
-      setSavingReward(false)
-      return
-    }
-
-    if ((existing?.length ?? 0) > 0) {
-      setSavedReward(true)
-      setSaveMessage('Today’s reward was already credited for this account.')
-      setSavingReward(false)
-      return
-    }
-
-    const { error } = await saveQuizResult({
+    const { error, alreadyCompleted } = await saveQuizResult({
       quizId,
       score,
       total: items.length,
       xp: xpFor(score, items.length),
       activityDate: dailyKey,
     })
+
     if (error) {
       setSaveMessage('Reward save failed. Please retry.')
       setSavingReward(false)
       return
     }
 
-    await refreshProfile()
+    if (!alreadyCompleted) {
+      await refreshProfile()
+      setSaveMessage('Today’s reward has been saved to your account.')
+    } else {
+      setSaveMessage('Today’s reward was already credited for this account.')
+    }
+
     setSavedReward(true)
-    setSaveMessage('Today’s reward has been saved to your account.')
     void clearQuizProgress(quizId)
     setSavingReward(false)
   }

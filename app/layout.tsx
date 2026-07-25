@@ -12,7 +12,6 @@ export const metadata: Metadata = {
     template: '%s | FootballIQ',
   },
   description: BRAND.description,
-  generator: 'v0.app',
   manifest: '/manifest.webmanifest',
   openGraph: {
     title: 'FootballIQ - Train football knowledge and judgement',

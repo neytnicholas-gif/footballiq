@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
+import type { Database } from '@/lib/supabase/types'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
@@ -9,7 +10,7 @@ if (!supabaseConfigured) {
   console.warn('Missing Supabase environment variables. Auth will not work until they are added.')
 }
 
-export const supabase = createClient(
+export const supabase = createClient<Database>(
   supabaseUrl || 'https://placeholder.supabase.co',
   supabaseAnonKey || 'placeholder',
   {
@@ -21,19 +22,4 @@ export const supabase = createClient(
   },
 )
 
-export type Profile = {
-  id: string
-  username: string | null
-  rating: number
-  xp: number
-  streak: number
-  quizzes_completed: number
-  correct_answers: number
-  total_answers: number
-  perfect_quizzes: number
-  current_streak: number
-  longest_streak: number
-  last_activity_date: string | null
-  created_at: string
-  updated_at: string
-}
+export type Profile = Database['public']['Tables']['profiles']['Row']

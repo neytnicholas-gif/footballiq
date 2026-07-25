@@ -4,12 +4,12 @@ import { Logo } from '@/components/logo'
 import { BRAND } from '@/lib/brand'
 
 const navLinks = [
-  { label: 'Home', href: '#home' },
-  { label: 'Quizzes', href: '#quiz' },
-  { label: 'Analysis', href: '#blog' },
-  { label: 'Predictions', href: '#predictions' },
-  { label: 'Leaderboard', href: '#leaderboard' },
-  { label: 'About', href: '#about' },
+  { label: 'Home', href: '/' },
+  { label: 'Quizzes', href: '/quizzes' },
+  { label: 'Daily Challenge', href: '/daily' },
+  { label: 'Predictions', href: '/predictions' },
+  { label: 'Leaderboard', href: '/leaderboard' },
+  { label: 'Sign in', href: '/login' },
 ]
 
 function InstagramIcon({ className }: { className?: string }) {
@@ -40,9 +40,9 @@ function YoutubeIcon({ className }: { className?: string }) {
 }
 
 const socials = [
-  { label: 'Instagram', href: '#', icon: InstagramIcon },
-  { label: 'LinkedIn', href: '#', icon: LinkedinIcon },
-  { label: 'YouTube', href: '#', icon: YoutubeIcon },
+  { label: 'Instagram', href: 'mailto:hello@footballiq.app?subject=FootballIQ%20Instagram', icon: InstagramIcon },
+  { label: 'LinkedIn', href: 'mailto:hello@footballiq.app?subject=FootballIQ%20LinkedIn', icon: LinkedinIcon },
+  { label: 'YouTube', href: 'mailto:hello@footballiq.app?subject=FootballIQ%20YouTube', icon: YoutubeIcon },
 ]
 
 export function SiteFooter() {
@@ -60,16 +60,16 @@ export function SiteFooter() {
               Ready to test your football brain?
             </h2>
             <p className="mx-auto mt-3 max-w-md text-pretty text-muted-foreground">
-              Play the first goalscorer duel quiz and see how sharp your football memory really is.
+              Jump into Scout Vision, Referee Arena, Football Duels and more to sharpen your judgement.
             </p>
             <div className="mt-7 flex flex-col justify-center gap-3 sm:flex-row">
               <Button
                 size="lg"
                 nativeButton={false}
-                render={<a href="#quiz" />}
+                render={<a href="/quizzes" />}
                 className="h-12 rounded-xl px-7 font-medium glow-green"
               >
-                Play First Quiz
+                Explore quiz modes
               </Button>
               <Button
                 size="lg"
@@ -133,7 +133,7 @@ export function SiteFooter() {
 
         <div className="mt-12 flex flex-col items-center justify-between gap-3 border-t border-border pt-6 text-sm text-muted-foreground sm:flex-row">
           <p>© FootballIQ</p>
-          <p>Made for football minds worldwide.</p>
+          <p>Made for football minds worldwide. No official league affiliation.</p>
         </div>
       </div>
     </footer>

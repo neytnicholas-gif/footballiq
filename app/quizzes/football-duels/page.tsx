@@ -76,7 +76,7 @@ export default function FootballDuelsPage() {
       <section className="relative z-10 mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-12">
         <div className="grid gap-6 lg:grid-cols-[1fr_auto] lg:items-end">
           <div>
-            <div className="inline-flex items-center gap-2 rounded-full border border-primary/25 bg-primary/10 px-3 py-1.5 text-xs font-semibold text-primary"><Sparkles className="size-3.5" /> Football Duels V2</div>
+            <div className="inline-flex items-center gap-2 rounded-full border border-primary/25 bg-primary/10 px-3 py-1.5 text-xs font-semibold text-primary"><Sparkles className="size-3.5" /> Football Duels</div>
             <h1 className="mt-4 max-w-3xl text-4xl font-bold tracking-tight sm:text-6xl">One stat. Two players. <span className="text-primary">No time to overthink.</span></h1>
             <p className="mt-4 max-w-2xl text-lg text-muted-foreground">Answer, get instant feedback and move straight on. Build combos, earn XP and climb from Football Fan to Legend.</p>
           </div>
@@ -91,7 +91,7 @@ export default function FootballDuelsPage() {
         <section className="mt-14 border-t border-border pt-10">
           <div className="flex flex-wrap items-end justify-between gap-4">
             <div><p className="text-xs font-semibold uppercase tracking-[.25em] text-primary">Pack library</p><h2 className="mt-2 text-3xl font-bold">Master every category</h2><p className="mt-2 text-muted-foreground">Your best score is saved. Every replay shuffles the order and sides.</p></div>
-            <div className="rounded-full border border-border bg-card px-4 py-2 text-sm"><strong className="text-primary">{Object.keys(completed).filter((id) => !id.startsWith('daily-duel-')).length}</strong>/{duelPacks.length} packs played</div>
+            <div className="rounded-full border border-border bg-card px-4 py-2 text-sm"><strong className="text-primary">{Object.keys(completed).filter((id) => !id.startsWith('daily-duel-')).length}</strong>/{duelPacks.length} packs completed</div>
           </div>
 
           <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">

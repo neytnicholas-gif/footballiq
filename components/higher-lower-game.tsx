@@ -47,9 +47,10 @@ export function HigherLowerGame() {
       const progress = await loadQuizProgress('higher-lower-pl-goals')
       if (!active) return
       const savedState = progress?.progress as { index?: number; streak?: number; deckSeed?: number } | undefined
-      if (progress && progress.status === 'in_progress' && savedState && Number.isInteger(savedState.index) && savedState.index > 0 && savedState.index < higherLowerItems.length) {
+      const savedIndex = typeof savedState?.index === 'number' && Number.isInteger(savedState.index) ? savedState.index : null
+      if (progress && progress.status === 'in_progress' && savedState && savedIndex !== null && savedIndex > 0 && savedIndex < higherLowerItems.length) {
         setResumeState({
-          index: savedState.index,
+          index: savedIndex,
           streak: typeof savedState.streak === 'number' ? savedState.streak : progress.score,
           deckSeed: typeof savedState.deckSeed === 'number' ? savedState.deckSeed : deckSeed,
         })

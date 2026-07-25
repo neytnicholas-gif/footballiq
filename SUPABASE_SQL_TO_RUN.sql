@@ -12,16 +12,14 @@ CREATE TABLE IF NOT EXISTS profiles (
 ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
 
 -- Policy 1: Users can read their own profile
+DROP POLICY IF EXISTS "Users can read their own profile" ON profiles;
 CREATE POLICY "Users can read their own profile"
   ON profiles
   FOR SELECT
   USING (auth.uid() = id);
 
--- Policy 2: Users can read all profiles (needed for leaderboard)
-CREATE POLICY "Anyone can read profiles"
-  ON profiles
-  FOR SELECT
-  USING (true);
+-- Remove legacy broad-read policy if present.
+DROP POLICY IF EXISTS "Anyone can read profiles" ON profiles;
 
 -- Policy 3: Users can update their own profile
 CREATE POLICY "Users can update their own profile"
@@ -41,3 +39,18 @@ CREATE INDEX IF NOT EXISTS profiles_username_idx ON profiles(username);
 
 -- Create an index on rating for leaderboard sorting
 CREATE INDEX IF NOT EXISTS profiles_rating_idx ON profiles(rating DESC);
+
+-- Public-safe leaderboard view.
+CREATE OR REPLACE VIEW public_leaderboard_profiles AS
+SELECT
+  id,
+  username,
+  rating,
+  xp,
+  streak,
+  created_at
+FROM profiles
+WHERE username IS NOT NULL;
+
+GRANT SELECT ON public_leaderboard_profiles TO anon;
+GRANT SELECT ON public_leaderboard_profiles TO authenticated;

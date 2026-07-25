@@ -4,24 +4,31 @@ import { useEffect, useMemo, useState } from 'react'
 import { useAuth } from '@/components/auth-provider'
 import { QuizProgressBanner } from '@/components/quiz-progress-banner'
 import { clearQuizProgress, loadQuizProgress, saveQuizProgress } from '@/lib/quiz-progress'
+import { getRankProgress } from '@/lib/progression'
 import { saveQuizResult } from '@/lib/quiz-save'
 import { scoutQuestions, type ScoutDecision } from '@/lib/game-data'
 
 const decisionOptions: ScoutDecision[] = ['Strongly follow', 'Follow', 'Monitor', 'Do not pursue']
 
 export function ScoutGame() {
-  const { user, refreshProfile } = useAuth()
+  const { user, profile, refreshProfile } = useAuth()
   const [index, setIndex] = useState(0)
   const [selected, setSelected] = useState<ScoutDecision | null>(null)
   const [score, setScore] = useState(0)
   const [saved, setSaved] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [alreadyCredited, setAlreadyCredited] = useState(false)
   const [resumeState, setResumeState] = useState<{ index: number; selected: ScoutDecision | null; score: number } | null>(null)
   const [checkingProgress, setCheckingProgress] = useState(Boolean(user))
 
   const dossier = scoutQuestions[index]
   const isLast = index === scoutQuestions.length - 1
   const percent = Math.round(((index + (selected ? 1 : 0)) / scoutQuestions.length) * 100)
+  const maxScore = scoutQuestions.length * 2
+  const accuracy = Math.round((score / maxScore) * 100)
+  const xp = 30 + score * 6
+  const creditedXp = saved && !alreadyCredited ? xp : 0
+  const rank = getRankProgress((profile?.xp ?? 0) + creditedXp)
 
   const verdict = useMemo(() => {
     if (!selected) return null
@@ -46,9 +53,10 @@ export function ScoutGame() {
       const progress = await loadQuizProgress('would-you-scout-1')
       if (!active) return
       const savedState = progress?.progress as { index?: number; selected?: ScoutDecision | null; score?: number } | undefined
-      if (progress && progress.status === 'in_progress' && savedState && Number.isInteger(savedState.index) && savedState.index >= 0 && savedState.index < scoutQuestions.length) {
+      const savedIndex = typeof savedState?.index === 'number' && Number.isInteger(savedState.index) ? savedState.index : null
+      if (progress && progress.status === 'in_progress' && savedState && savedIndex !== null && savedIndex >= 0 && savedIndex < scoutQuestions.length) {
         setResumeState({
-          index: savedState.index,
+          index: savedIndex,
           selected: typeof savedState.selected === 'string' ? (savedState.selected as ScoutDecision) : null,
           score: typeof savedState.score === 'number' ? savedState.score : progress.score,
         })
@@ -93,10 +101,10 @@ export function ScoutGame() {
   async function saveResult() {
     if (!user || saved || saving) return
     setSaving(true)
-    const xp = 30 + score * 6
-    const { error, alreadyCompleted } = await saveQuizResult({ quizId: 'would-you-scout-1', score, total: scoutQuestions.length * 2, xp })
+    const { error, alreadyCompleted } = await saveQuizResult({ quizId: 'would-you-scout-1', score, total: maxScore, xp })
     if (!error) {
       setSaved(true)
+      setAlreadyCredited(alreadyCompleted)
       void clearQuizProgress('would-you-scout-1')
       if (!alreadyCompleted) await refreshProfile()
     }
@@ -108,6 +116,7 @@ export function ScoutGame() {
     setSelected(null)
     setScore(0)
     setSaved(false)
+    setAlreadyCredited(false)
     setResumeState(null)
     void clearQuizProgress('would-you-scout-1')
   }
@@ -188,11 +197,29 @@ export function ScoutGame() {
                   Next dossier
                 </button>
               ) : (
-                <div className="flex flex-wrap gap-3">
-                  <button onClick={() => void saveResult()} disabled={!user || saved || saving} className="rounded-xl bg-primary px-5 py-2.5 font-semibold text-primary-foreground disabled:opacity-50">
-                    {!user ? 'Sign in to save Scout XP' : saving ? 'Saving...' : saved ? 'Saved' : 'Finish and save Scout XP'}
-                  </button>
-                  <button onClick={restart} className="rounded-xl border border-border px-5 py-2.5 font-semibold">Run dossiers again</button>
+                <div className="space-y-4">
+                  <div className="rounded-2xl border border-border bg-background/70 p-4">
+                    <div className="grid gap-3 sm:grid-cols-3">
+                      <MiniStat label="Score" value={`${score}/${maxScore}`} />
+                      <MiniStat label="Accuracy" value={`${accuracy}%`} />
+                      <MiniStat label="XP credited" value={user ? `+${creditedXp}` : `+${xp}`} />
+                    </div>
+                    {user ? (
+                      <div className="mt-4 rounded-xl border border-border bg-card px-4 py-3 text-sm">
+                        <p className="font-semibold">{rank.current.emoji} {rank.current.title}</p>
+                        <p className="mt-1 text-muted-foreground">{rank.next ? `${rank.remaining} XP to ${rank.next.title}` : 'Maximum rank reached'}</p>
+                      </div>
+                    ) : (
+                      <p className="mt-4 text-sm text-muted-foreground">Create an account to save this progress, earn XP and build your FootballIQ profile.</p>
+                    )}
+                  </div>
+                  <div className="flex flex-wrap gap-3">
+                    <button onClick={() => void saveResult()} disabled={!user || saved || saving} className="rounded-xl bg-primary px-5 py-2.5 font-semibold text-primary-foreground disabled:opacity-50">
+                      {!user ? 'Sign in to save progress' : saving ? 'Saving...' : saved ? 'Saved' : 'Finish and save Scout XP'}
+                    </button>
+                    <button onClick={restart} className="rounded-xl border border-border px-5 py-2.5 font-semibold">Run dossiers again</button>
+                  </div>
+                  {user ? <p className="text-xs text-muted-foreground">{saving ? 'Saving your result…' : saved && !alreadyCredited ? 'XP, rating and streak updates saved to your profile.' : saved && alreadyCredited ? 'This Scout Vision reward was already credited for your account.' : ''}</p> : null}
                 </div>
               )}
 
@@ -212,6 +239,15 @@ export function ScoutGame() {
           )}
         </section>
       </div>
+    </div>
+  )
+}
+
+function MiniStat({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-xl border border-border bg-card px-3 py-2">
+      <p className="text-xs text-muted-foreground">{label}</p>
+      <p className="mt-1 font-semibold">{value}</p>
     </div>
   )
 }

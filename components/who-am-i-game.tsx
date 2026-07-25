@@ -35,9 +35,10 @@ export function WhoAmIGame() {
       const progress = await loadQuizProgress('who-am-i-1')
       if (!active) return
       const savedState = progress?.progress as { index?: number; clues?: number; guess?: string; score?: number; revealed?: boolean } | undefined
-      if (progress && progress.status === 'in_progress' && savedState && Number.isInteger(savedState.index) && savedState.index >= 0 && savedState.index < whoAmIQuestions.length) {
+      const savedIndex = typeof savedState?.index === 'number' && Number.isInteger(savedState.index) ? savedState.index : null
+      if (progress && progress.status === 'in_progress' && savedState && savedIndex !== null && savedIndex >= 0 && savedIndex < whoAmIQuestions.length) {
         setResumeState({
-          index: savedState.index,
+          index: savedIndex,
           clues: typeof savedState.clues === 'number' ? savedState.clues : 1,
           guess: typeof savedState.guess === 'string' ? savedState.guess : '',
           score: typeof savedState.score === 'number' ? savedState.score : progress.score,
