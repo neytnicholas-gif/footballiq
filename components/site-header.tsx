@@ -1,123 +1,95 @@
 'use client'
 
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { Crown, Menu, X } from 'lucide-react'
 import { useState } from 'react'
-import { Menu, X } from 'lucide-react'
+import { usePathname } from 'next/navigation'
 import { Logo } from '@/components/logo'
 import { useAuth } from '@/components/auth-provider'
+import { cn } from '@/lib/utils'
 
 const links = [
-  { label: 'Home', href: '/' },
-  { label: 'Quizzes', href: '/quizzes' },
-  { label: 'Daily', href: '/daily' },
-  { label: 'Predictions', href: '/predictions' },
-  { label: 'Leaderboard', href: '/leaderboard' },
+  ['Home', '/'],
+  ['Modes', '/quizzes'],
+  ['Daily', '/daily'],
+  ['Leaderboard', '/leaderboard'],
+  ['Profile', '/profile'],
 ]
 
 export function SiteHeader() {
+  const { user, profile, membership, loading, profileLoading, signOut } = useAuth()
   const pathname = usePathname()
-  const { user, profile, loading, profileLoading, signOut } = useAuth()
-  const [open, setOpen] = useState(false)
+  const [mobileOpen, setMobileOpen] = useState(false)
   const authResolved = !loading && !profileLoading
+  const showSignedOutCta = authResolved && !user
 
-  const isActive = (href: string) => {
-    if (href === '/') return pathname === '/'
-    return pathname.startsWith(href)
+  function closeMobile() {
+    setMobileOpen(false)
   }
 
+  const authBlock = !authResolved
+    ? <span className="h-10 w-24 animate-pulse rounded-xl bg-secondary/60" aria-hidden="true" />
+    : showSignedOutCta
+      ? <Link href="/login" className="rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-[0_16px_30px_-20px_rgba(34,197,94,.7)]">Sign in</Link>
+      : user && !profile?.username
+        ? <Link href="/username" className="rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-[0_16px_30px_-20px_rgba(34,197,94,.7)]">Choose username</Link>
+      : (
+        <div className="flex items-center gap-2">
+          <Link href="/profile" className="rounded-xl border border-border bg-card px-4 py-2 text-sm transition hover:border-primary/35 hover:bg-secondary/40">
+            <span className="mr-2 rounded-full bg-primary px-2 py-1 text-xs font-semibold text-primary-foreground">{Math.max(1, Math.floor((profile?.xp ?? 0) / 250) + 1)}</span>
+            {profile?.username ?? 'Profile'}
+          </Link>
+          <button onClick={() => void signOut()} className="hidden rounded-xl border border-border bg-card px-3 py-2 text-sm text-muted-foreground transition hover:text-foreground sm:block">Log out</button>
+        </div>
+      )
+
   return (
-    <header className="sticky top-0 z-50 border-b border-border bg-background/92 backdrop-blur">
-      <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3 sm:px-6">
-        <Logo className="shrink-0" />
-        <nav aria-label="Primary" className="hidden items-center gap-1 md:flex">
-          {links.map((link) => (
+    <header className="sticky top-0 z-40 border-b border-border/80 bg-[color-mix(in_oklch,var(--background)_88%,white_12%)] backdrop-blur-xl">
+      <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3.5 sm:px-6">
+        <Logo />
+
+        <nav className="hidden items-center gap-1 rounded-full border border-border/80 bg-card/90 p-1 md:flex">
+          {links.map(([label, href]) => (
             <Link
-              key={link.href}
-              href={link.href}
-              className={`rounded-lg px-3 py-2 text-sm transition ${isActive(link.href) ? 'bg-secondary text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+              key={href}
+              href={href}
+              aria-current={pathname === href ? 'page' : undefined}
+              className={cn(
+                'rounded-full px-3.5 py-1.5 text-sm transition',
+                pathname === href ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:bg-secondary hover:text-foreground',
+              )}
             >
-              {link.label}
+              {label}
             </Link>
           ))}
         </nav>
 
         <div className="flex items-center gap-2">
-          {!authResolved && <div className="hidden h-9 w-[132px] rounded-xl border border-border/60 bg-secondary/40 sm:block" aria-hidden="true" />}
-
-          {authResolved && !user && (
-            <Link href="/login" className="hidden rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground sm:inline-flex">
-              Sign in
-            </Link>
-          )}
-          {authResolved && user && !profile?.username && (
-            <Link href="/username" className="hidden rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground sm:inline-flex">
-              Choose username
-            </Link>
-          )}
-          {authResolved && user && profile?.username && (
-            <div className="flex items-center gap-2">
-              <Link href="/profile" className="hidden rounded-xl border border-border px-4 py-2 text-sm sm:inline-flex sm:items-center">
-                <span className="mr-2 rounded-full bg-primary px-2 py-1 text-xs text-primary-foreground">{Math.max(1, Math.floor(profile.xp / 250) + 1)}</span>
-                {profile.username}
-              </Link>
-              <button type="button" onClick={() => void signOut()} className="hidden rounded-xl border border-border px-3 py-2 text-sm text-muted-foreground sm:block">
-                Log out
-              </button>
-            </div>
-          )}
-
-          <button
-            type="button"
-            className="inline-flex size-10 items-center justify-center rounded-xl border border-border md:hidden"
-            aria-label={open ? 'Close menu' : 'Open menu'}
-            aria-expanded={open}
-            onClick={() => setOpen((value) => !value)}
-          >
-            {open ? <X className="size-5" /> : <Menu className="size-5" />}
+          {membership.plan === 'pro' ? <span className="hidden items-center gap-1 rounded-full border border-indigo-300 bg-indigo-100 px-2.5 py-1 text-xs font-semibold text-indigo-800 sm:inline-flex"><Crown className="size-3" /> Pro</span> : null}
+          {authBlock}
+          <button onClick={() => setMobileOpen((value) => !value)} className="inline-flex size-10 items-center justify-center rounded-xl border border-border bg-card md:hidden" aria-label={mobileOpen ? 'Close menu' : 'Open menu'}>
+            {mobileOpen ? <X className="size-5" /> : <Menu className="size-5" />}
           </button>
         </div>
       </div>
 
-      {open && (
-        <nav aria-label="Mobile" className="border-t border-border px-4 py-3 md:hidden">
-          <div className="mx-auto flex max-w-7xl flex-col gap-1">
-            {links.map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                onClick={() => setOpen(false)}
-                className={`rounded-lg px-3 py-2 text-sm ${isActive(link.href) ? 'bg-secondary text-foreground' : 'text-muted-foreground'}`}
-              >
-                {link.label}
+      {mobileOpen ? (
+        <nav className="border-t border-border bg-card/95 p-3 md:hidden">
+          <div className="grid gap-1">
+            {links.map(([label, href]) => (
+              <Link key={href} href={href} onClick={closeMobile} className={cn('rounded-lg px-3 py-2 text-sm transition', pathname === href ? 'bg-primary/10 font-semibold text-primary' : 'text-muted-foreground hover:bg-secondary hover:text-foreground')}>
+                {label}
               </Link>
             ))}
-
-            {!authResolved && <div className="mt-2 h-10 rounded-lg border border-border/60 bg-secondary/40" aria-hidden="true" />}
-
-            {authResolved && !user && (
-              <Link href="/login" onClick={() => setOpen(false)} className="mt-2 rounded-lg bg-primary px-3 py-2 text-center text-sm font-semibold text-primary-foreground">
-                Sign in
-              </Link>
-            )}
-            {authResolved && user && !profile?.username && (
-              <Link href="/username" onClick={() => setOpen(false)} className="mt-2 rounded-lg bg-primary px-3 py-2 text-center text-sm font-semibold text-primary-foreground">
-                Choose username
-              </Link>
-            )}
-            {authResolved && user && profile?.username && (
-              <>
-                <Link href="/profile" onClick={() => setOpen(false)} className="mt-2 rounded-lg border border-border px-3 py-2 text-sm">
-                  Profile
-                </Link>
-                <button type="button" onClick={() => void signOut()} className="rounded-lg border border-border px-3 py-2 text-left text-sm text-muted-foreground">
-                  Log out
-                </button>
-              </>
-            )}
+            {authResolved && user && !profile?.username ? <Link href="/username" onClick={closeMobile} className="rounded-lg px-3 py-2 text-sm font-semibold text-primary transition hover:bg-primary/10">Finish profile</Link> : null}
+            {!showSignedOutCta && user ? (
+              <button onClick={() => { closeMobile(); void signOut() }} className="rounded-lg border border-border px-3 py-2 text-left text-sm text-muted-foreground transition hover:text-foreground">
+                Log out
+              </button>
+            ) : null}
           </div>
         </nav>
-      )}
+      ) : null}
     </header>
   )
 }

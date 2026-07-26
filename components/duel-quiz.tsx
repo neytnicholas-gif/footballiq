@@ -4,13 +4,28 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Check, Clock3, Copy, Flame, RotateCcw, Sparkles, Trophy, X, Zap } from 'lucide-react'
 import type { DuelPack, DuelQuestion } from '@/lib/duel-packs'
 import { useAuth } from '@/components/auth-provider'
-import { supabase } from '@/lib/supabase'
+import { QuizProgressBanner } from '@/components/quiz-progress-banner'
 import { calculateDuelXp, getRankProgress } from '@/lib/progression'
+import { clearQuizProgress, loadQuizProgress, saveQuizProgress } from '@/lib/quiz-progress'
+import { saveQuizResult } from '@/lib/quiz-save'
 
 type Choice = 'left' | 'right' | 'same'
 type Speed = 'relaxed' | 'timed'
+type RewardStatus = 'idle' | 'saving' | 'saved' | 'already' | 'error'
 
 type StoredBest = { score: number; points: number; bestCombo: number }
+type SavedDuelProgress = {
+  packId: string
+  questions: DuelQuestion[]
+  index: number
+  selected: Choice | 'timeout' | null
+  score: number
+  points: number
+  combo: number
+  bestCombo: number
+  speed: Speed
+  timeLeft: number
+}
 
 function shuffledQuestions(questions: DuelQuestion[]) {
   return [...questions]
@@ -34,7 +49,8 @@ function gradeFor(score: number, total: number) {
 
 export function DuelQuiz({ pack, onComplete }: { pack: DuelPack; onComplete?: (packId: string, score: number) => void }) {
   const { user, profile, refreshProfile } = useAuth()
-  const [questions, setQuestions] = useState(() => [...pack.questions])
+  const progressQuizId = `duel-progress-${pack.id}`
+  const [questions, setQuestions] = useState(() => shuffledQuestions(pack.questions))
   const [index, setIndex] = useState(0)
   const [selected, setSelected] = useState<Choice | 'timeout' | null>(null)
   const [score, setScore] = useState(0)
@@ -49,6 +65,9 @@ export function DuelQuiz({ pack, onComplete }: { pack: DuelPack; onComplete?: (p
   const [copied, setCopied] = useState(false)
   const [rewardFlash, setRewardFlash] = useState<number | null>(null)
   const [personalBest, setPersonalBest] = useState<StoredBest | null>(null)
+  const [resumeState, setResumeState] = useState<SavedDuelProgress | null>(null)
+  const [checkingProgress, setCheckingProgress] = useState(Boolean(user))
+  const [rewardStatus, setRewardStatus] = useState<RewardStatus>('idle')
 
   const question = questions[index]
   const answer = correctChoice(question)
@@ -59,25 +78,59 @@ export function DuelQuiz({ pack, onComplete }: { pack: DuelPack; onComplete?: (p
   const progress = Math.round(((index + (answered ? 1 : 0)) / questions.length) * 100)
 
   useEffect(() => {
-    setQuestions(shuffledQuestions(pack.questions))
-    setIndex(0)
-    setSelected(null)
-    setScore(0)
-    setPoints(0)
-    setCombo(0)
-    setBestCombo(0)
-    setTimeLeft(15)
-    setShowResults(false)
-    setSaved(false)
-    setCopied(false)
-  }, [pack])
-
-  useEffect(() => {
     try {
       const savedBest = localStorage.getItem(`footballiq-best-${pack.id}`)
       setPersonalBest(savedBest ? JSON.parse(savedBest) as StoredBest : null)
     } catch { setPersonalBest(null) }
   }, [pack.id])
+
+  useEffect(() => {
+    let active = true
+
+    if (!user) {
+      setResumeState(null)
+      setCheckingProgress(false)
+      return
+    }
+
+    setCheckingProgress(true)
+    void (async () => {
+      const progress = await loadQuizProgress(progressQuizId)
+      if (!active) return
+      const savedState = progress?.progress as SavedDuelProgress | undefined
+      const validQuestions = Array.isArray(savedState?.questions) && savedState.questions.length === pack.questions.length
+      if (
+        progress
+        && progress.status === 'in_progress'
+        && savedState
+        && savedState.packId === pack.id
+        && validQuestions
+        && Number.isInteger(savedState.index)
+        && savedState.index >= 0
+        && savedState.index < pack.questions.length
+      ) {
+        setResumeState(savedState)
+      } else {
+        setResumeState(null)
+      }
+      setCheckingProgress(false)
+    })()
+
+    return () => {
+      active = false
+    }
+  }, [pack.id, pack.questions.length, progressQuizId, user])
+
+  async function persistProgress(snapshot: SavedDuelProgress, status: 'in_progress' | 'completed' = 'in_progress') {
+    await saveQuizProgress({
+      quizId: progressQuizId,
+      currentIndex: snapshot.index,
+      score: snapshot.score,
+      total: snapshot.questions.length,
+      progress: snapshot,
+      status,
+    })
+  }
 
   const lockAnswer = useCallback((choice: Choice | 'timeout') => {
     if (answered) return
@@ -94,10 +147,34 @@ export function DuelQuiz({ pack, onComplete }: { pack: DuelPack; onComplete?: (p
       window.setTimeout(() => setRewardFlash(null), 900)
       setCombo(nextCombo)
       setBestCombo((value) => Math.max(value, nextCombo))
+      void persistProgress({
+        packId: pack.id,
+        questions,
+        index,
+        selected: choice,
+        score: score + 1,
+        points: points + questionPoints,
+        combo: nextCombo,
+        bestCombo: Math.max(bestCombo, nextCombo),
+        speed,
+        timeLeft,
+      })
     } else {
       setCombo(0)
+      void persistProgress({
+        packId: pack.id,
+        questions,
+        index,
+        selected: choice,
+        score,
+        points,
+        combo: 0,
+        bestCombo,
+        speed,
+        timeLeft,
+      })
     }
-  }, [answer, answered, combo, speed, timeLeft])
+  }, [answer, answered, bestCombo, combo, index, pack.id, points, questions, score, speed, timeLeft])
 
   useEffect(() => {
     if (speed !== 'timed' || answered || showResults) return
@@ -122,25 +199,43 @@ export function DuelQuiz({ pack, onComplete }: { pack: DuelPack; onComplete?: (p
 
   async function saveResult() {
     if (!user || !profile || saved || saving) return
+    setRewardStatus('saving')
     setSaving(true)
-    const perfect = score === questions.length
     const xpEarned = calculateDuelXp(score, questions.length, bestCombo, points)
-    const today = new Date().toISOString().slice(0, 10)
-    const { error } = await supabase.rpc('complete_quiz', {
-      p_quiz_id: pack.id,
-      p_score: score,
-      p_total: questions.length,
-      p_xp: xpEarned,
-      p_activity_date: today,
+    const { error, alreadyCompleted } = await saveQuizResult({
+      quizId: pack.id,
+      score,
+      total: questions.length,
+      xp: xpEarned,
     })
     if (!error) {
       setSaved(true)
-      await refreshProfile()
+      if (!alreadyCompleted) {
+        setRewardStatus('saved')
+        await refreshProfile()
+      } else {
+        setRewardStatus('already')
+      }
+      void clearQuizProgress(progressQuizId)
+    } else {
+      setRewardStatus('error')
     }
     setSaving(false)
   }
 
   function finish() {
+    void persistProgress({
+      packId: pack.id,
+      questions,
+      index,
+      selected,
+      score,
+      points,
+      combo,
+      bestCombo,
+      speed,
+      timeLeft,
+    }, 'completed')
     setShowResults(true)
     const best: StoredBest = {
       score: Math.max(score, personalBest?.score ?? 0),
@@ -158,9 +253,22 @@ export function DuelQuiz({ pack, onComplete }: { pack: DuelPack; onComplete?: (p
       finish()
       return
     }
-    setIndex((value) => value + 1)
+    const nextIndex = index + 1
+    setIndex(nextIndex)
     setSelected(null)
     setTimeLeft(15)
+    void persistProgress({
+      packId: pack.id,
+      questions,
+      index: nextIndex,
+      selected: null,
+      score,
+      points,
+      combo,
+      bestCombo,
+      speed,
+      timeLeft: 15,
+    })
   }
 
   useEffect(() => {
@@ -186,6 +294,44 @@ export function DuelQuiz({ pack, onComplete }: { pack: DuelPack; onComplete?: (p
     setShowResults(false)
     setSaved(false)
     setCopied(false)
+    setRewardStatus('idle')
+    setResumeState(null)
+    void clearQuizProgress(progressQuizId)
+  }
+
+  function continueProgress() {
+    if (!resumeState) return
+    setQuestions(resumeState.questions)
+    setIndex(resumeState.index)
+    setSelected(resumeState.selected)
+    setScore(resumeState.score)
+    setPoints(resumeState.points)
+    setCombo(resumeState.combo)
+    setBestCombo(resumeState.bestCombo)
+    setSpeed(resumeState.speed)
+    setTimeLeft(resumeState.timeLeft)
+    setShowResults(false)
+    setSaved(false)
+    setRewardStatus('idle')
+    setResumeState(null)
+  }
+
+  function startAgainFromResume() {
+    setQuestions(shuffledQuestions(pack.questions))
+    setIndex(0)
+    setSelected(null)
+    setScore(0)
+    setPoints(0)
+    setCombo(0)
+    setBestCombo(0)
+    setSpeed('timed')
+    setTimeLeft(15)
+    setShowResults(false)
+    setSaved(false)
+    setCopied(false)
+    setRewardStatus('idle')
+    setResumeState(null)
+    void clearQuizProgress(progressQuizId)
   }
 
   async function shareResult() {
@@ -209,7 +355,9 @@ export function DuelQuiz({ pack, onComplete }: { pack: DuelPack; onComplete?: (p
   if (showResults) {
     const grade = gradeFor(score, questions.length)
     const xpEarned = calculateDuelXp(score, questions.length, bestCombo, points)
-    const rankProgress = getRankProgress((profile?.xp ?? 0) + xpEarned)
+    const accuracy = Math.round((score / questions.length) * 100)
+    const creditedXp = rewardStatus === 'saved' ? xpEarned : 0
+    const rankProgress = getRankProgress((profile?.xp ?? 0) + creditedXp)
     const isNewBest = score >= (personalBest?.score ?? 0)
     return (
       <div className="overflow-hidden rounded-[2rem] border border-border bg-card">
@@ -222,18 +370,32 @@ export function DuelQuiz({ pack, onComplete }: { pack: DuelPack; onComplete?: (p
         </div>
         <div className="p-6 sm:p-8">
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <ResultStat icon={<TargetIcon />} label="Accuracy" value={`${accuracy}%`} />
             <ResultStat icon={<Sparkles className="size-5" />} label="Points" value={points.toLocaleString()} />
             <ResultStat icon={<Flame className="size-5" />} label="Best combo" value={`${bestCombo}x`} />
             <ResultStat icon={<Trophy className="size-5" />} label="Personal best" value={`${personalBest?.score ?? score}/${questions.length}`} />
-            <ResultStat icon={<Zap className="size-5" />} label="XP earned" value={`+${xpEarned}`} />
+            <ResultStat icon={<Zap className="size-5" />} label="XP credited" value={user ? `+${creditedXp}` : `+${xpEarned}`} />
           </div>
           {isNewBest && <div className="mt-4 rounded-2xl border border-primary/30 bg-primary/10 px-5 py-4 text-sm text-primary">New personal best recorded on this device.</div>}
-          {user && <div className="mt-4 rounded-2xl border border-border bg-background p-5"><div className="flex items-center justify-between gap-3"><div><p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">New rank progress</p><p className="mt-1 text-lg font-bold">{rankProgress.current.emoji} {rankProgress.current.title}</p></div><p className="text-sm text-primary">{rankProgress.next ? `${rankProgress.remaining} XP to ${rankProgress.next.title}` : 'Maximum rank reached'}</p></div><div className="mt-3 h-2 overflow-hidden rounded-full bg-secondary"><div className="h-full rounded-full bg-primary transition-all" style={{width:`${rankProgress.percent}%`}} /></div></div>}
+          {user && (
+            <div className="mt-4 rounded-2xl border border-border bg-background p-5">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Rank progress</p>
+                  <p className="mt-1 text-lg font-bold">{rankProgress.current.emoji} {rankProgress.current.title}</p>
+                </div>
+                <p className="text-sm text-primary">{rankProgress.next ? `${rankProgress.remaining} XP to ${rankProgress.next.title}` : 'Maximum rank reached'}</p>
+              </div>
+              <div className="mt-3 h-2 overflow-hidden rounded-full bg-secondary">
+                <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${rankProgress.percent}%` }} />
+              </div>
+            </div>
+          )}
           <div className="mt-6 flex flex-wrap gap-3">
             <button onClick={restart} className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-primary px-5 py-3 font-semibold text-primary-foreground"><RotateCcw className="size-4" /> Play again</button>
             <button onClick={() => void shareResult()} className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl border border-border px-5 py-3 font-semibold"><Copy className="size-4" /> {copied ? 'Copied!' : 'Share score'}</button>
           </div>
-          <p className="mt-4 text-center text-xs text-muted-foreground">{!user ? 'Sign in to save XP, streaks and leaderboard progress.' : saving ? 'Saving your result…' : saved ? 'XP and progress saved.' : 'This pack may already have rewarded XP today.'}</p>
+          <p className="mt-4 text-center text-xs text-muted-foreground">{!user ? 'Create an account to save this progress, earn XP and build your FootballIQ profile.' : rewardStatus === 'saving' ? 'Saving your result…' : rewardStatus === 'saved' ? 'XP, rating and streak updates saved to your profile.' : rewardStatus === 'already' ? 'This duel reward was already credited for your account.' : rewardStatus === 'error' ? 'Result save failed. You can retry by replaying this duel.' : 'Checking reward status…'}</p>
         </div>
       </div>
     )
@@ -241,6 +403,7 @@ export function DuelQuiz({ pack, onComplete }: { pack: DuelPack; onComplete?: (p
 
   return (
     <div className="overflow-hidden rounded-[2rem] border border-border bg-card shadow-2xl shadow-black/10">
+      {checkingProgress ? <div className="border-b border-border bg-background/60 px-5 py-4 text-sm text-muted-foreground sm:px-7">Checking saved duel progress…</div> : resumeState ? <div className="border-b border-border bg-background/70 px-5 py-4 sm:px-7"><QuizProgressBanner title="Resume your duel pack?" copy={`You left off at duel ${resumeState.index + 1} of ${resumeState.questions.length}.`} onContinue={continueProgress} onStartAgain={startAgainFromResume} /></div> : null}
       <div className="border-b border-border p-5 sm:p-7">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
@@ -308,4 +471,14 @@ function PlayerChoice({ side, option, selected, answer, answered, statLabel, onC
 
 function ResultStat({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
   return <div className="rounded-2xl border border-border bg-background p-5"><div className="flex items-center gap-2 text-primary">{icon}<span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{label}</span></div><p className="mt-3 text-2xl font-bold">{value}</p></div>
+}
+
+function TargetIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className="size-5" aria-hidden="true">
+      <circle cx="12" cy="12" r="8" stroke="currentColor" strokeWidth="1.6" />
+      <circle cx="12" cy="12" r="4" stroke="currentColor" strokeWidth="1.6" />
+      <circle cx="12" cy="12" r="1.8" fill="currentColor" />
+    </svg>
+  )
 }

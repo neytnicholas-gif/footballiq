@@ -1,183 +1,117 @@
-﻿'use client'
-
 import Link from 'next/link'
-import { useMemo, useState } from 'react'
-import {
-  ArrowRight,
-  Brain,
-  Flag,
-  GitBranch,
-  Search,
-  TrendingUp,
-  Trophy,
-} from 'lucide-react'
+import { Brain, Flag, GitBranch, Search, TrendingUp, Trophy } from 'lucide-react'
 import { SiteHeader } from '@/components/site-header'
-import { useAuth } from '@/components/auth-provider'
+import { CallToAction, ModeCard, SectionHeader, StatCard, SurfaceCard, StatusBadge } from '@/components/platform/primitives'
 import { duelPacks } from '@/lib/duel-packs'
-import {
-  careerQuestions,
-  higherLowerItems,
-  refereeQuestions,
-  scoutQuestions,
-  whoAmIQuestions,
-} from '@/lib/game-data'
+import { careerQuestions, higherLowerItems, refereeQuestions, scoutQuestions, whoAmIQuestions } from '@/lib/game-data'
 
-type Skill = 'All' | 'Decision-making' | 'Talent ID' | 'Stats' | 'Player knowledge'
-
-type ModeCard = {
-  theme: string
-  title: string
-  description: string
-  href: string
-  label: string
-  icon: React.ElementType
-  skill: Exclude<Skill, 'All'>
-  count: string
-  featured?: boolean
-}
-
-const modes: ModeCard[] = [
+const modes = [
   {
-    theme: 'duels',
-    title: 'Football Duels',
-    description: 'Fast head-to-head comparisons with timers, combo scoring and instant reveal.',
-    href: '/quizzes/football-duels',
-    label: 'Flagship',
-    icon: Trophy,
-    skill: 'Stats',
-    count: `${duelPacks.length} packs`,
-    featured: true,
-  },
-  {
-    theme: 'higher',
-    title: 'Higher or Lower',
-    description: 'Rapid stat comparisons built around streak protection and quick decisions.',
-    href: '/quizzes/higher-or-lower',
-    label: 'Rapid mode',
-    icon: TrendingUp,
-    skill: 'Stats',
-    count: `${higherLowerItems.length - 1} rounds`,
-  },
-  {
-    theme: 'mystery',
-    title: 'Who Am I?',
-    description: 'Use progressive clues to identify players before your score drops.',
-    href: '/quizzes/who-am-i',
-    label: 'Mystery mode',
-    icon: Search,
-    skill: 'Player knowledge',
-    count: `${whoAmIQuestions.length} players`,
-  },
-  {
-    theme: 'career',
-    title: 'Career Path',
-    description: 'Read transfer journeys and match each timeline to the right name.',
-    href: '/quizzes/career-path',
-    label: 'Timeline mode',
-    icon: GitBranch,
-    skill: 'Player knowledge',
-    count: `${careerQuestions.length} timelines`,
-  },
-  {
-    theme: 'referee',
-    title: 'Referee Arena',
-    description: 'Judge incidents using law principles, game context and discipline cues.',
-    href: '/quizzes/referee-decisions',
-    label: 'Law focus',
-    icon: Flag,
-    skill: 'Decision-making',
-    count: `${refereeQuestions.length} scenarios`,
-  },
-  {
-    theme: 'scout',
     title: 'Scout Vision',
-    description: 'Evaluate fictional player dossiers and decide follow priority with uncertainty.',
+    description: 'Evaluate dossiers, weigh risks and write a recommendation from the evidence in front of you.',
     href: '/quizzes/would-you-scout-him',
-    label: 'Scouting mode',
-    icon: Brain,
-    skill: 'Talent ID',
-    count: `${scoutQuestions.length} dossiers`,
+    icon: <Brain className="size-5" />,
+    accent: 'scout' as const,
+    meta: [`${scoutQuestions.length} dossiers`, '10-15 min', 'Playable now'],
+  },
+  {
+    title: 'Referee Arena',
+    description: 'Decide fouls, sanctions and restarts in law-led match incidents with clear debriefs.',
+    href: '/quizzes/referee-decisions',
+    icon: <Flag className="size-5" />,
+    accent: 'referee' as const,
+    meta: [`${refereeQuestions.length} scenarios`, '8-12 min', 'Playable now'],
+  },
+  {
+    title: 'Football Duels',
+    description: 'Fast stat battles across leagues, trophies and international records. Replayable pack selection and instant results.',
+    href: '/quizzes/football-duels',
+    icon: <Trophy className="size-5" />,
+    accent: 'duels' as const,
+    meta: [`${duelPacks.length} packs`, '5-10 min', 'Playable now'],
+  },
+  {
+    title: 'Daily Challenge',
+    description: 'Five questions in a shared Brussels daily key. One completion per day keeps the streak alive.',
+    href: '/daily',
+    icon: <TrendingUp className="size-5" />,
+    accent: 'daily' as const,
+    meta: ['5 questions', 'Daily', 'Playable now'],
+  },
+  {
+    title: 'Higher or Lower',
+    description: 'Keep a stat streak alive by judging which player record is higher or lower next.',
+    href: '/quizzes/higher-or-lower',
+    icon: <TrendingUp className="size-5" />,
+    accent: 'higher' as const,
+    meta: [`${higherLowerItems.length} players`, 'short run', 'Playable now'],
+  },
+  {
+    title: 'Who Am I?',
+    description: 'Solve a hidden player identity from clues and decide when to risk another clue.',
+    href: '/quizzes/who-am-i',
+    icon: <Search className="size-5" />,
+    accent: 'mystery' as const,
+    meta: [`${whoAmIQuestions.length} players`, 'deduction', 'Playable now'],
+  },
+  {
+    title: 'Career Path',
+    description: 'Recognise players from the sequence of clubs and the route their careers took.',
+    href: '/quizzes/career-path',
+    icon: <GitBranch className="size-5" />,
+    accent: 'career' as const,
+    meta: [`${careerQuestions.length} careers`, 'pattern recognition', 'Playable now'],
   },
 ]
 
-const filters: Skill[] = ['All', 'Decision-making', 'Talent ID', 'Stats', 'Player knowledge']
-
 export default function QuizzesPage() {
-  const [filter, setFilter] = useState<Skill>('All')
-  const { user, profile } = useAuth()
-
-  const filtered = useMemo(
-    () => modes.filter((mode) => filter === 'All' || mode.skill === filter),
-    [filter],
-  )
-
-  const completedTotal = profile?.quizzes_completed ?? 0
-
   return (
     <main className="min-h-screen bg-background">
       <SiteHeader />
       <section className="mx-auto max-w-7xl px-4 py-10 sm:px-6 sm:py-14">
-        <div className="flex flex-wrap items-end justify-between gap-4">
-          <div className="max-w-3xl">
-            <p className="text-xs font-semibold uppercase tracking-[.25em] text-primary">Quiz library</p>
-            <h1 className="mt-3 text-4xl font-bold tracking-tight sm:text-5xl">Pick your football challenge</h1>
-            <p className="mt-3 text-base text-muted-foreground sm:text-lg">
-              One library, six modes, one shared progression system.
-            </p>
+        <SurfaceCard className="overflow-hidden border-primary/15 p-6 sm:p-8">
+          <div className="grid gap-8 lg:grid-cols-[1.08fr_.92fr] lg:items-center">
+            <div>
+              <StatusBadge label="FootballIQ mode selection" tone="good" />
+              <h1 className="mt-4 text-4xl font-black tracking-tight text-foreground sm:text-6xl">Pick the mode that matches the football skill you want to train.</h1>
+              <p className="mt-4 max-w-3xl text-base leading-relaxed text-muted-foreground sm:text-lg">Each card below is a real playable mode. Session length, scenario count and training focus are shown explicitly so the library feels like a product selector, not a loose quiz list.</p>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <StatCard label="Playable modes" value={`${modes.length}`} hint="All cards route to live experiences" />
+              <StatCard label="Core packs" value={`${duelPacks.length}`} hint="Replayable stat duels" />
+              <StatCard label="Daily challenge" value="5 Qs" hint="One shared key per day" />
+              <StatCard label="Skill focus" value="Evidence first" hint="Decision-making, not trivia alone" />
+            </div>
           </div>
+        </SurfaceCard>
 
-          <div className="rounded-xl border border-border bg-card px-4 py-3 text-sm">
-            {user ? (
-              <>
-                Progress: <strong>{completedTotal}</strong> completed quizzes
-              </>
-            ) : (
-              'Sign in to save mode progress'
-            )}
-          </div>
+        <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          {modes.map((mode) => <ModeCard key={mode.title} {...mode} playable />)}
         </div>
 
-        <div className="mt-6 flex flex-wrap gap-2">
-          {filters.map((item) => (
-            <button
-              key={item}
-              type="button"
-              onClick={() => setFilter(item)}
-              className={`rounded-full px-4 py-2 text-sm ${filter === item ? 'bg-primary font-semibold text-primary-foreground' : 'border border-border bg-card text-muted-foreground'}`}
-            >
-              {item}
-            </button>
-          ))}
-        </div>
+        <section className="mt-8 grid gap-4 lg:grid-cols-[1fr_.9fr]">
+          <SurfaceCard className="p-6">
+            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-primary">How to start</p>
+            <h2 className="mt-2 text-2xl font-black tracking-tight text-foreground">Start with a mode, then sign in if you want the progress to persist.</h2>
+            <p className="mt-3 text-sm leading-relaxed text-muted-foreground">Anonymous users can still play the core experiences. Signed-in users get XP, ratings, streaks and leaderboard tracking.</p>
+          </SurfaceCard>
+          <SurfaceCard className="p-6">
+            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-primary">Product notes</p>
+            <ul className="mt-3 space-y-2 text-sm text-muted-foreground">
+              <li>• No playable mode is marked as coming soon</li>
+              <li>• Scenario counts and pack counts are derived from live data</li>
+              <li>• The visual system is shared across the product</li>
+            </ul>
+          </SurfaceCard>
+        </section>
 
-        <div className="mt-7 grid gap-4 lg:grid-cols-2">
-          {filtered.map((mode) => {
-            const Icon = mode.icon
-            return (
-              <Link
-                href={mode.href}
-                key={mode.title}
-                className={`mode-card mode-card-${mode.theme} group relative overflow-hidden rounded-[2rem] border p-6 transition duration-300 hover:-translate-y-1 hover:border-primary/60 ${mode.featured ? 'border-primary/35 bg-[radial-gradient(circle_at_top_right,var(--primary),transparent_55%)] lg:col-span-2' : 'border-border bg-card'}`}
-              >
-                <div className="flex items-start justify-between gap-5">
-                  <span className="flex size-12 items-center justify-center rounded-2xl border border-primary/20 bg-primary/10 text-primary">
-                    <Icon className="size-6" />
-                  </span>
-                  <span className="rounded-full border border-border bg-background/70 px-3 py-1 text-xs font-semibold text-muted-foreground">
-                    {mode.count}
-                  </span>
-                </div>
-                <h2 className={`mt-6 font-bold tracking-tight ${mode.featured ? 'text-4xl' : 'text-2xl'}`}>{mode.title}</h2>
-                <p className="mt-3 max-w-2xl leading-relaxed text-muted-foreground">{mode.description}</p>
-                <div className="mt-5 flex items-center justify-between">
-                  <p className="text-sm text-muted-foreground">Skill: {mode.skill}</p>
-                  <p className="inline-flex items-center gap-2 text-sm font-semibold text-primary">
-                    Play now <ArrowRight className="size-4 transition group-hover:translate-x-1" />
-                  </p>
-                </div>
-              </Link>
-            )
-          })}
+        <div className="mt-8">
+          <CallToAction
+            title="Choose a mode and start a real run."
+            copy="Scout, referee, duel or daily challenge. Each route opens a distinct FootballIQ experience with immediate feedback."
+            primary={<Link href="/quizzes/would-you-scout-him" className="inline-flex rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground">Start Scout Vision</Link>}
+            secondary={<Link href="/leaderboard" className="inline-flex rounded-xl border border-border bg-background px-4 py-2.5 text-sm font-semibold text-foreground">Open leaderboard</Link>}
+          />
         </div>
       </section>
     </main>

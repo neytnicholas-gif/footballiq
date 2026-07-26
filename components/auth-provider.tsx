@@ -3,11 +3,13 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
 import type { Session, User } from '@supabase/supabase-js'
 import { supabase, type Profile } from '@/lib/supabase'
+import { resolveEffectiveMembership, type Membership } from '@/lib/membership'
 
 type AuthContextValue = {
   session: Session | null
   user: User | null
   profile: Profile | null
+  membership: Membership
   loading: boolean
   profileLoading: boolean
   refreshProfile: () => Promise<void>
@@ -17,6 +19,9 @@ type AuthContextValue = {
 const AuthContext = createContext<AuthContextValue | undefined>(undefined)
 
 const PROFILE_COLUMNS =
+  'id, username, plan, subscription_status, trial_ends_at, subscription_started_at, subscription_expires_at, rating, xp, streak, quizzes_completed, correct_answers, total_answers, perfect_quizzes, current_streak, longest_streak, last_activity_date, created_at, updated_at'
+
+const PROFILE_COLUMNS_LEGACY =
   'id, username, rating, xp, streak, quizzes_completed, correct_answers, total_answers, perfect_quizzes, current_streak, longest_streak, last_activity_date, created_at, updated_at'
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
@@ -36,11 +41,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [profile])
 
   const loadProfile = useCallback(async (userId: string) => {
-    const { data, error } = await supabase
+    let data: Partial<Profile> | null
+    let error: Error | null
+
+    {
+      const result = await supabase
       .from('profiles')
       .select(PROFILE_COLUMNS)
       .eq('id', userId)
       .maybeSingle()
+      data = result.data as Partial<Profile> | null
+      error = result.error as Error | null
+    }
+
+    if (error && error.message.toLowerCase().includes('column')) {
+      const legacy = await supabase
+        .from('profiles')
+        .select(PROFILE_COLUMNS_LEGACY)
+        .eq('id', userId)
+        .maybeSingle()
+
+      data = legacy.data as Partial<Profile> | null
+      error = legacy.error
+    }
 
     if (error) {
       console.error('Profile load error:', error.message)
@@ -48,9 +71,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return null
     }
 
-    const nextProfile = (data as Profile | null) ?? null
-    setProfile(nextProfile)
-    return nextProfile
+    if (!data) {
+      setProfile(null)
+      return null
+    }
+
+    const source = data as Partial<Profile>
+    const resolved = {
+      ...source,
+      plan: source.plan ?? 'free',
+      subscription_status: source.subscription_status ?? 'inactive',
+      trial_ends_at: source.trial_ends_at ?? null,
+      subscription_started_at: source.subscription_started_at ?? null,
+      subscription_expires_at: source.subscription_expires_at ?? null,
+    } as Profile
+
+    setProfile(resolved)
+    return resolved
   }, [])
 
   const refreshProfile = useCallback(async () => {
@@ -94,7 +131,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (nextSession?.user) {
         setProfileLoading(true)
         const currentUserId = nextSession.user.id
-        // Keep prior profile visible during same-user refresh to avoid auth-state flicker.
         const canKeepCurrentProfile =
           previousUserId === currentUserId && profileRef.current?.id === currentUserId
         if (!canKeepCurrentProfile) {
@@ -127,6 +163,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       session,
       user: session?.user ?? null,
       profile,
+      membership: resolveEffectiveMembership(profile),
       loading,
       profileLoading,
       refreshProfile,

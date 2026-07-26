@@ -1,26 +1,59 @@
 import { Analytics } from '@vercel/analytics/next'
 import type { Metadata, Viewport } from 'next'
+import { IBM_Plex_Mono, Sora } from 'next/font/google'
 import { AuthProvider } from '@/components/auth-provider'
+import { AccountPrompt } from '@/components/account-prompt'
+import { BRAND } from '@/lib/brand'
 import './globals.css'
 
+const sora = Sora({
+  subsets: ['latin'],
+  variable: '--font-sora',
+  display: 'swap',
+})
+
+const plexMono = IBM_Plex_Mono({
+  subsets: ['latin'],
+  variable: '--font-plex-mono',
+  display: 'swap',
+  weight: ['400', '500'],
+})
+
 export const metadata: Metadata = {
+  metadataBase: new URL(BRAND.siteUrl),
   title: {
-    default: 'FootballIQ',
+    default: 'FootballIQ - Train football knowledge and judgement',
     template: '%s | FootballIQ',
   },
-  description:
-    'FootballIQ is a football intelligence platform for quizzes, scouting decisions, predictions, streaks, XP, ratings and leaderboards.',
+  description: BRAND.description,
+  manifest: '/manifest.webmanifest',
   openGraph: {
-    title: 'FootballIQ',
-    description:
-      'Play football knowledge and decision challenges, improve your profile, and compete on FootballIQ leaderboards.',
+    title: 'FootballIQ - Train football knowledge and judgement',
+    description: BRAND.description,
+    url: BRAND.siteUrl,
+    siteName: BRAND.name,
+    images: [
+      {
+        url: BRAND.socialImage,
+        width: 1200,
+        height: 630,
+        alt: 'FootballIQ platform preview',
+      },
+    ],
+    locale: 'en_GB',
     type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'FootballIQ - Train football knowledge and judgement',
+    description: BRAND.description,
+    images: [BRAND.socialImage],
   },
 }
 
 export const viewport: Viewport = {
-  colorScheme: 'dark',
-  themeColor: '#0b0d10',
+  colorScheme: 'light dark',
+  themeColor: BRAND.themeColor,
 }
 
 export default function RootLayout({
@@ -29,9 +62,12 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en" className="dark">
-      <body className="bg-background font-sans antialiased">
-        <AuthProvider>{children}</AuthProvider>
+    <html lang="en">
+      <body className={`${sora.variable} ${plexMono.variable} bg-background font-sans antialiased`}>
+        <AuthProvider>
+          {children}
+          <AccountPrompt />
+        </AuthProvider>
         {process.env.NODE_ENV === 'production' && <Analytics />}
       </body>
     </html>
