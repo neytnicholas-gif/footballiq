@@ -60,7 +60,7 @@ export function AccountPrompt() {
 
   return (
     <div className="pointer-events-none fixed inset-x-0 bottom-3 z-40 px-3 sm:bottom-5 sm:px-6">
-      <div className="pointer-events-auto mx-auto flex w-full max-w-xl items-start gap-3 rounded-3xl border border-primary/20 bg-card/95 p-3.5 shadow-2xl shadow-black/35 backdrop-blur-xl sm:p-4" role="region" aria-label="Create account prompt">
+      <div className="pointer-events-auto mx-auto flex w-full max-w-xl items-start gap-3 rounded-3xl border border-primary/20 bg-card/96 p-3.5 shadow-2xl shadow-black/15 backdrop-blur-xl sm:p-4" role="region" aria-label="Create account prompt">
         <div className="flex size-10 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary">
           <Sparkles className="size-5" />
         </div>

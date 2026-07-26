@@ -7,6 +7,8 @@ const navLinks = [
   { label: 'Home', href: '/' },
   { label: 'Player Market', href: '/market' },
   { label: 'Quizzes', href: '/quizzes' },
+  { label: 'Academy', href: '/academy' },
+  { label: 'FootballIQ Pro', href: '/pro' },
   { label: 'Daily Challenge', href: '/daily' },
   { label: 'Predictions', href: '/predictions' },
   { label: 'Leaderboard', href: '/leaderboard' },

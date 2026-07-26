@@ -1,9 +1,23 @@
 import { Analytics } from '@vercel/analytics/next'
 import type { Metadata, Viewport } from 'next'
+import { IBM_Plex_Mono, Sora } from 'next/font/google'
 import { AuthProvider } from '@/components/auth-provider'
 import { AccountPrompt } from '@/components/account-prompt'
 import { BRAND } from '@/lib/brand'
 import './globals.css'
+
+const sora = Sora({
+  subsets: ['latin'],
+  variable: '--font-sora',
+  display: 'swap',
+})
+
+const plexMono = IBM_Plex_Mono({
+  subsets: ['latin'],
+  variable: '--font-plex-mono',
+  display: 'swap',
+  weight: ['400', '500'],
+})
 
 export const metadata: Metadata = {
   metadataBase: new URL(BRAND.siteUrl),
@@ -38,7 +52,7 @@ export const metadata: Metadata = {
 }
 
 export const viewport: Viewport = {
-  colorScheme: 'dark',
+  colorScheme: 'light dark',
   themeColor: BRAND.themeColor,
 }
 
@@ -48,8 +62,8 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en" className="dark">
-      <body className="bg-background font-sans antialiased">
+    <html lang="en">
+      <body className={`${sora.variable} ${plexMono.variable} bg-background font-sans antialiased`}>
         <AuthProvider>
           {children}
           <AccountPrompt />

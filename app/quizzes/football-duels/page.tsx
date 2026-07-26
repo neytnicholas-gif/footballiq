@@ -71,7 +71,7 @@ export default function FootballDuelsPage() {
   }
 
   return (
-    <main className="mode-shell mode-duels min-h-screen"><div className="mode-atmosphere" aria-hidden="true"><span/><span/><span/></div>
+    <main className="min-h-screen bg-background">
       <SiteHeader />
       <section className="relative z-10 mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-12">
         <div className="grid gap-6 lg:grid-cols-[1fr_auto] lg:items-end">
@@ -88,14 +88,14 @@ export default function FootballDuelsPage() {
 
         <div className="mt-8"><DuelQuiz key={`${selected.id}-${selected.questions[0]?.left.name}`} pack={selected} onComplete={markComplete} /></div>
 
-        <section className="mt-14 border-t border-border pt-10">
+        <section className="mt-14 rounded-2xl border border-border bg-card p-6 sm:p-7">
           <div className="flex flex-wrap items-end justify-between gap-4">
             <div><p className="text-xs font-semibold uppercase tracking-[.25em] text-primary">Pack library</p><h2 className="mt-2 text-3xl font-bold">Master every category</h2><p className="mt-2 text-muted-foreground">Your best score is saved. Every replay shuffles the order and sides.</p></div>
             <div className="rounded-full border border-border bg-card px-4 py-2 text-sm"><strong className="text-primary">{Object.keys(completed).filter((id) => !id.startsWith('daily-duel-')).length}</strong>/{duelPacks.length} packs completed</div>
           </div>
 
           <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex gap-2 overflow-x-auto pb-1">{categories.map((item) => <button key={item} onClick={() => setCategory(item)} className={`whitespace-nowrap rounded-full px-4 py-2 text-sm transition ${category === item ? 'bg-primary font-semibold text-primary-foreground' : 'border border-border bg-card text-muted-foreground hover:text-foreground'}`}>{item}</button>)}</div>
+            <div className="flex gap-2 overflow-x-auto pb-1">{categories.map((item) => <button key={item} onClick={() => setCategory(item)} className={`whitespace-nowrap rounded-full px-4 py-2 text-sm transition ${category === item ? 'bg-primary font-semibold text-primary-foreground' : 'border border-border bg-background text-muted-foreground hover:text-foreground'}`}>{item}</button>)}</div>
             <label className="flex min-w-64 items-center gap-2 rounded-xl border border-border bg-card px-4 py-2.5"><Search className="size-4 text-muted-foreground" /><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search packs" className="w-full bg-transparent text-sm outline-none placeholder:text-muted-foreground" /></label>
           </div>
 

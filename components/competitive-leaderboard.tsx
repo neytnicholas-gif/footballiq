@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { useEffect, useMemo, useState } from 'react'
+import { usePathname, useRouter } from 'next/navigation'
 import { CalendarDays, ChevronRight, Crown, Flame, Medal, RefreshCw, Trophy } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import type { Database } from '@/lib/supabase/types'
@@ -78,8 +79,20 @@ export function CompetitiveLeaderboard({ initialBoard = 'overall' }: { initialBo
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const season = useMemo(() => seasonMeta(), [])
+  const router = useRouter()
+  const pathname = usePathname()
 
   useEffect(() => { void loadBoard(board) }, [board])
+
+  useEffect(() => {
+    const safeBoard = validBoards.has(initialBoard) ? initialBoard : 'overall'
+    setBoard(safeBoard)
+  }, [initialBoard])
+
+  useEffect(() => {
+    const nextUrl = board === 'overall' ? pathname : `${pathname}?board=${encodeURIComponent(board)}`
+    router.replace(nextUrl, { scroll: false })
+  }, [board, pathname, router])
 
   async function getPublicProfiles(ids?: string[]) {
     let query = supabase
@@ -235,13 +248,13 @@ export function CompetitiveLeaderboard({ initialBoard = 'overall' }: { initialBo
     <section className="mt-6">
       <div className="mb-3 flex items-center gap-2"><Trophy className="size-5 text-primary"/><h2 className="text-xl font-bold">Career leaderboards</h2></div>
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        {leaderboardModes.map((mode) => <button key={mode.id} onClick={() => setBoard(mode.id)} className={`rounded-2xl border p-5 text-left transition ${board === mode.id ? 'border-primary bg-primary/10' : 'border-border bg-card hover:border-primary/40'}`}><div className="flex items-start justify-between gap-3"><span className="text-2xl">{mode.emoji}</span><ChevronRight className="size-4 text-muted-foreground"/></div><p className="mt-4 font-bold">{mode.label}</p><p className="mt-1 text-sm text-muted-foreground">{mode.description}</p></button>)}
+        {leaderboardModes.map((mode) => <button key={mode.id} onClick={() => setBoard(mode.id)} className={`rounded-2xl border p-5 text-left transition ${board === mode.id ? 'border-primary bg-primary/10 shadow-[0_14px_28px_-24px_rgba(34,197,94,.5)]' : 'border-border bg-card hover:border-primary/40 hover:bg-secondary/30'}`}><div className="flex items-start justify-between gap-3"><span className="text-2xl">{mode.emoji}</span><ChevronRight className="size-4 text-muted-foreground"/></div><p className="mt-4 font-bold">{mode.label}</p><p className="mt-1 text-sm text-muted-foreground">{mode.description}</p></button>)}
       </div>
     </section>
 
     <section className="mt-6">
       <div className="mb-3 flex items-center gap-2"><CalendarDays className="size-5 text-primary"/><h2 className="text-xl font-bold">Fresh-start leaderboards</h2></div>
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">{periodBoards.map((item) => <button key={item.id} onClick={() => setBoard(item.id)} className={`rounded-2xl border p-4 text-left ${board === item.id ? 'border-primary bg-primary/10' : 'border-border bg-card hover:border-primary/40'}`}><span className="text-xl">{item.emoji}</span><p className="mt-2 font-semibold">{item.label}</p></button>)}</div>
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">{periodBoards.map((item) => <button key={item.id} onClick={() => setBoard(item.id)} className={`rounded-2xl border p-4 text-left transition ${board === item.id ? 'border-primary bg-primary/10 shadow-[0_14px_28px_-24px_rgba(34,197,94,.5)]' : 'border-border bg-card hover:border-primary/40 hover:bg-secondary/30'}`}><span className="text-xl">{item.emoji}</span><p className="mt-2 font-semibold">{item.label}</p></button>)}</div>
     </section>
 
     <section className="mt-8 overflow-hidden rounded-[2rem] border border-border bg-card">

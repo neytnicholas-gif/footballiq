@@ -1,23 +1,119 @@
 import Link from 'next/link'
-import { ArrowRight, Brain, Flag, GitBranch, Search, TrendingUp, Trophy } from 'lucide-react'
+import { Brain, Flag, GitBranch, Search, TrendingUp, Trophy } from 'lucide-react'
 import { SiteHeader } from '@/components/site-header'
+import { CallToAction, ModeCard, SectionHeader, StatCard, SurfaceCard, StatusBadge } from '@/components/platform/primitives'
 import { duelPacks } from '@/lib/duel-packs'
+import { careerQuestions, higherLowerItems, refereeQuestions, scoutQuestions, whoAmIQuestions } from '@/lib/game-data'
 
 const modes = [
-  { theme: 'scout', title: 'Scout Vision', description: 'Think like a scout. Review evidence, balance potential and risk, and compare your recommendation with structured scouting reasoning.', href: '/quizzes/would-you-scout-him', label: 'Flagship', icon: Brain, featured: true },
-  { theme: 'referee', title: 'Referee Arena', description: 'Cards, DOGSO, handball and restart decisions in professional judgement scenarios.', href: '/quizzes/referee-decisions', label: 'Pro judgement', icon: Flag, featured: true },
-  { theme: 'duels', title: 'Football Duels', description: `${duelPacks.length} replayable packs with timers, combos, ties and personal bests.`, href: '/quizzes/football-duels', label: 'Competitive', icon: Trophy },
-  { theme: 'higher', title: 'Higher or Lower', description: 'Keep the run alive by judging whether the next football stat is higher or lower.', href: '/quizzes/higher-or-lower', label: 'Streak mode', icon: TrendingUp },
-  { theme: 'mystery', title: 'Who Am I?', description: 'Identify the player before the clues become obvious. Fewer clues means more points.', href: '/quizzes/who-am-i', label: '10 players', icon: Search },
-  { theme: 'career', title: 'Career Path', description: 'Recognise players from their club journeys and career turning points.', href: '/quizzes/career-path', label: '10 careers', icon: GitBranch },
+  {
+    title: 'Scout Vision',
+    description: 'Evaluate dossiers, weigh risks and write a recommendation from the evidence in front of you.',
+    href: '/quizzes/would-you-scout-him',
+    icon: <Brain className="size-5" />,
+    accent: 'scout' as const,
+    meta: [`${scoutQuestions.length} dossiers`, '10-15 min', 'Playable now'],
+  },
+  {
+    title: 'Referee Arena',
+    description: 'Decide fouls, sanctions and restarts in law-led match incidents with clear debriefs.',
+    href: '/quizzes/referee-decisions',
+    icon: <Flag className="size-5" />,
+    accent: 'referee' as const,
+    meta: [`${refereeQuestions.length} scenarios`, '8-12 min', 'Playable now'],
+  },
+  {
+    title: 'Football Duels',
+    description: 'Fast stat battles across leagues, trophies and international records. Replayable pack selection and instant results.',
+    href: '/quizzes/football-duels',
+    icon: <Trophy className="size-5" />,
+    accent: 'duels' as const,
+    meta: [`${duelPacks.length} packs`, '5-10 min', 'Playable now'],
+  },
+  {
+    title: 'Daily Challenge',
+    description: 'Five questions in a shared Brussels daily key. One completion per day keeps the streak alive.',
+    href: '/daily',
+    icon: <TrendingUp className="size-5" />,
+    accent: 'daily' as const,
+    meta: ['5 questions', 'Daily', 'Playable now'],
+  },
+  {
+    title: 'Higher or Lower',
+    description: 'Keep a stat streak alive by judging which player record is higher or lower next.',
+    href: '/quizzes/higher-or-lower',
+    icon: <TrendingUp className="size-5" />,
+    accent: 'higher' as const,
+    meta: [`${higherLowerItems.length} players`, 'short run', 'Playable now'],
+  },
+  {
+    title: 'Who Am I?',
+    description: 'Solve a hidden player identity from clues and decide when to risk another clue.',
+    href: '/quizzes/who-am-i',
+    icon: <Search className="size-5" />,
+    accent: 'mystery' as const,
+    meta: [`${whoAmIQuestions.length} players`, 'deduction', 'Playable now'],
+  },
+  {
+    title: 'Career Path',
+    description: 'Recognise players from the sequence of clubs and the route their careers took.',
+    href: '/quizzes/career-path',
+    icon: <GitBranch className="size-5" />,
+    accent: 'career' as const,
+    meta: [`${careerQuestions.length} careers`, 'pattern recognition', 'Playable now'],
+  },
 ]
 
 export default function QuizzesPage() {
-  return <main className="min-h-screen bg-background"><SiteHeader/><section className="mx-auto max-w-7xl px-4 py-12 sm:px-6 sm:py-16">
-    <div className="max-w-3xl"><p className="text-xs font-semibold uppercase tracking-[.25em] text-primary">Quiz library</p><h1 className="mt-4 text-5xl font-bold tracking-tight sm:text-6xl">Train football judgement.</h1><p className="mt-4 text-lg text-muted-foreground">Player Market is the flagship game. These quiz modes are your supporting training ground for sharper decisions.</p><Link href="/market" className="mt-4 inline-flex items-center gap-2 rounded-xl border border-primary/35 bg-primary/10 px-4 py-2 text-sm font-semibold text-primary">Open Player Market <ArrowRight className="size-4" /></Link></div>
-    <div className="mt-9 grid gap-4 lg:grid-cols-2">{modes.map((mode) => { const Icon = mode.icon; return <Link href={mode.href} key={mode.title} className={`mode-card mode-card-${mode.theme} group relative overflow-hidden rounded-[2rem] border p-7 transition duration-300 hover:-translate-y-1 hover:border-primary/60 ${mode.featured ? 'border-primary/35 bg-[radial-gradient(circle_at_top_right,var(--primary),transparent_50%)] lg:col-span-2' : 'border-border bg-card'}`}>
-      <div className="flex items-start justify-between gap-5"><span className="flex size-12 items-center justify-center rounded-2xl border border-primary/20 bg-primary/10 text-primary"><Icon className="size-6" /></span><span className="rounded-full border border-border bg-background/70 px-3 py-1 text-xs font-semibold text-muted-foreground">{mode.label}</span></div>
-      <h2 className={`mt-7 font-bold tracking-tight ${mode.featured ? 'text-4xl' : 'text-2xl'}`}>{mode.title}</h2><p className="mt-3 max-w-2xl leading-relaxed text-muted-foreground">{mode.description}</p><p className="mt-7 inline-flex items-center gap-2 text-sm font-semibold text-primary">Play now <ArrowRight className="size-4 transition group-hover:translate-x-1" /></p>
-    </Link>})}</div>
-  </section></main>
+  return (
+    <main className="min-h-screen bg-background">
+      <SiteHeader />
+      <section className="mx-auto max-w-7xl px-4 py-10 sm:px-6 sm:py-14">
+        <SurfaceCard className="overflow-hidden border-primary/15 p-6 sm:p-8">
+          <div className="grid gap-8 lg:grid-cols-[1.08fr_.92fr] lg:items-center">
+            <div>
+              <StatusBadge label="FootballIQ mode selection" tone="good" />
+              <h1 className="mt-4 text-4xl font-black tracking-tight text-foreground sm:text-6xl">Pick the mode that matches the football skill you want to train.</h1>
+              <p className="mt-4 max-w-3xl text-base leading-relaxed text-muted-foreground sm:text-lg">Each card below is a real playable mode. Session length, scenario count and training focus are shown explicitly so the library feels like a product selector, not a loose quiz list.</p>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <StatCard label="Playable modes" value={`${modes.length}`} hint="All cards route to live experiences" />
+              <StatCard label="Core packs" value={`${duelPacks.length}`} hint="Replayable stat duels" />
+              <StatCard label="Daily challenge" value="5 Qs" hint="One shared key per day" />
+              <StatCard label="Skill focus" value="Evidence first" hint="Decision-making, not trivia alone" />
+            </div>
+          </div>
+        </SurfaceCard>
+
+        <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          {modes.map((mode) => <ModeCard key={mode.title} {...mode} playable />)}
+        </div>
+
+        <section className="mt-8 grid gap-4 lg:grid-cols-[1fr_.9fr]">
+          <SurfaceCard className="p-6">
+            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-primary">How to start</p>
+            <h2 className="mt-2 text-2xl font-black tracking-tight text-foreground">Start with a mode, then sign in if you want the progress to persist.</h2>
+            <p className="mt-3 text-sm leading-relaxed text-muted-foreground">Anonymous users can still play the core experiences. Signed-in users get XP, ratings, streaks and leaderboard tracking.</p>
+          </SurfaceCard>
+          <SurfaceCard className="p-6">
+            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-primary">Product notes</p>
+            <ul className="mt-3 space-y-2 text-sm text-muted-foreground">
+              <li>• No playable mode is marked as coming soon</li>
+              <li>• Scenario counts and pack counts are derived from live data</li>
+              <li>• The visual system is shared across the product</li>
+            </ul>
+          </SurfaceCard>
+        </section>
+
+        <div className="mt-8">
+          <CallToAction
+            title="Choose a mode and start a real run."
+            copy="Scout, referee, duel or daily challenge. Each route opens a distinct FootballIQ experience with immediate feedback."
+            primary={<Link href="/quizzes/would-you-scout-him" className="inline-flex rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground">Start Scout Vision</Link>}
+            secondary={<Link href="/leaderboard" className="inline-flex rounded-xl border border-border bg-background px-4 py-2.5 text-sm font-semibold text-foreground">Open leaderboard</Link>}
+          />
+        </div>
+      </section>
+    </main>
+  )
 }

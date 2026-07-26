@@ -181,7 +181,7 @@ export function ScoutGame() {
           </div>
         </section>
 
-        <section className="rounded-2xl border border-border bg-[linear-gradient(180deg,rgba(50,230,170,.08),rgba(10,18,21,.65))] p-5">
+        <section className="rounded-2xl border border-border bg-[linear-gradient(180deg,rgba(54,206,163,.07),rgba(255,255,255,.95))] p-5">
           {checkingProgress ? <div className="rounded-xl border border-border bg-background/70 p-4 text-sm text-muted-foreground">Checking saved progress…</div> : resumeState && !saved ? <div className="mb-4"><QuizProgressBanner title="Resume your quiz?" copy={`You left off at dossier ${resumeState.index + 1} of ${scoutQuestions.length}.`} onContinue={continueProgress} onStartAgain={restart} /></div> : null}
           {!selected ? (
             <div className="h-full rounded-xl border border-dashed border-border p-4 text-sm text-muted-foreground">
@@ -189,7 +189,7 @@ export function ScoutGame() {
             </div>
           ) : (
             <div className="space-y-4 text-sm">
-              <p className={`rounded-xl border px-3 py-2 font-semibold ${verdict?.tone === 'good' ? 'border-primary/45 bg-primary/10 text-primary' : verdict?.tone === 'ok' ? 'border-sky-400/35 bg-sky-500/10 text-sky-200' : 'border-orange-400/35 bg-orange-500/10 text-orange-200'}`}>
+              <p className={`rounded-xl border px-3 py-2 font-semibold ${verdict?.tone === 'good' ? 'border-primary/45 bg-primary/10 text-primary' : verdict?.tone === 'ok' ? 'border-sky-300 bg-sky-100 text-sky-800' : 'border-orange-300 bg-orange-100 text-orange-800'}`}>
                 {verdict?.label}
               </p>
               {!isLast ? (

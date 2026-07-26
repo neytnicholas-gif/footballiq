@@ -46,7 +46,7 @@ export function AuthMenu() {
       <button
         type="button"
         onClick={() => setOpen((value) => !value)}
-        className="flex h-10 items-center gap-2 rounded-xl border border-border bg-secondary/40 px-4 text-sm font-medium text-foreground transition-colors hover:bg-secondary"
+        className="flex h-10 items-center gap-2 rounded-xl border border-border bg-card px-4 text-sm font-medium text-foreground transition-colors hover:border-primary/35 hover:bg-secondary/40"
       >
         <UserRound className="size-4 text-primary" />
         <span className="max-w-32 truncate">{username}</span>

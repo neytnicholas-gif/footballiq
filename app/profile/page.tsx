@@ -1,12 +1,15 @@
 'use client'
 
 import Link from 'next/link'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Flame, Gauge, Medal, Sparkles, Target, Trophy } from 'lucide-react'
+import { BookOpen, Flame, Gauge, Medal, Sparkles, Target, Trophy } from 'lucide-react'
 import { SiteHeader } from '@/components/site-header'
 import { useAuth } from '@/components/auth-provider'
 import { getRankProgress } from '@/lib/progression'
+import { academyExperiences, computeAcademyProgress, loadAcademyCompletions, type AcademyCompletion } from '@/lib/academy'
+import { LoadingState, ProgressCard, SectionHeader, StatCard, SurfaceCard, StatusBadge } from '@/components/platform/primitives'
+import { supabase } from '@/lib/supabase'
 
 function formatDays(value: number) {
   return `${value} day${value === 1 ? '' : 's'}`
@@ -14,60 +17,156 @@ function formatDays(value: number) {
 
 export default function ProfilePage() {
   const router = useRouter()
-  const { user, profile, loading } = useAuth()
+  const { user, profile, membership, loading, signOut } = useAuth()
+  const [academyLoading, setAcademyLoading] = useState(true)
+  const [completions, setCompletions] = useState<AcademyCompletion[]>([])
+  const [derivedAccuracy, setDerivedAccuracy] = useState<number | null>(null)
 
   useEffect(() => {
     if (!loading && !user) router.replace('/login')
   }, [loading, user, router])
 
+  useEffect(() => {
+    let active = true
+
+    if (!user) {
+      setCompletions([])
+      setAcademyLoading(false)
+      return
+    }
+
+    void (async () => {
+      setAcademyLoading(true)
+      const result = await loadAcademyCompletions()
+      if (!active) return
+      setCompletions(result.data)
+      setAcademyLoading(false)
+    })()
+
+    return () => {
+      active = false
+    }
+  }, [user])
+
+  useEffect(() => {
+    let active = true
+
+    if (!user) {
+      setDerivedAccuracy(null)
+      return
+    }
+
+    if (profile?.total_answers && profile.total_answers > 0) {
+      setDerivedAccuracy(Math.round((profile.correct_answers / profile.total_answers) * 100))
+      return
+    }
+
+    void (async () => {
+      const { data, error } = await supabase
+        .from('quiz_results')
+        .select('score,total')
+        .eq('user_id', user.id)
+
+      if (!active || error) return
+      const totals = (data ?? []).reduce((accumulator, row) => {
+        accumulator.correct += row.score
+        accumulator.total += row.total
+        return accumulator
+      }, { correct: 0, total: 0 })
+      setDerivedAccuracy(totals.total > 0 ? Math.round((totals.correct / totals.total) * 100) : null)
+    })()
+
+    return () => {
+      active = false
+    }
+  }, [profile?.correct_answers, profile?.total_answers, user])
+
   const rank = getRankProgress(profile?.xp ?? 0)
-  const accuracy = profile?.total_answers ? Math.round((profile.correct_answers / profile.total_answers) * 100) : 0
+  const accuracy = derivedAccuracy ?? (profile?.total_answers ? Math.round((profile.correct_answers / profile.total_answers) * 100) : null)
+  const academy = computeAcademyProgress(completions)
+  const premiumCompleted = completions.filter((item) => item.experience_key.includes('scout-room') || item.experience_key.includes('referee-debrief')).length
 
   return (
     <main className="min-h-screen bg-background">
       <SiteHeader />
       <section className="mx-auto max-w-6xl px-4 py-12 sm:px-6">
-        {loading ? <p>Loading…</p> : !profile?.username ? (
-          <div className="rounded-3xl border border-border bg-card p-8"><h1 className="text-3xl font-semibold">Finish your profile</h1><Link href="/username" className="mt-6 inline-block rounded-xl bg-primary px-5 py-3 text-primary-foreground">Choose username</Link></div>
+        {loading ? <LoadingState label="Loading profile…" /> : !profile?.username ? (
+          <SurfaceCard className="p-8">
+            <StatusBadge label="Profile setup" tone="warn" />
+            <h1 className="mt-3 text-3xl font-black tracking-tight text-foreground">Finish your profile</h1>
+            <p className="mt-2 text-sm text-muted-foreground">Choose a username so your XP, ratings and streaks have a visible identity on the platform.</p>
+            <Link href="/username" className="mt-6 inline-flex rounded-xl bg-primary px-5 py-3 font-semibold text-primary-foreground">Choose username</Link>
+          </SurfaceCard>
         ) : (
           <>
-            <div className="overflow-hidden rounded-[2rem] border border-border bg-card">
-              <div className="bg-[radial-gradient(circle_at_top_left,var(--primary),transparent_55%)] p-8 sm:p-12">
-                <p className="text-xs font-semibold uppercase tracking-[.28em] text-primary">FootballIQ identity</p>
-                <div className="mt-4 flex flex-wrap items-end justify-between gap-6">
-                  <div><h1 className="text-4xl font-bold sm:text-6xl">{profile.username}</h1><p className="mt-3 text-muted-foreground">{user?.email}</p></div>
-                  <div className="rounded-3xl border border-primary/25 bg-background/75 px-6 py-5"><p className="text-xs uppercase tracking-wider text-muted-foreground">Current rank</p><p className="mt-2 text-2xl font-bold">{rank.current.emoji} {rank.current.title}</p></div>
+            <SurfaceCard className="overflow-hidden">
+              <div className="bg-[radial-gradient(circle_at_top_left,rgba(54,206,163,.16),transparent_48%),radial-gradient(circle_at_85%_20%,rgba(56,123,255,.12),transparent_42%)] p-8 sm:p-10">
+                <div className="flex flex-wrap items-start justify-between gap-6">
+                  <div>
+                    <StatusBadge label={membership.plan === 'pro' ? 'Pro profile' : 'Free profile'} tone={membership.plan === 'pro' ? 'pro' : 'neutral'} />
+                    <h1 className="mt-4 text-4xl font-black tracking-tight text-foreground sm:text-6xl">{profile.username}</h1>
+                    <p className="mt-2 text-muted-foreground">{user?.email}</p>
+                  </div>
+                  <div className="rounded-3xl border border-border bg-card/90 px-6 py-4 shadow-sm">
+                    <p className="text-xs uppercase tracking-wider text-muted-foreground">Current rank</p>
+                    <p className="mt-1 text-2xl font-black text-foreground">{rank.current.emoji} {rank.current.title}</p>
+                  </div>
                 </div>
-                <div className="mt-8"><div className="flex justify-between text-sm"><span>{profile.xp.toLocaleString()} XP</span><span>{rank.next ? `${rank.remaining} XP to ${rank.next.title}` : 'Maximum rank'}</span></div><div className="mt-3 h-3 overflow-hidden rounded-full bg-secondary"><div className="h-full rounded-full bg-primary" style={{ width: `${rank.percent}%` }} /></div></div>
+                <div className="mt-5 flex flex-wrap items-center gap-3">
+                  {membership.plan === 'pro' ? <StatusBadge label="Pro access active" tone="pro" /> : <StatusBadge label="Free plan" tone="neutral" />}
+                  {membership.source === 'dev-local-override' ? <StatusBadge label="Local dev override" tone="warn" /> : null}
+                </div>
+                <div className="mt-6">
+                  <div className="flex justify-between text-sm text-foreground"><span>{profile.xp.toLocaleString()} XP</span><span>{rank.next ? `${rank.remaining} XP to ${rank.next.title}` : 'Maximum rank'}</span></div>
+                  <div className="mt-3 h-3 overflow-hidden rounded-full bg-secondary"><div className="h-full rounded-full bg-primary" style={{ width: `${rank.percent}%` }} /></div>
+                </div>
               </div>
-            </div>
+            </SurfaceCard>
 
             <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              <Stat icon={<Gauge className="size-5" />} label="Rating" value={profile.rating.toLocaleString()} />
-              <Stat icon={<Target className="size-5" />} label="Accuracy" value={`${accuracy}%`} />
-              <Stat icon={<Flame className="size-5" />} label="Current streak" value={formatDays(profile.current_streak)} />
-              <Stat icon={<Trophy className="size-5" />} label="Longest streak" value={formatDays(profile.longest_streak)} />
-              <Stat icon={<Sparkles className="size-5" />} label="Quizzes completed" value={profile.quizzes_completed.toLocaleString()} />
-              <Stat icon={<Medal className="size-5" />} label="Perfect quizzes" value={profile.perfect_quizzes.toLocaleString()} />
+              <StatCard label="Rating" value={profile.rating.toLocaleString()} />
+              <StatCard label="Accuracy" value={accuracy === null ? '—' : `${accuracy}%`} hint={accuracy === null ? 'No completed answers yet' : 'Based on completed quiz results'} />
+              <StatCard label="Current streak" value={formatDays(profile.current_streak)} />
+              <StatCard label="Longest streak" value={formatDays(profile.longest_streak)} />
+              <StatCard label="Quizzes completed" value={profile.quizzes_completed.toLocaleString()} />
+              <StatCard label="Perfect quizzes" value={profile.perfect_quizzes.toLocaleString()} />
             </div>
 
             <div className="mt-6 grid gap-4 lg:grid-cols-2">
-              <div className="rounded-3xl border border-border bg-card p-7"><p className="text-xs font-semibold uppercase tracking-wider text-primary">Career totals</p><div className="mt-5 grid grid-cols-2 gap-3"><Mini label="Correct answers" value={profile.correct_answers} /><Mini label="Total answers" value={profile.total_answers} /><Mini label="XP" value={profile.xp} /><Mini label="Level" value={Math.max(1, Math.floor(profile.xp / 250) + 1)} /></div></div>
-              <div className="rounded-3xl border border-border bg-card p-7"><p className="text-xs font-semibold uppercase tracking-wider text-primary">Next mission</p><h2 className="mt-3 text-2xl font-bold">Keep climbing</h2><p className="mt-2 text-muted-foreground">Play today’s quick challenge, protect your streak and chase your next title.</p><div className="mt-6 flex flex-wrap gap-3"><Link href="/quizzes/football-duels" className="rounded-xl bg-primary px-5 py-3 font-semibold text-primary-foreground">Play quick duel</Link><Link href="/daily" className="rounded-xl border border-border px-5 py-3 font-semibold">Daily challenge</Link></div></div>
-            </div>
+              <SurfaceCard className="p-6">
+                <div className="flex items-center gap-2 text-primary"><BookOpen className="size-4" /><p className="text-xs font-semibold uppercase tracking-[0.22em]">Academy progress</p></div>
+                {academyLoading ? <div className="mt-3"><LoadingState label="Loading Academy progress…" /></div> : (
+                  <div className="mt-4 space-y-4">
+                    <ProgressCard label="Scout Academy" value={`${academy.scout.completed}/${academy.scout.total}`} percent={academy.scout.percent} />
+                    <ProgressCard label="Referee Academy" value={`${academy.referee.completed}/${academy.referee.total}`} percent={academy.referee.percent} />
+                    <SurfaceCard className="bg-background/70 p-4">
+                      <p className="text-sm font-semibold text-foreground">Completed premium experiences</p>
+                      <p className="mt-1 text-2xl font-black text-foreground">{premiumCompleted}</p>
+                      <p className="mt-1 text-xs text-muted-foreground">Scout Room and Referee Debrief completions saved on your profile.</p>
+                    </SurfaceCard>
+                    <Link href="/academy" className="inline-flex rounded-xl border border-border bg-background px-4 py-2.5 text-sm font-semibold text-foreground transition hover:border-primary/35 hover:bg-secondary/40">Open Academy</Link>
+                  </div>
+                )}
+              </SurfaceCard>
 
-            <Link href="/username" className="mt-8 inline-block rounded-xl border border-border px-5 py-3">Edit username</Link>
+              <SurfaceCard className="p-6">
+                <p className="text-xs font-semibold uppercase tracking-[0.22em] text-primary">Progression overview</p>
+                <h2 className="mt-2 text-2xl font-black tracking-tight text-foreground">What the profile already tells you</h2>
+                <ul className="mt-4 space-y-2 text-sm text-muted-foreground">
+                  <li>• XP, rating and streaks are live and persist across sessions</li>
+                  <li>• Accuracy now falls back to completed result data if counters are empty</li>
+                  <li>• Academy completions and premium progress remain visible</li>
+                  {academyExperiences.filter((item) => item.status !== 'available').slice(0, 2).map((item) => <li key={item.key}>• {item.title} · {item.status === 'coming-next' ? 'Coming next' : 'Planned later'}</li>)}
+                </ul>
+                <div className="mt-4 flex flex-wrap gap-3">
+                  <Link href="/username" className="rounded-xl border border-border bg-background px-4 py-2.5 text-sm font-semibold text-foreground transition hover:border-primary/35 hover:bg-secondary/40">Edit username</Link>
+                  <button onClick={() => void signOut()} className="rounded-xl border border-border bg-background px-4 py-2.5 text-sm font-semibold text-foreground transition hover:border-primary/35 hover:bg-secondary/40">Log out</button>
+                </div>
+              </SurfaceCard>
+            </div>
           </>
         )}
       </section>
     </main>
   )
-}
-
-function Stat({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
-  return <div className="rounded-3xl border border-border bg-card p-6"><div className="flex items-center gap-2 text-primary">{icon}<p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{label}</p></div><p className="mt-4 text-3xl font-bold">{value}</p></div>
-}
-
-function Mini({ label, value }: { label: string; value: number }) {
-  return <div className="rounded-2xl bg-secondary p-4"><p className="text-xs text-muted-foreground">{label}</p><p className="mt-2 text-xl font-bold">{value.toLocaleString()}</p></div>
 }

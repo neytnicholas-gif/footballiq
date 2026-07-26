@@ -5,6 +5,11 @@ export type Database = {
         Row: {
           id: string
           username: string | null
+          plan: 'free' | 'pro'
+          subscription_status: 'inactive' | 'trialing' | 'active' | 'expired' | 'cancelled'
+          trial_ends_at: string | null
+          subscription_started_at: string | null
+          subscription_expires_at: string | null
           rating: number
           xp: number
           streak: number
@@ -21,6 +26,11 @@ export type Database = {
         Insert: {
           id: string
           username?: string | null
+          plan?: 'free' | 'pro'
+          subscription_status?: 'inactive' | 'trialing' | 'active' | 'expired' | 'cancelled'
+          trial_ends_at?: string | null
+          subscription_started_at?: string | null
+          subscription_expires_at?: string | null
           rating?: number
           xp?: number
           streak?: number
@@ -37,6 +47,11 @@ export type Database = {
         Update: {
           id?: string
           username?: string | null
+          plan?: 'free' | 'pro'
+          subscription_status?: 'inactive' | 'trialing' | 'active' | 'expired' | 'cancelled'
+          trial_ends_at?: string | null
+          subscription_started_at?: string | null
+          subscription_expires_at?: string | null
           rating?: number
           xp?: number
           streak?: number
