@@ -26,6 +26,7 @@ export default function PlayerMarketDetailPage() {
   const [history, setHistory] = useState<MarketValueHistoryPoint[]>([])
   const [holdings, setHoldings] = useState<MarketHolding[]>([])
   const [watchlist, setWatchlist] = useState<number[]>([])
+  const [availableCash, setAvailableCash] = useState(100_000_000)
   const [buysRemaining, setBuysRemaining] = useState(3)
   const [salesRemaining, setSalesRemaining] = useState(3)
   const [loading, setLoading] = useState(true)
@@ -70,6 +71,7 @@ export default function PlayerMarketDetailPage() {
     setHistory(historyResult.data)
     setHoldings(portfolioResult.holdings)
     setWatchlist(portfolioResult.watchlist)
+    setAvailableCash(portfolioResult.portfolio?.available_balance ?? 100_000_000)
 
     const remaining = calculateTradesRemaining(portfolioResult.transactions)
     setBuysRemaining(remaining.buysRemaining)
@@ -96,6 +98,7 @@ export default function PlayerMarketDetailPage() {
             history={history}
             holdings={holdings}
             watchlist={watchlist}
+            availableCash={availableCash}
             buysRemaining={buysRemaining}
             salesRemaining={salesRemaining}
             onRefresh={load}

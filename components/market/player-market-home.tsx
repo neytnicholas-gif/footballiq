@@ -11,6 +11,7 @@ import { MarketPlayerChip } from '@/components/market/market-player-chip'
 import {
   applySimulatedMatchweek,
   calculateTradesRemaining,
+  loadMyLatestReveal,
   loadLatestMatchweekRun,
   loadMarketPlayers,
   loadMarketSeasonStats,
@@ -26,6 +27,7 @@ import {
   MARKET_MAX_PORTFOLIO_SIZE,
 } from '@/lib/market/format'
 import { MARKET_SIMULATION_METHOD_VERSION, seedMatchweekProvider } from '@/lib/market/simulation'
+import { createRevealSummary, saveRevealSummary } from '@/lib/market/reveal'
 import type { MarketHolding, MarketMatchweekApplyResult, MarketMatchweekRun, MarketPlayer, MarketPortfolio, MarketSeasonStats } from '@/lib/market/types'
 
 export function PlayerMarketHome() {
@@ -36,6 +38,8 @@ export function PlayerMarketHome() {
   const [latestStatsByPlayerId, setLatestStatsByPlayerId] = useState<Map<number, MarketSeasonStats | undefined>>(new Map())
   const [lastRun, setLastRun] = useState<MarketMatchweekRun | null>(null)
   const [latestResult, setLatestResult] = useState<MarketMatchweekApplyResult | null>(null)
+  const [latestRevealWeek, setLatestRevealWeek] = useState<string | null>(null)
+  const [onboardingDismissed, setOnboardingDismissed] = useState(false)
   const [tradesMessage, setTradesMessage] = useState('')
   const [simulating, setSimulating] = useState(false)
   const [loading, setLoading] = useState(true)
@@ -48,11 +52,11 @@ export function PlayerMarketHome() {
     const [{ data: playerRows, error: playerError }, { data: seasonStatsRows, error: seasonStatsError }, portfolioData, latestRunData] = await Promise.all([
       loadMarketPlayers(),
       loadMarketSeasonStats(),
-      user ? (async () => {
-        await refreshMyMarketPortfolio()
+      (async () => {
+        if (user) await refreshMyMarketPortfolio()
         return loadMyPortfolioData()
-      })() : Promise.resolve({ error: null, portfolio: null, holdings: [], transactions: [], watchlist: [] as number[] }),
-      user ? loadLatestMatchweekRun() : Promise.resolve({ data: null, error: null }),
+      })(),
+      loadLatestMatchweekRun(),
     ])
 
     if (playerError) {
@@ -82,23 +86,19 @@ export function PlayerMarketHome() {
     }
     setLatestStatsByPlayerId(statsMap)
 
-    if (user) {
-      const remaining = calculateTradesRemaining(portfolioData.transactions)
-      setTradesMessage(`${remaining.buysRemaining}/${MARKET_DAILY_BUY_LIMIT} buys left · ${remaining.salesRemaining}/${MARKET_DAILY_SELL_LIMIT} sales left today`)
-    }
+    const remaining = calculateTradesRemaining(portfolioData.transactions)
+    setTradesMessage(`${remaining.buysRemaining}/${MARKET_DAILY_BUY_LIMIT} buys left · ${remaining.salesRemaining}/${MARKET_DAILY_SELL_LIMIT} sales left today`)
+
+    const revealResult = await loadMyLatestReveal()
+    setLatestRevealWeek(revealResult.data?.week_label ?? null)
 
     setLoading(false)
   }
 
   async function handleSimulateMatchweek() {
-    if (!user) {
-      setError('Sign in to run the matchweek simulator.')
-      return
-    }
-
     const hasValidFormation = formation.GK === 1 && formation.DEF === 4 && formation.MID === 3 && formation.FWD === 3
     if (!hasValidFormation) {
-      setError('Complete a valid 1-4-3-3 squad before simulating a matchweek.')
+      setError('Complete a valid 1-4-3-3 portfolio before simulating a matchweek.')
       return
     }
 
@@ -113,6 +113,9 @@ export function PlayerMarketHome() {
       weekSeed: `${weekLabel}-${MARKET_SIMULATION_METHOD_VERSION}`,
     })
 
+    const beforePlayers = [...players]
+    const beforeHoldings = [...holdings]
+
     const { data, error: simulateError } = await applySimulatedMatchweek(weekLabel, payload)
     if (simulateError || !data) {
       setError(simulateError?.message ?? 'Matchweek simulation failed')
@@ -122,11 +125,35 @@ export function PlayerMarketHome() {
 
     setLatestResult(data)
     await load()
+
+    const refreshedPortfolio = await loadMyPortfolioData()
+    const refreshedPlayers = await loadMarketPlayers()
+    const scopeKey = user?.id ?? 'anon'
+    const reveal = createRevealSummary({
+      scopeKey,
+      result: data,
+      playersBefore: beforePlayers,
+      playersAfter: refreshedPlayers.data,
+      holdingsBefore: beforeHoldings,
+      holdingsAfter: refreshedPortfolio.holdings,
+      patches: payload,
+      portfolioAfter: refreshedPortfolio.portfolio,
+    })
+    saveRevealSummary(scopeKey, reveal)
+    setLatestRevealWeek(reveal.week_label)
+
     setSimulating(false)
   }
 
   useEffect(() => {
     void load()
+  }, [user])
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const key = `fiq-market-onboarding-dismissed:${user?.id ?? 'anon'}`
+    const stored = window.localStorage.getItem(key)
+    setOnboardingDismissed(stored === '1')
   }, [user])
 
   const movers = useMemo(() => {
@@ -156,7 +183,7 @@ export function PlayerMarketHome() {
             <p className="text-xs font-semibold uppercase tracking-[.25em] text-primary">FootballIQ flagship</p>
             <h1 className="mt-3 text-4xl font-black tracking-tight sm:text-5xl">FootballIQ Player Market</h1>
             <p className="mt-3 text-muted-foreground">
-              Build a complete 11-player 1-4-3-3 squad. Read movement. Time entries and exits. Prove your football judgement.
+              Build a complete 11-player 1-4-3-3 portfolio. Read movement. Time entries and exits. Prove your football judgement.
             </p>
           </div>
           <Link href="/market/players" className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground">
@@ -165,18 +192,32 @@ export function PlayerMarketHome() {
           </Link>
         </div>
 
+        {!onboardingDismissed ? (
+          <div className="mt-5 rounded-2xl border border-primary/25 bg-primary/10 px-4 py-3 text-sm">
+            <p className="font-semibold">You are not picking a fantasy team. You are investing in footballers you believe are undervalued.</p>
+            <button
+              className="mt-2 rounded-lg border border-border bg-background/60 px-3 py-1.5 text-xs font-semibold"
+              onClick={() => {
+                const key = `fiq-market-onboarding-dismissed:${user?.id ?? 'anon'}`
+                window.localStorage.setItem(key, '1')
+                setOnboardingDismissed(true)
+              }}
+            >
+              Dismiss
+            </button>
+          </div>
+        ) : null}
+
         <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <SummaryCard icon={<Wallet className="size-5" />} label="Total account value" value={portfolio ? formatFiqCompact(portfolio.total_account_value) : '100.0m FIQ'} sub={portfolio ? formatFiqLong(portfolio.total_account_value) : 'Create an account to track your market account'} />
           <SummaryCard icon={<Coins className="size-5" />} label="Available balance" value={portfolio ? formatFiqCompact(portfolio.available_balance) : '100.0m FIQ'} sub={portfolio ? `Starting balance ${formatFiqCompact(portfolio.starting_balance)}` : 'No cash purchases. No withdrawals.'} />
-          <SummaryCard icon={<BarChart3 className="size-5" />} label="Portfolio value" value={portfolio ? formatFiqCompact(portfolio.portfolio_value) : '0.0m FIQ'} sub={portfolio ? `${holdings.length}/${MARKET_MAX_PORTFOLIO_SIZE} slots used` : '11-player squad target'} />
+          <SummaryCard icon={<BarChart3 className="size-5" />} label="Portfolio value" value={portfolio ? formatFiqCompact(portfolio.portfolio_value) : '0.0m FIQ'} sub={portfolio ? `${holdings.length}/${MARKET_MAX_PORTFOLIO_SIZE} slots used` : '11-player portfolio target'} />
           <SummaryCard icon={<TrendingUp className="size-5" />} label="Realised profit/loss" value={portfolio ? formatChange(portfolio.realized_profit_loss) : '0'} sub={user ? tradesMessage : 'Sign in to start trading'} />
         </div>
 
-        {user ? (
-          <div className="mt-3 rounded-xl border border-border bg-background/60 px-4 py-3 text-xs text-muted-foreground">
-            Formation status: GK {formation.GK}/1 · DEF {formation.DEF}/4 · MID {formation.MID}/3 · FWD {formation.FWD}/3
-          </div>
-        ) : null}
+        <div className="mt-3 rounded-xl border border-border bg-background/60 px-4 py-3 text-xs text-muted-foreground">
+          Formation status: GK {formation.GK}/1 · DEF {formation.DEF}/4 · MID {formation.MID}/3 · FWD {formation.FWD}/3
+        </div>
 
         <div className="mt-5">
           <MarketDisclaimer />
@@ -189,24 +230,29 @@ export function PlayerMarketHome() {
         </div>
       ) : null}
 
-      {user ? (
-        <section className="rounded-[2rem] border border-border bg-card p-6 sm:p-8">
+      <section className="rounded-[2rem] border border-border bg-card p-6 sm:p-8">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[.2em] text-primary">First playable loop</p>
               <h2 className="mt-1 text-2xl font-black">Matchweek simulator</h2>
               <p className="mt-2 text-sm text-muted-foreground">Generate realistic sample performances, revalue the market, and roll straight into your next buy/sell cycle.</p>
             </div>
-            <button
-              onClick={() => void handleSimulateMatchweek()}
-              disabled={simulating || loading || !isValidSquad}
-              className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground disabled:opacity-45"
-            >
-              <PlayCircle className="size-4" />
-              {simulating ? 'Simulating…' : 'Simulate Matchweek'}
-            </button>
+            <div className="flex flex-wrap gap-2">
+              <button
+                onClick={() => void handleSimulateMatchweek()}
+                disabled={simulating || loading || !isValidSquad}
+                className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground disabled:opacity-45"
+              >
+                <PlayCircle className="size-4" />
+                {simulating ? 'Simulating…' : 'Simulate Matchweek'}
+              </button>
+              <Link href="/market/reveal" className="inline-flex items-center gap-2 rounded-xl border border-border px-4 py-2.5 text-sm font-semibold">
+                Open The Reveal
+              </Link>
+            </div>
           </div>
-          {!isValidSquad ? <p className="mt-3 text-xs text-amber-200">Build a complete 1-4-3-3 squad to unlock simulation.</p> : null}
+          {!isValidSquad ? <p className="mt-3 text-xs text-amber-200">Build a complete 1-4-3-3 portfolio to unlock simulation.</p> : null}
+          {latestRevealWeek ? <p className="mt-2 text-xs text-muted-foreground">Latest Reveal available: {latestRevealWeek}</p> : null}
 
           {latestResult ? (
             <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
@@ -221,33 +267,28 @@ export function PlayerMarketHome() {
               Latest run: {lastRun.week_label} · Weekly {lastRun.weekly_portfolio_gain >= 0 ? '+' : ''}{formatFiqCompact(Math.abs(lastRun.weekly_portfolio_gain))} · ROI {lastRun.current_roi_pct.toFixed(2)}%
             </div>
           ) : (
-            <div className="mt-4 rounded-xl border border-border bg-background/60 px-4 py-3 text-sm text-muted-foreground">No matchweek simulated yet. Build your squad and run your first week.</div>
+            <div className="mt-4 rounded-xl border border-border bg-background/60 px-4 py-3 text-sm text-muted-foreground">No matchweek simulated yet. Build your portfolio and run your first week.</div>
           )}
-        </section>
-      ) : null}
+      </section>
 
       {!user ? (
         <section className="rounded-[2rem] border border-border bg-card p-6 sm:p-8">
           <div className="flex items-start gap-3">
             <Lock className="mt-0.5 size-5 text-primary" />
             <div>
-              <h2 className="text-xl font-bold">Market browsing is open. Trading requires an account.</h2>
+              <h2 className="text-xl font-bold">Anonymous Market mode is active.</h2>
               <p className="mt-2 text-sm text-muted-foreground">
-                Anonymous visitors can explore prices, movers and player details. Create an account to back, sell, track portfolio growth and appear on market leaderboards.
+                Your portfolio is saved locally on this device. Create an account anytime for persistent cross-device history and leaderboard access.
               </p>
-              <div className="mt-4 flex flex-wrap gap-3">
-                <Link href="/signup" className="rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground">Create free account</Link>
-                <Link href="/market/players" className="rounded-xl border border-border px-4 py-2 text-sm font-semibold">Explore players</Link>
-              </div>
             </div>
           </div>
         </section>
       ) : null}
 
-      {user && !loading && holdings.length === 0 ? (
+      {!loading && holdings.length === 0 ? (
         <section className="rounded-[2rem] border border-primary/25 bg-primary/10 p-6 sm:p-8">
-          <h2 className="text-2xl font-black">Fast start: place your first Back in under 30 seconds</h2>
-          <p className="mt-2 text-sm text-muted-foreground">Formation is strict: 1 GK, 4 DEF, 3 MID, 3 FWD. Start with your GK and core defenders, then build midfield and attack.</p>
+          <h2 className="text-2xl font-black">Fast start: make your first investment in under 30 seconds</h2>
+          <p className="mt-2 text-sm text-muted-foreground">Formation is strict: 1 GK, 4 DEF, 3 MID, 3 FWD. Start with a goalkeeper and core defenders, then complete midfield and attack.</p>
           <div className="mt-4 flex flex-wrap gap-3">
             <Link href="/market/players" className="rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground">Open player marketplace</Link>
             <Link href="/market/portfolio" className="rounded-xl border border-border px-4 py-2 text-sm font-semibold">View empty portfolio</Link>
@@ -261,7 +302,7 @@ export function PlayerMarketHome() {
             <h2 className="text-xl font-bold">Current holdings</h2>
             <Link href="/market/portfolio" className="text-sm font-semibold text-primary">Open portfolio</Link>
           </div>
-          {loading ? <p className="text-sm text-muted-foreground">Loading holdings…</p> : holdings.length === 0 ? <p className="text-sm text-muted-foreground">No holdings yet. Build your first 11-player squad.</p> : (
+          {loading ? <p className="text-sm text-muted-foreground">Loading holdings…</p> : holdings.length === 0 ? <p className="text-sm text-muted-foreground">No holdings yet. Build your first 11-player portfolio.</p> : (
             <div className="space-y-3">
               {holdings.map((holding) => {
                 const player = players.find((candidate) => candidate.id === holding.player_id)

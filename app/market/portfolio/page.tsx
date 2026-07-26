@@ -6,11 +6,13 @@ import { PlayerMarketPortfolio } from '@/components/market/player-market-portfol
 import { useAuth } from '@/components/auth-provider'
 import {
   calculateTradesRemaining,
+  loadMatchweekRuns,
+  loadMyRevealHistory,
   loadMarketPlayers,
   loadMyPortfolioData,
   refreshMyMarketPortfolio,
 } from '@/lib/market/client'
-import type { MarketHolding, MarketPlayer, MarketPortfolio, MarketTransaction } from '@/lib/market/types'
+import type { MarketHolding, MarketMatchweekRun, MarketPlayer, MarketPortfolio, MarketRevealSummary, MarketTransaction } from '@/lib/market/types'
 
 export default function PlayerMarketPortfolioPage() {
   const { user } = useAuth()
@@ -18,6 +20,8 @@ export default function PlayerMarketPortfolioPage() {
   const [players, setPlayers] = useState<MarketPlayer[]>([])
   const [holdings, setHoldings] = useState<MarketHolding[]>([])
   const [transactions, setTransactions] = useState<MarketTransaction[]>([])
+  const [runs, setRuns] = useState<MarketMatchweekRun[]>([])
+  const [reveals, setReveals] = useState<MarketRevealSummary[]>([])
   const [buysRemaining, setBuysRemaining] = useState(3)
   const [salesRemaining, setSalesRemaining] = useState(3)
   const [loading, setLoading] = useState(true)
@@ -30,25 +34,29 @@ export default function PlayerMarketPortfolioPage() {
       setLoading(true)
       setError('')
 
-      const [{ data: marketPlayers, error: playerError }, portfolioData] = await Promise.all([
+      const [{ data: marketPlayers, error: playerError }, portfolioData, runsResult, revealsResult] = await Promise.all([
         loadMarketPlayers(),
-        user
-          ? (async () => {
-              await refreshMyMarketPortfolio()
-              return loadMyPortfolioData()
-            })()
-          : Promise.resolve({ error: null, portfolio: null, holdings: [], transactions: [], watchlist: [] as number[] }),
+        (async () => {
+          if (user) await refreshMyMarketPortfolio()
+          return loadMyPortfolioData()
+        })(),
+        loadMatchweekRuns(12),
+        loadMyRevealHistory(12),
       ])
 
       if (!active) return
 
       if (playerError) setError(playerError.message)
       if (portfolioData.error) setError(portfolioData.error.message)
+      if (runsResult.error) setError(runsResult.error.message)
+      if (revealsResult.error) setError(revealsResult.error.message)
 
       setPlayers(marketPlayers)
       setPortfolio(portfolioData.portfolio)
       setHoldings(portfolioData.holdings)
       setTransactions(portfolioData.transactions)
+      setRuns(runsResult.data)
+      setReveals(revealsResult.data)
 
       const remaining = calculateTradesRemaining(portfolioData.transactions)
       setBuysRemaining(remaining.buysRemaining)
@@ -73,6 +81,8 @@ export default function PlayerMarketPortfolioPage() {
             players={players}
             holdings={holdings}
             transactions={transactions}
+            runs={runs}
+            reveals={reveals}
             buysRemaining={buysRemaining}
             salesRemaining={salesRemaining}
           />

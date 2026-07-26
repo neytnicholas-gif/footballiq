@@ -11,7 +11,7 @@ import { canBuyPosition, countFormation } from '@/lib/market/formation'
 import { formatFiqCompact, MARKET_MAX_PORTFOLIO_SIZE } from '@/lib/market/format'
 import type { MarketHolding, MarketPlayer, MarketSeasonStats } from '@/lib/market/types'
 
-type SortKey = 'value-desc' | 'value-asc' | 'change-desc' | 'change-asc' | 'name-asc'
+type SortKey = 'value-desc' | 'value-asc' | 'change-desc' | 'change-asc' | 'form-desc' | 'name-asc'
 
 export function PlayerMarketBrowser({
   players,
@@ -21,6 +21,7 @@ export function PlayerMarketBrowser({
   userSignedIn,
   buysRemaining,
   salesRemaining,
+  availableCash,
   onTradeAction,
 }: {
   players: MarketPlayer[]
@@ -30,6 +31,7 @@ export function PlayerMarketBrowser({
   userSignedIn: boolean
   buysRemaining: number
   salesRemaining: number
+  availableCash: number
   onTradeAction: () => Promise<void>
 }) {
   const [search, setSearch] = useState('')
@@ -87,6 +89,11 @@ export function PlayerMarketBrowser({
           return (b.current_value - b.previous_value) - (a.current_value - a.previous_value)
         case 'change-asc':
           return (a.current_value - a.previous_value) - (b.current_value - b.previous_value)
+        case 'form-desc': {
+          const aForm = a.recent_form_indicator === 'hot' ? 2 : a.recent_form_indicator === 'steady' ? 1 : 0
+          const bForm = b.recent_form_indicator === 'hot' ? 2 : b.recent_form_indicator === 'steady' ? 1 : 0
+          return bForm - aForm
+        }
         case 'name-asc':
           return a.display_name.localeCompare(b.display_name)
         case 'value-desc':
@@ -99,10 +106,6 @@ export function PlayerMarketBrowser({
   }, [players, search, position, club, trend, priceRange, sortKey])
 
   async function handleBuy(player: MarketPlayer) {
-    if (!userSignedIn) {
-      setNotice({ kind: 'info', message: 'Create an account to start trading.' })
-      return
-    }
     setBusyId(player.id)
     setNotice(null)
     const { data, error } = await buyMarketPlayer(player.slug)
@@ -111,16 +114,12 @@ export function PlayerMarketBrowser({
       setBusyId(null)
       return
     }
-    setNotice({ kind: 'success', message: String(data?.message ?? `${player.display_name} backed`) })
+    setNotice({ kind: 'success', message: String(data?.message ?? `${player.display_name} purchased`) })
     await onTradeAction()
     setBusyId(null)
   }
 
   async function handleSell(player: MarketPlayer) {
-    if (!userSignedIn) {
-      setNotice({ kind: 'info', message: 'Create an account to manage your squad.' })
-      return
-    }
     setBusyId(player.id)
     setNotice(null)
     const { data, error } = await sellMarketPlayer(player.slug)
@@ -135,10 +134,6 @@ export function PlayerMarketBrowser({
   }
 
   async function handleWatchlist(player: MarketPlayer) {
-    if (!userSignedIn) {
-      setNotice({ kind: 'info', message: 'Sign in to use your watchlist.' })
-      return
-    }
     setBusyId(player.id)
     const { data, error } = await toggleMarketWatchlist(player.slug)
     if (error) {
@@ -154,8 +149,8 @@ export function PlayerMarketBrowser({
   return (
     <div className="space-y-5">
       <section className="rounded-[2rem] border border-border bg-card p-5 sm:p-7">
-        <h1 className="text-3xl font-black sm:text-4xl">Player marketplace</h1>
-        <p className="mt-2 text-sm text-muted-foreground">Build your exact 11-player 1-4-3-3 squad. Every card includes value, movement, form context and direct actions.</p>
+        <h1 className="text-3xl font-black sm:text-4xl">Player market</h1>
+        <p className="mt-2 text-sm text-muted-foreground">Build your 11-player investment portfolio. Every card shows value movement, form context and role security.</p>
 
         <div className="mt-4 grid gap-3 rounded-2xl border border-border bg-background/60 p-3 text-sm sm:grid-cols-2 lg:grid-cols-6">
           <FormationPill label="GK" value={`${formation.GK}/1`} />
@@ -190,15 +185,34 @@ export function PlayerMarketBrowser({
               <option value="value-asc">Lowest value</option>
               <option value="change-desc">Biggest risers</option>
               <option value="change-asc">Biggest fallers</option>
+              <option value="form-desc">Strongest form</option>
               <option value="name-asc">Name A-Z</option>
             </select>
           </label>
+          <button
+            onClick={() => {
+              setSearch('')
+              setPosition('ALL')
+              setClub('ALL')
+              setTrend('all')
+              setPriceRange('all')
+              setSortKey('value-desc')
+            }}
+            className="rounded-xl border border-border px-3 py-2 text-sm font-semibold"
+          >
+            Clear filters
+          </button>
         </div>
-        <p className="mt-2 text-xs text-muted-foreground">Squad occupancy: {holdings.length}/{MARKET_MAX_PORTFOLIO_SIZE} players.</p>
+        <p className="mt-2 text-xs text-muted-foreground">Portfolio occupancy: {holdings.length}/{MARKET_MAX_PORTFOLIO_SIZE} holdings.</p>
         {notice ? <Notice kind={notice.kind} message={notice.message} /> : null}
       </section>
 
       <section className="rounded-[2rem] border border-border bg-card p-4 sm:p-6">
+        {filtered.length === 0 ? (
+          <div className="rounded-2xl border border-border bg-background/60 p-5 text-sm text-muted-foreground">
+            No players match these filters. Clear filters or adjust your search to find new investment options.
+          </div>
+        ) : null}
         <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
           {filtered.map((player) => {
             const delta = player.current_value - player.previous_value
@@ -210,6 +224,7 @@ export function PlayerMarketBrowser({
               && !lockActive
               && buysRemaining > 0
               && holdings.length < MARKET_MAX_PORTFOLIO_SIZE
+              && availableCash >= player.current_value
               && canBuyPosition(player.position, formation)
             const stat = statsByPlayerId[player.id]
             const sim = simByPlayer.get(player.id)
@@ -235,8 +250,12 @@ export function PlayerMarketBrowser({
                   <InfoCell label="Age" value={player.age ? String(player.age) : 'N/A'} />
                   <InfoCell label="Minutes" value={String(stat?.minutes ?? 'N/A')} />
                   <InfoCell label="Recent rating" value={stat?.average_rating ? stat.average_rating.toFixed(2) : 'N/A'} />
-                  <InfoCell label="Status" value={lockActive ? 'Trade lock' : owned ? 'Owned' : watchlisted ? 'Watchlisted' : 'Tradable'} />
+                  <InfoCell label="Role security" value={player.role_security_indicator ?? (stat?.starts && stat.starts >= 24 ? 'Secure' : 'Rotation')} />
                 </div>
+
+                <p className="mt-2 text-xs text-muted-foreground">
+                  {player.decision_support_note ?? 'Use recent movement and minutes profile to assess whether this player is undervalued.'}
+                </p>
 
                 <div className="mt-3 rounded-xl border border-border bg-card/50 px-3 py-2">
                   <p className="mb-2 text-[10px] uppercase tracking-[.18em] text-muted-foreground">Momentum sparkline</p>
@@ -245,14 +264,25 @@ export function PlayerMarketBrowser({
 
                 <div className="mt-3 flex flex-wrap gap-2">
                   <button
-                    onClick={() => void handleBuy(player)}
+                    onClick={() => {
+                      const after = availableCash - player.current_value
+                      const confirmed = window.confirm(
+                        `Buy ${player.display_name}?\n\nCurrent value: ${formatFiqCompact(player.current_value)}\nAvailable cash before purchase: ${formatFiqCompact(availableCash)}\nExpected cash after purchase: ${formatFiqCompact(after)}\nPosition slot: ${player.position}`,
+                      )
+                      if (confirmed) void handleBuy(player)
+                    }}
                     disabled={!canBuy || busyId !== null}
                     className="rounded-xl bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground disabled:opacity-45"
                   >
-                    {busyId === player.id ? 'Processing…' : !userSignedIn ? 'Sign in to back' : owned ? 'Owned' : !canBuyPosition(player.position, formation) ? `${player.position} slot full` : buysRemaining <= 0 ? 'Buy limit reached' : 'Back now'}
+                    {busyId === player.id ? 'Processing…' : owned ? 'Held' : !canBuyPosition(player.position, formation) ? `${player.position} slot full` : availableCash < player.current_value ? 'Not enough cash' : buysRemaining <= 0 ? 'Buy limit reached' : 'Buy'}
                   </button>
                   <button
-                    onClick={() => void handleSell(player)}
+                    onClick={() => {
+                      const confirmed = window.confirm(
+                        `Sell ${player.display_name}?\n\nPurchase price: ${owned ? formatFiqCompact(holdings.find((row) => row.player_id === player.id)?.acquisition_value ?? player.current_value) : 'N/A'}\nCurrent value: ${formatFiqCompact(player.current_value)}\nThis action will return cash immediately and reopen the ${player.position} slot.`,
+                      )
+                      if (confirmed) void handleSell(player)
+                    }}
                     disabled={!owned || salesRemaining <= 0 || lockActive || busyId !== null}
                     className="rounded-xl border border-border px-3 py-2 text-xs font-semibold disabled:opacity-45"
                   >
@@ -268,14 +298,16 @@ export function PlayerMarketBrowser({
                   <Link href={`/market/player/${encodeURIComponent(player.slug)}`} className="rounded-xl border border-border px-3 py-2 text-xs font-semibold">Open card</Link>
                 </div>
 
-                {!canBuy && !owned && userSignedIn ? (
+                {!canBuy && !owned ? (
                   <p className="mt-2 text-xs text-muted-foreground">
                     {lockActive
                       ? 'Trading is temporarily locked for this player.'
                       : holdings.length >= MARKET_MAX_PORTFOLIO_SIZE
-                        ? 'Your 11-player squad is full. Sell before buying.'
+                        ? 'Your 11-player portfolio is full. Sell before buying.'
                         : !canBuyPosition(player.position, formation)
                           ? `Formation slot limit reached for ${player.position}.`
+                          : availableCash < player.current_value
+                            ? 'Insufficient cash for this purchase.'
                           : buysRemaining <= 0
                             ? 'Daily buy limit reached.'
                             : 'Not available for buy right now.'}

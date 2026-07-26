@@ -29,6 +29,16 @@ export type MarketPlayer = {
   trade_lock_reason: string | null
   trade_lock_started_at: string | null
   trade_lock_ends_at: string | null
+  value_trend?: 'rising' | 'falling' | 'flat'
+  recent_form_indicator?: 'hot' | 'steady' | 'cool'
+  role_security_indicator?: 'secure' | 'rotation' | 'risk'
+  availability_status?: 'available' | 'limited' | 'unavailable'
+  decision_support_note?: string
+  matchweek_performance_history?: Array<{
+    week: number
+    rating: number
+    minutes: number
+  }>
   created_at: string
   updated_at: string
 }
@@ -197,6 +207,86 @@ export type MarketMatchweekApplyResult = {
   total_profit_since_start: number
   portfolio_before: number
   portfolio_after: number
+}
+
+export type MarketRevealHoldingMovement = {
+  player_id: number
+  player_name: string
+  position: MarketPosition
+  purchase_price: number
+  previous_value: number
+  current_value: number
+  delta: number
+  return_pct: number
+  explanation: string
+}
+
+export type MarketRevealSummary = {
+  scope_key: string
+  week_number: number
+  week_label: string
+  completed_at: string
+  previous_portfolio_value: number
+  new_portfolio_value: number
+  weekly_change: number
+  weekly_return_pct: number
+  biggest_winner: {
+    player_id: number | null
+    player_name: string | null
+    delta: number
+  }
+  biggest_loser: {
+    player_id: number | null
+    player_name: string | null
+    delta: number
+  }
+  best_held_player: {
+    player_id: number | null
+    player_name: string | null
+    delta: number
+  }
+  weakest_held_player: {
+    player_id: number | null
+    player_name: string | null
+    delta: number
+  }
+  cash_after: number
+  invested_after: number
+  total_after: number
+  holdings: MarketRevealHoldingMovement[]
+}
+
+export type MarketAnonymousState = {
+  version: 1
+  cash: number
+  watchlist: number[]
+  holdings: Array<{
+    id: number
+    player_id: number
+    acquisition_value: number
+    acquired_at: string
+    current_value_snapshot: number
+    unrealized_profit_loss: number
+    acquired_week: number
+  }>
+  transactions: Array<{
+    id: number
+    transaction_id: string
+    player_id: number
+    transaction_type: 'buy' | 'sell'
+    execution_value: number
+    balance_before: number
+    balance_after: number
+    created_at: string
+    trade_date_utc: string
+    idempotency_key: string
+    matchweek: number
+    realized_profit_loss: number | null
+  }>
+  runs: MarketMatchweekRun[]
+  reveals: MarketRevealSummary[]
+  player_overrides: Record<string, { previous_value: number; current_value: number; updated_at: string }>
+  last_updated_at: string
 }
 
 export type MarketStatsInput = {

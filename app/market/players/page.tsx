@@ -16,6 +16,7 @@ export default function PlayerMarketPlayersPage() {
   const [statsByPlayerId, setStatsByPlayerId] = useState<Record<number, MarketSeasonStats | undefined>>({})
   const [buysRemaining, setBuysRemaining] = useState(3)
   const [salesRemaining, setSalesRemaining] = useState(3)
+  const [availableCash, setAvailableCash] = useState(100_000_000)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
@@ -40,19 +41,16 @@ export default function PlayerMarketPlayersPage() {
 
     if (user) {
       await refreshMyMarketPortfolio()
-      const portfolioData = await loadMyPortfolioData()
-      if (portfolioData.error) setError(portfolioData.error.message)
-      setHoldings(portfolioData.holdings)
-      setWatchlist(portfolioData.watchlist)
-      const remaining = calculateTradesRemaining(portfolioData.transactions)
-      setBuysRemaining(remaining.buysRemaining)
-      setSalesRemaining(remaining.salesRemaining)
-    } else {
-      setHoldings([])
-      setWatchlist([])
-      setBuysRemaining(3)
-      setSalesRemaining(3)
     }
+
+    const portfolioData = await loadMyPortfolioData()
+    if (portfolioData.error) setError(portfolioData.error.message)
+    setHoldings(portfolioData.holdings)
+    setWatchlist(portfolioData.watchlist)
+    setAvailableCash(portfolioData.portfolio?.available_balance ?? 100_000_000)
+    const remaining = calculateTradesRemaining(portfolioData.transactions)
+    setBuysRemaining(remaining.buysRemaining)
+    setSalesRemaining(remaining.salesRemaining)
 
     setLoading(false)
   }
@@ -76,7 +74,7 @@ export default function PlayerMarketPlayersPage() {
       <section className="mx-auto max-w-7xl px-4 py-10 sm:px-6 sm:py-14">
         <div className="mb-5"><MarketDisclaimer /></div>
         {error ? <p className="mb-4 rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">{error}</p> : null}
-        {loading ? <p className="text-sm text-muted-foreground">Loading market players…</p> : <PlayerMarketBrowser players={players} holdings={holdings} watchlist={watchlist} statsByPlayerId={statsByPlayerId} userSignedIn={Boolean(user)} buysRemaining={buysRemaining} salesRemaining={salesRemaining} onTradeAction={load} />}
+        {loading ? <p className="text-sm text-muted-foreground">Loading market players…</p> : <PlayerMarketBrowser players={players} holdings={holdings} watchlist={watchlist} statsByPlayerId={statsByPlayerId} userSignedIn={Boolean(user)} buysRemaining={buysRemaining} salesRemaining={salesRemaining} availableCash={availableCash} onTradeAction={load} />}
       </section>
     </main>
   )

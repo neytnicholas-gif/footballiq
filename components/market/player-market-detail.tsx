@@ -18,6 +18,7 @@ export function PlayerMarketDetail({
   history,
   holdings,
   watchlist,
+  availableCash,
   buysRemaining,
   salesRemaining,
   onRefresh,
@@ -28,6 +29,7 @@ export function PlayerMarketDetail({
   history: MarketValueHistoryPoint[]
   holdings: MarketHolding[]
   watchlist: number[]
+  availableCash: number
   buysRemaining: number
   salesRemaining: number
   onRefresh: () => Promise<void>
@@ -51,13 +53,10 @@ export function PlayerMarketDetail({
     && busy === null
     && !lockActive
     && holdings.length < MARKET_MAX_PORTFOLIO_SIZE
+    && availableCash >= player.current_value
     && hasPositionSlot
 
   async function handleBuy() {
-    if (!user) {
-      setNotice({ kind: 'info', message: 'Create an account to start backing and selling players.' })
-      return
-    }
     setBusy('buy')
     setNotice(null)
     const { data, error } = await buyMarketPlayer(player.slug)
@@ -66,17 +65,13 @@ export function PlayerMarketDetail({
       setBusy(null)
       return
     }
-    setNotice({ kind: 'success', message: String(data?.message ?? 'Back completed') })
-    await refreshProfile()
+    setNotice({ kind: 'success', message: String(data?.message ?? 'Purchase completed') })
+    if (user) await refreshProfile()
     await onRefresh()
     setBusy(null)
   }
 
   async function handleSell() {
-    if (!user) {
-      setNotice({ kind: 'info', message: 'Create an account to manage your portfolio.' })
-      return
-    }
     setBusy('sell')
     setNotice(null)
     const { data, error } = await sellMarketPlayer(player.slug)
@@ -86,16 +81,12 @@ export function PlayerMarketDetail({
       return
     }
     setNotice({ kind: 'success', message: String(data?.message ?? 'Sale completed') })
-    await refreshProfile()
+    if (user) await refreshProfile()
     await onRefresh()
     setBusy(null)
   }
 
   async function handleWatchlist() {
-    if (!user) {
-      setNotice({ kind: 'info', message: 'Create an account to use your watchlist.' })
-      return
-    }
     setBusy('watch')
     setNotice(null)
     const { data, error } = await toggleMarketWatchlist(player.slug)
@@ -121,7 +112,7 @@ export function PlayerMarketDetail({
               <p className="mt-1 text-sm text-muted-foreground">{player.club_name} · {player.position}{player.nationality ? ` · ${player.nationality}` : ''}</p>
             </div>
           </div>
-          <Link href="/market/players" className="rounded-xl border border-border px-4 py-2 text-sm font-semibold">Back to market</Link>
+          <Link href="/market/players" className="rounded-xl border border-border px-4 py-2 text-sm font-semibold">Return to market</Link>
         </div>
 
         <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
@@ -143,14 +134,27 @@ export function PlayerMarketDetail({
             <p className="text-xs font-semibold uppercase tracking-[.2em] text-muted-foreground">Trade controls</p>
             <div className="mt-3 space-y-2">
               <button
-                onClick={() => void handleBuy()}
+                onClick={() => {
+                  const after = availableCash - player.current_value
+                  const confirmed = window.confirm(
+                    `Buy ${player.display_name}?\n\nCurrent value: ${formatFiqCompact(player.current_value)}\nAvailable cash before purchase: ${formatFiqCompact(availableCash)}\nExpected cash after purchase: ${formatFiqCompact(after)}\nPosition slot: ${player.position}`,
+                  )
+                  if (confirmed) void handleBuy()
+                }}
                 disabled={!canBuy}
                 className="w-full rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground disabled:opacity-50"
               >
-                {busy === 'buy' ? 'Backing…' : !user ? 'Sign in to back' : lockActive ? 'Temporarily locked' : owned ? 'Already owned' : !hasPositionSlot ? `${player.position} slot full` : holdings.length >= MARKET_MAX_PORTFOLIO_SIZE ? 'Squad full (11/11)' : 'Back'}
+                {busy === 'buy' ? 'Buying…' : lockActive ? 'Temporarily locked' : owned ? 'Already held' : !hasPositionSlot ? `${player.position} slot full` : availableCash < player.current_value ? 'Not enough cash' : holdings.length >= MARKET_MAX_PORTFOLIO_SIZE ? 'Portfolio full (11/11)' : 'Buy'}
               </button>
               <button
-                onClick={() => void handleSell()}
+                onClick={() => {
+                  if (!holding) return
+                  const realized = player.current_value - holding.acquisition_value
+                  const confirmed = window.confirm(
+                    `Sell ${player.display_name}?\n\nPurchase price: ${formatFiqCompact(holding.acquisition_value)}\nCurrent value: ${formatFiqCompact(player.current_value)}\nRealised P/L: ${realized >= 0 ? '+' : '-'}${formatFiqCompact(Math.abs(realized))}`,
+                  )
+                  if (confirmed) void handleSell()
+                }}
                 disabled={!owned || salesRemaining <= 0 || busy !== null || lockActive}
                 className="w-full rounded-xl border border-border px-4 py-2.5 text-sm font-semibold disabled:opacity-50"
               >
@@ -165,11 +169,12 @@ export function PlayerMarketDetail({
               </button>
             </div>
             <p className="mt-3 text-xs text-muted-foreground">
-              Daily limits: {buysRemaining} buys left, {salesRemaining} sales left. Squad limit: {MARKET_MAX_PORTFOLIO_SIZE} players.
+              Daily limits: {buysRemaining} buys left, {salesRemaining} sales left. Portfolio limit: {MARKET_MAX_PORTFOLIO_SIZE} holdings.
             </p>
             <p className="mt-2 text-xs text-muted-foreground">Formation occupancy: GK {formation.GK}/1 · DEF {formation.DEF}/4 · MID {formation.MID}/3 · FWD {formation.FWD}/3</p>
             {!owned && !hasPositionSlot ? <p className="mt-2 text-xs text-amber-200">No {player.position} slots left. Sell an existing {player.position} first to replace.</p> : null}
-            {!owned && holdings.length >= MARKET_MAX_PORTFOLIO_SIZE ? <p className="mt-2 text-xs text-amber-200">Squad is full. Sell one player before any new buy.</p> : null}
+            {!owned && availableCash < player.current_value ? <p className="mt-2 text-xs text-amber-200">Insufficient cash for this purchase.</p> : null}
+            {!owned && holdings.length >= MARKET_MAX_PORTFOLIO_SIZE ? <p className="mt-2 text-xs text-amber-200">Portfolio is full. Sell one player before buying another.</p> : null}
             {lockActive ? (
               <p className="mt-2 rounded-lg border border-amber-300/30 bg-amber-200/10 px-2.5 py-2 text-xs text-amber-200">
                 Trading lock active: {lockReason}{player.trade_lock_ends_at ? ` (until ${new Date(player.trade_lock_ends_at).toLocaleString()})` : ''}.

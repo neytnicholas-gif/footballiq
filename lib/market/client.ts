@@ -5,6 +5,19 @@ import {
   MARKET_DAILY_SELL_LIMIT,
   toUtcDateKey,
 } from '@/lib/market/format'
+import {
+  anonymousApplySimulatedMatchweek,
+  anonymousBuyPlayer,
+  anonymousLatestRun,
+  anonymousRuns,
+  anonymousSellPlayer,
+  anonymousToggleWatchlist,
+  applyAnonymousOverrides,
+  buildAnonymousPortfolio,
+  readAnonymousState,
+} from '@/lib/market/anonymous-state'
+import { buildSampleMarketPlayers, buildSampleSeasonStats } from '@/lib/market/sample-data'
+import { loadLatestReveal, loadRevealHistory } from '@/lib/market/reveal'
 import type {
   MarketFriendLeague,
   MarketFriendLeagueLeaderboardRow,
@@ -15,6 +28,7 @@ import type {
   MarketMatchweekRun,
   MarketPlayer,
   MarketPortfolio,
+  MarketRevealSummary,
   MarketSeasonStats,
   MarketTransaction,
   MarketValueHistoryPoint,
@@ -26,14 +40,28 @@ export async function refreshMyMarketPortfolio() {
 }
 
 export async function loadMarketPlayers() {
+  const { data: authData } = await supabase.auth.getUser()
+  const user = authData.user
+
   const { data, error } = await supabase
     .from('market_players')
     .select('*')
     .eq('active', true)
     .order('current_value', { ascending: false })
 
+  const remoteRows = ((data as MarketPlayer[] | null) ?? [])
+  let rows = remoteRows
+  if (rows.length === 0 || error) {
+    rows = buildSampleMarketPlayers()
+  }
+
+  if (!user) {
+    const anonState = readAnonymousState()
+    rows = applyAnonymousOverrides(rows, anonState)
+  }
+
   return {
-    data: (data as MarketPlayer[] | null) ?? [],
+    data: rows,
     error: error as Error | null,
   }
 }
@@ -80,8 +108,13 @@ export async function loadMarketSeasonStats() {
     .select('*')
     .order('season', { ascending: false })
 
+  let rows = (data as MarketSeasonStats[] | null) ?? []
+  if (rows.length === 0 || error) {
+    rows = buildSampleSeasonStats(buildSampleMarketPlayers())
+  }
+
   return {
-    data: (data as MarketSeasonStats[] | null) ?? [],
+    data: rows,
     error: error as Error | null,
   }
 }
@@ -103,7 +136,11 @@ export async function loadPlayerValueHistory(playerId: number) {
 export async function loadMyPortfolioData() {
   const { data: authData, error: authError } = await supabase.auth.getUser()
   if (authError) return { error: authError as Error, portfolio: null, holdings: [], transactions: [], watchlist: [] as number[] }
-  if (!authData.user) return { error: null, portfolio: null, holdings: [], transactions: [], watchlist: [] as number[] }
+  if (!authData.user) {
+    const { data: players } = await loadMarketPlayers()
+    const anon = buildAnonymousPortfolio(players, readAnonymousState())
+    return { error: null, portfolio: anon.portfolio, holdings: anon.holdings, transactions: anon.transactions, watchlist: anon.watchlist }
+  }
 
   const userId = authData.user.id
 
@@ -154,6 +191,13 @@ export function calculateTradesRemaining(transactions: MarketTransaction[]) {
 
 export async function buyMarketPlayer(slug: string) {
   const idempotencyKey = createMarketRequestKey(`buy-${slug}`)
+
+  const { data: authData } = await supabase.auth.getUser()
+  if (!authData.user) {
+    const { data: players } = await loadMarketPlayers()
+    return anonymousBuyPlayer(players, slug, idempotencyKey)
+  }
+
   const { data, error } = await supabase.rpc('market_buy_player', {
     p_player_slug: slug,
     p_idempotency_key: idempotencyKey,
@@ -167,6 +211,13 @@ export async function buyMarketPlayer(slug: string) {
 
 export async function sellMarketPlayer(slug: string) {
   const idempotencyKey = createMarketRequestKey(`sell-${slug}`)
+
+  const { data: authData } = await supabase.auth.getUser()
+  if (!authData.user) {
+    const { data: players } = await loadMarketPlayers()
+    return anonymousSellPlayer(players, slug, idempotencyKey)
+  }
+
   const { data, error } = await supabase.rpc('market_sell_player', {
     p_player_slug: slug,
     p_idempotency_key: idempotencyKey,
@@ -179,6 +230,12 @@ export async function sellMarketPlayer(slug: string) {
 }
 
 export async function toggleMarketWatchlist(slug: string) {
+  const { data: authData } = await supabase.auth.getUser()
+  if (!authData.user) {
+    const { data: players } = await loadMarketPlayers()
+    return anonymousToggleWatchlist(slug, players)
+  }
+
   const { data, error } = await supabase.rpc('market_toggle_watchlist', {
     p_player_slug: slug,
   })
@@ -258,6 +315,13 @@ export async function leaveFriendLeague(leagueId: number) {
 }
 
 export async function applySimulatedMatchweek(weekLabel: string, playerUpdates: Array<Record<string, unknown>>) {
+  const { data: authData } = await supabase.auth.getUser()
+
+  if (!authData.user) {
+    const { data: players } = await loadMarketPlayers()
+    return anonymousApplySimulatedMatchweek(players, weekLabel, playerUpdates)
+  }
+
   const { data, error } = await (supabase as any).rpc('market_apply_simulated_matchweek', {
     p_week_label: weekLabel,
     p_player_updates: playerUpdates,
@@ -271,6 +335,14 @@ export async function applySimulatedMatchweek(weekLabel: string, playerUpdates: 
 }
 
 export async function loadLatestMatchweekRun() {
+  const { data: authData } = await supabase.auth.getUser()
+  if (!authData.user) {
+    return {
+      data: anonymousLatestRun(),
+      error: null,
+    }
+  }
+
   const { data, error } = await (supabase as any)
     .from('market_matchweek_runs')
     .select('*')
@@ -281,5 +353,44 @@ export async function loadLatestMatchweekRun() {
   return {
     data: (data as MarketMatchweekRun | null) ?? null,
     error: error as Error | null,
+  }
+}
+
+export async function loadMatchweekRuns(limit = 12): Promise<{ data: MarketMatchweekRun[]; error: Error | null }> {
+  const { data: authData } = await supabase.auth.getUser()
+  if (!authData.user) {
+    return {
+      data: anonymousRuns(limit),
+      error: null,
+    }
+  }
+
+  const { data, error } = await (supabase as any)
+    .from('market_matchweek_runs')
+    .select('*')
+    .order('created_at', { ascending: false })
+    .limit(limit)
+
+  return {
+    data: (data as MarketMatchweekRun[] | null) ?? [],
+    error: error as Error | null,
+  }
+}
+
+export async function loadMyRevealHistory(limit = 12): Promise<{ data: MarketRevealSummary[]; error: Error | null }> {
+  const { data: authData } = await supabase.auth.getUser()
+  const scopeKey = authData.user?.id ?? 'anon'
+  return {
+    data: loadRevealHistory(scopeKey, limit),
+    error: null,
+  }
+}
+
+export async function loadMyLatestReveal(): Promise<{ data: MarketRevealSummary | null; error: Error | null }> {
+  const { data: authData } = await supabase.auth.getUser()
+  const scopeKey = authData.user?.id ?? 'anon'
+  return {
+    data: loadLatestReveal(scopeKey),
+    error: null,
   }
 }

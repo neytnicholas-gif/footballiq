@@ -7,13 +7,15 @@ import { ArrowUpRight, Wallet } from 'lucide-react'
 import { MarketPlayerChip } from '@/components/market/market-player-chip'
 import { countFormation } from '@/lib/market/formation'
 import { formatFiqCompact, MARKET_MAX_PORTFOLIO_SIZE } from '@/lib/market/format'
-import type { MarketHolding, MarketPlayer, MarketPortfolio, MarketTransaction } from '@/lib/market/types'
+import type { MarketHolding, MarketMatchweekRun, MarketPlayer, MarketPortfolio, MarketRevealSummary, MarketTransaction } from '@/lib/market/types'
 
 export function PlayerMarketPortfolio({
   portfolio,
   players,
   holdings,
   transactions,
+  runs,
+  reveals,
   buysRemaining,
   salesRemaining,
 }: {
@@ -21,6 +23,8 @@ export function PlayerMarketPortfolio({
   players: MarketPlayer[]
   holdings: MarketHolding[]
   transactions: MarketTransaction[]
+  runs: MarketMatchweekRun[]
+  reveals: MarketRevealSummary[]
   buysRemaining: number
   salesRemaining: number
 }) {
@@ -44,6 +48,11 @@ export function PlayerMarketPortfolio({
     }
     return movement
   }, [holdings, playersById])
+  const totalProfitLoss = useMemo(() => (portfolio ? portfolio.total_account_value - portfolio.starting_balance : 0), [portfolio])
+  const totalRoi = useMemo(() => {
+    if (!portfolio || portfolio.starting_balance <= 0) return 0
+    return ((portfolio.total_account_value - portfolio.starting_balance) / portfolio.starting_balance) * 100
+  }, [portfolio])
 
   if (!portfolio) {
     return (
@@ -59,7 +68,7 @@ export function PlayerMarketPortfolio({
     <div className="space-y-5">
       <section className="rounded-[2rem] border border-border bg-card p-6 sm:p-8">
         <h1 className="text-3xl font-black">Portfolio</h1>
-        <p className="mt-2 text-sm text-muted-foreground">Exact 11-player squad required: 1 GK, 4 DEF, 3 MID, 3 FWD.</p>
+        <p className="mt-2 text-sm text-muted-foreground">Exact 11-player portfolio required: 1 GK, 4 DEF, 3 MID, 3 FWD.</p>
 
         <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <Metric label="Total account value" value={formatFiqCompact(portfolio.total_account_value)} />
@@ -81,6 +90,12 @@ export function PlayerMarketPortfolio({
             value={worstHolding ? `-${formatFiqCompact(Math.abs(worstHolding.unrealized_profit_loss))}` : 'N/A'}
             tone={worstHolding && worstHolding.unrealized_profit_loss < 0 ? 'negative' : 'default'}
           />
+        </div>
+
+        <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          <Metric label="Total profit/loss" value={`${totalProfitLoss >= 0 ? '+' : '-'}${formatFiqCompact(Math.abs(totalProfitLoss))}`} tone={totalProfitLoss >= 0 ? 'positive' : 'negative'} />
+          <Metric label="Overall ROI" value={`${totalRoi >= 0 ? '+' : ''}${totalRoi.toFixed(2)}%`} tone={totalRoi >= 0 ? 'positive' : 'negative'} />
+          <Metric label="Simulated matchweeks" value={String(runs.length)} />
         </div>
 
         <div className="mt-4 rounded-xl border border-border bg-background/60 px-4 py-3 text-sm text-muted-foreground">
@@ -109,7 +124,7 @@ export function PlayerMarketPortfolio({
                     </div>
                   </div>
                   <div className="text-right text-sm">
-                    <p className="text-muted-foreground">Backed</p>
+                    <p className="text-muted-foreground">Purchase price</p>
                     <p>{formatFiqCompact(holding.acquisition_value)}</p>
                   </div>
                   <div className="text-right text-sm">
@@ -153,6 +168,35 @@ export function PlayerMarketPortfolio({
               Compare performance on leaderboard
               <ArrowUpRight className="size-4" />
             </Link>
+          </div>
+        </div>
+      </section>
+
+      <section className="grid gap-5 lg:grid-cols-2">
+        <div className="rounded-[2rem] border border-border bg-card p-6">
+          <h2 className="text-xl font-bold">Matchweek history</h2>
+          <div className="mt-4 space-y-2">
+            {runs.length === 0 ? <p className="text-sm text-muted-foreground">No simulated matchweeks yet.</p> : runs.map((run) => (
+              <div key={run.id} className="rounded-xl border border-border bg-background/60 px-3 py-2 text-sm">
+                <p className="font-semibold">{run.week_label}</p>
+                <p className="text-xs text-muted-foreground">Weekly change {run.weekly_portfolio_gain >= 0 ? '+' : '-'}{formatFiqCompact(Math.abs(run.weekly_portfolio_gain))} · ROI {run.current_roi_pct.toFixed(2)}%</p>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="rounded-[2rem] border border-border bg-card p-6">
+          <div className="flex items-center justify-between">
+            <h2 className="text-xl font-bold">Reveal history</h2>
+            <Link href="/market/reveal" className="text-sm font-semibold text-primary">Open The Reveal</Link>
+          </div>
+          <div className="mt-4 space-y-2">
+            {reveals.length === 0 ? <p className="text-sm text-muted-foreground">No Reveal snapshots yet.</p> : reveals.map((reveal) => (
+              <div key={`${reveal.scope_key}-${reveal.week_number}`} className="rounded-xl border border-border bg-background/60 px-3 py-2 text-sm">
+                <p className="font-semibold">{reveal.week_label}</p>
+                <p className="text-xs text-muted-foreground">{reveal.weekly_change >= 0 ? '+' : '-'}{formatFiqCompact(Math.abs(reveal.weekly_change))} · {reveal.weekly_return_pct >= 0 ? '+' : ''}{reveal.weekly_return_pct.toFixed(2)}%</p>
+              </div>
+            ))}
           </div>
         </div>
       </section>
