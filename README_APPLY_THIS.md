@@ -11,7 +11,7 @@ This update adds the permanent retention foundation without changing packages or
 - Existing packs remain available and keep best-score tracking.
 
 ## Apply
-1. Copy the contents of this folder into the ROOT of your current `refdecision-v2-referee-rating` project.
+1. Copy the contents of this folder into the ROOT of your current FootballIQ project.
 2. Choose **Replace files in destination**.
 3. Do not leave this drop-in folder inside the project.
 4. In VS Code run:

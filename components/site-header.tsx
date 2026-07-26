@@ -17,19 +17,22 @@ const links = [
 ]
 
 export function SiteHeader() {
-  const { user, profile, membership, loading, signOut } = useAuth()
+  const { user, profile, membership, loading, profileLoading, signOut } = useAuth()
   const pathname = usePathname()
   const [mobileOpen, setMobileOpen] = useState(false)
-  const showSignedOutCta = !loading && !user
+  const authResolved = !loading && !profileLoading
+  const showSignedOutCta = authResolved && !user
 
   function closeMobile() {
     setMobileOpen(false)
   }
 
-  const authBlock = loading
+  const authBlock = !authResolved
     ? <span className="h-10 w-24 animate-pulse rounded-xl bg-secondary/60" aria-hidden="true" />
     : showSignedOutCta
       ? <Link href="/login" className="rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-[0_16px_30px_-20px_rgba(34,197,94,.7)]">Sign in</Link>
+      : user && !profile?.username
+        ? <Link href="/username" className="rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-[0_16px_30px_-20px_rgba(34,197,94,.7)]">Choose username</Link>
       : (
         <div className="flex items-center gap-2">
           <Link href="/profile" className="rounded-xl border border-border bg-card px-4 py-2 text-sm transition hover:border-primary/35 hover:bg-secondary/40">
@@ -78,7 +81,7 @@ export function SiteHeader() {
                 {label}
               </Link>
             ))}
-            {!showSignedOutCta && !profile?.username ? <Link href="/username" onClick={closeMobile} className="rounded-lg px-3 py-2 text-sm font-semibold text-primary transition hover:bg-primary/10">Finish profile</Link> : null}
+            {authResolved && user && !profile?.username ? <Link href="/username" onClick={closeMobile} className="rounded-lg px-3 py-2 text-sm font-semibold text-primary transition hover:bg-primary/10">Finish profile</Link> : null}
             {!showSignedOutCta && user ? (
               <button onClick={() => { closeMobile(); void signOut() }} className="rounded-lg border border-border px-3 py-2 text-left text-sm text-muted-foreground transition hover:text-foreground">
                 Log out

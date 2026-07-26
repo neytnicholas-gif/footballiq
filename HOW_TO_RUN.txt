@@ -1,4 +1,4 @@
-REFDECISION - HOW TO RUN
+FOOTBALLIQ - HOW TO RUN
 
 1. Open this folder in Visual Studio Code.
 2. Open Terminal > New Terminal.

@@ -19,6 +19,13 @@ export type RankedPlayer = {
   quizzes?: number
 }
 
+const CURRENT_SEASON = {
+  id: '2026-beta',
+  label: '2026 Beta Season',
+  start: '2026-01-01T00:00:00.000Z',
+  end: '2026-12-31T23:59:59.999Z',
+} as const
+
 export function inferModeFromQuizId(quizId: string) {
   if (quizId.startsWith('daily-')) return 'daily'
   if (quizId.startsWith('referee')) return 'referee-decisions'
@@ -30,14 +37,20 @@ export function inferModeFromQuizId(quizId: string) {
 }
 
 export function seasonMeta(date = new Date()) {
-  const quarter = Math.floor(date.getMonth() / 3) + 1
-  const endMonth = quarter * 3
-  const end = new Date(date.getFullYear(), endMonth, 1)
+  const start = new Date(CURRENT_SEASON.start)
+  const end = new Date(CURRENT_SEASON.end)
   const remainingMs = Math.max(0, end.getTime() - date.getTime())
+  const totalMs = Math.max(1, end.getTime() - start.getTime())
   return {
-    id: `${date.getFullYear()}-S${quarter}`,
-    label: `Season ${quarter} · ${date.getFullYear()}`,
-    daysLeft: Math.max(1, Math.ceil(remainingMs / 86_400_000)),
+    id: CURRENT_SEASON.id,
+    label: CURRENT_SEASON.label,
+    start,
+    end,
+    daysLeft: Math.ceil(remainingMs / 86_400_000),
+    progressPercent: Math.max(
+      0,
+      Math.min(100, Math.round(((date.getTime() - start.getTime()) / totalMs) * 100)),
+    ),
   }
 }
 

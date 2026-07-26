@@ -1,6 +1,6 @@
 'use client'
 
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
 import type { Session, User } from '@supabase/supabase-js'
 import { supabase, type Profile } from '@/lib/supabase'
 import { resolveEffectiveMembership, type Membership } from '@/lib/membership'
@@ -11,6 +11,7 @@ type AuthContextValue = {
   profile: Profile | null
   membership: Membership
   loading: boolean
+  profileLoading: boolean
   refreshProfile: () => Promise<void>
   signOut: () => Promise<void>
 }
@@ -27,6 +28,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null)
   const [profile, setProfile] = useState<Profile | null>(null)
   const [loading, setLoading] = useState(true)
+  const [profileLoading, setProfileLoading] = useState(false)
+  const sessionRef = useRef<Session | null>(null)
+  const profileRef = useRef<Profile | null>(null)
+
+  useEffect(() => {
+    sessionRef.current = session
+  }, [session])
+
+  useEffect(() => {
+    profileRef.current = profile
+  }, [profile])
 
   const loadProfile = useCallback(async (userId: string) => {
     let data: Partial<Profile> | null
@@ -56,12 +68,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (error) {
       console.error('Profile load error:', error.message)
       setProfile(null)
-      return
+      return null
     }
 
     if (!data) {
       setProfile(null)
-      return
+      return null
     }
 
     const source = data as Partial<Profile>
@@ -75,6 +87,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } as Profile
 
     setProfile(resolved)
+    return resolved
   }, [])
 
   const refreshProfile = useCallback(async () => {
@@ -82,8 +95,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const { data } = await supabase.auth.getSession()
     const currentSession = data.session
     setSession(currentSession)
-    if (currentSession?.user) await loadProfile(currentSession.user.id)
-    else setProfile(null)
+    if (currentSession?.user) {
+      setProfileLoading(true)
+      await loadProfile(currentSession.user.id)
+      setProfileLoading(false)
+    } else {
+      setProfile(null)
+      setProfileLoading(false)
+    }
     setLoading(false)
   }, [loadProfile])
 
@@ -94,18 +113,38 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const { data } = await supabase.auth.getSession()
       if (!mounted) return
       setSession(data.session)
-      if (data.session?.user) await loadProfile(data.session.user.id)
+      if (data.session?.user) {
+        setProfileLoading(true)
+        await loadProfile(data.session.user.id)
+        if (!mounted) return
+        setProfileLoading(false)
+      } else {
+        setProfile(null)
+        setProfileLoading(false)
+      }
       setLoading(false)
     })()
 
     const { data: subscription } = supabase.auth.onAuthStateChange((_event, nextSession) => {
-      void (async () => {
-        setLoading(true)
-        setSession(nextSession)
-        if (nextSession?.user) await loadProfile(nextSession.user.id)
-        else setProfile(null)
-        setLoading(false)
-      })()
+      const previousUserId = sessionRef.current?.user?.id
+      setSession(nextSession)
+      if (nextSession?.user) {
+        setProfileLoading(true)
+        const currentUserId = nextSession.user.id
+        const canKeepCurrentProfile =
+          previousUserId === currentUserId && profileRef.current?.id === currentUserId
+        if (!canKeepCurrentProfile) {
+          setProfile(null)
+        }
+        void (async () => {
+          await loadProfile(currentUserId)
+          if (mounted) setProfileLoading(false)
+        })()
+      } else {
+        setProfile(null)
+        setProfileLoading(false)
+      }
+      setLoading(false)
     })
 
     return () => {
@@ -126,10 +165,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       profile,
       membership: resolveEffectiveMembership(profile),
       loading,
+      profileLoading,
       refreshProfile,
       signOut,
     }),
-    [session, profile, loading, refreshProfile],
+    [session, profile, loading, profileLoading, refreshProfile],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
