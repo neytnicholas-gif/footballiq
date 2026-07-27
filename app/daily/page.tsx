@@ -5,6 +5,7 @@ import { CalendarDays, Copy, Flame, Gift } from 'lucide-react'
 import { ModePage } from '@/components/mode-page'
 import { DailyChallenge } from '@/components/daily-challenge'
 import { useAuth } from '@/components/auth-provider'
+import { formatDayCount } from '@/lib/player-metrics'
 
 export default function DailyPage() {
   const { user, profile } = useAuth()
@@ -15,7 +16,7 @@ export default function DailyPage() {
 
   async function share() {
     if (!completed) return
-    const text = `FootballIQ Daily Challenge\nDate: ${today}\nStatus: Completed\nStreak: ${profile?.streak ?? 0} days\nPlay: ${window.location.origin}/daily`
+    const text = `FootballIQ Daily Challenge\nDate: ${today}\nStatus: Completed\nStreak: ${formatDayCount(profile?.streak ?? 0)}\nPlay: ${window.location.origin}/daily`
     await navigator.clipboard.writeText(text)
     setCopied(true)
     window.setTimeout(() => setCopied(false), 1800)
@@ -50,8 +51,8 @@ export default function DailyPage() {
         <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <DailyStat icon={<CalendarDays className="size-4" />} label="Status" value={completed ? 'Completed today' : 'Not completed'} />
           <DailyStat icon={<Gift className="size-4" />} label="Reward" value="XP + rating" />
-          <DailyStat icon={<Flame className="size-4" />} label="Current streak" value={`${profile?.current_streak ?? 0} days`} />
-          <DailyStat icon={<Flame className="size-4" />} label="Longest streak" value={`${profile?.longest_streak ?? 0} days`} />
+          <DailyStat icon={<Flame className="size-4" />} label="Current streak" value={formatDayCount(profile?.current_streak ?? 0)} />
+          <DailyStat icon={<Flame className="size-4" />} label="Longest streak" value={formatDayCount(profile?.longest_streak ?? 0)} />
         </div>
 
         {!user && (

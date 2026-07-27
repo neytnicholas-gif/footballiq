@@ -13,11 +13,11 @@ import {
 } from 'lucide-react'
 import { SiteHeader } from '@/components/site-header'
 import { useAuth } from '@/components/auth-provider'
+import { REFEREE_ARENA_SCENARIO_COUNT } from '@/components/referee-decision-quiz'
 import { duelPacks } from '@/lib/duel-packs'
 import {
   careerQuestions,
   higherLowerItems,
-  refereeQuestions,
   scoutQuestions,
   whoAmIQuestions,
 } from '@/lib/game-data'
@@ -86,7 +86,7 @@ const modes: ModeCard[] = [
     label: 'Law focus',
     icon: Flag,
     skill: 'Decision-making',
-    count: `${refereeQuestions.length} scenarios`,
+    count: `${REFEREE_ARENA_SCENARIO_COUNT} scenarios`,
   },
   {
     theme: 'scout',

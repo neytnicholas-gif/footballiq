@@ -1,8 +1,13 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import Link from 'next/link'
+import { useEffect, useMemo, useState } from 'react'
 import { ArrowRight, BadgeCheck, Flame, RotateCcw, ShieldCheck, Trophy, X } from 'lucide-react'
+import { useAuth } from '@/components/auth-provider'
 import { Button } from '@/components/ui/button'
+import { formatDayCount } from '@/lib/player-metrics'
+import { getRankProgress } from '@/lib/progression'
+import { saveQuizResult } from '@/lib/quiz-save'
 import { cn } from '@/lib/utils'
 
 type Scenario = {
@@ -247,6 +252,15 @@ const scenarios: Scenario[] = [
   },
 ]
 
+export const REFEREE_ARENA_SCENARIO_COUNT = scenarios.length
+
+function calculateRefereeXp(score: number, total: number, bestStreak: number) {
+  const perfect = score === total
+  const accuracyBonus = Math.round((score / total) * 35)
+  const streakBonus = Math.min(bestStreak, 6) * 4
+  return 20 + score * 10 + accuracyBonus + streakBonus + (perfect ? 50 : 0)
+}
+
 function getLevel(rating: number) {
   if (rating >= 1250) return 'Professional Referee'
   if (rating >= 1150) return 'National Referee'
@@ -255,20 +269,110 @@ function getLevel(rating: number) {
 }
 
 export function RefereeDecisionQuiz() {
+  const { user, profile, refreshProfile } = useAuth()
   const [index, setIndex] = useState(0)
   const [selected, setSelected] = useState<string | null>(null)
   const [answered, setAnswered] = useState(false)
+  const [finished, setFinished] = useState(false)
   const [rating, setRating] = useState(1000)
   const [correct, setCorrect] = useState(0)
   const [played, setPlayed] = useState(0)
   const [streak, setStreak] = useState(0)
   const [bestStreak, setBestStreak] = useState(0)
+  const [categoryTotals, setCategoryTotals] = useState<Record<string, { total: number; correct: number }>>({})
+  const [saving, setSaving] = useState(false)
+  const [saved, setSaved] = useState(false)
+  const [saveError, setSaveError] = useState('')
+  const [animatedXp, setAnimatedXp] = useState(0)
+  const [animatedRatingDelta, setAnimatedRatingDelta] = useState(0)
+  const [runStartXp, setRunStartXp] = useState<number | null>(null)
 
   const scenario = scenarios[index]
   const isCorrect = selected === scenario.answer
   const level = useMemo(() => getLevel(rating), [rating])
   const accuracy = played === 0 ? 0 : Math.round((correct / played) * 100)
   const progress = Math.round(((index + (answered ? 1 : 0)) / scenarios.length) * 100)
+  const runComplete = index === scenarios.length - 1 && answered
+  const ratingDelta = rating - 1000
+  const xpEarned = useMemo(() => calculateRefereeXp(correct, scenarios.length, bestStreak), [correct, bestStreak])
+  const accountXp = profile?.xp ?? 0
+  const projectedRank = useMemo(() => getRankProgress(accountXp + xpEarned), [accountXp, xpEarned])
+  const beforeRank = useMemo(() => getRankProgress(runStartXp ?? accountXp).current, [runStartXp, accountXp])
+  const bestCategory = useMemo(() => {
+    const entries = Object.entries(categoryTotals)
+    if (entries.length === 0) return null
+    entries.sort((a, b) => {
+      const aAcc = a[1].total === 0 ? 0 : a[1].correct / a[1].total
+      const bAcc = b[1].total === 0 ? 0 : b[1].correct / b[1].total
+      if (bAcc !== aAcc) return bAcc - aAcc
+      if (b[1].correct !== a[1].correct) return b[1].correct - a[1].correct
+      return b[1].total - a[1].total
+    })
+    const [name, stat] = entries[0]
+    return {
+      name,
+      accuracy: stat.total === 0 ? 0 : Math.round((stat.correct / stat.total) * 100),
+      correct: stat.correct,
+      total: stat.total,
+    }
+  }, [categoryTotals])
+
+  useEffect(() => {
+    if (!finished) return
+    if (runStartXp === null) {
+      setRunStartXp(accountXp)
+    }
+    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    if (reducedMotion) {
+      setAnimatedXp(xpEarned)
+      setAnimatedRatingDelta(ratingDelta)
+      return
+    }
+    let frame = 0
+    const startedAt = performance.now()
+    const duration = 850
+    const animate = (now: number) => {
+      const elapsed = now - startedAt
+      const t = Math.min(1, elapsed / duration)
+      const eased = 1 - Math.pow(1 - t, 3)
+      setAnimatedXp(Math.round(xpEarned * eased))
+      setAnimatedRatingDelta(Math.round(ratingDelta * eased))
+      if (t < 1) {
+        frame = window.requestAnimationFrame(animate)
+      }
+    }
+    frame = window.requestAnimationFrame(animate)
+    return () => window.cancelAnimationFrame(frame)
+  }, [finished, xpEarned, ratingDelta, accountXp, runStartXp])
+
+  useEffect(() => {
+    if (!finished || !user || saved || saving) return
+    let mounted = true
+    const persist = async () => {
+      setSaving(true)
+      setSaveError('')
+      const { error } = await saveQuizResult({
+        quizId: 'referee-arena',
+        score: correct,
+        total: scenarios.length,
+        xp: xpEarned,
+      })
+      if (!mounted) return
+      if (error) {
+        setSaveError(error.message || 'Result could not be saved right now.')
+      } else {
+        setSaved(true)
+        await refreshProfile()
+      }
+      if (mounted) {
+        setSaving(false)
+      }
+    }
+    void persist()
+    return () => {
+      mounted = false
+    }
+  }, [finished, user, saved, saving, correct, xpEarned, refreshProfile])
 
   function choose(option: string) {
     if (answered) return
@@ -276,6 +380,16 @@ export function RefereeDecisionQuiz() {
     setSelected(option)
     setAnswered(true)
     setPlayed((current) => current + 1)
+    setCategoryTotals((current) => {
+      const row = current[scenario.category] ?? { total: 0, correct: 0 }
+      return {
+        ...current,
+        [scenario.category]: {
+          total: row.total + 1,
+          correct: row.correct + (right ? 1 : 0),
+        },
+      }
+    })
     if (right) {
       setCorrect((current) => current + 1)
       setRating((current) => current + 14)
@@ -302,11 +416,117 @@ export function RefereeDecisionQuiz() {
     setIndex(0)
     setSelected(null)
     setAnswered(false)
+    setFinished(false)
     setRating(1000)
     setCorrect(0)
     setPlayed(0)
     setStreak(0)
     setBestStreak(0)
+    setCategoryTotals({})
+    setSaving(false)
+    setSaved(false)
+    setSaveError('')
+    setAnimatedXp(0)
+    setAnimatedRatingDelta(0)
+    setRunStartXp(null)
+  }
+
+  if (finished) {
+    const latestXp = profile?.xp ?? accountXp
+    const latestRank = getRankProgress(latestXp)
+    const leveledUp = saved && latestRank.current.minXp > beforeRank.minXp
+
+    return (
+      <section id="referee" className="relative mx-auto max-w-6xl px-1 py-0 sm:px-2">
+        <div className="mx-auto grid max-w-6xl gap-6 lg:grid-cols-[1fr_360px]">
+          <div className="overflow-hidden rounded-[32px] border border-amber-400/20 bg-[radial-gradient(circle_at_top_left,_rgba(247,212,75,0.16),_transparent_30%),linear-gradient(135deg,_rgba(7,9,18,0.98),_rgba(16,24,42,0.95))] shadow-[0_25px_80px_-36px_rgba(247,212,75,0.55)]">
+            <div className="border-b border-white/10 bg-black/20 p-6 sm:p-8">
+              <p className="text-xs font-semibold uppercase tracking-[0.28em] text-white/60">Referee Arena complete</p>
+              <h3 className="mt-3 text-3xl font-semibold tracking-tight text-white">Final report</h3>
+              <p className="mt-3 text-white/70">You completed all {scenarios.length} incidents. Keep decisions consistent and protect momentum.</p>
+            </div>
+
+            <div className="p-6 sm:p-8">
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                <ResultTile label="Score" value={`${correct}/${scenarios.length}`} />
+                <ResultTile label="Accuracy" value={`${accuracy}%`} />
+                <ResultTile label="XP earned" value={`+${animatedXp}`} highlight />
+                <ResultTile label="Rating delta" value={`${animatedRatingDelta >= 0 ? '+' : ''}${animatedRatingDelta}`} />
+              </div>
+
+              <div className="mt-5 rounded-[22px] border border-white/10 bg-black/20 p-5">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div>
+                    <p className="text-xs uppercase tracking-[0.24em] text-white/60">Current FootballIQ level</p>
+                    <p className="mt-1 text-xl font-semibold text-white">{projectedRank.current.emoji} {projectedRank.current.title}</p>
+                  </div>
+                  <p className="text-sm text-white/70">{projectedRank.next ? `${projectedRank.remaining} XP to ${projectedRank.next.title}` : 'Maximum rank reached'}</p>
+                </div>
+                <div className="mt-3 h-2 overflow-hidden rounded-full bg-white/10">
+                  <div className="h-full rounded-full bg-gradient-to-r from-amber-400 via-orange-400 to-red-500 transition-all duration-700" style={{ width: `${projectedRank.percent}%` }} />
+                </div>
+                <p className="mt-3 text-sm text-white/70">Current XP: {latestXp.toLocaleString()} • Streak peak this run: {formatDayCount(bestStreak)}</p>
+                {bestCategory ? (
+                  <p className="mt-1 text-sm text-white/70">Best category: <strong className="text-white">{bestCategory.name}</strong> ({bestCategory.correct}/{bestCategory.total}, {bestCategory.accuracy}%)</p>
+                ) : null}
+                <p className="mt-1 text-sm text-white/70">Rating breakdown: starts at 1000, +14 for each correct decision, -8 for each incorrect decision.</p>
+              </div>
+
+              {leveledUp ? (
+                <div className="mt-4 rounded-2xl border border-primary/45 bg-primary/12 px-4 py-3 text-sm font-medium text-primary">
+                  Level up confirmed: {beforeRank.title} {'->'} {latestRank.current.title}
+                </div>
+              ) : null}
+
+              <p className="mt-4 text-sm text-white/70">
+                {!user
+                  ? 'Sign in to save this run to profile XP, streaks and leaderboards.'
+                  : saving
+                    ? 'Saving your result...'
+                    : saved
+                      ? 'Result saved successfully. Profile progression updated.'
+                      : saveError
+                        ? `Save failed: ${saveError}`
+                        : 'Result not saved yet.'}
+              </p>
+
+              <div className="mt-6 flex flex-wrap gap-3">
+                <Link href="/daily" className="inline-flex items-center justify-center rounded-xl bg-primary px-5 py-3 font-semibold text-primary-foreground">
+                  Protect today&apos;s streak
+                </Link>
+                <Button onClick={restart} variant="outline" className="rounded-xl border-white/20 bg-transparent text-white hover:bg-white/10 hover:text-white">
+                  <RotateCcw className="size-4" /> Replay Referee Arena
+                </Button>
+                <Link href="/profile#ratings" className="inline-flex items-center justify-center rounded-xl border border-white/20 px-5 py-3 font-semibold text-white/90 hover:bg-white/10">
+                  View profile ratings
+                </Link>
+              </div>
+            </div>
+          </div>
+
+          <aside className="space-y-4">
+            <div className="rounded-[28px] border border-white/10 bg-black/20 p-6 backdrop-blur">
+              <div className="flex items-center gap-3">
+                <span className="flex size-11 items-center justify-center rounded-2xl bg-primary/10 text-primary ring-1 ring-primary/20">
+                  <ShieldCheck className="size-5" />
+                </span>
+                <div>
+                  <p className="text-sm text-white/60">Current level</p>
+                  <p className="font-semibold tracking-tight text-white">{level}</p>
+                </div>
+              </div>
+            </div>
+            <div className="rounded-[28px] border border-primary/30 bg-primary/10 p-6">
+              <Trophy className="size-6 text-primary" />
+              <h3 className="mt-3 font-semibold tracking-tight text-white">Next sharp action</h3>
+              <p className="mt-2 text-sm leading-relaxed text-white/70">
+                Take the daily challenge now to protect your streak and turn this run into sustained progression.
+              </p>
+            </div>
+          </aside>
+        </div>
+      </section>
+    )
   }
 
   return (
@@ -382,9 +602,9 @@ export function RefereeDecisionQuiz() {
                   </div>
                 </div>
                 <div className="mt-5 flex justify-end">
-                  {index === scenarios.length - 1 ? (
-                    <Button onClick={restart} className="rounded-xl glow-green">
-                      <RotateCcw className="size-4" /> Restart mode
+                  {runComplete ? (
+                    <Button onClick={() => setFinished(true)} className="rounded-xl glow-green">
+                      View final report <ArrowRight className="size-4" />
                     </Button>
                   ) : (
                     <Button onClick={next} className="rounded-xl glow-green">
@@ -444,5 +664,14 @@ export function RefereeDecisionQuiz() {
         </aside>
       </div>
     </section>
+  )
+}
+
+function ResultTile({ label, value, highlight = false }: { label: string; value: string; highlight?: boolean }) {
+  return (
+    <div className={cn('rounded-[18px] border p-4', highlight ? 'border-primary/45 bg-primary/12' : 'border-white/10 bg-black/20')}>
+      <p className="text-[11px] uppercase tracking-[0.24em] text-white/60">{label}</p>
+      <p className={cn('mt-2 text-2xl font-semibold', highlight ? 'text-primary' : 'text-white')}>{value}</p>
+    </div>
   )
 }

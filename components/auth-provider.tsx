@@ -89,6 +89,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     })()
 
     const { data: subscription } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+      setLoading(true)
       const previousUserId = sessionRef.current?.user?.id
       setSession(nextSession)
       if (nextSession?.user) {
@@ -102,13 +103,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
         void (async () => {
           await loadProfile(currentUserId)
-          if (mounted) setProfileLoading(false)
+          if (mounted) {
+            setProfileLoading(false)
+            setLoading(false)
+          }
         })()
       } else {
         setProfile(null)
         setProfileLoading(false)
+        setLoading(false)
       }
-      setLoading(false)
     })
 
     return () => {

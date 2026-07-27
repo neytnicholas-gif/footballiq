@@ -14,13 +14,14 @@ import {
 } from 'lucide-react'
 import { SiteHeader } from '@/components/site-header'
 import { useAuth } from '@/components/auth-provider'
+import { formatAccuracy, formatDayCount } from '@/lib/player-metrics'
 import { getRankProgress } from '@/lib/progression'
 import { SiteFooter } from '@/components/site-footer'
+import { REFEREE_ARENA_SCENARIO_COUNT } from '@/components/referee-decision-quiz'
 import { duelPacks } from '@/lib/duel-packs'
 import {
   careerQuestions,
   higherLowerItems,
-  refereeQuestions,
   scoutQuestions,
   whoAmIQuestions,
 } from '@/lib/game-data'
@@ -52,7 +53,7 @@ const modes: ModeCard[] = [
     href: '/quizzes/referee-decisions',
     icon: Flag,
     skill: 'Decision-making',
-    count: `${refereeQuestions.length} scenarios`,
+    count: `${REFEREE_ARENA_SCENARIO_COUNT} scenarios`,
   },
   {
     theme: 'scout',
@@ -93,11 +94,10 @@ const modes: ModeCard[] = [
 ]
 
 export default function HomePage() {
-  const { user, profile, loading } = useAuth()
+  const { user, profile, loading, profileLoading } = useAuth()
+  const authResolved = !loading && !profileLoading
   const rank = getRankProgress(profile?.xp ?? 0)
-  const accuracy = profile?.total_answers
-    ? Math.round((profile.correct_answers / profile.total_answers) * 100)
-    : 0
+  const accuracy = formatAccuracy(profile?.correct_answers ?? 0, profile?.total_answers ?? 0)
 
   return (
     <main className="min-h-screen bg-background">
@@ -109,7 +109,11 @@ export default function HomePage() {
           className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_15%_15%,rgba(55,220,130,.16),transparent_30rem),radial-gradient(circle_at_82%_20%,rgba(77,120,255,.13),transparent_28rem)]"
         />
         <div className="relative mx-auto grid max-w-7xl gap-6 px-4 py-12 sm:px-6 sm:py-16 lg:grid-cols-[1.2fr_.8fr]">
-          {!loading && !user ? (
+          {!authResolved ? (
+            <div className="rounded-3xl border border-border bg-card p-8 lg:col-span-2">
+              <p className="text-sm text-muted-foreground">Loading FootballIQ profile...</p>
+            </div>
+          ) : !user ? (
             <>
               <div>
                 <p className="text-xs font-semibold uppercase tracking-[.25em] text-primary">FootballIQ</p>
@@ -151,7 +155,7 @@ export default function HomePage() {
                 </Link>
               </div>
             </>
-          ) : !loading && user && !profile?.username ? (
+          ) : user && !profile?.username ? (
             <div className="rounded-3xl border border-border bg-card p-8 lg:col-span-2">
               <h1 className="text-3xl font-bold">Finish your FootballIQ profile</h1>
               <p className="mt-3 text-muted-foreground">
@@ -195,8 +199,8 @@ export default function HomePage() {
                 <div className="mt-4 space-y-3">
                   <QuickStat label="Rank" value={rank.current.title} />
                   <QuickStat label="XP" value={(profile?.xp ?? 0).toString()} />
-                  <QuickStat label="Streak" value={`${profile?.streak ?? 0} days`} />
-                  <QuickStat label="Accuracy" value={`${accuracy}%`} />
+                  <QuickStat label="Streak" value={formatDayCount(profile?.streak ?? 0)} />
+                  <QuickStat label="Accuracy" value={accuracy} />
                 </div>
                 <Link href="/profile" className="mt-4 inline-flex text-sm font-semibold text-primary">
                   Open full profile →
@@ -273,21 +277,29 @@ export default function HomePage() {
             icon={<Trophy className="size-5" />}
             title="XP and levels"
             text="Every saved result contributes to your FootballIQ level progression."
+            href="/profile#progression"
+            actionLabel="View progression →"
           />
           <InfoCard
             icon={<TrendingUp className="size-5" />}
             title="Ratings"
             text="Mode and overall ratings reward consistency, not one isolated run."
+            href="/profile#ratings"
+            actionLabel="View ratings →"
           />
           <InfoCard
             icon={<CalendarDays className="size-5" />}
             title="Streaks"
             text="Daily completion builds current and longest streak records."
+            href="/daily"
+            actionLabel="Protect streak →"
           />
           <InfoCard
             icon={<ShieldCheck className="size-5" />}
             title="Leaderboards"
             text="Compete across overall, mode-specific, and time-based tables."
+            href="/leaderboard"
+            actionLabel="View rankings →"
           />
         </div>
       </section>
@@ -306,14 +318,31 @@ function QuickStat({ label, value }: { label: string; value: string }) {
   )
 }
 
-function InfoCard({ icon, title, text }: { icon: React.ReactNode; title: string; text: string }) {
+function InfoCard({
+  icon,
+  title,
+  text,
+  href,
+  actionLabel,
+}: {
+  icon: React.ReactNode
+  title: string
+  text: string
+  href: string
+  actionLabel: string
+}) {
   return (
-    <article className="rounded-2xl border border-border bg-card p-5">
+    <Link
+      href={href}
+      aria-label={`${title}. ${actionLabel.replace(' →', '')}`}
+      className="group block rounded-2xl border border-border bg-card p-5 transition hover:border-primary/35 hover:bg-secondary/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60"
+    >
       <div className="flex items-center gap-2 text-primary">
         {icon}
         <p className="font-semibold">{title}</p>
       </div>
       <p className="mt-2 text-sm text-muted-foreground">{text}</p>
-    </article>
+      <p className="mt-4 text-sm font-semibold text-primary transition group-hover:translate-x-0.5">{actionLabel}</p>
+    </Link>
   )
 }

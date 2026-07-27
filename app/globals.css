@@ -265,8 +265,8 @@ button, a {
 .mode-daily { --mode-accent: 255 145 47; --mode-accent-2: 255 220 75; --mode-panel: 28 18 10; background:radial-gradient(circle at 50% 5%,rgb(255 145 47/.2),transparent 30rem),#100b08; }
 .mode-predictions { --mode-accent: 64 190 255; --mode-accent-2: 75 255 166; --mode-panel: 8 20 30; background-image:linear-gradient(rgb(64 190 255/.035) 1px,transparent 1px),linear-gradient(90deg,rgb(64 190 255/.035) 1px,transparent 1px),radial-gradient(circle at 80% 15%,rgb(64 190 255/.15),transparent 28rem);background-size:44px 44px,44px 44px,auto; }
 
-.mode-card { position:relative; overflow:hidden; isolation:isolate; }
-.mode-card:after { content:""; position:absolute; width:13rem;height:13rem;border-radius:999px;right:-6rem;top:-7rem;background:rgb(var(--card-accent)/.16);filter:blur(12px);z-index:-1;transition:transform .35s ease; }
+.mode-card { position:relative; overflow:hidden; isolation:isolate; cursor:pointer; }
+.mode-card:after { content:""; position:absolute; width:13rem;height:13rem;border-radius:999px;right:-6rem;top:-7rem;background:rgb(var(--card-accent)/.16);filter:blur(12px);z-index:-1;transition:transform .35s ease; pointer-events:none; }
 .mode-card:hover:after { transform:scale(1.28); }
 .mode-card-referee{--card-accent:250 204 21}.mode-card-scout{--card-accent:50 230 170}.mode-card-duels{--card-accent:255 198 72}.mode-card-mystery{--card-accent:188 118 255}.mode-card-career{--card-accent:70 200 255}.mode-card-higher{--card-accent:255 92 120}
 
