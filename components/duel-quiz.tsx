@@ -12,10 +12,23 @@ type Speed = 'relaxed' | 'timed'
 
 type StoredBest = { score: number; points: number; bestCombo: number }
 
-function shuffledQuestions(questions: DuelQuestion[]) {
-  return [...questions]
-    .sort(() => Math.random() - 0.5)
-    .map((question) => Math.random() > 0.5 ? question : { left: question.right, right: question.left })
+function shuffledQuestions(questions: DuelQuestion[], seedSource: string) {
+  let seed = Array.from(seedSource).reduce(
+    (hash, character) => ((hash * 31) + character.charCodeAt(0)) >>> 0,
+    2166136261,
+  )
+  const random = () => {
+    seed = ((seed * 1664525) + 1013904223) >>> 0
+    return seed / 4294967296
+  }
+  const shuffled = [...questions]
+  for (let index = shuffled.length - 1; index > 0; index -= 1) {
+    const swapIndex = Math.floor(random() * (index + 1))
+    ;[shuffled[index], shuffled[swapIndex]] = [shuffled[swapIndex], shuffled[index]]
+  }
+  return shuffled.map((question) =>
+    random() > 0.5 ? question : { left: question.right, right: question.left },
+  )
 }
 
 function correctChoice(question: DuelQuestion): Choice {
@@ -34,7 +47,7 @@ function gradeFor(score: number, total: number) {
 
 export function DuelQuiz({ pack, onComplete }: { pack: DuelPack; onComplete?: (packId: string, score: number) => void }) {
   const { user, profile, refreshProfile } = useAuth()
-  const [questions, setQuestions] = useState(() => [...pack.questions])
+  const [questions, setQuestions] = useState(() => shuffledQuestions(pack.questions, pack.id))
   const [index, setIndex] = useState(0)
   const [selected, setSelected] = useState<Choice | 'timeout' | null>(null)
   const [score, setScore] = useState(0)
@@ -59,24 +72,14 @@ export function DuelQuiz({ pack, onComplete }: { pack: DuelPack; onComplete?: (p
   const progress = Math.round(((index + (answered ? 1 : 0)) / questions.length) * 100)
 
   useEffect(() => {
-    setQuestions(shuffledQuestions(pack.questions))
-    setIndex(0)
-    setSelected(null)
-    setScore(0)
-    setPoints(0)
-    setCombo(0)
-    setBestCombo(0)
-    setTimeLeft(15)
-    setShowResults(false)
-    setSaved(false)
-    setCopied(false)
-  }, [pack])
-
-  useEffect(() => {
-    try {
-      const savedBest = localStorage.getItem(`footballiq-best-${pack.id}`)
-      setPersonalBest(savedBest ? JSON.parse(savedBest) as StoredBest : null)
-    } catch { setPersonalBest(null) }
+    queueMicrotask(() => {
+      try {
+        const savedBest = localStorage.getItem(`footballiq-best-${pack.id}`)
+        setPersonalBest(savedBest ? JSON.parse(savedBest) as StoredBest : null)
+      } catch {
+        setPersonalBest(null)
+      }
+    })
   }, [pack.id])
 
   const lockAnswer = useCallback((choice: Choice | 'timeout') => {
@@ -101,11 +104,10 @@ export function DuelQuiz({ pack, onComplete }: { pack: DuelPack; onComplete?: (p
 
   useEffect(() => {
     if (speed !== 'timed' || answered || showResults) return
-    if (timeLeft <= 0) {
-      lockAnswer('timeout')
-      return
-    }
-    const timer = window.setTimeout(() => setTimeLeft((value) => value - 1), 1000)
+    const timer = window.setTimeout(() => {
+      if (timeLeft <= 0) lockAnswer('timeout')
+      else setTimeLeft((value) => value - 1)
+    }, timeLeft <= 0 ? 0 : 1000)
     return () => window.clearTimeout(timer)
   }, [answered, lockAnswer, showResults, speed, timeLeft])
 
@@ -123,7 +125,6 @@ export function DuelQuiz({ pack, onComplete }: { pack: DuelPack; onComplete?: (p
   async function saveResult() {
     if (!user || !profile || saved || saving) return
     setSaving(true)
-    const perfect = score === questions.length
     const xpEarned = calculateDuelXp(score, questions.length, bestCombo, points)
     const today = new Date().toISOString().slice(0, 10)
     const { error } = await supabase.rpc('complete_quiz', {
@@ -175,7 +176,7 @@ export function DuelQuiz({ pack, onComplete }: { pack: DuelPack; onComplete?: (p
   }, [answered, isLast, showResults])
 
   function restart() {
-    setQuestions(shuffledQuestions(pack.questions))
+    setQuestions(shuffledQuestions(pack.questions, `${pack.id}-${Date.now()}`))
     setIndex(0)
     setSelected(null)
     setScore(0)

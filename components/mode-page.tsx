@@ -1,18 +1,19 @@
 import Link from 'next/link'
 import { BarChart3, Flame, Radar, ShieldCheck, Sparkles, Trophy } from 'lucide-react'
 import { SiteHeader } from '@/components/site-header'
+import { COMPETITIVE_MODE_IDS, type LeaderboardMode } from '@/lib/competitive'
 
 export type ModeTheme = 'referee' | 'scout' | 'duels' | 'mystery' | 'career' | 'higher' | 'daily' | 'predictions'
 
-const themeMeta: Record<ModeTheme, { label: string; icon: React.ElementType; className: string; leaderboard: string }> = {
-  referee: { label: 'Referee Arena', icon: ShieldCheck, className: 'mode-referee', leaderboard: 'referee-decisions' },
-  scout: { label: 'Scout Vision', icon: Radar, className: 'mode-scout', leaderboard: 'scout-mode' },
-  duels: { label: 'Football Duels', icon: Trophy, className: 'mode-duels', leaderboard: 'football-duels' },
-  mystery: { label: 'Who Am I?', icon: Sparkles, className: 'mode-mystery', leaderboard: 'who-am-i' },
-  career: { label: 'Career Path', icon: BarChart3, className: 'mode-career', leaderboard: 'career-path' },
-  higher: { label: 'Higher or Lower', icon: Flame, className: 'mode-higher', leaderboard: 'higher-lower' },
+const themeMeta: Record<ModeTheme, { label: string; icon: React.ElementType; className: string; leaderboard: LeaderboardMode | 'daily' }> = {
+  referee: { label: 'Referee Arena', icon: ShieldCheck, className: 'mode-referee', leaderboard: COMPETITIVE_MODE_IDS.refereeDecisions },
+  scout: { label: 'Scout Vision', icon: Radar, className: 'mode-scout', leaderboard: COMPETITIVE_MODE_IDS.scout },
+  duels: { label: 'Football Duels', icon: Trophy, className: 'mode-duels', leaderboard: COMPETITIVE_MODE_IDS.footballDuels },
+  mystery: { label: 'Who Am I?', icon: Sparkles, className: 'mode-mystery', leaderboard: COMPETITIVE_MODE_IDS.whoAmI },
+  career: { label: 'Career Path', icon: BarChart3, className: 'mode-career', leaderboard: COMPETITIVE_MODE_IDS.careerPath },
+  higher: { label: 'Higher or Lower', icon: Flame, className: 'mode-higher', leaderboard: COMPETITIVE_MODE_IDS.higherLower },
   daily: { label: 'Daily Challenge', icon: Flame, className: 'mode-daily', leaderboard: 'daily' },
-  predictions: { label: 'Prediction Centre', icon: BarChart3, className: 'mode-predictions', leaderboard: 'overall' },
+  predictions: { label: 'Prediction Centre', icon: BarChart3, className: 'mode-predictions', leaderboard: COMPETITIVE_MODE_IDS.overall },
 }
 
 export function ModePage({ eyebrow, title, description, theme, children }: { eyebrow: string; title: string; description: string; theme: ModeTheme; children: React.ReactNode }) {

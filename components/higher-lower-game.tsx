@@ -7,7 +7,10 @@ import { saveQuizResult } from '@/lib/quiz-save'
 
 export function HigherLowerGame() {
   const { user, refreshProfile } = useAuth()
-  const deck = useMemo(() => [...higherLowerItems].sort(() => Math.random() - .5), [])
+  const deck = useMemo(
+    () => [...higherLowerItems].sort((a, b) => stableOrder(a.name) - stableOrder(b.name)),
+    [],
+  )
   const [index, setIndex] = useState(1)
   const [streak, setStreak] = useState(0)
   const [result, setResult] = useState<{ guess: 'higher' | 'lower'; correct: boolean } | null>(null)
@@ -45,4 +48,8 @@ export function HigherLowerGame() {
 
     {over && <div className="mt-8 rounded-2xl bg-secondary/40 p-6"><h2 className="text-2xl font-semibold">Run finished: {streak}</h2><p className="mt-2 text-muted-foreground">Final comparison: {right.name} {right.value}</p><div className="mt-5 flex gap-3"><button onClick={() => void save()} disabled={!user || saved} className="rounded-xl bg-primary px-5 py-3 text-primary-foreground disabled:opacity-50">{!user ? 'Sign in to save' : saved ? 'Saved' : 'Save XP'}</button><button onClick={() => window.location.reload()} className="rounded-xl border border-border px-5 py-3">New run</button></div></div>}
   </div>
+}
+
+function stableOrder(value: string) {
+  return Array.from(value).reduce((hash, character) => ((hash * 31) + character.charCodeAt(0)) >>> 0, 7)
 }

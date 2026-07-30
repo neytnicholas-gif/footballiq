@@ -9,7 +9,7 @@ export const metadata: Metadata = {
     template: '%s | FootballIQ',
   },
   description:
-    'FootballIQ is a football intelligence platform for quizzes, scouting decisions, predictions, streaks, XP, ratings and leaderboards.',
+    'FootballIQ is a football intelligence platform for quizzes, scouting decisions, predictions, Player Market portfolios, streaks, XP, ratings and leaderboards.',
   openGraph: {
     title: 'FootballIQ',
     description:

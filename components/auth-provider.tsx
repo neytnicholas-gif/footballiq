@@ -16,6 +16,16 @@ type AuthContextValue = {
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined)
 
+const fallbackAuthContext: AuthContextValue = {
+  session: null,
+  user: null,
+  profile: null,
+  loading: true,
+  profileLoading: false,
+  refreshProfile: async () => {},
+  signOut: async () => {},
+}
+
 const PROFILE_COLUMNS =
   'id, username, rating, xp, streak, quizzes_completed, correct_answers, total_answers, perfect_quizzes, current_streak, longest_streak, last_activity_date, created_at, updated_at'
 
@@ -144,6 +154,5 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
 export function useAuth() {
   const context = useContext(AuthContext)
-  if (!context) throw new Error('useAuth must be used inside AuthProvider')
-  return context
+  return context ?? fallbackAuthContext
 }

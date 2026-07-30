@@ -18,3 +18,23 @@ What changed in this version:
 - Added Progression System section with daily challenge, badges and community vote ideas.
 
 If npm install fails because of an old lock file, delete package-lock.json and run npm install again.
+
+Market import setup (Sprint 7A):
+1. Copy .env.local.example to .env.local.
+2. Configure these server-only values in .env.local:
+   - API_FOOTBALL_KEY=
+   - API_FOOTBALL_BASE_URL=https://v3.football.api-sports.io
+   - MARKET_DATA_PROVIDER=api-football
+   - MARKET_TARGET_LEAGUE_ID=39 (optional)
+   - MARKET_TARGET_SEASON=2026
+
+Development-only season fallback (free plan):
+- If 2026 is blocked by plan access, set MARKET_TARGET_SEASON=2024 in .env.local for local dry-run development only.
+- Keep production target documented as 2026 and switch back once provider access includes that season.
+3. Do not commit .env.local.
+4. Run provider dry-run checks:
+   - npm run market:discover
+   - npm run market:import-squads:dry
+   - npm run market:validate-squads
+
+If API_FOOTBALL_KEY is missing, validation exits cleanly with a BLOCKED message.

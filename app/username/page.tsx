@@ -11,19 +11,18 @@ const clean = (value: string) => value.trim().replace(/[^a-zA-Z0-9_]/g, '').slic
 export default function UsernamePage() {
   const router = useRouter()
   const { user, profile, loading, refreshProfile } = useAuth()
-  const [username, setUsername] = useState('')
+  const [username, setUsername] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState('')
 
   useEffect(() => {
     if (!loading && !user) router.replace('/login')
-    if (!loading && profile?.username) setUsername(profile.username)
-  }, [loading, user, profile, router])
+  }, [loading, user, router])
 
   async function save(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
     if (!user) return
-    const value = clean(username)
+    const value = clean(username ?? profile?.username ?? '')
     if (value.length < 3) return setMessage('Username must be at least 3 characters.')
     setSaving(true)
     setMessage('')
@@ -46,7 +45,7 @@ export default function UsernamePage() {
           <h1 className="mt-3 text-3xl font-semibold tracking-tight">Create your username</h1>
           <p className="mt-3 text-sm text-muted-foreground">Letters, numbers and underscores only.</p>
           <form onSubmit={save} className="mt-6 space-y-4">
-            <input value={username} onChange={(e) => setUsername(clean(e.target.value))} minLength={3} required placeholder="NicholasIQ" className="h-11 w-full rounded-xl border border-border bg-background px-4 outline-none focus:ring-2 focus:ring-primary/40" />
+            <input value={username ?? profile?.username ?? ''} onChange={(e) => setUsername(clean(e.target.value))} minLength={3} required placeholder="NicholasIQ" className="h-11 w-full rounded-xl border border-border bg-background px-4 outline-none focus:ring-2 focus:ring-primary/40" />
             {message && <p className="rounded-xl border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">{message}</p>}
             <button disabled={saving || loading} className="h-11 w-full rounded-xl bg-primary font-medium text-primary-foreground disabled:opacity-60">{saving ? 'Saving…' : 'Save username'}</button>
           </form>

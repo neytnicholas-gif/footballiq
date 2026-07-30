@@ -319,14 +319,13 @@ export function RefereeDecisionQuiz() {
 
   useEffect(() => {
     if (!finished) return
-    if (runStartXp === null) {
-      setRunStartXp(accountXp)
-    }
     const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
     if (reducedMotion) {
-      setAnimatedXp(xpEarned)
-      setAnimatedRatingDelta(ratingDelta)
-      return
+      const frame = window.requestAnimationFrame(() => {
+        setAnimatedXp(xpEarned)
+        setAnimatedRatingDelta(ratingDelta)
+      })
+      return () => window.cancelAnimationFrame(frame)
     }
     let frame = 0
     const startedAt = performance.now()
@@ -343,7 +342,7 @@ export function RefereeDecisionQuiz() {
     }
     frame = window.requestAnimationFrame(animate)
     return () => window.cancelAnimationFrame(frame)
-  }, [finished, xpEarned, ratingDelta, accountXp, runStartXp])
+  }, [finished, xpEarned, ratingDelta])
 
   useEffect(() => {
     if (!finished || !user || saved || saving) return
@@ -410,6 +409,11 @@ export function RefereeDecisionQuiz() {
       setSelected(null)
       setAnswered(false)
     }
+  }
+
+  function finish() {
+    setRunStartXp(accountXp)
+    setFinished(true)
   }
 
   function restart() {
@@ -603,7 +607,7 @@ export function RefereeDecisionQuiz() {
                 </div>
                 <div className="mt-5 flex justify-end">
                   {runComplete ? (
-                    <Button onClick={() => setFinished(true)} className="rounded-xl glow-green">
+                    <Button onClick={finish} className="rounded-xl glow-green">
                       View final report <ArrowRight className="size-4" />
                     </Button>
                   ) : (

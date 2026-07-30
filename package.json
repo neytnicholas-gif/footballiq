@@ -6,7 +6,20 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "test:market": "tsx --test tests/market.test.ts",
+    "test:market-initial-valuation": "tsx --test tests/market-initial-valuation.test.ts",
+    "test:market-import": "tsx --test tests/market-import.test.ts",
+    "test:market-weekly": "tsx --test tests/market-weekly.test.ts",
+    "market:test-provider": "tsx scripts/market-test-provider.ts",
+    "market:discover": "tsx scripts/market-discover.ts",
+    "market:build-dev-dataset": "tsx scripts/market-build-dev-dataset.ts",
+    "market:import-squads:dry": "tsx scripts/market-import-squads-dry.ts",
+    "market:import-squads:resume": "tsx scripts/market-import-squads-resume.ts",
+    "market:validate-squads": "tsx scripts/market-validate-squads.ts",
+    "market:import-weekly:dry": "tsx scripts/market-import-weekly-dry.ts",
+    "market:import-weekly:resume": "tsx scripts/market-import-weekly-resume.ts",
+    "market:validate-weekly": "tsx scripts/market-validate-weekly.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.5.0",
@@ -16,7 +29,7 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "lucide-react": "^1.16.0",
-    "next": "16.2.6",
+    "next": "16.2.12",
     "react": "^19",
     "react-dom": "^19",
     "shadcn": "^4.8.0",
@@ -28,8 +41,11 @@
     "@types/node": "^24",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "eslint": "9.39.5",
+    "eslint-config-next": "16.2.12",
     "postcss": "^8.5",
     "tailwindcss": "^4.2.0",
+    "tsx": "4.23.1",
     "typescript": "5.7.3"
   },
   "pnpm": {

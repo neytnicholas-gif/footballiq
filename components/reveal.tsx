@@ -14,7 +14,7 @@ export function Reveal({
   delay?: number
   as?: 'div' | 'section' | 'li' | 'article'
 }) {
-  const ref = useRef<HTMLDivElement>(null)
+  const ref = useRef<HTMLElement | null>(null)
   const [visible, setVisible] = useState(false)
 
   useEffect(() => {
@@ -35,11 +35,13 @@ export function Reveal({
     return () => observer.disconnect()
   }, [])
 
-  const Component = Tag as any
+  const Component = Tag
 
   return (
     <Component
-      ref={ref}
+      ref={(node: HTMLElement | null) => {
+        ref.current = node
+      }}
       style={{ animationDelay: `${delay}ms` }}
       className={cn('reveal', visible && 'in-view', className)}
     >

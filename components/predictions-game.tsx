@@ -40,13 +40,15 @@ export function PredictionsGame() {
   }, [user, predictionSet])
 
   useEffect(() => {
-    try {
-      const stored = localStorage.getItem('footballiq-prediction-history')
-      if (!stored) return
-      setHistory(JSON.parse(stored) as Array<{ set: string; picks: number }>)
-    } catch {
-      setHistory([])
-    }
+    queueMicrotask(() => {
+      try {
+        const stored = localStorage.getItem('footballiq-prediction-history')
+        if (!stored) return
+        setHistory(JSON.parse(stored) as Array<{ set: string; picks: number }>)
+      } catch {
+        setHistory([])
+      }
+    })
   }, [])
 
   async function save() {

@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { CalendarDays, ChevronRight, Crown, Flame, Medal, RefreshCw, Trophy } from 'lucide-react'
 import { useAuth } from '@/components/auth-provider'
 import { supabase, type Profile } from '@/lib/supabase'
@@ -28,15 +28,13 @@ export function CompetitiveLeaderboard({ initialBoard = 'overall' }: { initialBo
   const [error, setError] = useState('')
   const season = useMemo(() => seasonMeta(), [])
 
-  useEffect(() => { void loadBoard(board) }, [board])
-
-  async function usernamesFor(ids: string[]) {
+  const usernamesFor = useCallback(async (ids: string[]) => {
     if (!ids.length) return new Map<string, string>()
     const { data } = await supabase.from('profiles').select('id,username').in('id', ids)
     return new Map((data ?? []).map((profile) => [profile.id as string, (profile.username as string | null) ?? 'Anonymous']))
-  }
+  }, [])
 
-  async function loadBoard(selected: Board) {
+  const loadBoard = useCallback(async (selected: Board) => {
     setLoading(true)
     setError('')
     try {
@@ -110,7 +108,14 @@ export function CompetitiveLeaderboard({ initialBoard = 'overall' }: { initialBo
     } finally {
       setLoading(false)
     }
-  }
+  }, [season.id, usernamesFor])
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      void loadBoard(board)
+    }, 0)
+    return () => window.clearTimeout(timer)
+  }, [board, loadBoard])
 
   const activeLabel = leaderboardModes.find((mode) => mode.id === board)?.label ?? periodBoards.find((item) => item.id === board)?.label ?? 'Leaderboard'
   const currentUserRow = user ? players.find((player) => player.id === user.id) : undefined

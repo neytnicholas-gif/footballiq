@@ -14,7 +14,9 @@ export function CareerPathGame() {
   const q = careerQuestions[index]
   const options = useMemo(() => {
     const wrong = careerQuestions.filter((x) => x.answer !== q.answer).slice((index * 3) % 7, ((index * 3) % 7) + 3).map((x) => x.answer)
-    return [q.answer, ...wrong].sort(() => Math.random() - .5)
+    const ordered = [q.answer, ...wrong]
+    const answerPosition = index % ordered.length
+    return [...ordered.slice(answerPosition), ...ordered.slice(0, answerPosition)]
   }, [q, index])
   const last = index === careerQuestions.length - 1
 
