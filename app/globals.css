@@ -197,8 +197,21 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+
   .reveal {
     opacity: 1;
+    animation: none;
+  }
+
+  .mode-atmosphere span {
     animation: none;
   }
 }
@@ -210,6 +223,11 @@
 
 button, a {
   -webkit-tap-highlight-color: transparent;
+}
+
+:where(a, button, input, select, textarea, summary, [tabindex]:not([tabindex='-1'])):focus-visible {
+  outline: 3px solid color-mix(in oklch, var(--ring) 82%, white 18%);
+  outline-offset: 3px;
 }
 
 @keyframes fiq-pulse-soft {
@@ -271,4 +289,3 @@ button, a {
 .mode-card-referee{--card-accent:250 204 21}.mode-card-scout{--card-accent:50 230 170}.mode-card-duels{--card-accent:255 198 72}.mode-card-mystery{--card-accent:188 118 255}.mode-card-career{--card-accent:70 200 255}.mode-card-higher{--card-accent:255 92 120}
 
 @keyframes fiq-drift { to { transform: translate3d(3rem,-2rem,0) scale(1.08); } }
-@media (prefers-reduced-motion: reduce){.mode-atmosphere span{animation:none}}

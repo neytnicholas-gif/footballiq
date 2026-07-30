@@ -138,17 +138,17 @@ export function CompetitiveLeaderboard({ initialBoard = 'overall' }: { initialBo
     <section className="mt-6">
       <div className="mb-3 flex items-center gap-2"><Trophy className="size-5 text-primary"/><h2 className="text-xl font-bold">Career leaderboards</h2></div>
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        {leaderboardModes.map((mode) => <button key={mode.id} onClick={() => setBoard(mode.id)} className={`rounded-2xl border p-5 text-left transition ${board === mode.id ? 'border-primary bg-primary/10' : 'border-border bg-card hover:border-primary/40'}`}><div className="flex items-start justify-between gap-3"><span className="text-2xl">{mode.emoji}</span><ChevronRight className="size-4 text-muted-foreground"/></div><p className="mt-4 font-bold">{mode.label}</p><p className="mt-1 text-sm text-muted-foreground">{mode.description}</p></button>)}
+        {leaderboardModes.map((mode) => <button key={mode.id} type="button" aria-pressed={board === mode.id} onClick={() => setBoard(mode.id)} className={`rounded-2xl border p-5 text-left transition ${board === mode.id ? 'border-primary bg-primary/10' : 'border-border bg-card hover:border-primary/40'}`}><div className="flex items-start justify-between gap-3"><span className="text-2xl">{mode.emoji}</span><ChevronRight className="size-4 text-muted-foreground"/></div><p className="mt-4 font-bold">{mode.label}</p><p className="mt-1 text-sm text-muted-foreground">{mode.description}</p></button>)}
       </div>
     </section>
 
     <section className="mt-6">
       <div className="mb-3 flex items-center gap-2"><CalendarDays className="size-5 text-primary"/><h2 className="text-xl font-bold">Fresh-start leaderboards</h2></div>
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">{periodBoards.map((item) => <button key={item.id} onClick={() => setBoard(item.id)} className={`rounded-2xl border p-4 text-left ${board === item.id ? 'border-primary bg-primary/10' : 'border-border bg-card hover:border-primary/40'}`}><span className="text-xl">{item.emoji}</span><p className="mt-2 font-semibold">{item.label}</p></button>)}</div>
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">{periodBoards.map((item) => <button key={item.id} type="button" aria-pressed={board === item.id} onClick={() => setBoard(item.id)} className={`rounded-2xl border p-4 text-left ${board === item.id ? 'border-primary bg-primary/10' : 'border-border bg-card hover:border-primary/40'}`}><span className="text-xl">{item.emoji}</span><p className="mt-2 font-semibold">{item.label}</p></button>)}</div>
     </section>
 
     <section className="mt-8 overflow-hidden rounded-[2rem] border border-border bg-card">
-      <div className="flex items-center justify-between border-b border-border p-6"><div><p className="text-xs font-semibold uppercase tracking-wider text-primary">Standings</p><h2 className="mt-1 text-2xl font-bold">{activeLabel}</h2></div><button onClick={() => void loadBoard(board)} className="rounded-xl border border-border p-3" aria-label="Refresh"><RefreshCw className="size-4"/></button></div>
+      <div className="flex items-center justify-between border-b border-border p-6"><div><p className="text-xs font-semibold uppercase tracking-wider text-primary">Standings</p><h2 className="mt-1 text-2xl font-bold">{activeLabel}</h2></div><button type="button" onClick={() => void loadBoard(board)} className="rounded-xl border border-border p-3" aria-label="Refresh"><RefreshCw className="size-4"/></button></div>
       {loading ? (
         <div className="space-y-2 p-6">
           {[...Array(6)].map((_, i) => <div key={i} className="h-14 animate-pulse rounded-xl border border-border bg-background/60" />)}

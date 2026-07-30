@@ -174,7 +174,7 @@ export function PortfolioPanel({ initialPortfolio, authRequired }: PortfolioPane
         >
           Create portfolio
         </button>
-        {message && <p className="mt-3 text-sm text-muted-foreground">{message}</p>}
+        {message && <p role="status" aria-live="polite" className="mt-3 text-sm text-muted-foreground">{message}</p>}
       </div>
     )
   }
@@ -220,7 +220,7 @@ export function PortfolioPanel({ initialPortfolio, authRequired }: PortfolioPane
         </div>
 
         {message && (
-          <p className="mt-4 rounded-xl border border-border bg-background px-3 py-2 text-sm text-muted-foreground">{message}</p>
+          <p role="status" aria-live="polite" className="mt-4 rounded-xl border border-border bg-background px-3 py-2 text-sm text-muted-foreground">{message}</p>
         )}
       </div>
 

@@ -45,9 +45,12 @@ export default function UsernamePage() {
           <h1 className="mt-3 text-3xl font-semibold tracking-tight">Create your username</h1>
           <p className="mt-3 text-sm text-muted-foreground">Letters, numbers and underscores only.</p>
           <form onSubmit={save} className="mt-6 space-y-4">
-            <input value={username ?? profile?.username ?? ''} onChange={(e) => setUsername(clean(e.target.value))} minLength={3} required placeholder="NicholasIQ" className="h-11 w-full rounded-xl border border-border bg-background px-4 outline-none focus:ring-2 focus:ring-primary/40" />
-            {message && <p className="rounded-xl border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">{message}</p>}
-            <button disabled={saving || loading} className="h-11 w-full rounded-xl bg-primary font-medium text-primary-foreground disabled:opacity-60">{saving ? 'Saving…' : 'Save username'}</button>
+            <label className="block text-sm font-medium">
+              Username
+              <input name="username" autoComplete="username" autoCapitalize="none" spellCheck={false} value={username ?? profile?.username ?? ''} onChange={(e) => setUsername(clean(e.target.value))} minLength={3} required placeholder="NicholasIQ" className="mt-2 h-11 w-full rounded-xl border border-border bg-background px-4 outline-none focus:ring-2 focus:ring-primary/40" />
+            </label>
+            {message && <p role="alert" className="rounded-xl border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">{message}</p>}
+            <button type="submit" disabled={saving || loading} className="h-11 w-full rounded-xl bg-primary font-medium text-primary-foreground disabled:opacity-60">{saving ? 'Saving…' : 'Save username'}</button>
           </form>
         </div>
       </div>

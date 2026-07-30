@@ -186,7 +186,7 @@ export function MarketBrowser({ rows, clubs, ownedPlayerIds }: MarketBrowserProp
             {filtered.length} players
           </span>
           {search !== deferredSearch && (
-            <span className="inline-flex items-center rounded-full border border-border bg-background px-3 py-1 text-xs text-muted-foreground">
+            <span role="status" aria-live="polite" className="inline-flex items-center rounded-full border border-border bg-background px-3 py-1 text-xs text-muted-foreground">
               Filtering...
             </span>
           )}

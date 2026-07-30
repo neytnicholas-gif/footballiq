@@ -31,7 +31,15 @@ export default function RootLayout({
   return (
     <html lang="en" className="dark">
       <body className="bg-background font-sans antialiased">
-        <AuthProvider>{children}</AuthProvider>
+        <a
+          href="#main-content"
+          className="fixed left-4 top-4 z-[100] -translate-y-24 rounded-xl bg-primary px-4 py-3 font-semibold text-primary-foreground shadow-xl transition focus:translate-y-0"
+        >
+          Skip to main content
+        </a>
+        <div id="main-content" tabIndex={-1}>
+          <AuthProvider>{children}</AuthProvider>
+        </div>
         {process.env.NODE_ENV === 'production' && <Analytics />}
       </body>
     </html>

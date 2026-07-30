@@ -107,6 +107,8 @@ export function PredictionsGame() {
               <button
                 key={value}
                 type="button"
+                aria-label={value === 'home' ? `${fixture.home} win` : value === 'away' ? `${fixture.away} win` : 'Draw'}
+                aria-pressed={picks[fixture.id] === value}
                 disabled={locked}
                 onClick={() => {
                   setPicks((current) => ({ ...current, [fixture.id]: value }))
@@ -120,8 +122,10 @@ export function PredictionsGame() {
           </div>
 
           <div className="mt-4">
-            <label className="text-xs uppercase tracking-widest text-muted-foreground">Confidence</label>
+            <label htmlFor={`confidence-${fixture.id}`} className="text-xs uppercase tracking-widest text-muted-foreground">Confidence</label>
             <input
+              id={`confidence-${fixture.id}`}
+              name={`confidence-${fixture.id}`}
               type="range"
               min={1}
               max={5}

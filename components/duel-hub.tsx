@@ -47,6 +47,7 @@ export function DuelHub() {
               <button
                 key={item}
                 type="button"
+                aria-pressed={category === item}
                 onClick={() => setCategory(item)}
                 className={`rounded-full px-4 py-2 text-sm ${category === item ? 'bg-primary font-semibold text-primary-foreground' : 'border border-border bg-background text-muted-foreground'}`}
               >
@@ -58,6 +59,8 @@ export function DuelHub() {
           <label className="flex min-w-64 items-center gap-2 rounded-xl border border-border bg-background px-3 py-2">
             <Search className="size-4 text-muted-foreground" />
             <input
+              aria-label="Search duel packs"
+              name="duel-pack-search"
               value={search}
               onChange={(event) => setSearch(event.target.value)}
               placeholder="Search packs"
@@ -74,6 +77,7 @@ export function DuelHub() {
               <button
                 key={pack.id}
                 type="button"
+                aria-pressed={isActive}
                 onClick={() => setSelected(pack)}
                 className={`rounded-2xl border p-4 text-left transition ${isActive ? 'border-primary bg-primary/10' : 'border-border bg-background hover:border-primary/40'}`}
               >

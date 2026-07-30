@@ -134,7 +134,7 @@ export function ImportDashboard({ initial }: ImportDashboardProps) {
           Sprint 7C production approval.
         </p>
 
-        {message && <p className="mt-4 text-sm text-muted-foreground">{message}</p>}
+        {message && <p role="status" aria-live="polite" className="mt-4 text-sm text-muted-foreground">{message}</p>}
       </div>
 
       <div className="rounded-3xl border border-border bg-card p-6 sm:p-8">
