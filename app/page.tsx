@@ -223,7 +223,7 @@ const whyCards: WhyCard[] = [
   },
   {
     title: 'Player Market Strategy',
-    desc: 'Build and manage a football player portfolio with live value movement and risk decisions.',
+    desc: 'Build and manage a virtual football player portfolio with transparent value rules and risk decisions.',
     href: '/market',
     icon: Goal,
     kicker: 'Invest smarter',

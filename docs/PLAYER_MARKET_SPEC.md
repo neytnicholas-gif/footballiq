@@ -28,7 +28,8 @@ Build a football player valuation and portfolio game using virtual FIQ funds. Th
 
 ## Awaiting API, migration, and production gates
 
-- Awaiting API: fixture and per-match statistics mapping for weekly processing phases.
+- Awaiting API verification: fixture and per-match statistics mappings are implemented for
+  dry-run processing but still require credentialed provider validation.
 - Awaiting migrations: schema and RLS SQL prepared in supabase/migrations but not applied in this sprint.
 - Awaiting production: scheduler wiring, database migration apply/verify, legal sign-off, provider rights sign-off.
 
@@ -42,7 +43,7 @@ Build a football player valuation and portfolio game using virtual FIQ funds. Th
 - Migrations applied: No.
 - Database write mode enabled: No, explicitly blocked.
 - Public live market data enabled: No.
-- Weekly statistics import: Deferred to Sprint 7B.
+- Weekly statistics import: Sprint 7B dry-run and validation workflow implemented.
 - Valuation processing on real weekly stats: Deferred to Sprint 7C.
 
 ## Core game rules implemented in local server authority

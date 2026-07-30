@@ -230,7 +230,7 @@ export function MarketBrowser({ rows, clubs, ownedPlayerIds }: MarketBrowserProp
             return (
               <article
                 key={row.player.id}
-                className="rounded-2xl border border-border bg-card p-4 transition hover:border-primary/45"
+                className="min-w-0 rounded-2xl border border-border bg-card p-4 transition hover:border-primary/45"
               >
                 <div className="flex items-center justify-between gap-4">
                   <div className="flex min-w-0 items-center gap-3">
@@ -279,7 +279,7 @@ export function MarketBrowser({ rows, clubs, ownedPlayerIds }: MarketBrowserProp
                               : 'border border-border text-muted-foreground'
                         }`}
                       >
-                        {isOwned ? 'Owned' : row.player.isAvailable ? 'Buy' : 'Unavailable'}
+                        View player
                       </Link>
                     </div>
                   </div>
@@ -288,7 +288,7 @@ export function MarketBrowser({ rows, clubs, ownedPlayerIds }: MarketBrowserProp
             )
           })}
 
-            <div className="mt-2 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border bg-card px-4 py-3 text-sm">
+            <div className="mt-2 min-w-0 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border bg-card px-4 py-3 text-sm">
               <p className="text-muted-foreground">
                 Showing {pageRows.length === 0 ? 0 : startIndex + 1}-{startIndex + pageRows.length} of {filtered.length}
               </p>

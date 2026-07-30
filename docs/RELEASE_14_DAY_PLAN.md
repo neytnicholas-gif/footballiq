@@ -47,6 +47,15 @@ Scope: Legal, trust, Player Market foundation and public-beta readiness
 - Added mocked automated tests for discovery/import validation pathways.
 - Kept database write mode disabled and migrations unapplied.
 
+## Completed in Sprint 7B
+
+- Implemented provider-backed fixture and player-stat retrieval for weekly dry runs.
+- Added normalized weekly artifacts, validation, confidence checks, and unresolved-membership review handling.
+- Added deterministic valuation preview generation without persistent database writes.
+- Added administrator-only staged preview reporting.
+- Added weekly import, resume, and validation commands plus mocked automated coverage.
+- Kept persistent valuation execution, scheduler activation, and database writes disabled.
+
 ## Founder decisions still required
 
 - Confirm governing law and jurisdiction for Terms.
@@ -87,7 +96,8 @@ Scope: Legal, trust, Player Market foundation and public-beta readiness
 - Provider rights verification: Pending
 - Database write mode: Disabled
 - Public market live provider mode: Not enabled
-- Weekly fixture/stat import: Deferred to Sprint 7B
+- Weekly fixture/stat dry-run import: Implemented
+- Weekly provider mapping verification: Pending credentials
 - Valuation processing from weekly stats: Deferred to Sprint 7C
 
 ## Day-by-day execution outline (next 14 days)

@@ -167,7 +167,10 @@ Pipeline order:
 Callable services currently wired:
 
 - Import orchestration: lib/market/import-workflow.ts -> runMarketSeasonImport
-- Weekly valuation run: lib/market/weekly-job.ts -> runWeeklyMarketProcessing (deferred execution in Sprint 7A)
+- Weekly dry-run pipeline: lib/market/weekly-pipeline.ts -> runWeeklyImportDry
+- Weekly valuation preview: lib/market/weekly-pipeline.ts -> buildWeeklyValuationPreview
+- Weekly persistent valuation runner: lib/market/weekly-job.ts -> runWeeklyMarketProcessing
+  (execution remains disabled pending Sprint 7C approval)
 - Admin server actions: app/market/actions.ts -> runMarketImportAction, runMarketWeeklyAction
 - Admin API routes: /api/market/admin/import and /api/market/admin/weekly-run
 
@@ -214,5 +217,7 @@ A callable weekly-run route exists:
 
 - POST /api/market/admin/weekly-run
 
-This sprint does not deploy scheduler infrastructure. Connect this route to an approved scheduler in a later release stage.
-Weekly fixture/stat import is deferred to Sprint 7B, and valuation processing is deferred to Sprint 7C.
+This sprint does not deploy scheduler infrastructure. The route remains intentionally blocked
+until persistent processing is approved. Sprint 7B dry-run fixture/stat import and valuation
+preview are implemented through the offline commands; persistent valuation processing remains
+deferred to Sprint 7C.

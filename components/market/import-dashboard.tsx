@@ -129,7 +129,9 @@ export function ImportDashboard({ initial }: ImportDashboardProps) {
         </div>
 
         <p className="mt-3 text-xs text-muted-foreground">
-          Weekly fixture/stat import and valuation processing are deferred to Sprint 7B and Sprint 7C.
+          Weekly fixture/stat dry-run import and valuation preview are available through the
+          offline validation commands. Persistent valuation processing remains disabled pending
+          Sprint 7C production approval.
         </p>
 
         {message && <p className="mt-4 text-sm text-muted-foreground">{message}</p>}

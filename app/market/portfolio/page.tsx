@@ -15,6 +15,9 @@ export default async function MarketPortfolioPage() {
       <main className="min-h-screen bg-background">
         <SiteHeader />
         <section className="mx-auto max-w-4xl px-4 py-10 sm:px-6 sm:py-14">
+          <div className="mb-5">
+            <h1 className="text-3xl font-bold">Portfolio</h1>
+          </div>
           <PortfolioPanel initialPortfolio={null} authRequired />
         </section>
         <SiteFooter compact />

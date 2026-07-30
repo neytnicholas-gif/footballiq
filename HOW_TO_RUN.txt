@@ -38,3 +38,10 @@ Development-only season fallback (free plan):
    - npm run market:validate-squads
 
 If API_FOOTBALL_KEY is missing, validation exits cleanly with a BLOCKED message.
+
+Before saving or sharing a code checkpoint:
+1. Run:
+   npm run verify
+2. This performs ESLint, standalone TypeScript checking, all Player Market tests,
+   and the production build in one command.
+3. Do not continue to deployment unless every stage passes.
