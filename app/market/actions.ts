@@ -1,71 +1,49 @@
 'use server'
 
-import { randomUUID } from 'crypto'
 import { createClient } from '@/lib/supabase/server'
 import { assertMarketAdminUser } from '@/lib/market/admin-auth'
 import {
-  buyPlayerForUser,
-  ensurePortfolioForUser,
   getMarketAdminDashboardView,
-  getPortfolioForUser,
-  sellPlayerForUser,
 } from '@/lib/market/demo-store'
 import { runMarketSeasonImport } from '@/lib/market/import-workflow'
+import type { PortfolioView } from '@/lib/market/types'
 
-export async function ensureMarketPortfolioAction() {
-  const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+type MarketPortfolioActionResult =
+  | { ok: true; portfolio: PortfolioView }
+  | { ok: false; code: string; message: string }
 
-  if (!user) return { ok: false as const, code: 'AUTH_REQUIRED', message: 'Sign in to create a portfolio.' }
-
-  const portfolio = await ensurePortfolioForUser(user.id)
-  return { ok: true as const, portfolio }
+export async function ensureMarketPortfolioAction(): Promise<MarketPortfolioActionResult> {
+  return marketCatalogueUnavailable()
 }
 
-export async function getMarketPortfolioAction() {
-  const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
-  if (!user) return { ok: false as const, code: 'AUTH_REQUIRED', message: 'Sign in to manage your portfolio.' }
-
-  const portfolio = await getPortfolioForUser(user.id)
-  if (!portfolio) return { ok: false as const, code: 'PORTFOLIO_NOT_FOUND', message: 'Portfolio not found.' }
-
-  return { ok: true as const, portfolio }
+export async function getMarketPortfolioAction(): Promise<MarketPortfolioActionResult> {
+  return marketCatalogueUnavailable()
 }
 
-export async function buyMarketPlayerAction(playerId: string, clientRequestId?: string) {
-  const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
-  if (!user) return { ok: false as const, code: 'AUTH_REQUIRED', message: 'Sign in to buy players.' }
-
-  return buyPlayerForUser({
-    userId: user.id,
-    playerId,
-    idempotencyKey: clientRequestId?.trim() || randomUUID(),
-  })
+export async function buyMarketPlayerAction(
+  playerId: string,
+  clientRequestId?: string,
+): Promise<MarketPortfolioActionResult> {
+  void playerId
+  void clientRequestId
+  return marketCatalogueUnavailable()
 }
 
-export async function sellMarketPlayerAction(playerId: string, clientRequestId?: string) {
-  const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+export async function sellMarketPlayerAction(
+  playerId: string,
+  clientRequestId?: string,
+): Promise<MarketPortfolioActionResult> {
+  void playerId
+  void clientRequestId
+  return marketCatalogueUnavailable()
+}
 
-  if (!user) return { ok: false as const, code: 'AUTH_REQUIRED', message: 'Sign in to sell players.' }
-
-  return sellPlayerForUser({
-    userId: user.id,
-    playerId,
-    idempotencyKey: clientRequestId?.trim() || randomUUID(),
-  })
+function marketCatalogueUnavailable() {
+  return {
+    ok: false as const,
+    code: 'CATALOGUE_VERIFICATION_PENDING',
+    message: 'The 2026/27 player catalogue is being verified. Portfolio actions are temporarily unavailable.',
+  }
 }
 
 export async function getMarketAdminDashboardAction() {

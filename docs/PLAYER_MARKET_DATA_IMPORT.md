@@ -39,6 +39,7 @@ Default behavior for non-secret settings:
 Development-only fallback:
 
 - When free-plan access does not include 2026, set MARKET_TARGET_SEASON=2024 in `.env.local` for local dry-run development.
+- Artifacts created from this fallback are developer-only validation inputs and must never appear in the public Player Market catalogue.
 - Intended production target remains 2026 (2026/27) and should stay documented but inactive until provider access exists.
 
 League ID note:

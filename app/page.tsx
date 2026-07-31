@@ -36,6 +36,7 @@ import {
   scoutQuestions,
   whoAmIQuestions,
 } from '@/lib/game-data'
+import { PLAYER_MARKET_HOME_FEATURE } from '@/lib/market/home-feature'
 
 type ModeCard = {
   theme: string
@@ -432,6 +433,50 @@ export default function HomePage() {
               </div>
             </>
           )}
+        </div>
+      </Reveal>
+
+      <Reveal as="section" className="mx-auto max-w-7xl px-4 pt-10 sm:px-6">
+        <div
+          data-market-feature="category-independent"
+          className="relative overflow-hidden rounded-[2rem] border border-primary/25 bg-[radial-gradient(circle_at_top_right,rgba(55,220,130,.2),transparent_38%),linear-gradient(135deg,rgba(55,220,130,.1),rgba(10,14,20,.94)_58%),var(--card)] p-6 shadow-[0_30px_90px_-55px_rgba(55,220,130,.7)] sm:p-8 lg:p-10"
+        >
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute -right-16 -top-20 size-72 rounded-full border border-primary/15 bg-primary/5 blur-[2px]"
+          />
+          <div className="relative grid gap-8 lg:grid-cols-[1.15fr_.85fr] lg:items-center">
+            <div>
+              <div className="flex flex-wrap items-center gap-3">
+                <span className="flex size-11 items-center justify-center rounded-2xl border border-primary/20 bg-primary/10 text-primary">
+                  <TrendingUp className="size-5" />
+                </span>
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-[.24em] text-primary">Featured retention game</p>
+                  <p className="mt-1 text-xs text-muted-foreground">2026/27 catalogue verification in progress</p>
+                </div>
+              </div>
+              <h2 className="mt-6 text-balance text-3xl font-black tracking-tight sm:text-5xl">
+                {PLAYER_MARKET_HOME_FEATURE.title}
+              </h2>
+              <p className="mt-4 max-w-2xl text-pretty text-base leading-relaxed text-muted-foreground sm:text-lg">
+                {PLAYER_MARKET_HOME_FEATURE.loop}
+              </p>
+              <Link
+                href={PLAYER_MARKET_HOME_FEATURE.href}
+                className="mt-7 inline-flex h-12 items-center justify-center gap-2 rounded-full bg-primary px-6 font-semibold text-primary-foreground shadow-[0_18px_45px_-22px_color-mix(in_oklch,var(--primary)_75%,transparent)] transition hover:-translate-y-0.5"
+              >
+                {PLAYER_MARKET_HOME_FEATURE.actionLabel} <ArrowRight className="size-4" />
+              </Link>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2">
+              {PLAYER_MARKET_HOME_FEATURE.rules.map((rule) => (
+                <div key={rule} className="rounded-2xl border border-border/80 bg-background/55 p-4 backdrop-blur">
+                  <p className="text-sm font-semibold text-foreground">{rule}</p>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       </Reveal>
 

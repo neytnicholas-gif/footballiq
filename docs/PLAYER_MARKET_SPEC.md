@@ -9,8 +9,8 @@ Build a football player valuation and portfolio game using virtual FIQ funds. Th
 ## Current status summary
 
 - Implemented: Market browse route, player detail route, portfolio route, dedicated market leaderboard, deterministic valuation module, server-side local transaction authority, admin import dashboard route, provider-backed competition discovery, and provider-backed dry-run club and squad import validation.
-- Locally playable: Yes, with safe development-season players and clubs generated from cached dry-run artifacts.
-- Development-labeled: Yes. Market entities are clearly marked as development data.
+- Public catalogue available: No. Public browsing fails closed until a licensed, current and provenance-backed 2026/27 catalogue is approved.
+- Developer-only data: Cached dry-run and fictional seed records remain isolated for automated tests and import-development work; they are not public catalogue inputs.
 - Awaiting database migration: Yes. Supabase migration files are prepared but not applied.
 - Awaiting API credentials: Yes. Provider adapter requires server-side API_FOOTBALL_KEY and endpoint configuration.
 - Awaiting real squad import write mode: Yes. Real provider retrieval and normalization are implemented in dry-run mode, but staging/production writes remain disabled in Sprint 7A.
@@ -142,6 +142,7 @@ Prepared SQL target:
 ## Important constraints and disclaimers
 
 - FIQ currency has no real-world monetary value.
-- Current market players are development-season data and not live 2026/27 verified production squads.
+- Public market routes do not display development-season, fictional, stale-season or unverified player records.
+- The local `tmp/market-playable-dataset.json` artifact is developer-only and must never be treated as a public catalogue.
 - No live provider claims should be made until import mapping, rights verification, and production validation complete.
 - No logos, crests, photographs, or official kit reproductions are used.
