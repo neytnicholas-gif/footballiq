@@ -270,7 +270,7 @@ export type MarketAdminDashboardView = {
 
 export type PortfolioView = {
   portfolio: MarketPortfolio
-  holdings: Array<MarketHolding & { player: MarketPlayer; club: MarketClub }>
+  holdings: Array<MarketHolding & { player: MarketPlayer; club?: MarketClub }>
   transactions: Array<MarketTransaction & { player: MarketPlayer }>
   dailyLimit: MarketDailyLimit
   purchasesRemaining: number

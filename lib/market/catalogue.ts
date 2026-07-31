@@ -6,6 +6,9 @@ export const MANUAL_CATALOGUE_KEY = 'footballiq-manual-v1' as const
 export const FOOTBALLIQ_INTERNAL_ID_PATTERN = /^fiq_player_[a-z0-9][a-z0-9_-]{2,63}$/
 
 export type ManualAvailabilityStatus = 'available' | 'sell_only' | 'inactive'
+export function canBuyManualPlayer(status: ManualAvailabilityStatus): boolean { return status === 'available' }
+export function canSellManualPlayer(status: ManualAvailabilityStatus): boolean { return status === 'available' || status === 'sell_only' || status === 'inactive' }
+export function isPubliclyBrowseableManualPlayer(status: ManualAvailabilityStatus): boolean { return status !== 'inactive' }
 export type ManualValueHistoryPoint = { effectiveAt: string; valueMinor: number }
 export type MarketCatalogueRecord = {
   internalId: string

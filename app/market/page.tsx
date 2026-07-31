@@ -4,10 +4,15 @@ import { CatalogueVerificationState } from '@/components/market/catalogue-verifi
 import { MarketBrowser } from '@/components/market/market-browser'
 import { loadPublicCatalogueState } from '@/lib/market/public-catalogue-loader'
 import { buildApprovedCatalogueViews } from '@/lib/market/catalogue-market-view'
+import { isPubliclyBrowseableManualPlayer } from '@/lib/market/catalogue'
 
 export default async function MarketPage() {
   const catalogueState = await loadPublicCatalogueState()
-  const rows = catalogueState.available ? buildApprovedCatalogueViews(catalogueState.records) : []
+  const rows = catalogueState.available
+    ? buildApprovedCatalogueViews(catalogueState.records).filter((row) =>
+        isPubliclyBrowseableManualPlayer(row.player.availabilityStatus as 'available' | 'sell_only' | 'inactive'),
+      )
+    : []
   return (
     <main className="min-h-screen bg-background">
       <SiteHeader />

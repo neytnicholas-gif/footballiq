@@ -430,18 +430,17 @@ function toPortfolioView(
   return {
     portfolio: { ...record.portfolio },
     holdings: record.holdings
-      .map((holding) => {
+      .flatMap((holding) => {
         const player = playersById.get(holding.playerId)
-        if (!player) return null
+        if (!player) return []
         const club = clubsById.get(player.clubId)
-        if (!club) return null
-        return {
+        if (!club) return []
+        return [{
           ...holding,
           player,
           club,
-        }
-      })
-      .filter((item): item is PortfolioView['holdings'][number] => Boolean(item)),
+        }]
+      }),
     transactions: [...record.transactions]
       .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
       .map((transaction) => {

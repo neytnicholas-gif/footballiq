@@ -261,7 +261,11 @@ export function PortfolioPanel({ initialPortfolio, authRequired }: PortfolioPane
                     <div>
                       <p className="font-semibold">{holding.player.displayName}</p>
                       <p className="text-sm text-muted-foreground">
-                        {holding.club.shortName} - {holding.player.positionGroup}
+                        {holding.player.availabilityStatus === 'inactive'
+                          ? 'Inactive — selling remains available at the last authoritative value'
+                          : holding.player.availabilityStatus === 'sell_only'
+                            ? 'Sell only'
+                            : 'Available'}
                       </p>
                     </div>
                     <button
