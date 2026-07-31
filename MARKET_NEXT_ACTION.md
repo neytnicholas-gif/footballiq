@@ -4,7 +4,7 @@ Audit date: 2026-07-31
 Audited commit: `308ac13a21f83eb50b3962fdc78edf5cf0d97d2d`
 Scope: repository-only inspection. No provider request, API quota use, Supabase connection, migration application, catalogue approval, deployment or market activation was performed.
 
-> Completion note: this audit captured the pre-implementation state. Market Foundation Completion V1 subsequently adds repository migration `20260731_03_market_foundation_completion_v1.sql`, including `player_season_stats`, `market_public_leaderboard` and fingerprint-bound catalogue activation. Those objects still do not exist remotely unless that migration is separately reviewed and applied.
+> Completion note: this audit captured the pre-implementation state. Market Foundation Completion V1 subsequently adds repository migration `20260731000300_market_foundation_completion_v1.sql`, including `player_season_stats`, `market_public_leaderboard` and fingerprint-bound catalogue activation. Those objects still do not exist remotely unless that migration is separately reviewed and applied.
 
 ## Executive conclusion
 
@@ -16,9 +16,9 @@ The safest next action is to obtain one licensed, human-reviewed JSON file conta
 
 The audited commit contained two Player Market migrations; Foundation Completion V1 adds a third:
 
-- `supabase/migrations/20260727_01_player_market_foundation.sql`
-- `supabase/migrations/20260727_02_player_market_security_and_functions.sql`
-- `supabase/migrations/20260731_03_market_foundation_completion_v1.sql`
+- `supabase/migrations/20260727000100_player_market_foundation.sql`
+- `supabase/migrations/20260727000200_player_market_security_and_functions.sql`
+- `supabase/migrations/20260731000300_market_foundation_completion_v1.sql`
 
 The foundation migration defines these 12 tables:
 

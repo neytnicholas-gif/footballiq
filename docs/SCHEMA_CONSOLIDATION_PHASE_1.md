@@ -16,8 +16,8 @@ The root-level SQL files remain preserved as legacy inputs until the deployed da
 | `FootballIQ_SUPABASE_COMPLETE_V6.sql` | Profiles, quiz results, predictions, triggers and quiz RPC | Legacy consolidation input |
 | `SUPABASE_MASTER_SETUP.sql` | Same as the V6 file | Exact duplicate of `FootballIQ_SUPABASE_COMPLETE_V6.sql` |
 | `FOOTBALLIQ_COMPETITIVE_PLATFORM.sql` | Mode and season statistics plus replacement quiz RPC | Legacy consolidation input; depends on the V6 objects |
-| `supabase/migrations/20260727_01_player_market_foundation.sql` | Player Market tables, indexes and triggers | Prepared migration; documented as not applied |
-| `supabase/migrations/20260727_02_player_market_security_and_functions.sql` | Player Market RLS, policies and RPC functions | Prepared migration; documented as not applied |
+| `supabase/migrations/20260727000100_player_market_foundation.sql` | Player Market tables, indexes and triggers | Prepared migration; documented as not applied |
+| `supabase/migrations/20260727000200_player_market_security_and_functions.sql` | Player Market RLS, policies and RPC functions | Prepared migration; documented as not applied |
 
 ## Intended database object inventory
 
@@ -116,4 +116,3 @@ Before any migration is applied:
 - No generated database types
 - No Football Journey, Passport, qualifications or reputation schema
 - No production grants, policies or function changes
-

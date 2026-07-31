@@ -28,7 +28,7 @@ const migrationPath = path.join(
   process.cwd(),
   'supabase',
   'migrations',
-  '20260731_03_market_foundation_completion_v1.sql',
+  '20260731000300_market_foundation_completion_v1.sql',
 )
 
 test('anonymous access is read-only and missing sessions return a structured result', async () => {

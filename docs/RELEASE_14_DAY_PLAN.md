@@ -83,7 +83,7 @@ Scope: Legal, trust, Player Market foundation and public-beta readiness
 ## Remaining work by category
 
 - Remaining API work: provider endpoint mapping completion for clubs, squads, fixtures, and player match stats.
-- Remaining migration work: apply and verify 20260727_01 and 20260727_02 market migrations in non-production then production.
+- Remaining migration work: apply and verify 20260727000100 and 20260727000200 market migrations in non-production then production.
 - Remaining legal work: provider rights confirmation, trademark usage review, and market launch wording sign-off.
 - Remaining production work: scheduler hookup, credential rollout, observability checks, and go/no-go dry run.
 

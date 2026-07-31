@@ -10,8 +10,8 @@ a separate non-production project. Never infer safety from an environment name.
 - Authorized operator and exact test-user identities.
 - Restorable pre-migration checkpoint, proven restore identifier, schema version,
   migration list, and relevant table row counts.
-- Reviewed migrations in order: `20260727_01`, `20260727_02`, `20260731_03`,
-  `20260731_04`, then `20260731_05`.
+- Reviewed migrations in order: `20260727000100`, `20260727000200`,
+  `20260731000300`, `20260731000400`, then `20260731000500`.
 - No real catalogue, approval, provider data, credentials, or production data in
   the test fixtures.
 

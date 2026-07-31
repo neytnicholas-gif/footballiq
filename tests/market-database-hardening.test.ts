@@ -3,7 +3,9 @@ import { readFile } from 'node:fs/promises'
 import test from 'node:test'
 import { canBuyManualPlayer, canSellManualPlayer, isPubliclyBrowseableManualPlayer } from '../lib/market/catalogue'
 
-const migrationUrl = new URL('../supabase/migrations/20260731_05_manual_market_database_hardening_v1.sql', import.meta.url)
+const migrationUrl = new URL('../supabase/migrations/20260731000500_manual_market_database_hardening_v1.sql', import.meta.url)
+const aclMigrationUrl = new URL('../supabase/migrations/20260731194719_harden_market_function_acl.sql', import.meta.url)
+const integrityMigrationUrl = new URL('../supabase/migrations/20260731201710_enforce_market_transaction_integrity.sql', import.meta.url)
 async function migration() { return readFile(migrationUrl, 'utf8') }
 
 test('manual activation requires exact fingerprint and all five declarations', async () => {
@@ -32,7 +34,7 @@ test('portfolio snapshot is club independent and legacy valuation is disabled', 
 
 test('availability is authoritative and inactive holdings remain sellable', async () => {
   const sql = await migration()
-  const transactionSql = await readFile(new URL('../supabase/migrations/20260731_03_market_foundation_completion_v1.sql', import.meta.url), 'utf8')
+  const transactionSql = await readFile(new URL('../supabase/migrations/20260731000300_market_foundation_completion_v1.sql', import.meta.url), 'utf8')
   const buyFunction = transactionSql.slice(transactionSql.indexOf('create or replace function public.market_buy_player'), transactionSql.indexOf('create or replace function public.market_sell_player'))
   const sellFunction = transactionSql.slice(transactionSql.indexOf('create or replace function public.market_sell_player'), transactionSql.indexOf('create or replace function public.market_get_portfolio_snapshot'))
   assert.match(sql, /new\.is_available := new\.availability_status = 'available'/)
@@ -53,9 +55,46 @@ test('availability is authoritative and inactive holdings remain sellable', asyn
 
 test('manual admin path remains service-role plus market_admins protected', async () => {
   const hardening = await migration()
-  const manual = await readFile(new URL('../supabase/migrations/20260731_04_manual_market_v1.sql', import.meta.url), 'utf8')
+  const manual = await readFile(new URL('../supabase/migrations/20260731000400_manual_market_v1.sql', import.meta.url), 'utf8')
   assert.match(manual, /ADMIN_REQUIRED/)
   assert.match(hardening, /grant execute on function public\.market_admin_update_player_value[\s\S]+to service_role/i)
   assert.doesNotMatch(hardening, /grant execute on function public\.market_admin_update_player_value[\s\S]+to authenticated/i)
   assert.match(hardening, /audited[\s\S]+not cryptographic proof/i)
+})
+
+test('function ACL migration uses explicit role allowlists and fixed search paths', async () => {
+  const sql = await readFile(aclMigrationUrl, 'utf8')
+  for (const mutation of [
+    'market_create_or_get_portfolio()',
+    'market_buy_player(uuid, text, int)',
+    'market_sell_player(uuid, text)',
+    'market_get_portfolio_snapshot()',
+  ]) {
+    assert.match(sql, new RegExp(`revoke all on function public\\.${mutation.replace(/[()]/g, '\\$&')} from public, anon, authenticated, service_role`, 'i'))
+    assert.match(sql, new RegExp(`grant execute on function public\\.${mutation.replace(/[()]/g, '\\$&')} to authenticated, service_role`, 'i'))
+  }
+  for (const internal of [
+    'market_activate_catalogue(uuid, text)',
+    'market_admin_update_player_value(text, int, int, timestamptz, text, text, text, uuid)',
+    'market_rebuild_leaderboard_values()',
+    'market_recalculate_portfolio_totals(uuid)',
+    'market_refresh_player_season_stats(text)',
+    'market_upsert_public_leaderboard_row(uuid, text, bigint)',
+  ]) {
+    assert.match(sql, new RegExp(`grant execute on function public\\.${internal.replace(/[()]/g, '\\$&')} to service_role`, 'i'))
+  }
+  assert.match(sql, /revoke all on function public\.set_updated_at\(\) from public, anon, authenticated, service_role/i)
+  assert.match(sql, /alter function public\.set_updated_at\(\) set search_path = pg_catalog, public/i)
+  assert.equal((sql.match(/set search_path = pg_catalog, public/gi) ?? []).length, 17)
+})
+
+test('transaction integrity migration fixes admin ambiguity and makes valuation events append-only', async () => {
+  const sql = await readFile(integrityMigrationUrl, 'utf8')
+  assert.match(sql, /affected_portfolio_id uuid/i)
+  assert.match(sql, /select distinct holding\.portfolio_id[\s\S]+where holding\.player_id = player_row\.id/i)
+  assert.doesNotMatch(sql, /for portfolio_id in select distinct portfolio_id/i)
+  assert.match(sql, /VALUATION_EVENTS_ARE_IMMUTABLE/)
+  assert.match(sql, /before update or delete on public\.market_valuation_events/i)
+  assert.match(sql, /revoke update, delete on table public\.market_valuation_events from public, anon, authenticated, service_role/i)
+  assert.match(sql, /grant execute on function public\.market_admin_update_player_value[\s\S]+to service_role/i)
 })
