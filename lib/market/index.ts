@@ -1,6 +1,4 @@
 export * from '@/lib/market/types'
 export * from '@/lib/market/settings'
 export * from '@/lib/market/decimal'
-export * from '@/lib/market/valuation-engine'
 export * from '@/lib/market/filters'
-export * from '@/lib/market/demo-store'

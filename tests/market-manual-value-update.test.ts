@@ -8,6 +8,6 @@ test('manual update contract rejects unsafe, stale-prone or unauditable input', 
 test('migration keeps value updates server-only, locked, idempotent and atomic', async () => {
   const sql = await readFile(new URL('../supabase/migrations/20260731_04_manual_market_v1.sql', import.meta.url), 'utf8')
   for (const requirement of ['security definer', 'ADMIN_REQUIRED', 'for update', 'STALE_VALUE', 'IDEMPOTENCY_KEY_CONFLICT', 'market_valuation_events', 'market_recalculate_portfolio_totals', 'revoke all on function', 'grant execute on function public.market_admin_update_player_value', 'to service_role']) assert.match(sql, new RegExp(requirement, 'i'))
-  assert.doesNotMatch(sql, /grant execute on function public\.market_admin_update_player_value[^;]+to authenticated/is)
-  assert.doesNotMatch(sql, /private_justification[^;]*market_valuation_events/is)
+  assert.doesNotMatch(sql, /grant execute on function public\.market_admin_update_player_value[^;]+to authenticated/i)
+  assert.match(sql, /insert into public\.market_valuation_events[\s\S]+p_new_value_minor - player_row\.current_price_minor, null, 'manual-v1'/i)
 })

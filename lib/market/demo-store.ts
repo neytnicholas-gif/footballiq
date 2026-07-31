@@ -1,5 +1,4 @@
 import { DEMO_CLUBS, DEMO_PLAYERS, DEMO_SEASON } from './demo-seed'
-import { loadDevelopmentDatasetFromFileSync } from './development-dataset'
 import { percentageReturnBps } from './decimal'
 import { filterAndSortPlayers, type MarketFilters } from './filters'
 import { currentMarketDateISO, MARKET_RULES } from './settings'
@@ -101,10 +100,9 @@ function createSeedValuationEvents(players: MarketPlayer[]): Map<string, MarketV
 }
 
 function createInitialState(): DemoStoreState {
-  const generatedDataset = loadDevelopmentDatasetFromFileSync()
-  const baseSeason = generatedDataset?.season ?? DEMO_SEASON
-  const baseClubs = generatedDataset?.clubs ?? DEMO_CLUBS
-  const basePlayers = generatedDataset?.players ?? DEMO_PLAYERS
+  const baseSeason = DEMO_SEASON
+  const baseClubs = DEMO_CLUBS
+  const basePlayers = DEMO_PLAYERS
 
   const clubsById = new Map(baseClubs.map((club) => [club.id, club]))
   const playersById = new Map(basePlayers.map((player) => [player.id, { ...player }]))
@@ -121,7 +119,7 @@ function createInitialState(): DemoStoreState {
     portfoliosByUserId: new Map(),
     portfolioLocks: new Map(),
     systemLogs: [],
-    provider: process.env.MARKET_DATA_PROVIDER || 'api-football',
+    provider: 'deprecated-test-fixture',
     lastImportAt: null,
     lastValuationAt: null,
     lastFixtureProcessedAt: null,

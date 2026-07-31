@@ -612,7 +612,7 @@ test('admin dashboard status/log store updates on import and weekly operations',
     queuedFixtures: 12,
     message: 'Dry-run import completed.',
     dryRun: true,
-    source: 'api-football',
+    source: 'deprecated-test-fixture',
   })
 
   setMarketWeeklyStatus({

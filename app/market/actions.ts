@@ -1,11 +1,6 @@
 'use server'
 
 import { createClient } from '@/lib/supabase/server'
-import { assertMarketAdminUser } from '@/lib/market/admin-auth'
-import {
-  getMarketAdminDashboardView,
-} from '@/lib/market/demo-store'
-import { runMarketSeasonImport } from '@/lib/market/import-workflow'
 import { requireMarketUser } from '@/lib/market/action-policy'
 import { loadPublicCatalogueState } from '@/lib/market/public-catalogue-loader'
 import type { PortfolioView } from '@/lib/market/types'
@@ -22,13 +17,11 @@ export async function ensureMarketPortfolioAction(): Promise<MarketPortfolioActi
   if (error) return databaseFailure(error.message)
   return getPortfolioSnapshot(context.supabase)
 }
-
 export async function getMarketPortfolioAction(): Promise<MarketPortfolioActionResult> {
   const context = await authorizedMarketContext()
   if (!context.ok) return context
   return getPortfolioSnapshot(context.supabase)
 }
-
 export async function buyMarketPlayerAction(
   playerId: string,
   clientRequestId?: string,
@@ -123,60 +116,3 @@ async function getPortfolioSnapshot(
   return { ok: true, portfolio: data as unknown as PortfolioView }
 }
 
-export async function getMarketAdminDashboardAction() {
-  const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
-  assertMarketAdminUser(user?.id)
-
-  return {
-    ok: true as const,
-    dashboard: getMarketAdminDashboardView(),
-  }
-}
-
-type MarketImportActionInput = {
-  competitionKey: string
-  seasonKey: string
-  dryRun: boolean
-}
-
-export async function runMarketImportAction(input: MarketImportActionInput) {
-  const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
-  assertMarketAdminUser(user?.id)
-
-  const report = await runMarketSeasonImport(input)
-
-  return {
-    ok: true as const,
-    report,
-    dashboard: getMarketAdminDashboardView(),
-  }
-}
-
-type MarketWeeklyActionInput = {
-  seasonKey: string
-  dryRun: boolean
-}
-
-export async function runMarketWeeklyAction(input: MarketWeeklyActionInput) {
-  void input
-  const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
-  assertMarketAdminUser(user?.id)
-
-  return {
-    ok: false as const,
-    message: 'Weekly valuation processing is deferred to Sprint 7C.',
-    dashboard: getMarketAdminDashboardView(),
-  }
-}
