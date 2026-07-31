@@ -29,3 +29,14 @@ Scope: Public-beta web application review
 - Risk levels are practical launch classifications, not legal conclusions.
 - No item is marked definitively safe without verification evidence.
 - This register should be reviewed with qualified legal counsel before full production release.
+# Simplified manually managed market V1 status
+
+The active V1 plan uses an independently and manually curated small catalogue and
+original FootballIQ play-money values. Provider imports, systematic squad-list
+collection, provider identifiers/statistics, photographs, crests, and automatic
+rating-derived valuations are prohibited. Activation requires the declaration in
+`PLAYER_MARKET_MANUAL_V1.md` and exact fingerprint-bound approval.
+
+This does not eliminate trademark, database-right, personality/publicity-right,
+defamation, consumer-protection, or implied-endorsement risk. Names and valuation
+justifications require human review; private justifications must never be public.
