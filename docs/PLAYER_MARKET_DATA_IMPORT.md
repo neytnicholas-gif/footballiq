@@ -132,6 +132,8 @@ These commands run server-side and must never expose API keys in output.
 
 This is the safe path to use after provider access and storage rights are explicitly approved. These commands do not call API-Football.
 
+For the activation-preparation selection policy, use `PLAYER_MARKET_ACTIVATION_PREPARATION_V1.md`. The activation-ready workflow requires a licensed candidate export, explicit data-permission approval, prior-season Premier League minutes and current eligibility verification. Generic structural validation alone cannot activate the market.
+
 ### 1. Keep the raw response outside Git
 
 Save the approved JSON input beneath:
@@ -140,7 +142,7 @@ Save the approved JSON input beneath:
 
 The complete `tmp/` directory is ignored by Git. Do not copy a provider response into a tracked folder unless the provider contract explicitly permits redistribution.
 
-The provider-neutral input must be a JSON object with a `records` array. Every record requires:
+The generic provider-neutral validation input is a JSON object with a `records` array. Every record requires:
 
 ```json
 {
@@ -164,10 +166,10 @@ Do not manually fill missing values or guess transfers.
 npm run market:catalogue:import -- --input tmp/market-catalogue/raw/provider-response.json
 ```
 
-Outputs are separated:
+Generic outputs are separated and deliberately not activation-ready:
 
-- Validated output: `tmp/market-catalogue/validated/catalogue.validated.json`
-- Review report: `tmp/market-catalogue/reports/catalogue.review.json`
+- Validated output: `tmp/market-catalogue/validated/catalogue.unselected.json`
+- Review report: `tmp/market-catalogue/reports/catalogue.unselected.review.json`
 - Raw input remains in: `tmp/market-catalogue/raw/`
 
 The command exits with an error and keeps the public catalogue closed if any record is rejected or if zero records are accepted.

@@ -3,10 +3,14 @@ import path from 'path'
 import {
   CATALOGUE_ARTIFACT_VERSION,
   catalogueFingerprint,
-  type ValidatedCatalogueArtifact,
 } from '../lib/market/catalogue-pipeline'
 import { validatePublicMarketCatalogue } from '../lib/market/catalogue'
 import type { CatalogueApprovalManifest } from '../lib/market/public-catalogue-loader'
+import {
+  CATALOGUE_SELECTION_POLICY_VERSION,
+  REQUIRED_SELECTED_PLAYERS,
+  type SelectionValidatedArtifact,
+} from '../lib/market/catalogue-selection'
 
 const OUTPUT_ROOT = path.join(process.cwd(), 'tmp', 'market-catalogue')
 const VALIDATED_PATH = path.join(OUTPUT_ROOT, 'validated', 'catalogue.validated.json')
@@ -23,12 +27,15 @@ async function main() {
     throw new Error('Usage: npm run market:catalogue:approve -- --reviewer <reviewer-name>')
   }
 
-  const validated = JSON.parse(await readFile(VALIDATED_PATH, 'utf8')) as ValidatedCatalogueArtifact
+  const validated = JSON.parse(await readFile(VALIDATED_PATH, 'utf8')) as SelectionValidatedArtifact
   if (
     validated.version !== CATALOGUE_ARTIFACT_VERSION ||
     validated.blockingErrorCount !== 0 ||
+    validated.unresolvedWarningCount !== 0 ||
+    validated.selectionPolicyVersion !== CATALOGUE_SELECTION_POLICY_VERSION ||
+    !validated.permissionEvidenceFingerprint?.trim() ||
     !Array.isArray(validated.records) ||
-    validated.records.length === 0
+    validated.records.length !== REQUIRED_SELECTED_PLAYERS
   ) {
     throw new Error('BLOCKED: Validated catalogue is empty or still contains blocking errors.')
   }
@@ -38,10 +45,17 @@ async function main() {
     throw new Error('BLOCKED: Catalogue failed final application-boundary revalidation.')
   }
 
+  const finalFingerprint = catalogueFingerprint(validated.records)
+  if (validated.catalogueFingerprint !== finalFingerprint) {
+    throw new Error('BLOCKED: Stored catalogue fingerprint does not match the canonical selected records.')
+  }
+
   const approval: CatalogueApprovalManifest = {
     version: CATALOGUE_ARTIFACT_VERSION,
     approved: true,
-    catalogueFingerprint: catalogueFingerprint(validated.records),
+    catalogueFingerprint: finalFingerprint,
+    permissionEvidenceFingerprint: validated.permissionEvidenceFingerprint,
+    selectionPolicyVersion: validated.selectionPolicyVersion,
     reviewer,
     approvedAt: new Date().toISOString(),
   }

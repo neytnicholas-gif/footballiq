@@ -6,8 +6,8 @@ import {
 } from '../lib/market/catalogue-pipeline'
 
 const OUTPUT_ROOT = path.join(process.cwd(), 'tmp', 'market-catalogue')
-const VALIDATED_PATH = path.join(OUTPUT_ROOT, 'validated', 'catalogue.validated.json')
-const REPORT_PATH = path.join(OUTPUT_ROOT, 'reports', 'catalogue.review.json')
+const VALIDATED_PATH = path.join(OUTPUT_ROOT, 'validated', 'catalogue.unselected.json')
+const REPORT_PATH = path.join(OUTPUT_ROOT, 'reports', 'catalogue.unselected.review.json')
 
 function argumentValue(name: string): string | null {
   const index = process.argv.indexOf(name)
@@ -47,7 +47,7 @@ async function main() {
     return
   }
 
-  console.log('PASS: Catalogue is valid but remains closed until explicit local approval.')
+  console.log('PASS: Records are structurally valid but cannot activate until deterministic selection and permission review.')
 }
 
 void main().catch((error) => {

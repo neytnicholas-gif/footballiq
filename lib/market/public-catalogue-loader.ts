@@ -3,14 +3,20 @@ import path from 'path'
 import {
   CATALOGUE_ARTIFACT_VERSION,
   catalogueFingerprint,
-  type ValidatedCatalogueArtifact,
 } from '@/lib/market/catalogue-pipeline'
 import { PUBLIC_MARKET_CATALOGUE_STATUS, validatePublicMarketCatalogue } from '@/lib/market/catalogue'
+import {
+  CATALOGUE_SELECTION_POLICY_VERSION,
+  REQUIRED_SELECTED_PLAYERS,
+  type SelectionValidatedArtifact,
+} from '@/lib/market/catalogue-selection'
 
 export type CatalogueApprovalManifest = {
   version: typeof CATALOGUE_ARTIFACT_VERSION
   approved: true
   catalogueFingerprint: string
+  permissionEvidenceFingerprint: string
+  selectionPolicyVersion: typeof CATALOGUE_SELECTION_POLICY_VERSION
   reviewer: string
   approvedAt: string
 }
@@ -28,7 +34,7 @@ export type PublicCatalogueRuntimeState =
       seasonKey: string
       message: string
       reason: string
-      records: ValidatedCatalogueArtifact['records']
+      records: SelectionValidatedArtifact['records']
     }
 
 export const DEFAULT_VALIDATED_CATALOGUE_PATH = path.join(
@@ -65,15 +71,18 @@ export async function loadPublicCatalogueState(options: {
   try {
     const validatedPath = options.validatedPath ?? DEFAULT_VALIDATED_CATALOGUE_PATH
     const approvalPath = options.approvalPath ?? DEFAULT_CATALOGUE_APPROVAL_PATH
-    const validated = (await readJson(validatedPath)) as ValidatedCatalogueArtifact
+    const validated = (await readJson(validatedPath)) as SelectionValidatedArtifact
     const approval = (await readJson(approvalPath)) as CatalogueApprovalManifest
 
     if (
       validated.version !== CATALOGUE_ARTIFACT_VERSION ||
       validated.seasonKey !== PUBLIC_MARKET_CATALOGUE_STATUS.seasonKey ||
       validated.blockingErrorCount !== 0 ||
+      validated.unresolvedWarningCount !== 0 ||
+      validated.selectionPolicyVersion !== CATALOGUE_SELECTION_POLICY_VERSION ||
+      !validated.permissionEvidenceFingerprint?.trim() ||
       !Array.isArray(validated.records) ||
-      validated.records.length === 0
+      validated.records.length !== REQUIRED_SELECTED_PLAYERS
     ) {
       return closed('Validated catalogue is missing, empty or contains blocking errors.')
     }
@@ -85,8 +94,11 @@ export async function loadPublicCatalogueState(options: {
 
     const fingerprint = catalogueFingerprint(validated.records)
     if (
+      validated.catalogueFingerprint !== fingerprint ||
       approval.version !== CATALOGUE_ARTIFACT_VERSION ||
       approval.approved !== true ||
+      approval.selectionPolicyVersion !== validated.selectionPolicyVersion ||
+      approval.permissionEvidenceFingerprint !== validated.permissionEvidenceFingerprint ||
       !approval.reviewer?.trim() ||
       !Number.isFinite(Date.parse(approval.approvedAt)) ||
       approval.catalogueFingerprint !== fingerprint

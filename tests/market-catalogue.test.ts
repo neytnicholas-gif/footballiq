@@ -128,21 +128,22 @@ test('closed market remains when catalogue is missing, partially invalid or unap
   assert.deepEqual(unapproved.records, [])
 })
 
-test('valid catalogue loads only after explicit matching local approval', async () => {
+test('generic validation cannot bypass deterministic selection even with a matching approval', async () => {
   const result = buildCatalogueArtifacts({ records: [validRecord()] })
   const approval: CatalogueApprovalManifest = {
     version: 1,
     approved: true,
     catalogueFingerprint: catalogueFingerprint(result.validated.records),
+    permissionEvidenceFingerprint: 'permission-fingerprint',
+    selectionPolicyVersion: 'pl-2026-27-prior-minutes-40-plus-10-v1',
     reviewer: 'catalogue-reviewer',
     approvedAt: '2026-07-31T09:00:00.000Z',
   }
   const paths = await writeRuntimeArtifacts({ validated: result.validated, approval })
   const state = await loadPublicCatalogueState(paths)
 
-  assert.equal(state.available, true)
-  assert.equal(state.records.length, 1)
-  assert.equal(state.records[0].providerPlayerId, 'provider-player-1')
+  assert.equal(state.available, false)
+  assert.equal(state.records.length, 0)
 })
 
 test('direct player routes remain blocked when the public catalogue is closed', async () => {
