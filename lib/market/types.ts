@@ -1,6 +1,6 @@
 export type PositionGroup = 'GK' | 'DEF' | 'MID' | 'FWD'
 
-export type AvailabilityStatus = 'available' | 'injured' | 'suspended' | 'transferred' | 'unknown'
+export type AvailabilityStatus = 'available' | 'sell_only' | 'inactive' | 'injured' | 'suspended' | 'transferred' | 'unknown'
 
 export type MarketSort = 'alphabetical' | 'price-asc' | 'price-desc' | 'movement-desc' | 'movement-asc' | 'club-asc'
 

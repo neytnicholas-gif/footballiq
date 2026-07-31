@@ -28,11 +28,7 @@ import {
   sellPlayerForUser,
   ensurePortfolioForUser,
 } from '../lib/market/demo-store'
-import {
-  PUBLIC_MARKET_SEASON_KEY,
-  type MarketCatalogueRecord,
-  validatePublicMarketCatalogue,
-} from '../lib/market/catalogue'
+import { MANUAL_CATALOGUE_KEY, type MarketCatalogueRecord, validatePublicMarketCatalogue } from '../lib/market/catalogue'
 import { PLAYER_MARKET_HOME_FEATURE } from '../lib/market/home-feature'
 import { MARKET_RULES } from '../lib/market/settings'
 import {
@@ -320,67 +316,22 @@ test('portfolio constraint helpers enforce buy/sell rules and ownership checks',
 
 function verifiedCatalogueRecord(overrides: Partial<MarketCatalogueRecord> = {}): MarketCatalogueRecord {
   return {
-    seasonKey: PUBLIC_MARKET_SEASON_KEY,
-    providerPlayerId: 'verified-player-1',
-    fullName: 'Verified Player',
-    clubName: 'Coventry City',
-    position: 'MID',
-    sourceType: 'approved-provider',
-    sourceReference: 'approved-provider:player:verified-player-1',
-    verifiedAt: '2026-07-31T00:00:00.000Z',
-    isActive: true,
+    internalId: 'fiq_player_0001',
+    displayName: 'Verified Player',
+    currentValueMinor: 125,
+    availabilityStatus: 'available',
+    valueHistory: [{ effectiveAt: '2026-07-31T00:00:00.000Z', valueMinor: 125 }],
     ...overrides,
   }
 }
 
-test('public market catalogue fails closed for generated, duplicate, stale and unverified records', () => {
-  const generated = verifiedCatalogueRecord({
-    providerPlayerId: 'generated-1',
-    sourceType: 'generated' as MarketCatalogueRecord['sourceType'],
-  })
-  const duplicateOne = verifiedCatalogueRecord({ providerPlayerId: 'duplicate-1' })
-  const duplicateTwo = verifiedCatalogueRecord({ providerPlayerId: 'duplicate-1', fullName: 'Duplicate Copy' })
-  const stale = verifiedCatalogueRecord({ providerPlayerId: 'stale-1', seasonKey: '2024/25' })
-  const unverified = verifiedCatalogueRecord({ providerPlayerId: 'unverified-1', sourceReference: '' })
-
-  const result = validatePublicMarketCatalogue([generated, duplicateOne, duplicateTwo, stale, unverified])
-
+test('public manual catalogue fails closed for invalid and duplicate FootballIQ records', () => {
+  const result = validatePublicMarketCatalogue({ schemaVersion: 1, catalogueKey: MANUAL_CATALOGUE_KEY, players: [
+    verifiedCatalogueRecord(),
+    verifiedCatalogueRecord({ displayName: 'Other Player' }),
+  ] })
   assert.deepEqual(result.accepted, [])
-  assert.deepEqual(
-    result.rejected.map((item) => item.code),
-    ['UNSUPPORTED_SOURCE', 'DUPLICATE_IDENTITY', 'DUPLICATE_IDENTITY', 'STALE_SEASON', 'UNVERIFIED_SOURCE'],
-  )
-})
-
-test('2026/27 club boundary excludes relegated and ineligible clubs and accepts promoted clubs', () => {
-  const clubs = [
-    'Southampton',
-    'Burnley',
-    'Wolverhampton Wanderers',
-    'Wolves',
-    'West Ham United',
-    'Coventry City',
-    'Ipswich Town',
-    'Hull City',
-  ]
-  const result = validatePublicMarketCatalogue(
-    clubs.map((clubName, index) =>
-      verifiedCatalogueRecord({
-        providerPlayerId: `club-boundary-${index}`,
-        fullName: `Boundary Player ${index}`,
-        clubName,
-      }),
-    ),
-  )
-
-  assert.deepEqual(result.accepted.map((record) => record.clubName), ['Coventry City', 'Ipswich Town', 'Hull City'])
-  assert.deepEqual(result.rejected.map((item) => item.code), [
-    'INELIGIBLE_CLUB',
-    'INELIGIBLE_CLUB',
-    'INELIGIBLE_CLUB',
-    'INELIGIBLE_CLUB',
-    'INELIGIBLE_CLUB',
-  ])
+  assert.ok(result.issues.some((item) => item.code === 'DUPLICATE_INTERNAL_ID'))
 })
 
 test('homepage Player Market feature is category-independent and preserves its CTA and rules', () => {

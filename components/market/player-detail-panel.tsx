@@ -1,12 +1,11 @@
 'use client'
 
-import { useMemo, useRef, useState, useTransition } from 'react'
+import { useRef, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { buyMarketPlayerAction, sellMarketPlayerAction } from '@/app/market/actions'
 import { formatMinorToMoney, formatSignedMinor } from '@/lib/market/decimal'
 import { MARKET_COPY, MARKET_RULES } from '@/lib/market/settings'
 import type { MarketPlayerProfileView } from '@/lib/market/types'
-import { ClubShirtIcon } from '@/components/market/club-shirt-icon'
 
 const ACTION_TIMEOUT_MS = 12000
 
@@ -44,17 +43,6 @@ export function PlayerDetailPanel({ row, authRequired, owned }: PlayerDetailPane
   const sellRequestIdRef = useRef<string | null>(null)
 
   const movement = row.player.currentPriceMinor - row.player.initialPriceMinor
-
-  const bankView = useMemo(() => {
-    const bank = row.player.performanceBankMilli / 1000
-    const direction = bank >= 0 ? 'increase' : 'decrease'
-    const gapToStep = bank >= 0 ? 1 - bank : 1 - Math.abs(bank)
-    return {
-      bank,
-      direction,
-      gapToStep,
-    }
-  }, [row.player.performanceBankMilli])
 
   async function executeBuy() {
     setMessage('')
@@ -115,17 +103,10 @@ export function PlayerDetailPanel({ row, authRequired, owned }: PlayerDetailPane
       <div className="rounded-3xl border border-border bg-card p-6 sm:p-8">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="flex items-start gap-3">
-            <ClubShirtIcon
-              primaryColour={row.club.primaryColour}
-              secondaryColour={row.club.secondaryColour}
-              label={row.club.shortName}
-            />
             <div>
               <p className="text-xs uppercase tracking-[.22em] text-primary">Player profile</p>
               <h1 className="mt-1 text-3xl font-bold">{row.player.fullName}</h1>
-              <p className="mt-1 text-sm text-muted-foreground">
-                {row.club.name} - {row.player.positionGroup} - {row.player.detailedPosition}
-              </p>
+              <p className="mt-1 text-sm text-muted-foreground">Manually reviewed FootballIQ market player</p>
             </div>
           </div>
 
@@ -135,7 +116,7 @@ export function PlayerDetailPanel({ row, authRequired, owned }: PlayerDetailPane
               {formatMinorToMoney(row.player.currentPriceMinor)} {MARKET_RULES.fiqCurrencyLabel}
             </p>
             <p className={movement >= 0 ? 'text-emerald-300' : 'text-rose-300'}>
-              Weekly change {formatSignedMinor(row.weeklyChangeMinor)}
+              Latest change {formatSignedMinor(row.weeklyChangeMinor)}
             </p>
           </div>
         </div>
@@ -143,10 +124,6 @@ export function PlayerDetailPanel({ row, authRequired, owned }: PlayerDetailPane
         <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <Metric label="Current value" value={`${formatMinorToMoney(row.player.currentPriceMinor)} FIQ`} />
           <Metric label="Total movement" value={formatSignedMinor(movement)} />
-          <Metric
-            label="Performance bank"
-            value={`${bankView.bank >= 0 ? '+' : ''}${bankView.bank.toFixed(1)}`}
-          />
           <Metric label="Last updated" value={new Date(row.lastUpdatedAt).toLocaleString()} />
           <Metric label="Ownership" value={localOwned ? 'Owned in portfolio' : 'Not owned'} />
           <Metric label="Ownership %" value={`${row.ownershipPercentage.toFixed(1)}% (${row.ownershipCount})`} />
@@ -154,16 +131,9 @@ export function PlayerDetailPanel({ row, authRequired, owned }: PlayerDetailPane
         </div>
 
         <div className="mt-4 rounded-2xl border border-border bg-background/60 p-4 text-sm text-muted-foreground">
-          <p className="font-semibold text-foreground">Valuation explanation</p>
+          <p className="font-semibold text-foreground">FootballIQ play-money value</p>
           <p className="mt-2">
-            Values move in deterministic 0.1 FIQ steps from a 7.0 baseline, with performance-bank carryover and
-            weekly caps to reduce unstable swings.
-          </p>
-          <p className="mt-2">
-            Current Bank: {bankView.bank >= 0 ? '+' : ''}{bankView.bank.toFixed(1)}
-          </p>
-          <p className="mt-1">
-            Next {bankView.direction}: {bankView.direction === 'increase' ? '+' : '-'}{bankView.gapToStep.toFixed(1)} required
+            Values are original FootballIQ fictional values entered through a reviewed manual process. They are not financial assets, professional advice, FPL prices, Transfermarkt values, or provider prices.
           </p>
           <p className="mt-2">{MARKET_COPY.noCashValue}</p>
         </div>
@@ -203,71 +173,23 @@ export function PlayerDetailPanel({ row, authRequired, owned }: PlayerDetailPane
       </div>
 
       <div className="rounded-3xl border border-border bg-card p-6 sm:p-8">
-        <h2 className="text-xl font-semibold">Season stats</h2>
-        {!row.seasonStats.hasCompetitiveStats ? (
-          <p className="mt-2 text-sm text-muted-foreground">No competitive statistics recorded yet.</p>
-        ) : (
-          <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-4 text-sm">
-            <p>Matches: {row.seasonStats.matchesPlayed}</p>
-            <p>Starts: {row.seasonStats.starts}</p>
-            <p>Minutes: {row.seasonStats.minutesPlayed}</p>
-            <p>Goals: {row.seasonStats.goals}</p>
-            <p>Assists: {row.seasonStats.assists}</p>
-            <p>Clean sheets: {row.seasonStats.cleanSheets}</p>
-            <p>Yellow cards: {row.seasonStats.yellowCards}</p>
-            <p>Red cards: {row.seasonStats.redCards}</p>
-          </div>
-        )}
-      </div>
-
-      <div className="rounded-3xl border border-border bg-card p-6 sm:p-8">
-        <h2 className="text-xl font-semibold">Recent matches</h2>
-        {row.recentMatches.length === 0 ? (
-          <p className="mt-2 text-sm text-muted-foreground">No competitive statistics recorded yet.</p>
-        ) : (
-          <ul className="mt-3 space-y-2 text-sm">
-            {row.recentMatches.map((match) => (
-              <li key={match.id} className="rounded-xl border border-border bg-background/60 px-3 py-2">
-                {new Date(match.fixtureDate).toLocaleDateString()} - Minutes {match.minutesPlayed} - Rating{' '}
-                {typeof match.providerRatingMilli === 'number'
-                  ? (match.providerRatingMilli / 1000).toFixed(1)
-                  : 'n/a'}
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
-
-      <div className="rounded-3xl border border-border bg-card p-6 sm:p-8">
-        <h2 className="text-xl font-semibold">Valuation history</h2>
-        {row.valuationHistory.length === 0 ? (
-          <p className="mt-2 text-sm text-muted-foreground">No valuation events recorded yet.</p>
+        <h2 className="text-xl font-semibold">Value history</h2>
+        {row.priceHistory.length === 0 ? (
+          <p className="mt-2 text-sm text-muted-foreground">No value history recorded yet.</p>
         ) : (
           <div className="mt-3 overflow-x-auto">
             <table className="min-w-full text-sm">
               <thead>
                 <tr className="border-b border-border text-left text-xs uppercase tracking-wider text-muted-foreground">
                   <th className="px-2 py-2">Date</th>
-                  <th className="px-2 py-2">Old value</th>
-                  <th className="px-2 py-2">New value</th>
-                  <th className="px-2 py-2">Rating</th>
-                  <th className="px-2 py-2">Bank before</th>
-                  <th className="px-2 py-2">Bank after</th>
-                  <th className="px-2 py-2">Reason</th>
+                  <th className="px-2 py-2">FootballIQ value</th>
                 </tr>
               </thead>
               <tbody>
-                {row.valuationHistory.map((event) => (
-                  <tr key={event.id} className="border-b border-border/60">
-                    <td className="px-2 py-2">{new Date(event.effectiveAt).toLocaleDateString()}</td>
-                    <td className="px-2 py-2">{formatMinorToMoney(event.previousPriceMinor)} FIQ</td>
-                    <td className="px-2 py-2">{formatMinorToMoney(event.newPriceMinor)} FIQ</td>
-                    <td className="px-2 py-2">
-                      {typeof event.ratingMilli === 'number' ? (event.ratingMilli / 1000).toFixed(1) : 'n/a'}
-                    </td>
-                    <td className="px-2 py-2">{(event.previousBankMilli / 1000).toFixed(1)}</td>
-                    <td className="px-2 py-2">{(event.bankAfterEventMilli / 1000).toFixed(1)}</td>
-                    <td className="px-2 py-2">{event.reason}</td>
+                {row.priceHistory.map((point) => (
+                  <tr key={`${point.date}:${point.valueMinor}`} className="border-b border-border/60">
+                    <td className="px-2 py-2">{new Date(point.date).toLocaleDateString()}</td>
+                    <td className="px-2 py-2">{formatMinorToMoney(point.valueMinor)} FIQ</td>
                   </tr>
                 ))}
               </tbody>
@@ -380,25 +302,7 @@ function buildHistorySeries(
   currentValueMinor: number,
   weeklyChangeMinor: number,
 ): Array<{ date: string; valueMinor: number; reason: string }> {
-  if (points.length >= 2) {
-    return points
-  }
-
-  const now = new Date()
-  const generated = Array.from({ length: 6 }).map((_, index) => {
-    const reversed = 5 - index
-    const date = new Date(now)
-    date.setDate(now.getDate() - reversed * 7)
-
-    const trendOffset = Math.trunc((weeklyChangeMinor / 5) * reversed)
-    const valueMinor = Math.max(0, currentValueMinor - trendOffset)
-
-    return {
-      date: date.toISOString(),
-      valueMinor,
-      reason: 'Development trend placeholder',
-    }
-  })
-
-  return generated
+  void currentValueMinor
+  void weeklyChangeMinor
+  return points
 }

@@ -8,7 +8,6 @@ import { buildApprovedCatalogueViews } from '@/lib/market/catalogue-market-view'
 export default async function MarketPage() {
   const catalogueState = await loadPublicCatalogueState()
   const rows = catalogueState.available ? buildApprovedCatalogueViews(catalogueState.records) : []
-  const clubs = [...new Map(rows.map((row) => [row.club.slug, { slug: row.club.slug, name: row.club.name }])).values()]
   return (
     <main className="min-h-screen bg-background">
       <SiteHeader />
@@ -16,7 +15,7 @@ export default async function MarketPage() {
         {catalogueState.available ? (
           <div className="space-y-6">
             <CatalogueVerificationState state={catalogueState} />
-            <MarketBrowser rows={rows} clubs={clubs} ownedPlayerIds={[]} />
+            <MarketBrowser rows={rows} ownedPlayerIds={[]} />
           </div>
         ) : <CatalogueVerificationState state={catalogueState} />}
       </section>

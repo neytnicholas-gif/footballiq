@@ -6,8 +6,8 @@ import {
 } from '../lib/market/catalogue-pipeline'
 
 const OUTPUT_ROOT = path.join(process.cwd(), 'tmp', 'market-catalogue')
-const VALIDATED_PATH = path.join(OUTPUT_ROOT, 'validated', 'catalogue.unselected.json')
-const REPORT_PATH = path.join(OUTPUT_ROOT, 'reports', 'catalogue.unselected.review.json')
+const VALIDATED_PATH = path.join(OUTPUT_ROOT, 'validated', 'catalogue.validated.json')
+const REPORT_PATH = path.join(OUTPUT_ROOT, 'reports', 'catalogue.manual.review.json')
 
 function argumentValue(name: string): string | null {
   const index = process.argv.indexOf(name)
@@ -17,7 +17,7 @@ function argumentValue(name: string): string | null {
 async function main() {
   const inputPath = argumentValue('--input')
   if (!inputPath) {
-    throw new Error('Usage: npm run market:catalogue:import -- --input <approved-json-path>')
+    throw new Error('Usage: npm run market:catalogue:validate -- --input <manual-json-path>')
   }
 
   let input: unknown
@@ -36,7 +36,7 @@ async function main() {
 
   console.log(`Catalogue input fingerprint: ${result.report.sourceFingerprint}`)
   console.log(`Accepted: ${result.report.summary.accepted}`)
-  console.log(`Rejected: ${result.report.summary.rejected}`)
+  console.log(`Rejected or blocked: ${result.report.summary.rejected}`)
   console.log(`Blocking errors: ${result.report.summary.blockingErrors}`)
   console.log(`Validated output: ${VALIDATED_PATH}`)
   console.log(`Review report: ${REPORT_PATH}`)
@@ -47,7 +47,7 @@ async function main() {
     return
   }
 
-  console.log('PASS: Records are structurally valid but cannot activate until deterministic selection and permission review.')
+  console.log('PASS: Manual records are valid but cannot activate without a separate declaration and exact fingerprint approval.')
 }
 
 void main().catch((error) => {

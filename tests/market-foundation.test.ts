@@ -71,19 +71,15 @@ test('daily limits use the Europe/Brussels calendar boundary', () => {
 
 test('approved catalogue becomes browseable without demo players', () => {
   const rows = buildApprovedCatalogueViews([{
-    seasonKey: '2026/27',
-    providerPlayerId: 'licensed:1',
-    fullName: 'Licensed Test Person',
-    clubName: 'Arsenal',
-    position: 'MID',
-    sourceType: 'licensed-local',
-    sourceReference: 'licence-ledger:1',
-    verifiedAt: '2026-07-31T00:00:00.000Z',
-    isActive: true,
+    internalId: 'fiq_player_0001',
+    displayName: 'Reviewed Test Person',
+    currentValueMinor: 125,
+    availabilityStatus: 'available',
+    valueHistory: [{ effectiveAt: '2026-07-31T00:00:00.000Z', valueMinor: 125 }],
   }])
   assert.equal(rows.length, 1)
   assert.equal(rows[0].player.isDemoSeed, false)
-  assert.equal(rows[0].player.fullName, 'Licensed Test Person')
+  assert.equal(rows[0].player.fullName, 'Reviewed Test Person')
   assert.ok(rows[0].player.currentPriceMinor > 0)
 })
 

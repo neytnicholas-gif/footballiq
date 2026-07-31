@@ -6,18 +6,15 @@ import { ArrowUpDown, FilterX, Search } from 'lucide-react'
 import { formatMinorToMoney, formatSignedMinor } from '@/lib/market/decimal'
 import { filterAndSortPlayers, type MarketFilters } from '@/lib/market/filters'
 import { MARKET_RULES } from '@/lib/market/settings'
-import type { AvailabilityFilter, MarketPlayerView, OwnershipFilter, PositionGroup } from '@/lib/market/types'
-import { ClubShirtIcon } from '@/components/market/club-shirt-icon'
+import type { AvailabilityFilter, MarketPlayerView, OwnershipFilter } from '@/lib/market/types'
 
 type MarketBrowserProps = {
   rows: MarketPlayerView[]
-  clubs: Array<{ slug: string; name: string }>
   ownedPlayerIds: string[]
 }
 
 const sortOptions: Array<{ value: MarketFilters['sort']; label: string }> = [
   { value: 'alphabetical', label: 'Alphabetical' },
-  { value: 'club-asc', label: 'Club (A-Z)' },
   { value: 'price-desc', label: 'Highest value' },
   { value: 'price-asc', label: 'Lowest value' },
   { value: 'movement-desc', label: 'Biggest risers' },
@@ -26,10 +23,8 @@ const sortOptions: Array<{ value: MarketFilters['sort']; label: string }> = [
 
 const PAGE_SIZE = 24
 
-export function MarketBrowser({ rows, clubs, ownedPlayerIds }: MarketBrowserProps) {
+export function MarketBrowser({ rows, ownedPlayerIds }: MarketBrowserProps) {
   const [search, setSearch] = useState('')
-  const [club, setClub] = useState<string>('ALL')
-  const [position, setPosition] = useState<PositionGroup | 'ALL'>('ALL')
   const [sort, setSort] = useState<MarketFilters['sort']>('alphabetical')
   const [availability, setAvailability] = useState<AvailabilityFilter>('ALL')
   const [ownership, setOwnership] = useState<OwnershipFilter>('ALL')
@@ -42,14 +37,14 @@ export function MarketBrowser({ rows, clubs, ownedPlayerIds }: MarketBrowserProp
     () =>
       filterAndSortPlayers(rows, {
         search: deferredSearch,
-        club,
-        position,
+        club: 'ALL',
+        position: 'ALL',
         sort,
         availability,
         ownership,
         ownedPlayerIds: ownedSet,
       }),
-    [rows, deferredSearch, club, position, sort, availability, ownership, ownedSet],
+    [rows, deferredSearch, sort, availability, ownership, ownedSet],
   )
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE))
@@ -59,8 +54,6 @@ export function MarketBrowser({ rows, clubs, ownedPlayerIds }: MarketBrowserProp
 
   const hasFilters =
     search.length > 0 ||
-    club !== 'ALL' ||
-    position !== 'ALL' ||
     sort !== 'alphabetical' ||
     availability !== 'ALL' ||
     ownership !== 'ALL'
@@ -70,12 +63,12 @@ export function MarketBrowser({ rows, clubs, ownedPlayerIds }: MarketBrowserProp
       <div className="rounded-2xl border border-border bg-card p-4 sm:p-5">
         <p className="text-xs font-semibold uppercase tracking-[.2em] text-primary">Approved catalogue</p>
         <p className="mt-2 text-sm text-muted-foreground">
-          Player identities come from the validated active catalogue. Values are original FootballIQ calculations.
+          Independently selected players with original FootballIQ fictional play-money values. These are not financial assets, professional advice, FPL prices, Transfermarkt values, or provider prices.
         </p>
       </div>
 
       <div className="rounded-3xl border border-border bg-card p-4 sm:p-6">
-        <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-6">
+        <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
           <label className="lg:col-span-2">
             <span className="mb-1.5 block text-xs uppercase tracking-wider text-muted-foreground">Player name</span>
             <div className="flex h-11 items-center gap-2 rounded-xl border border-border bg-background px-3">
@@ -90,43 +83,6 @@ export function MarketBrowser({ rows, clubs, ownedPlayerIds }: MarketBrowserProp
                 className="w-full bg-transparent text-sm outline-none placeholder:text-muted-foreground"
               />
             </div>
-          </label>
-
-          <label>
-            <span className="mb-1.5 block text-xs uppercase tracking-wider text-muted-foreground">Club</span>
-            <select
-              value={club}
-              onChange={(event) => {
-                setClub(event.target.value)
-                setPage(1)
-              }}
-              className="h-11 w-full rounded-xl border border-border bg-background px-3 text-sm"
-            >
-              <option value="ALL">All clubs</option>
-              {clubs.map((item) => (
-                <option key={item.slug} value={item.slug}>
-                  {item.name}
-                </option>
-              ))}
-            </select>
-          </label>
-
-          <label>
-            <span className="mb-1.5 block text-xs uppercase tracking-wider text-muted-foreground">Position</span>
-            <select
-              value={position}
-              onChange={(event) => {
-                setPosition(event.target.value as PositionGroup | 'ALL')
-                setPage(1)
-              }}
-              className="h-11 w-full rounded-xl border border-border bg-background px-3 text-sm"
-            >
-              <option value="ALL">All positions</option>
-              <option value="GK">Goalkeeper</option>
-              <option value="DEF">Defender</option>
-              <option value="MID">Midfielder</option>
-              <option value="FWD">Forward</option>
-            </select>
           </label>
 
           <label>
@@ -195,8 +151,6 @@ export function MarketBrowser({ rows, clubs, ownedPlayerIds }: MarketBrowserProp
               type="button"
               onClick={() => {
                 setSearch('')
-                setClub('ALL')
-                setPosition('ALL')
                 setSort('alphabetical')
                 setAvailability('ALL')
                 setOwnership('ALL')
@@ -234,16 +188,9 @@ export function MarketBrowser({ rows, clubs, ownedPlayerIds }: MarketBrowserProp
               >
                 <div className="flex items-center justify-between gap-4">
                   <div className="flex min-w-0 items-center gap-3">
-                    <ClubShirtIcon
-                      primaryColour={row.club.primaryColour}
-                      secondaryColour={row.club.secondaryColour}
-                      label={row.club.shortName}
-                    />
                     <div className="min-w-0">
                       <p className="truncate font-semibold">{row.player.displayName}</p>
-                      <p className="truncate text-sm text-muted-foreground">
-                        {row.club.shortName} - {row.player.positionGroup} - {row.player.detailedPosition}
-                      </p>
+                      <p className="truncate text-sm text-muted-foreground">FootballIQ player</p>
                     </div>
                   </div>
 
