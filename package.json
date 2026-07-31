@@ -8,11 +8,12 @@
     "start": "next start",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit --incremental false",
-    "test": "npm run test:market && npm run test:market-catalogue && npm run test:market-foundation",
+    "test": "npm run test:market && npm run test:market-catalogue && npm run test:market-foundation && npm run test:market-manual-value-update",
     "verify": "npm run lint && npm run typecheck && npm test && npm run build",
     "test:market": "tsx --test tests/market.test.ts",
     "test:market-catalogue": "tsx --test tests/market-catalogue.test.ts",
     "test:market-foundation": "tsx --test tests/market-foundation.test.ts",
+    "test:market-manual-value-update": "tsx --test tests/market-manual-value-update.test.ts",
     "market:test-provider": "tsx scripts/market-test-provider.ts",
     "market:discover": "tsx scripts/market-discover.ts",
     "market:build-dev-dataset": "tsx scripts/market-build-dev-dataset.ts",
@@ -23,7 +24,8 @@
     "market:import-weekly:resume": "tsx scripts/market-import-weekly-resume.ts",
     "market:validate-weekly": "tsx scripts/market-validate-weekly.ts",
     "market:catalogue:validate": "tsx scripts/market-catalogue-import.ts",
-    "market:catalogue:approve": "tsx scripts/market-catalogue-approve.ts"
+    "market:catalogue:approve": "tsx scripts/market-catalogue-approve.ts",
+    "market:value:update": "tsx scripts/market-manual-value-update.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.5.0",
