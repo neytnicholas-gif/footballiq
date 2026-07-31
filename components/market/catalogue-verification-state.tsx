@@ -2,19 +2,26 @@ import Link from 'next/link'
 import { Clock3, ShieldCheck } from 'lucide-react'
 import { PUBLIC_MARKET_CATALOGUE_STATUS } from '@/lib/market/catalogue'
 import { MARKET_RULES } from '@/lib/market/settings'
+import type { PublicCatalogueRuntimeState } from '@/lib/market/public-catalogue-loader'
 
-export function CatalogueVerificationState() {
+export function CatalogueVerificationState({
+  state = { ...PUBLIC_MARKET_CATALOGUE_STATUS, records: [] },
+}: {
+  state?: PublicCatalogueRuntimeState
+}) {
   return (
     <div className="rounded-[2rem] border border-primary/20 bg-[radial-gradient(circle_at_top_right,rgba(55,220,130,.12),transparent_42%),var(--card)] p-6 shadow-[0_24px_70px_-45px_rgba(55,220,130,.45)] sm:p-8">
       <div className="flex flex-col gap-6 sm:flex-row sm:items-start sm:justify-between">
         <div className="max-w-2xl">
           <p className="text-xs font-semibold uppercase tracking-[.24em] text-primary">Catalogue status</p>
           <h1 className="mt-3 text-balance text-3xl font-black tracking-tight sm:text-5xl">
-            {PUBLIC_MARKET_CATALOGUE_STATUS.message}
+            {state.message}
           </h1>
           <p className="mt-4 text-sm leading-relaxed text-muted-foreground sm:text-base">
-            FootballIQ will not display generated, stale-season or unverified player records. The public market will open
-            when the 2026/27 catalogue has a licensed source, stable player IDs and recorded verification dates.
+            FootballIQ will not display generated, stale-season or unverified player records.{' '}
+            {state.available
+              ? `${state.records.length} records passed local validation and explicit approval. Public trading remains closed pending release approval.`
+              : 'The public market will open when the 2026/27 catalogue has a licensed source, stable player IDs and recorded verification dates.'}
           </p>
         </div>
         <span className="flex size-12 shrink-0 items-center justify-center rounded-2xl border border-primary/20 bg-primary/10 text-primary">

@@ -144,5 +144,7 @@ Prepared SQL target:
 - FIQ currency has no real-world monetary value.
 - Public market routes do not display development-season, fictional, stale-season or unverified player records.
 - The local `tmp/market-playable-dataset.json` artifact is developer-only and must never be treated as a public catalogue.
+- Approved catalogue inputs, validation output, review reports and local approval manifests are separated under `tmp/market-catalogue/`.
+- Catalogue activation requires zero blocking validation errors plus an explicit fingerprint-matching local approval manifest.
 - No live provider claims should be made until import mapping, rights verification, and production validation complete.
 - No logos, crests, photographs, or official kit reproductions are used.

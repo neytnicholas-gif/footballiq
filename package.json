@@ -8,9 +8,10 @@
     "start": "next start",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit --incremental false",
-    "test": "npm run test:market && npm run test:market-initial-valuation && npm run test:market-import && npm run test:market-weekly",
+    "test": "npm run test:market && npm run test:market-catalogue && npm run test:market-initial-valuation && npm run test:market-import && npm run test:market-weekly",
     "verify": "npm run lint && npm run typecheck && npm test && npm run build",
     "test:market": "tsx --test tests/market.test.ts",
+    "test:market-catalogue": "tsx --test tests/market-catalogue.test.ts",
     "test:market-initial-valuation": "tsx --test tests/market-initial-valuation.test.ts",
     "test:market-import": "tsx --test tests/market-import.test.ts",
     "test:market-weekly": "tsx --test tests/market-weekly.test.ts",
@@ -22,7 +23,9 @@
     "market:validate-squads": "tsx scripts/market-validate-squads.ts",
     "market:import-weekly:dry": "tsx scripts/market-import-weekly-dry.ts",
     "market:import-weekly:resume": "tsx scripts/market-import-weekly-resume.ts",
-    "market:validate-weekly": "tsx scripts/market-validate-weekly.ts"
+    "market:validate-weekly": "tsx scripts/market-validate-weekly.ts",
+    "market:catalogue:import": "tsx scripts/market-catalogue-import.ts",
+    "market:catalogue:approve": "tsx scripts/market-catalogue-approve.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.5.0",

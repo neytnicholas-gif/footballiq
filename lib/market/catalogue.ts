@@ -51,6 +51,7 @@ export type CatalogueRejectionCode =
   | 'INVALID_VERIFIED_AT'
   | 'INACTIVE'
   | 'DUPLICATE_IDENTITY'
+  | 'AMBIGUOUS_IDENTITY'
 
 export type CatalogueValidationResult = {
   accepted: MarketCatalogueRecord[]
@@ -65,10 +66,17 @@ export function validatePublicMarketCatalogue(records: MarketCatalogueRecord[]):
   const accepted: MarketCatalogueRecord[] = []
   const rejected: CatalogueValidationResult['rejected'] = []
   const providerIdCounts = new Map<string, number>()
+  const identityProviderIds = new Map<string, Set<string>>()
 
   for (const record of records) {
     const providerId = record.providerPlayerId.trim()
     if (providerId) providerIdCounts.set(providerId, (providerIdCounts.get(providerId) ?? 0) + 1)
+    const identity = record.fullName.trim().toLocaleLowerCase('en')
+    if (identity && providerId) {
+      const ids = identityProviderIds.get(identity) ?? new Set<string>()
+      ids.add(providerId)
+      identityProviderIds.set(identity, ids)
+    }
   }
 
   for (const record of records) {
@@ -83,6 +91,9 @@ export function validatePublicMarketCatalogue(records: MarketCatalogueRecord[]):
     else if (!isVerifiedTimestamp(record.verifiedAt)) code = 'INVALID_VERIFIED_AT'
     else if (!record.isActive) code = 'INACTIVE'
     else if ((providerIdCounts.get(record.providerPlayerId.trim()) ?? 0) > 1) code = 'DUPLICATE_IDENTITY'
+    else if ((identityProviderIds.get(record.fullName.trim().toLocaleLowerCase('en'))?.size ?? 0) > 1) {
+      code = 'AMBIGUOUS_IDENTITY'
+    }
 
     if (code) {
       rejected.push({ record, code })

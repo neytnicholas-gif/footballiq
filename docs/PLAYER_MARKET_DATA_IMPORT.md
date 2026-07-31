@@ -128,6 +128,97 @@ These commands run server-side and must never expose API keys in output.
 - Unresolved review exclusions are written to tmp/market-excluded-review.json.
 - Unresolved duplicate memberships remain blocked from write eligibility until admin review decisions are recorded.
 
+## Offline approved-catalogue workflow
+
+This is the safe path to use after provider access and storage rights are explicitly approved. These commands do not call API-Football.
+
+### 1. Keep the raw response outside Git
+
+Save the approved JSON input beneath:
+
+`tmp/market-catalogue/raw/`
+
+The complete `tmp/` directory is ignored by Git. Do not copy a provider response into a tracked folder unless the provider contract explicitly permits redistribution.
+
+The provider-neutral input must be a JSON object with a `records` array. Every record requires:
+
+```json
+{
+  "seasonKey": "2026/27",
+  "providerPlayerId": "<stable provider player ID>",
+  "fullName": "<real player name from the approved source>",
+  "clubName": "<verified current 2026/27 club>",
+  "position": "GK | DEF | MID | FWD",
+  "sourceType": "approved-provider",
+  "sourceReference": "<provider endpoint or licensed source reference>",
+  "verifiedAt": "<ISO-8601 timestamp>",
+  "isActive": true
+}
+```
+
+Do not manually fill missing values or guess transfers.
+
+### 2. Validate and create the review artifacts
+
+```powershell
+npm run market:catalogue:import -- --input tmp/market-catalogue/raw/provider-response.json
+```
+
+Outputs are separated:
+
+- Validated output: `tmp/market-catalogue/validated/catalogue.validated.json`
+- Review report: `tmp/market-catalogue/reports/catalogue.review.json`
+- Raw input remains in: `tmp/market-catalogue/raw/`
+
+The command exits with an error and keeps the public catalogue closed if any record is rejected or if zero records are accepted.
+
+### 3. Review every result
+
+Open `tmp/market-catalogue/reports/catalogue.review.json` and confirm:
+
+- accepted and rejected counts;
+- rejected record reasons;
+- provider IDs and names;
+- club associations;
+- positions;
+- duplicate identities;
+- source references;
+- verification timestamps.
+
+Any rejection is blocking. Correct it at the approved source or normalization stage, then rerun the import. Never edit a rejected record into a guess.
+
+### 4. Record explicit local approval
+
+Only after the review report has zero blocking errors:
+
+```powershell
+npm run market:catalogue:approve -- --reviewer "Nicholas"
+```
+
+This writes a fingerprint-bound approval manifest to:
+
+`tmp/market-catalogue/approval/catalogue.approval.json`
+
+The application revalidates the catalogue and requires this exact matching approval. Merely placing a file in `tmp/` never activates it.
+
+### 5. Roll back to the closed state
+
+Remove only the local approval manifest:
+
+```powershell
+Remove-Item -LiteralPath "tmp/market-catalogue/approval/catalogue.approval.json"
+```
+
+The public market immediately returns to the closed “2026/27 player catalogue being verified” state. No database rollback is involved because this workflow does not apply migrations or write to Supabase.
+
+### Activation boundary
+
+- Missing, malformed, empty, stale or partially rejected catalogues fail closed.
+- Duplicate provider IDs and ambiguous duplicate names fail closed.
+- Direct player URLs do not bypass catalogue validation.
+- Local approval does not mean the market is “live” or approved for deployment.
+- Deployment, database import and public trading require separate explicit approval.
+
 ## Admin review workflow for unresolved memberships
 
 - Admin route: /market/admin/review
