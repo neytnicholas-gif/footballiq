@@ -1,10 +1,11 @@
 'use client'
 
-import { useMemo, useRef, useState, useTransition } from 'react'
+import { useEffect, useMemo, useRef, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import {
   buyMarketPlayerAction,
   ensureMarketPortfolioAction,
+  getMarketPortfolioAction,
   sellMarketPlayerAction,
 } from '@/app/market/actions'
 import { formatBpsToPercent, formatMinorToMoney, formatSignedMinor, percentageReturnBps } from '@/lib/market/decimal'
@@ -44,6 +45,22 @@ export function PortfolioPanel({ initialPortfolio, authRequired }: PortfolioPane
   const [isPending, startTransition] = useTransition()
   const requestIdRef = useRef<string | null>(null)
 
+  useEffect(() => {
+    if (authRequired || initialPortfolio || portfolio) return
+    let active = true
+    startTransition(async () => {
+      try {
+        const result = await withActionTimeout(getMarketPortfolioAction())
+        if (!active) return
+        if (result.ok && result.portfolio) setPortfolio(result.portfolio)
+        else if (!result.ok && result.code !== 'PORTFOLIO_NOT_FOUND') setMessage(result.message)
+      } catch {
+        if (active) setMessage('Portfolio request timed out. Please retry.')
+      }
+    })
+    return () => { active = false }
+  }, [authRequired, initialPortfolio, portfolio])
+
   const holdingsMap = useMemo(() => {
     const map = new Set<string>()
     for (const item of portfolio?.holdings ?? []) map.add(item.player.id)
@@ -66,14 +83,18 @@ export function PortfolioPanel({ initialPortfolio, authRequired }: PortfolioPane
       }
       try {
         const result = await withActionTimeout(
-          buyMarketPlayerAction(playerId, requestIdRef.current),
+          buyMarketPlayerAction(
+            playerId,
+            requestIdRef.current,
+            portfolio?.holdings.find((holding) => holding.player.id === playerId)?.player.currentPriceMinor,
+          ),
         )
         if (!result.ok) {
           setMessage(result.message)
           requestIdRef.current = null
           return
         }
-        setPortfolio(result.portfolio)
+        if (result.portfolio) setPortfolio(result.portfolio)
         setMessage('Purchase completed.')
         requestIdRef.current = null
         router.refresh()
@@ -119,7 +140,7 @@ export function PortfolioPanel({ initialPortfolio, authRequired }: PortfolioPane
           requestIdRef.current = null
           return
         }
-        setPortfolio(result.portfolio)
+        if (result.portfolio) setPortfolio(result.portfolio)
         setMessage('Sale completed.')
         requestIdRef.current = null
         router.refresh()
@@ -139,7 +160,7 @@ export function PortfolioPanel({ initialPortfolio, authRequired }: PortfolioPane
           setMessage(result.message)
           return
         }
-        setPortfolio(result.portfolio)
+        if (result.portfolio) setPortfolio(result.portfolio)
         setMessage('Portfolio created.')
         router.refresh()
       } catch {

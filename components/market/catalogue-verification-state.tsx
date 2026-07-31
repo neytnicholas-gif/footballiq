@@ -20,7 +20,7 @@ export function CatalogueVerificationState({
           <p className="mt-4 text-sm leading-relaxed text-muted-foreground sm:text-base">
             FootballIQ will not display generated, stale-season or unverified player records.{' '}
             {state.available
-              ? `${state.records.length} records passed local validation and explicit approval. Public trading remains closed pending release approval.`
+              ? `${state.records.length} records passed local validation and explicit fingerprint-linked approval. Anonymous browsing is available; portfolio changes require sign-in.`
               : 'The public market will open when the 2026/27 catalogue has a licensed source, stable player IDs and recorded verification dates.'}
           </p>
         </div>
@@ -37,7 +37,9 @@ export function CatalogueVerificationState({
 
       <div className="mt-6 flex items-start gap-3 rounded-2xl border border-border bg-background/55 p-4 text-sm text-muted-foreground">
         <ShieldCheck className="mt-0.5 size-4 shrink-0 text-primary" />
-        <p>No player names, club memberships, positions, prices or provider IDs are being guessed.</p>
+        <p>{state.available
+          ? 'Player identity data is approved; displayed values are FootballIQ calculations and not provider prices.'
+          : 'No player names, club memberships, positions, prices or provider IDs are being guessed.'}</p>
       </div>
 
       <Link href="/" className="mt-6 inline-flex text-sm font-semibold text-primary">

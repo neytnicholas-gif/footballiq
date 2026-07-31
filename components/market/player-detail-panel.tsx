@@ -65,7 +65,7 @@ export function PlayerDetailPanel({ row, authRequired, owned }: PlayerDetailPane
       }
       try {
         const result = await withActionTimeout(
-          buyMarketPlayerAction(row.player.id, buyRequestIdRef.current),
+          buyMarketPlayerAction(row.player.id, buyRequestIdRef.current, row.player.currentPriceMinor),
         )
         if (!result.ok) {
           setLocalOwned(false)

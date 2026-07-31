@@ -38,6 +38,18 @@ export type ValuationEventResult = {
   calculationVersion: string
 }
 
+export type WeeklyRatingInput = MatchPerformanceInput & {
+  marketWeekKey: string
+}
+
+export type WeeklyRatingAggregate = {
+  playerId: string
+  marketWeekKey: string
+  sourceStatIds: string[]
+  ratingMilli: number | null
+  skippedReason?: 'no_appearance' | 'missing_rating'
+}
+
 export function ratingToMilli(rating: number): number {
   return Math.round(rating * 1000)
 }
@@ -48,6 +60,68 @@ export function milliToRating(milli: number): string {
   const whole = Math.floor(absolute / 1000)
   const fraction = absolute % 1000
   return `${sign}${whole}.${fraction.toString().padStart(3, '0')}`
+}
+
+export function roundHalfAwayFromZero(value: number): number {
+  return value < 0 ? -Math.round(Math.abs(value)) : Math.round(value)
+}
+
+/**
+ * Produces one deterministic rating per player/week. No appearance and unrated
+ * appearances never manufacture a rating. Any supplied rating, including a
+ * rated substitute appearance, participates in the arithmetic mean.
+ */
+export function aggregateWeeklyRatings(matches: WeeklyRatingInput[]): WeeklyRatingAggregate[] {
+  const groups = new Map<string, WeeklyRatingInput[]>()
+  for (const match of matches) {
+    const key = `${match.playerId}\u0000${match.marketWeekKey}`
+    const group = groups.get(key) ?? []
+    group.push(match)
+    groups.set(key, group)
+  }
+
+  return [...groups.values()]
+    .map((group): WeeklyRatingAggregate => {
+      const first = group[0]
+      const sourceStatIds = [...new Set(group.map((match) => match.statId))].sort()
+      const appearances = group.filter((match) => match.appeared)
+      const ratings = appearances
+        .map((match) => match.ratingMilli)
+        .filter((rating): rating is number => rating !== null)
+
+      if (appearances.length === 0) {
+        return {
+          playerId: first.playerId,
+          marketWeekKey: first.marketWeekKey,
+          sourceStatIds,
+          ratingMilli: null,
+          skippedReason: 'no_appearance',
+        }
+      }
+      if (ratings.length === 0) {
+        return {
+          playerId: first.playerId,
+          marketWeekKey: first.marketWeekKey,
+          sourceStatIds,
+          ratingMilli: null,
+          skippedReason: 'missing_rating',
+        }
+      }
+
+      return {
+        playerId: first.playerId,
+        marketWeekKey: first.marketWeekKey,
+        sourceStatIds,
+        ratingMilli: roundHalfAwayFromZero(ratings.reduce((sum, rating) => sum + rating, 0) / ratings.length),
+      }
+    })
+    .sort((left, right) =>
+      left.marketWeekKey.localeCompare(right.marketWeekKey) || left.playerId.localeCompare(right.playerId),
+    )
+}
+
+export function weeklyValuationIdempotencyKey(aggregate: WeeklyRatingAggregate): string {
+  return `weekly:${aggregate.marketWeekKey}:${aggregate.playerId}:${aggregate.sourceStatIds.join(',')}`
 }
 
 export function processValuationMatch(

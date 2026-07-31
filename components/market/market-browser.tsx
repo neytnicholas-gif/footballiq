@@ -5,7 +5,7 @@ import { useDeferredValue, useMemo, useState } from 'react'
 import { ArrowUpDown, FilterX, Search } from 'lucide-react'
 import { formatMinorToMoney, formatSignedMinor } from '@/lib/market/decimal'
 import { filterAndSortPlayers, type MarketFilters } from '@/lib/market/filters'
-import { MARKET_COPY, MARKET_RULES } from '@/lib/market/settings'
+import { MARKET_RULES } from '@/lib/market/settings'
 import type { AvailabilityFilter, MarketPlayerView, OwnershipFilter, PositionGroup } from '@/lib/market/types'
 import { ClubShirtIcon } from '@/components/market/club-shirt-icon'
 
@@ -68,9 +68,9 @@ export function MarketBrowser({ rows, clubs, ownedPlayerIds }: MarketBrowserProp
   return (
     <div className="space-y-5">
       <div className="rounded-2xl border border-border bg-card p-4 sm:p-5">
-        <p className="text-xs font-semibold uppercase tracking-[.2em] text-primary">{MARKET_COPY.demoLabel}</p>
+        <p className="text-xs font-semibold uppercase tracking-[.2em] text-primary">Approved catalogue</p>
         <p className="mt-2 text-sm text-muted-foreground">
-          Local market play uses development-season data only. This is not a claim of current 2026/27 production squads.
+          Player identities come from the validated active catalogue. Values are original FootballIQ calculations.
         </p>
       </div>
 
