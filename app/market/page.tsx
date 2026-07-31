@@ -44,7 +44,7 @@ export default async function MarketPage() {
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div className="max-w-3xl">
             <p className="text-xs font-semibold uppercase tracking-[.22em] text-primary">Player Market</p>
-            <h1 className="mt-2 text-4xl font-black tracking-tight sm:text-5xl">Build your 11-player portfolio</h1>
+            <h1 className="mt-2 text-4xl font-black tracking-tight sm:text-5xl">Build your 5-player portfolio</h1>
             <p className="mt-3 text-base text-muted-foreground sm:text-lg">
               Browse player prices, manage virtual FIQ balance, and track portfolio value through deterministic valuation rules.
             </p>

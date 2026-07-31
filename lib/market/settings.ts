@@ -3,7 +3,7 @@ import type { MarketSettings } from '@/lib/market/types'
 export const MARKET_RULES: MarketSettings = {
   activeSeasonId: 'demo-2026-27',
   startingBalanceMinor: 1200,
-  maximumHoldings: 11,
+  maximumHoldings: 5,
   maximumDailyPurchases: 3,
   maximumDailySales: 3,
   universalBaselineRatingMilli: 7000,

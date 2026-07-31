@@ -227,7 +227,7 @@ export function PortfolioPanel({ initialPortfolio, authRequired }: PortfolioPane
       <div className="rounded-3xl border border-border bg-card p-6 sm:p-8">
         <h3 className="text-xl font-semibold">Holdings</h3>
         {portfolio.holdings.length === 0 ? (
-          <p className="mt-3 text-sm text-muted-foreground">No holdings yet. Buy up to 11 players to start your portfolio.</p>
+          <p className="mt-3 text-sm text-muted-foreground">No holdings yet. Buy up to 5 players to start your portfolio.</p>
         ) : (
           <ul className="mt-4 space-y-3">
             {portfolio.holdings.map((holding) => {

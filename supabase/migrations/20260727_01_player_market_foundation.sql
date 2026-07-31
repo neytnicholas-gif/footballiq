@@ -199,7 +199,7 @@ create table if not exists public.market_settings (
   id int primary key default 1,
   active_season_id text references public.market_seasons(id),
   starting_balance_minor int not null default 1200,
-  maximum_holdings int not null default 11,
+  maximum_holdings int not null default 5,
   maximum_daily_purchases int not null default 3,
   maximum_daily_sales int not null default 3,
   universal_baseline_rating_milli int not null default 7000,

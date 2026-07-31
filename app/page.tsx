@@ -143,7 +143,7 @@ const priorityFeatures: FeatureCard[] = [
   },
   {
     title: 'Player Market',
-    desc: 'Follow player values, build a portfolio and track the market with confidence.',
+    desc: 'Follow player values, build a portfolio of up to five players and track the market with confidence.',
     href: '/market',
     icon: TrendingUp,
     label: 'Portfolio play',

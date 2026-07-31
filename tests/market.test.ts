@@ -298,7 +298,7 @@ test('portfolio constraint helpers enforce buy/sell rules and ownership checks',
 
   assert.equal(
     validateBuyConstraints({
-      holdingsCount: 11,
+      holdingsCount: 5,
       purchasesToday: 0,
       balanceMinor: 100,
       playerPriceMinor: 90,
@@ -311,7 +311,7 @@ test('portfolio constraint helpers enforce buy/sell rules and ownership checks',
   assert.equal(isAuthorizedPortfolioAccess('u1', 'u2'), false)
 })
 
-test('maximum 11 holdings are enforced and one-player portfolio remains valid', async () => {
+test('maximum 5 holdings are enforced and one-player portfolio remains valid', async () => {
   resetDemoMarketStoreForTests()
   const userId = 'one-player-validity-user'
   await ensurePortfolioForUser(userId)
@@ -339,7 +339,7 @@ test('maximum 11 holdings are enforced and one-player portfolio remains valid', 
   assert.equal(portfolio.salesRemaining >= 0, true)
 
   const limitCheck = validateBuyConstraints({
-    holdingsCount: 11,
+    holdingsCount: 5,
     purchasesToday: 0,
     balanceMinor: portfolio.portfolio.cashBalanceMinor,
     playerPriceMinor: rows[1].player.currentPriceMinor,
