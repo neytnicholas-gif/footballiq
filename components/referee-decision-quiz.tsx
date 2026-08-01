@@ -1,13 +1,13 @@
 'use client'
 
 import Link from 'next/link'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { ArrowRight, BadgeCheck, Flame, RotateCcw, ShieldCheck, Trophy, X } from 'lucide-react'
 import { useAuth } from '@/components/auth-provider'
 import { Button } from '@/components/ui/button'
 import { formatDayCount } from '@/lib/player-metrics'
 import { getRankProgress } from '@/lib/progression'
-import { saveQuizResult } from '@/lib/quiz-save'
+import { buildCompletionKey, saveQuizResult } from '@/lib/quiz-save'
 import { cn } from '@/lib/utils'
 
 type Scenario = {
@@ -286,6 +286,8 @@ export function RefereeDecisionQuiz() {
   const [animatedXp, setAnimatedXp] = useState(0)
   const [animatedRatingDelta, setAnimatedRatingDelta] = useState(0)
   const [runStartXp, setRunStartXp] = useState<number | null>(null)
+  const [runKey, setRunKey] = useState(0)
+  const saveAttemptedRef = useRef(false)
 
   const scenario = scenarios[index]
   const isCorrect = selected === scenario.answer
@@ -345,9 +347,10 @@ export function RefereeDecisionQuiz() {
   }, [finished, xpEarned, ratingDelta])
 
   useEffect(() => {
-    if (!finished || !user || saved || saving) return
+    if (!finished || !user || saved || saveAttemptedRef.current) return
     let mounted = true
     const persist = async () => {
+      saveAttemptedRef.current = true
       setSaving(true)
       setSaveError('')
       const { error } = await saveQuizResult({
@@ -355,6 +358,7 @@ export function RefereeDecisionQuiz() {
         score: correct,
         total: scenarios.length,
         xp: xpEarned,
+        completionKey: buildCompletionKey('referee-arena', runKey),
       })
       if (!mounted) return
       if (error) {
@@ -371,7 +375,7 @@ export function RefereeDecisionQuiz() {
     return () => {
       mounted = false
     }
-  }, [finished, user, saved, saving, correct, xpEarned, refreshProfile])
+  }, [finished, user, saved, correct, xpEarned, refreshProfile, runKey])
 
   function choose(option: string) {
     if (answered) return
@@ -433,6 +437,8 @@ export function RefereeDecisionQuiz() {
     setAnimatedXp(0)
     setAnimatedRatingDelta(0)
     setRunStartXp(null)
+    setRunKey((value) => value + 1)
+    saveAttemptedRef.current = false
   }
 
   if (finished) {

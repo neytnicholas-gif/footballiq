@@ -3,7 +3,7 @@
 import { useMemo, useState } from 'react'
 import { higherLowerItems } from '@/lib/game-data'
 import { useAuth } from '@/components/auth-provider'
-import { saveQuizResult } from '@/lib/quiz-save'
+import { buildCompletionKey, saveQuizResult } from '@/lib/quiz-save'
 
 export function HigherLowerGame() {
   const { user, refreshProfile } = useAuth()
@@ -16,6 +16,9 @@ export function HigherLowerGame() {
   const [result, setResult] = useState<{ guess: 'higher' | 'lower'; correct: boolean } | null>(null)
   const [over, setOver] = useState(false)
   const [saved, setSaved] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [saveError, setSaveError] = useState('')
+  const [runKey] = useState(0)
   const left = deck[index - 1]
   const right = deck[index]
 
@@ -34,10 +37,24 @@ export function HigherLowerGame() {
   }
 
   async function save() {
-    if (!user || saved) return
+    if (!user || saved || saving) return
     const total = Math.max(1, deck.length - 1)
-    const { error } = await saveQuizResult({ quizId: 'higher-lower-pl-goals', score: streak, total, xp: 20 + streak * 8 })
-    if (!error) { setSaved(true); await refreshProfile() }
+    setSaving(true)
+    setSaveError('')
+    const { error } = await saveQuizResult({
+      quizId: 'higher-lower-pl-goals',
+      score: streak,
+      total,
+      xp: 20 + streak * 8,
+      completionKey: buildCompletionKey('higher-lower-pl-goals', runKey),
+    })
+    if (!error) {
+      setSaved(true)
+      await refreshProfile()
+    } else {
+      setSaveError(error.message ?? 'Could not save this result.')
+    }
+    setSaving(false)
   }
 
   return <div className="rounded-3xl border border-border bg-card p-6 sm:p-8">
@@ -46,7 +63,7 @@ export function HigherLowerGame() {
 
     {result && <div className={`mt-6 rounded-2xl border p-5 ${result.correct ? 'border-primary/40 bg-primary/10' : 'border-destructive/40 bg-destructive/10'}`}><p className="font-semibold">{result.correct ? 'Correct call.' : 'Wrong call.'} {right.name} recorded {right.value}.</p><p className="mt-2 text-sm text-muted-foreground">You chose {result.guess}. {right.value >= left.value ? 'Higher' : 'Lower'} was correct.</p>{!over && <button onClick={next} className="mt-4 rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground">Next question</button>}</div>}
 
-    {over && <div className="mt-8 rounded-2xl bg-secondary/40 p-6"><h2 className="text-2xl font-semibold">Run finished: {streak}</h2><p className="mt-2 text-muted-foreground">Final comparison: {right.name} {right.value}</p><div className="mt-5 flex gap-3"><button onClick={() => void save()} disabled={!user || saved} className="rounded-xl bg-primary px-5 py-3 text-primary-foreground disabled:opacity-50">{!user ? 'Sign in to save' : saved ? 'Saved' : 'Save XP'}</button><button onClick={() => window.location.reload()} className="rounded-xl border border-border px-5 py-3">New run</button></div></div>}
+    {over && <div className="mt-8 rounded-2xl bg-secondary/40 p-6"><h2 className="text-2xl font-semibold">Run finished: {streak}</h2><p className="mt-2 text-muted-foreground">Final comparison: {right.name} {right.value}</p><div className="mt-5 flex gap-3"><button onClick={() => void save()} disabled={!user || saved || saving} className="rounded-xl bg-primary px-5 py-3 text-primary-foreground disabled:opacity-50">{!user ? 'Sign in to save' : saved ? 'Saved' : saving ? 'Saving…' : 'Save XP'}</button><button onClick={() => window.location.reload()} className="rounded-xl border border-border px-5 py-3">New run</button></div>{saveError ? <p className="mt-3 text-sm text-destructive">{saveError}</p> : <p className="mt-3 text-sm text-muted-foreground">{!user ? 'Result shown locally. Sign in to save XP and progression.' : saved ? 'XP and progression saved.' : saving ? 'Saving result…' : 'Save this run to persist progression.'}</p>}</div>}
   </div>
 }
 

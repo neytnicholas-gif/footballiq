@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useAuth } from '@/components/auth-provider'
-import { saveQuizResult } from '@/lib/quiz-save'
+import { buildCompletionKey, saveQuizResult } from '@/lib/quiz-save'
 
 type Item = { prompt: string; options: string[]; answer: number; explanation: string }
 
@@ -12,6 +12,9 @@ export function ChoiceQuiz({ quizId, title, items }: { quizId: string; title: st
   const [selected, setSelected] = useState<number | null>(null)
   const [score, setScore] = useState(0)
   const [saved, setSaved] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [saveError, setSaveError] = useState('')
+  const [runKey, setRunKey] = useState(0)
   const item = items[index]
   const finished = selected !== null && index === items.length - 1
 
@@ -22,14 +25,36 @@ export function ChoiceQuiz({ quizId, title, items }: { quizId: string; title: st
   }
 
   async function save() {
-    if (!user || saved) return
+    if (!user || saved || saving) return
     const xp = 20 + score * 10 + (score === items.length ? 40 : 0)
-    const { error } = await saveQuizResult({ quizId, score, total: items.length, xp })
-    if (!error) { setSaved(true); await refreshProfile() }
+    setSaving(true)
+    setSaveError('')
+    const { error } = await saveQuizResult({
+      quizId,
+      score,
+      total: items.length,
+      xp,
+      completionKey: buildCompletionKey(quizId, runKey),
+    })
+    if (!error) {
+      setSaved(true)
+      await refreshProfile()
+    } else {
+      setSaveError(error.message ?? 'Could not save this result.')
+    }
+    setSaving(false)
   }
 
   function next() { setIndex((i) => i + 1); setSelected(null) }
-  function restart() { setIndex(0); setSelected(null); setScore(0); setSaved(false) }
+  function restart() {
+    setIndex(0)
+    setSelected(null)
+    setScore(0)
+    setSaved(false)
+    setSaving(false)
+    setSaveError('')
+    setRunKey((value) => value + 1)
+  }
 
   return <div className="rounded-3xl border border-border bg-card p-5 sm:p-8">
     <div className="flex items-center justify-between gap-4 border-b border-border pb-5"><div><p className="text-sm text-muted-foreground">Question {index + 1} of {items.length}</p><h2 className="mt-1 text-2xl font-semibold">{title}</h2></div><div className="rounded-xl bg-secondary px-4 py-2">Score <strong className="ml-2 text-primary">{score}</strong></div></div>
@@ -39,6 +64,6 @@ export function ChoiceQuiz({ quizId, title, items }: { quizId: string; title: st
       const wrong = selected === i && i !== item.answer
       return <button key={option} onClick={() => choose(i)} disabled={selected !== null} className={`rounded-2xl border p-4 text-left ${correct ? 'border-primary bg-primary/10' : wrong ? 'border-destructive bg-destructive/10' : 'border-border bg-background hover:border-primary/50'}`}>{option}</button>
     })}</div>
-    {selected !== null && <div className="mt-6 rounded-2xl bg-secondary/40 p-5"><p className="font-semibold">{selected === item.answer ? 'Correct.' : `Correct answer: ${item.options[item.answer]}`}</p><p className="mt-2 text-sm text-muted-foreground">{item.explanation}</p><div className="mt-4 flex flex-wrap gap-3">{!finished ? <button onClick={next} className="rounded-xl bg-primary px-5 py-2.5 font-medium text-primary-foreground">Next</button> : <><button onClick={() => void save()} disabled={!user || saved} className="rounded-xl bg-primary px-5 py-2.5 font-medium text-primary-foreground disabled:opacity-50">{!user ? 'Sign in to save XP' : saved ? 'Saved' : 'Finish and save XP'}</button><button onClick={restart} className="rounded-xl border border-border px-5 py-2.5">Play again</button></>}</div></div>}
+    {selected !== null && <div className="mt-6 rounded-2xl bg-secondary/40 p-5"><p className="font-semibold">{selected === item.answer ? 'Correct.' : `Correct answer: ${item.options[item.answer]}`}</p><p className="mt-2 text-sm text-muted-foreground">{item.explanation}</p><div className="mt-4 flex flex-wrap gap-3">{!finished ? <button onClick={next} className="rounded-xl bg-primary px-5 py-2.5 font-medium text-primary-foreground">Next</button> : <><button onClick={() => void save()} disabled={!user || saved || saving} className="rounded-xl bg-primary px-5 py-2.5 font-medium text-primary-foreground disabled:opacity-50">{!user ? 'Sign in to save XP' : saved ? 'Saved' : saving ? 'Saving…' : 'Finish and save XP'}</button><button onClick={restart} className="rounded-xl border border-border px-5 py-2.5">Play again</button></>}</div>{finished && (saveError ? <p className="mt-3 text-sm text-destructive">{saveError}</p> : <p className="mt-3 text-sm text-muted-foreground">{!user ? 'Result shown locally. Sign in to save XP and progression.' : saved ? 'XP and progression saved.' : saving ? 'Saving result…' : 'Save this run to persist progression.'}</p>)}</div>}
   </div>
 }

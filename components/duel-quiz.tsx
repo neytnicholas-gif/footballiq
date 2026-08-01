@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Check, Clock3, Copy, Flame, RotateCcw, Sparkles, Trophy, X, Zap } from 'lucide-react'
 import type { DuelPack, DuelQuestion } from '@/lib/duel-packs'
 import { useAuth } from '@/components/auth-provider'
-import { supabase } from '@/lib/supabase'
+import { buildCompletionKey, saveQuizResult } from '@/lib/quiz-save'
 import { calculateDuelXp, getRankProgress } from '@/lib/progression'
 
 type Choice = 'left' | 'right' | 'same'
@@ -62,6 +62,8 @@ export function DuelQuiz({ pack, onComplete }: { pack: DuelPack; onComplete?: (p
   const [copied, setCopied] = useState(false)
   const [rewardFlash, setRewardFlash] = useState<number | null>(null)
   const [personalBest, setPersonalBest] = useState<StoredBest | null>(null)
+  const [runKey, setRunKey] = useState(0)
+  const [saveError, setSaveError] = useState('')
 
   const question = questions[index]
   const answer = correctChoice(question)
@@ -125,18 +127,20 @@ export function DuelQuiz({ pack, onComplete }: { pack: DuelPack; onComplete?: (p
   async function saveResult() {
     if (!user || !profile || saved || saving) return
     setSaving(true)
+    setSaveError('')
     const xpEarned = calculateDuelXp(score, questions.length, bestCombo, points)
-    const today = new Date().toISOString().slice(0, 10)
-    const { error } = await supabase.rpc('complete_quiz', {
-      p_quiz_id: pack.id,
-      p_score: score,
-      p_total: questions.length,
-      p_xp: xpEarned,
-      p_activity_date: today,
+    const { error } = await saveQuizResult({
+      quizId: pack.id,
+      score,
+      total: questions.length,
+      xp: xpEarned,
+      completionKey: buildCompletionKey(pack.id, runKey),
     })
     if (!error) {
       setSaved(true)
       await refreshProfile()
+    } else {
+      setSaveError(error.message ?? 'Could not save this result.')
     }
     setSaving(false)
   }
@@ -187,6 +191,8 @@ export function DuelQuiz({ pack, onComplete }: { pack: DuelPack; onComplete?: (p
     setShowResults(false)
     setSaved(false)
     setCopied(false)
+    setSaveError('')
+    setRunKey((value) => value + 1)
   }
 
   async function shareResult() {
@@ -234,7 +240,7 @@ export function DuelQuiz({ pack, onComplete }: { pack: DuelPack; onComplete?: (p
             <button onClick={restart} className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-primary px-5 py-3 font-semibold text-primary-foreground"><RotateCcw className="size-4" /> Play again</button>
             <button onClick={() => void shareResult()} className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl border border-border px-5 py-3 font-semibold"><Copy className="size-4" /> {copied ? 'Copied!' : 'Share score'}</button>
           </div>
-          <p className="mt-4 text-center text-xs text-muted-foreground">{!user ? 'Sign in to save XP, streaks and leaderboard progress.' : saving ? 'Saving your result…' : saved ? 'XP and progress saved.' : 'This pack may already have rewarded XP today.'}</p>
+          <p className={`mt-4 text-center text-xs ${saveError ? 'text-destructive' : 'text-muted-foreground'}`}>{!user ? 'Sign in to save XP, streaks and leaderboard progress.' : saveError ? `Save failed: ${saveError}` : saving ? 'Saving your result…' : saved ? 'XP and progress saved.' : 'Save this run to persist progression.'}</p>
         </div>
       </div>
     )

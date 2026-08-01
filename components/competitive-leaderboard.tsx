@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { CalendarDays, ChevronRight, Crown, Flame, Medal, RefreshCw, Trophy } from 'lucide-react'
 import { useAuth } from '@/components/auth-provider'
+import { getBrusselsPeriodStartUtcIso } from '@/lib/brussels-time'
 import { supabase, type Profile } from '@/lib/supabase'
 import { formatLeaderboardValue, leaderboardModes, seasonMeta, type RankedPlayer } from '@/lib/competitive'
 
@@ -50,12 +51,8 @@ export function CompetitiveLeaderboard({ initialBoard = 'overall' }: { initialBo
           quizzes: profile.quizzes_completed,
         })))
       } else if (selected === 'daily' || selected === 'weekly' || selected === 'monthly') {
-        const now = new Date()
-        const start = new Date(now)
-        if (selected === 'daily') start.setHours(0, 0, 0, 0)
-        if (selected === 'weekly') { const day = (start.getDay() + 6) % 7; start.setDate(start.getDate() - day); start.setHours(0, 0, 0, 0) }
-        if (selected === 'monthly') { start.setDate(1); start.setHours(0, 0, 0, 0) }
-        const { data, error: queryError } = await supabase.from('quiz_results').select('user_id,score,total,xp_earned,completed_at').gte('completed_at', start.toISOString()).limit(2000)
+        const start = getBrusselsPeriodStartUtcIso(selected)
+        const { data, error: queryError } = await supabase.from('quiz_results').select('user_id,score,total,xp_earned,completed_at').gte('completed_at', start).limit(2000)
         if (queryError) throw queryError
         const totals = new Map<string, { xp: number; correct: number; total: number; quizzes: number }>()
         for (const result of (data as QuizResult[]) ?? []) {

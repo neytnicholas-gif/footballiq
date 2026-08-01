@@ -3,7 +3,7 @@
 import { useMemo, useState } from 'react'
 import { ArrowRight, Check, Eye, RotateCcw, TriangleAlert, X } from 'lucide-react'
 import { useAuth } from '@/components/auth-provider'
-import { saveQuizResult } from '@/lib/quiz-save'
+import { buildCompletionKey, saveQuizResult } from '@/lib/quiz-save'
 import { cn } from '@/lib/utils'
 
 type ScoutDecision = 'strong-follow' | 'follow' | 'monitor' | 'do-not-pursue'
@@ -223,6 +223,9 @@ export function ScoutVisionGame() {
   const [selected, setSelected] = useState<ScoutDecision | null>(null)
   const [score, setScore] = useState(0)
   const [saved, setSaved] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [saveError, setSaveError] = useState('')
+  const [runKey, setRunKey] = useState(0)
   const scenario = scenarios[index]
   const complete = index === scenarios.length - 1 && selected !== null
 
@@ -250,21 +253,30 @@ export function ScoutVisionGame() {
     setSelected(null)
     setScore(0)
     setSaved(false)
+    setSaving(false)
+    setSaveError('')
+    setRunKey((value) => value + 1)
   }
 
   async function save() {
-    if (!user || saved) return
+    if (!user || saved || saving) return
     const xp = 30 + score * 11
+    setSaving(true)
+    setSaveError('')
     const { error } = await saveQuizResult({
       quizId: 'would-you-scout-v1',
       score,
       total: scenarios.length,
       xp,
+      completionKey: buildCompletionKey('would-you-scout-v1', runKey),
     })
     if (!error) {
       setSaved(true)
       await refreshProfile()
+    } else {
+      setSaveError(error.message ?? 'Could not save this result.')
     }
+    setSaving(false)
   }
 
   return (
@@ -400,10 +412,10 @@ export function ScoutVisionGame() {
                     <button
                       type="button"
                       onClick={() => void save()}
-                      disabled={!user || saved}
+                      disabled={!user || saved || saving}
                       className="rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground disabled:opacity-50"
                     >
-                      {!user ? 'Sign in to save progress' : saved ? 'Progress saved' : 'Finish and save XP'}
+                      {!user ? 'Sign in to save progress' : saved ? 'Progress saved' : saving ? 'Saving…' : 'Finish and save XP'}
                     </button>
                     <button
                       type="button"
@@ -416,6 +428,7 @@ export function ScoutVisionGame() {
                   </>
                 )}
               </div>
+              {complete && (saveError ? <p className="mt-3 text-sm text-destructive">{saveError}</p> : <p className="mt-3 text-sm text-muted-foreground">{!user ? 'Result shown locally. Sign in to save XP and progression.' : saved ? 'XP and progression saved.' : saving ? 'Saving result…' : 'Save this run to persist progression.'}</p>)}
             </div>
           )}
         </article>

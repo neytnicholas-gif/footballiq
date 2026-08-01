@@ -5,13 +5,15 @@ import { CalendarDays, Copy, Flame, Gift } from 'lucide-react'
 import { ModePage } from '@/components/mode-page'
 import { DailyChallenge } from '@/components/daily-challenge'
 import { useAuth } from '@/components/auth-provider'
+import { formatBrusselsDateLong, getBrusselsDateISO } from '@/lib/brussels-time'
 import { formatDayCount } from '@/lib/player-metrics'
 
 export default function DailyPage() {
   const { user, profile } = useAuth()
   const [copied, setCopied] = useState(false)
 
-  const today = useMemo(() => new Date().toISOString().slice(0, 10), [])
+  const today = useMemo(() => getBrusselsDateISO(), [])
+  const todayLabel = useMemo(() => formatBrusselsDateLong(), [])
   const completed = profile?.last_activity_date?.slice(0, 10) === today
 
   async function share() {
@@ -33,7 +35,7 @@ export default function DailyPage() {
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[.2em] text-primary">Daily challenge</p>
-            <h2 className="mt-2 text-2xl font-bold tracking-tight">{new Date(today).toDateString()}</h2>
+            <h2 className="mt-2 text-2xl font-bold tracking-tight">{todayLabel}</h2>
             <p className="mt-2 text-sm text-muted-foreground">
               Complete the daily set once to record progress for today.
             </p>
