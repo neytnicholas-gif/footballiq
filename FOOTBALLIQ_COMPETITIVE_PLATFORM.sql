@@ -42,8 +42,17 @@ create policy "Season stats are publicly readable" on public.season_stats for se
 drop policy if exists "Quiz results are publicly readable" on public.quiz_results;
 create policy "Quiz results are publicly readable" on public.quiz_results for select using (true);
 
+drop policy if exists "Users can insert own quiz results" on public.quiz_results;
+
 -- Replays should count as new competitive attempts. Remove the old first-completion-only rule.
 drop index if exists public.quiz_results_first_completion;
+alter table public.quiz_results add column if not exists completion_key text;
+update public.quiz_results set completion_key = concat('legacy:', id::text) where completion_key is null;
+alter table public.quiz_results alter column completion_key set not null;
+alter table public.quiz_results drop constraint if exists quiz_results_completion_key_format;
+alter table public.quiz_results add constraint quiz_results_completion_key_format
+  check (char_length(completion_key) between 24 and 120 and completion_key ~ '^[A-Za-z0-9:_-]+$');
+create unique index if not exists quiz_results_user_completion_key_idx on public.quiz_results(user_id, completion_key);
 create index if not exists quiz_results_user_completed_idx on public.quiz_results(user_id, completed_at desc);
 create index if not exists quiz_results_completed_idx on public.quiz_results(completed_at desc);
 create index if not exists mode_stats_mode_rating_idx on public.mode_stats(mode, rating desc);
@@ -72,9 +81,9 @@ create or replace function public.complete_quiz(
   p_score integer,
   p_total integer,
   p_xp integer,
-  p_activity_date date
+  p_completion_key text
 )
-returns void language plpgsql security definer set search_path = public as $$
+returns jsonb language plpgsql security definer set search_path = pg_catalog, public as $$
 declare
   uid uuid := auth.uid();
   previous_date date;
@@ -82,22 +91,32 @@ declare
   mode_name text;
   season_name text;
   rating_change integer;
+  inserted_count integer;
+  activity_day date := (now() at time zone 'Europe/Brussels')::date;
 begin
   if uid is null then raise exception 'Not authenticated'; end if;
   if p_score < 0 or p_total <= 0 or p_score > p_total then raise exception 'Invalid quiz result'; end if;
+  if char_length(p_completion_key) < 24 or char_length(p_completion_key) > 120 then raise exception 'Invalid completion key length'; end if;
+  if p_completion_key !~ '^[A-Za-z0-9:_-]+$' then raise exception 'Invalid completion key format'; end if;
 
   mode_name := public.competitive_mode_from_quiz(p_quiz_id);
-  season_name := public.current_footballiq_season(p_activity_date);
+  season_name := public.current_footballiq_season(activity_day);
   rating_change := (p_score * 20) - (p_total * 8);
 
   insert into public.profiles (id) values (uid) on conflict (id) do nothing;
 
-  insert into public.quiz_results(user_id, quiz_id, score, total, xp_earned)
-  values (uid, p_quiz_id, p_score, p_total, p_xp);
+  insert into public.quiz_results(user_id, quiz_id, completion_key, score, total, xp_earned)
+  values (uid, p_quiz_id, p_completion_key, p_score, p_total, p_xp)
+  on conflict (user_id, completion_key) do nothing;
+
+  get diagnostics inserted_count = row_count;
+  if inserted_count = 0 then
+    return jsonb_build_object('awarded', false, 'already_processed', true, 'completion_key', p_completion_key, 'activity_date', activity_day);
+  end if;
 
   select last_activity_date, current_streak into previous_date, next_streak from public.profiles where id = uid for update;
-  if previous_date = p_activity_date then next_streak := greatest(next_streak, 1);
-  elsif previous_date = p_activity_date - 1 then next_streak := next_streak + 1;
+  if previous_date = activity_day then next_streak := greatest(next_streak, 1);
+  elsif previous_date = activity_day - 1 then next_streak := next_streak + 1;
   else next_streak := 1;
   end if;
 
@@ -111,7 +130,7 @@ begin
     streak = next_streak,
     current_streak = next_streak,
     longest_streak = greatest(longest_streak, next_streak),
-    last_activity_date = p_activity_date
+    last_activity_date = activity_day
   where id = uid;
 
   insert into public.mode_stats(user_id, mode, rating, xp, quizzes_completed, correct_answers, total_answers, perfect_quizzes, best_score)
@@ -136,7 +155,10 @@ begin
     total_answers = public.season_stats.total_answers + excluded.total_answers,
     perfect_quizzes = public.season_stats.perfect_quizzes + excluded.perfect_quizzes,
     updated_at = now();
+
+  return jsonb_build_object('awarded', true, 'already_processed', false, 'completion_key', p_completion_key, 'activity_date', activity_day);
 end;
 $$;
 
-grant execute on function public.complete_quiz(text, integer, integer, integer, date) to authenticated;
+revoke all on function public.complete_quiz(text, integer, integer, integer, text) from public, anon, authenticated, service_role;
+grant execute on function public.complete_quiz(text, integer, integer, integer, text) to authenticated;

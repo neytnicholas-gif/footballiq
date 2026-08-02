@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useAuth } from '@/components/auth-provider'
-import { buildCompletionKey, saveQuizResult } from '@/lib/quiz-save'
+import { buildCompletionKey, createCompletionRunId, saveQuizResult } from '@/lib/quiz-save'
 
 type Item = { prompt: string; options: string[]; answer: number; explanation: string }
 
@@ -14,7 +14,7 @@ export function ChoiceQuiz({ quizId, title, items }: { quizId: string; title: st
   const [saved, setSaved] = useState(false)
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState('')
-  const [runKey, setRunKey] = useState(0)
+  const [runKey, setRunKey] = useState(() => createCompletionRunId())
   const item = items[index]
   const finished = selected !== null && index === items.length - 1
 
@@ -53,7 +53,7 @@ export function ChoiceQuiz({ quizId, title, items }: { quizId: string; title: st
     setSaved(false)
     setSaving(false)
     setSaveError('')
-    setRunKey((value) => value + 1)
+    setRunKey(createCompletionRunId())
   }
 
   return <div className="rounded-3xl border border-border bg-card p-5 sm:p-8">

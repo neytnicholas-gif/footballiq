@@ -3,7 +3,7 @@
 import { useMemo, useState } from 'react'
 import { higherLowerItems } from '@/lib/game-data'
 import { useAuth } from '@/components/auth-provider'
-import { buildCompletionKey, saveQuizResult } from '@/lib/quiz-save'
+import { buildCompletionKey, createCompletionRunId, saveQuizResult } from '@/lib/quiz-save'
 
 export function HigherLowerGame() {
   const { user, refreshProfile } = useAuth()
@@ -18,7 +18,7 @@ export function HigherLowerGame() {
   const [saved, setSaved] = useState(false)
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState('')
-  const [runKey] = useState(0)
+  const [runKey] = useState(() => createCompletionRunId())
   const left = deck[index - 1]
   const right = deck[index]
 

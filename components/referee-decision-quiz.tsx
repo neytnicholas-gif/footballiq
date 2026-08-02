@@ -7,7 +7,7 @@ import { useAuth } from '@/components/auth-provider'
 import { Button } from '@/components/ui/button'
 import { formatDayCount } from '@/lib/player-metrics'
 import { getRankProgress } from '@/lib/progression'
-import { buildCompletionKey, saveQuizResult } from '@/lib/quiz-save'
+import { buildCompletionKey, createCompletionRunId, saveQuizResult } from '@/lib/quiz-save'
 import { cn } from '@/lib/utils'
 
 type Scenario = {
@@ -286,7 +286,7 @@ export function RefereeDecisionQuiz() {
   const [animatedXp, setAnimatedXp] = useState(0)
   const [animatedRatingDelta, setAnimatedRatingDelta] = useState(0)
   const [runStartXp, setRunStartXp] = useState<number | null>(null)
-  const [runKey, setRunKey] = useState(0)
+  const [runKey, setRunKey] = useState(() => createCompletionRunId())
   const saveAttemptedRef = useRef(false)
 
   const scenario = scenarios[index]
@@ -437,7 +437,7 @@ export function RefereeDecisionQuiz() {
     setAnimatedXp(0)
     setAnimatedRatingDelta(0)
     setRunStartXp(null)
-    setRunKey((value) => value + 1)
+    setRunKey(createCompletionRunId())
     saveAttemptedRef.current = false
   }
 

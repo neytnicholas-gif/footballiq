@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Check, Clock3, Copy, Flame, RotateCcw, Sparkles, Trophy, X, Zap } from 'lucide-react'
 import type { DuelPack, DuelQuestion } from '@/lib/duel-packs'
 import { useAuth } from '@/components/auth-provider'
-import { buildCompletionKey, saveQuizResult } from '@/lib/quiz-save'
+import { buildCompletionKey, createCompletionRunId, saveQuizResult } from '@/lib/quiz-save'
 import { calculateDuelXp, getRankProgress } from '@/lib/progression'
 
 type Choice = 'left' | 'right' | 'same'
@@ -62,7 +62,7 @@ export function DuelQuiz({ pack, onComplete }: { pack: DuelPack; onComplete?: (p
   const [copied, setCopied] = useState(false)
   const [rewardFlash, setRewardFlash] = useState<number | null>(null)
   const [personalBest, setPersonalBest] = useState<StoredBest | null>(null)
-  const [runKey, setRunKey] = useState(0)
+  const [runKey, setRunKey] = useState(() => createCompletionRunId())
   const [saveError, setSaveError] = useState('')
 
   const question = questions[index]
@@ -192,7 +192,7 @@ export function DuelQuiz({ pack, onComplete }: { pack: DuelPack; onComplete?: (p
     setSaved(false)
     setCopied(false)
     setSaveError('')
-    setRunKey((value) => value + 1)
+    setRunKey(createCompletionRunId())
   }
 
   async function shareResult() {

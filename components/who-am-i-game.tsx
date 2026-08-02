@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { whoAmIQuestions } from '@/lib/game-data'
 import { useAuth } from '@/components/auth-provider'
-import { buildCompletionKey, saveQuizResult } from '@/lib/quiz-save'
+import { buildCompletionKey, createCompletionRunId, saveQuizResult } from '@/lib/quiz-save'
 
 export function WhoAmIGame() {
   const { user, refreshProfile } = useAuth()
@@ -15,7 +15,7 @@ export function WhoAmIGame() {
   const [saved, setSaved] = useState(false)
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState('')
-  const [runKey] = useState(0)
+  const [runKey] = useState(() => createCompletionRunId())
   const q = whoAmIQuestions[index]
   const last = index === whoAmIQuestions.length - 1
 
