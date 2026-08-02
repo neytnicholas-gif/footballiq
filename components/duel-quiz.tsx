@@ -6,6 +6,7 @@ import type { DuelPack, DuelQuestion } from '@/lib/duel-packs'
 import { useAuth } from '@/components/auth-provider'
 import { buildCompletionKey, createCompletionRunId, saveQuizResult } from '@/lib/quiz-save'
 import { calculateDuelXp, getRankProgress } from '@/lib/progression'
+import { shouldIgnoreGlobalShortcut } from '@/lib/keyboard-shortcuts'
 
 type Choice = 'left' | 'right' | 'same'
 type Speed = 'relaxed' | 'timed'
@@ -115,7 +116,7 @@ export function DuelQuiz({ pack, onComplete }: { pack: DuelPack; onComplete?: (p
 
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
-      if (showResults || answered) return
+      if (showResults || answered || shouldIgnoreGlobalShortcut(event)) return
       if (event.key === '1') lockAnswer('left')
       if (event.key === '2') lockAnswer('same')
       if (event.key === '3') lockAnswer('right')

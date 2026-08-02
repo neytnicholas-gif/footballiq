@@ -194,3 +194,34 @@ test('create_profile_for_new_user is trigger-only and helper functions pin safe 
   assert.ok(modeHelperDefinitionCount > 0, 'expected competitive_mode_from_quiz definition in repository SQL')
   assert.ok(seasonHelperDefinitionCount > 0, 'expected current_footballiq_season definition in repository SQL')
 })
+
+test('set_profile_username is permissioned and uses unambiguous profile id conflict handling', async () => {
+  const thisFilePath = fileURLToPath(import.meta.url)
+  const repoRoot = path.resolve(path.dirname(thisFilePath), '..')
+  const sqlFiles = await collectSqlFiles(repoRoot)
+
+  const setProfileDef = /create\s+or\s+replace\s+function\s+public\.set_profile_username\(/i
+  const ambiguousConflict = /on\s+conflict\s*\(\s*id\s*\)\s*do\s+update/i
+  const safeConflict = /on\s+conflict\s+on\s+constraint\s+profiles_pkey\s+do\s+update/i
+  const secureSearchPath = /set\s+search_path\s*=\s*pg_catalog\s*,\s*public/i
+  const secureRevoke = /revoke\s+all\s+on\s+function\s+public\.set_profile_username\(text\)\s+from\s+public\s*,\s*anon\s*,\s*authenticated\s*,\s*service_role/i
+  const authGrant = /grant\s+execute\s+on\s+function\s+public\.set_profile_username\(text\)\s+to\s+authenticated/i
+
+  let definitionCount = 0
+
+  for (const filePath of sqlFiles) {
+    const sql = await readFile(filePath, 'utf8')
+    const normalizedPath = filePath.replace(/\\/g, '/').toLowerCase()
+    if (!setProfileDef.test(sql)) continue
+
+    definitionCount += 1
+    assert.doesNotMatch(sql, ambiguousConflict, `${normalizedPath} uses ambiguous on conflict (id) in set_profile_username`)
+    assert.match(sql, safeConflict, `${normalizedPath} must use on conflict on constraint profiles_pkey`)
+    assert.match(sql, secureSearchPath, `${normalizedPath} must pin set_profile_username search_path to pg_catalog, public`)
+    assert.match(sql, secureRevoke, `${normalizedPath} must revoke set_profile_username from all roles first`)
+    assert.match(sql, authGrant, `${normalizedPath} must grant set_profile_username execute only to authenticated`)
+    assert.match(sql, /select\s+p\.id\s+as\s+id\s*,\s*p\.username\s+as\s+username/i, `${normalizedPath} must return explicitly aliased id and username fields`)
+  }
+
+  assert.ok(definitionCount > 0, 'expected set_profile_username definition in repository SQL')
+})

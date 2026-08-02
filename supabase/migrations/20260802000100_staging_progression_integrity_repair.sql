@@ -59,11 +59,11 @@ begin
 
   insert into public.profiles (id, username)
   values (uid, clean_username)
-  on conflict (id) do update
+  on conflict on constraint profiles_pkey do update
   set username = excluded.username;
 
   return query
-  select p.id, p.username
+  select p.id as id, p.username as username
   from public.profiles p
   where p.id = uid;
 end;
