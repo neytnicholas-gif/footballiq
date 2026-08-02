@@ -135,3 +135,62 @@ test('repository SQL never defines or grants obsolete complete_quiz date signatu
   assert.ok(completeQuizDefinitionCount > 0, 'expected at least one complete_quiz definition in repository SQL')
   assert.ok(completeQuizGrantCount > 0, 'expected at least one complete_quiz authenticated grant in repository SQL')
 })
+
+test('create_profile_for_new_user is trigger-only and helper functions pin safe search_path in authoritative SQL', async () => {
+  const thisFilePath = fileURLToPath(import.meta.url)
+  const repoRoot = path.resolve(path.dirname(thisFilePath), '..')
+  const sqlFiles = await collectSqlFiles(repoRoot)
+
+  const createProfileDef = /create\s+or\s+replace\s+function\s+public\.create_profile_for_new_user\(\)/i
+  const createProfileGrant = /grant\s+execute\s+on\s+function\s+public\.create_profile_for_new_user\(\)/i
+  const createProfileRevoke = /revoke\s+all\s+on\s+function\s+public\.create_profile_for_new_user\(\)\s+from\s+public\s*,\s*anon\s*,\s*authenticated/i
+
+  const modeHelperDef = /create\s+or\s+replace\s+function\s+public\.competitive_mode_from_quiz\(p_quiz_id\s+text\)[\s\S]*?set\s+search_path\s*=\s*pg_catalog\s*,\s*public/i
+  const seasonHelperDef = /create\s+or\s+replace\s+function\s+public\.current_footballiq_season\(p_date\s+date\)[\s\S]*?set\s+search_path\s*=\s*pg_catalog\s*,\s*public/i
+
+  let createProfileDefinitionCount = 0
+  let modeHelperDefinitionCount = 0
+  let seasonHelperDefinitionCount = 0
+
+  for (const filePath of sqlFiles) {
+    const sql = await readFile(filePath, 'utf8')
+    const normalizedPath = filePath.replace(/\\/g, '/').toLowerCase()
+
+    assert.doesNotMatch(
+      sql,
+      createProfileGrant,
+      `${normalizedPath} must not grant execute on create_profile_for_new_user()`,
+    )
+
+    if (createProfileDef.test(sql)) {
+      createProfileDefinitionCount += 1
+      assert.match(
+        sql,
+        createProfileRevoke,
+        `${normalizedPath} must revoke create_profile_for_new_user() from public, anon, authenticated`,
+      )
+    }
+
+    if (/create\s+or\s+replace\s+function\s+public\.competitive_mode_from_quiz\(p_quiz_id\s+text\)/i.test(sql)) {
+      modeHelperDefinitionCount += 1
+      assert.match(
+        sql,
+        modeHelperDef,
+        `${normalizedPath} competitive_mode_from_quiz must set search_path = pg_catalog, public`,
+      )
+    }
+
+    if (/create\s+or\s+replace\s+function\s+public\.current_footballiq_season\(p_date\s+date\)/i.test(sql)) {
+      seasonHelperDefinitionCount += 1
+      assert.match(
+        sql,
+        seasonHelperDef,
+        `${normalizedPath} current_footballiq_season must set search_path = pg_catalog, public`,
+      )
+    }
+  }
+
+  assert.ok(createProfileDefinitionCount > 0, 'expected create_profile_for_new_user() definition in repository SQL')
+  assert.ok(modeHelperDefinitionCount > 0, 'expected competitive_mode_from_quiz definition in repository SQL')
+  assert.ok(seasonHelperDefinitionCount > 0, 'expected current_footballiq_season definition in repository SQL')
+})

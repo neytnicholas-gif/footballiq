@@ -59,7 +59,7 @@ create index if not exists mode_stats_mode_rating_idx on public.mode_stats(mode,
 create index if not exists season_stats_season_rating_idx on public.season_stats(season_id, rating desc);
 
 create or replace function public.competitive_mode_from_quiz(p_quiz_id text)
-returns text language sql immutable as $$
+returns text language sql immutable set search_path = pg_catalog, public as $$
   select case
     when p_quiz_id like 'daily-%' then 'daily'
     when p_quiz_id like 'referee%' then 'referee-decisions'
@@ -72,7 +72,7 @@ returns text language sql immutable as $$
 $$;
 
 create or replace function public.current_footballiq_season(p_date date)
-returns text language sql immutable as $$
+returns text language sql immutable set search_path = pg_catalog, public as $$
   select extract(year from p_date)::int::text || '-S' || (extract(quarter from p_date)::int)::text
 $$;
 

@@ -72,6 +72,34 @@ $$;
 revoke all on function public.set_profile_username(text) from public, anon, authenticated, service_role;
 grant execute on function public.set_profile_username(text) to authenticated;
 
+revoke all on function public.create_profile_for_new_user() from public, anon, authenticated, service_role;
+
+create or replace function public.competitive_mode_from_quiz(p_quiz_id text)
+returns text
+language sql
+immutable
+set search_path = pg_catalog, public
+as $$
+  select case
+    when p_quiz_id like 'daily-%' then 'daily'
+    when p_quiz_id like 'referee%' then 'referee-decisions'
+    when p_quiz_id like 'would-you-scout%' then 'scout-mode'
+    when p_quiz_id like 'higher-lower%' then 'higher-lower'
+    when p_quiz_id like 'career-path%' then 'career-path'
+    when p_quiz_id like 'who-am-i%' then 'who-am-i'
+    else 'football-duels'
+  end
+$$;
+
+create or replace function public.current_footballiq_season(p_date date)
+returns text
+language sql
+immutable
+set search_path = pg_catalog, public
+as $$
+  select extract(year from p_date)::int::text || '-S' || (extract(quarter from p_date)::int)::text
+$$;
+
 drop function if exists public.complete_quiz(text, integer, integer, integer, date);
 
 create or replace function public.complete_quiz(
