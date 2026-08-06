@@ -95,7 +95,7 @@ export function PlayerMarketPortfolio({
         <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           <Metric label="Total profit/loss" value={`${totalProfitLoss >= 0 ? '+' : '-'}${formatFiqCompact(Math.abs(totalProfitLoss))}`} tone={totalProfitLoss >= 0 ? 'positive' : 'negative'} />
           <Metric label="Overall ROI" value={`${totalRoi >= 0 ? '+' : ''}${totalRoi.toFixed(2)}%`} tone={totalRoi >= 0 ? 'positive' : 'negative'} />
-          <Metric label="Simulated matchweeks" value={String(runs.length)} />
+          <Metric label="Legacy update records" value={String(runs.length)} />
         </div>
 
         <div className="mt-4 rounded-xl border border-border bg-background/60 px-4 py-3 text-sm text-muted-foreground">
@@ -174,9 +174,9 @@ export function PlayerMarketPortfolio({
 
       <section className="grid gap-5 lg:grid-cols-2">
         <div className="rounded-[2rem] border border-border bg-card p-6">
-          <h2 className="text-xl font-bold">Matchweek history</h2>
+          <h2 className="text-xl font-bold">Legacy update history</h2>
           <div className="mt-4 space-y-2">
-            {runs.length === 0 ? <p className="text-sm text-muted-foreground">No simulated matchweeks yet.</p> : runs.map((run) => (
+            {runs.length === 0 ? <p className="text-sm text-muted-foreground">No verified performance updates have been processed.</p> : runs.map((run) => (
               <div key={run.id} className="rounded-xl border border-border bg-background/60 px-3 py-2 text-sm">
                 <p className="font-semibold">{run.week_label}</p>
                 <p className="text-xs text-muted-foreground">Weekly change {run.weekly_portfolio_gain >= 0 ? '+' : '-'}{formatFiqCompact(Math.abs(run.weekly_portfolio_gain))} · ROI {run.current_roi_pct.toFixed(2)}%</p>

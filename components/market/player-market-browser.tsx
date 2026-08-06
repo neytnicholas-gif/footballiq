@@ -6,7 +6,6 @@ import type { ReactNode } from 'react'
 import { ArrowUpDown, Clock3, Search, Shield, Star } from 'lucide-react'
 import { MarketPlayerChip } from '@/components/market/market-player-chip'
 import { buyMarketPlayer, sellMarketPlayer, toggleMarketWatchlist } from '@/lib/market/client'
-import { simulateMarketCards } from '@/lib/market/engine'
 import { canBuyPosition, countFormation } from '@/lib/market/formation'
 import { formatFiqCompact, MARKET_MAX_PORTFOLIO_SIZE } from '@/lib/market/format'
 import type { MarketHolding, MarketPlayer, MarketSeasonStats } from '@/lib/market/types'
@@ -48,12 +47,6 @@ export function PlayerMarketBrowser({
   const watchSet = useMemo(() => new Set(watchlist), [watchlist])
   const playersById = useMemo(() => new Map(players.map((player) => [player.id, player])), [players])
   const formation = useMemo(() => countFormation(holdings, playersById), [holdings, playersById])
-  const statsMap = useMemo(
-    () => new Map<number, MarketSeasonStats | undefined>(Object.entries(statsByPlayerId).map(([id, row]) => [Number(id), row])),
-    [statsByPlayerId],
-  )
-  const simByPlayer = useMemo(() => simulateMarketCards(players, statsMap), [players, statsMap])
-
   const filtered = useMemo(() => {
     let rows = [...players]
 
@@ -227,9 +220,8 @@ export function PlayerMarketBrowser({
               && availableCash >= player.current_value
               && canBuyPosition(player.position, formation)
             const stat = statsByPlayerId[player.id]
-            const sim = simByPlayer.get(player.id)
-            const trendDelta = sim?.trendDelta ?? delta
-            const trendPct = sim?.trendPct ?? Number(pct)
+            const trendDelta = delta
+            const trendPct = Number(pct)
 
             return (
               <article key={player.id} className="group rounded-2xl border border-border bg-background/70 p-4 transition hover:border-primary/45 hover:shadow-[0_18px_50px_-38px_rgba(83,240,166,.95)]">
@@ -258,8 +250,8 @@ export function PlayerMarketBrowser({
                 </p>
 
                 <div className="mt-3 rounded-xl border border-border bg-card/50 px-3 py-2">
-                  <p className="mb-2 text-[10px] uppercase tracking-[.18em] text-muted-foreground">Momentum sparkline</p>
-                  <Sparkline points={sim?.sparkline.map((point) => point.value) ?? [player.previous_value, player.current_value]} positive={trendDelta >= 0} />
+                  <p className="mb-2 text-[10px] uppercase tracking-[.18em] text-muted-foreground">Recorded value movement</p>
+                  <Sparkline points={[player.previous_value, player.current_value]} positive={trendDelta >= 0} />
                 </div>
 
                 <div className="mt-3 flex flex-wrap gap-2">

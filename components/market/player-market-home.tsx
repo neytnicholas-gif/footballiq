@@ -3,18 +3,16 @@
 import Link from 'next/link'
 import { useEffect, useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
-import { ArrowRight, BarChart3, Coins, Lock, PlayCircle, Trophy, TrendingDown, TrendingUp, Users, Wallet } from 'lucide-react'
+import { ArrowRight, BarChart3, Coins, DatabaseZap, Lock, Trophy, TrendingDown, TrendingUp, Users, Wallet } from 'lucide-react'
 import { countFormation } from '@/lib/market/formation'
 import { useAuth } from '@/components/auth-provider'
 import { MarketDisclaimer } from '@/components/market/market-disclaimer'
 import { MarketPlayerChip } from '@/components/market/market-player-chip'
 import {
-  applySimulatedMatchweek,
   calculateTradesRemaining,
   loadMyLatestReveal,
   loadLatestMatchweekRun,
   loadMarketPlayers,
-  loadMarketSeasonStats,
   loadMyPortfolioData,
   refreshMyMarketPortfolio,
 } from '@/lib/market/client'
@@ -26,22 +24,17 @@ import {
   MARKET_DAILY_SELL_LIMIT,
   MARKET_MAX_PORTFOLIO_SIZE,
 } from '@/lib/market/format'
-import { MARKET_SIMULATION_METHOD_VERSION, seedMatchweekProvider } from '@/lib/market/simulation'
-import { createRevealSummary, saveRevealSummary } from '@/lib/market/reveal'
-import type { MarketHolding, MarketMatchweekApplyResult, MarketMatchweekRun, MarketPlayer, MarketPortfolio, MarketSeasonStats } from '@/lib/market/types'
+import type { MarketHolding, MarketMatchweekRun, MarketPlayer, MarketPortfolio } from '@/lib/market/types'
 
 export function PlayerMarketHome() {
   const { user } = useAuth()
   const [players, setPlayers] = useState<MarketPlayer[]>([])
   const [portfolio, setPortfolio] = useState<MarketPortfolio | null>(null)
   const [holdings, setHoldings] = useState<MarketHolding[]>([])
-  const [latestStatsByPlayerId, setLatestStatsByPlayerId] = useState<Map<number, MarketSeasonStats | undefined>>(new Map())
   const [lastRun, setLastRun] = useState<MarketMatchweekRun | null>(null)
-  const [latestResult, setLatestResult] = useState<MarketMatchweekApplyResult | null>(null)
   const [latestRevealWeek, setLatestRevealWeek] = useState<string | null>(null)
   const [onboardingDismissed, setOnboardingDismissed] = useState(false)
   const [tradesMessage, setTradesMessage] = useState('')
-  const [simulating, setSimulating] = useState(false)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
@@ -49,9 +42,8 @@ export function PlayerMarketHome() {
     setLoading(true)
     setError('')
 
-    const [{ data: playerRows, error: playerError }, { data: seasonStatsRows, error: seasonStatsError }, portfolioData, latestRunData] = await Promise.all([
+    const [{ data: playerRows, error: playerError }, portfolioData, latestRunData] = await Promise.all([
       loadMarketPlayers(),
-      loadMarketSeasonStats(),
       (async () => {
         if (user) await refreshMyMarketPortfolio()
         return loadMyPortfolioData()
@@ -67,10 +59,6 @@ export function PlayerMarketHome() {
       setError(portfolioData.error.message)
     }
 
-    if (seasonStatsError) {
-      setError(seasonStatsError.message)
-    }
-
     if (latestRunData.error) {
       setError(latestRunData.error.message)
     }
@@ -80,12 +68,6 @@ export function PlayerMarketHome() {
     setHoldings(portfolioData.holdings)
     setLastRun(latestRunData.data)
 
-    const statsMap = new Map<number, MarketSeasonStats | undefined>()
-    for (const row of seasonStatsRows) {
-      if (!statsMap.has(row.player_id)) statsMap.set(row.player_id, row)
-    }
-    setLatestStatsByPlayerId(statsMap)
-
     const remaining = calculateTradesRemaining(portfolioData.transactions)
     setTradesMessage(`${remaining.buysRemaining}/${MARKET_DAILY_BUY_LIMIT} buys left · ${remaining.salesRemaining}/${MARKET_DAILY_SELL_LIMIT} sales left today`)
 
@@ -93,56 +75,6 @@ export function PlayerMarketHome() {
     setLatestRevealWeek(revealResult.data?.week_label ?? null)
 
     setLoading(false)
-  }
-
-  async function handleSimulateMatchweek() {
-    const hasValidFormation = formation.GK === 1 && formation.DEF === 4 && formation.MID === 3 && formation.FWD === 3
-    if (!hasValidFormation) {
-      setError('Complete a valid 1-4-3-3 portfolio before simulating a matchweek.')
-      return
-    }
-
-    setSimulating(true)
-    setError('')
-
-    const nextWeek = (lastRun?.week_number ?? 0) + 1
-    const weekLabel = `Matchweek ${nextWeek}`
-    const payload = seedMatchweekProvider.simulateMatchweek({
-      players,
-      latestStatsByPlayerId,
-      weekSeed: `${weekLabel}-${MARKET_SIMULATION_METHOD_VERSION}`,
-    })
-
-    const beforePlayers = [...players]
-    const beforeHoldings = [...holdings]
-
-    const { data, error: simulateError } = await applySimulatedMatchweek(weekLabel, payload)
-    if (simulateError || !data) {
-      setError(simulateError?.message ?? 'Matchweek simulation failed')
-      setSimulating(false)
-      return
-    }
-
-    setLatestResult(data)
-    await load()
-
-    const refreshedPortfolio = await loadMyPortfolioData()
-    const refreshedPlayers = await loadMarketPlayers()
-    const scopeKey = user?.id ?? 'anon'
-    const reveal = createRevealSummary({
-      scopeKey,
-      result: data,
-      playersBefore: beforePlayers,
-      playersAfter: refreshedPlayers.data,
-      holdingsBefore: beforeHoldings,
-      holdingsAfter: refreshedPortfolio.holdings,
-      patches: payload,
-      portfolioAfter: refreshedPortfolio.portfolio,
-    })
-    saveRevealSummary(scopeKey, reveal)
-    setLatestRevealWeek(reveal.week_label)
-
-    setSimulating(false)
   }
 
   useEffect(() => {
@@ -233,41 +165,26 @@ export function PlayerMarketHome() {
       <section className="rounded-[2rem] border border-border bg-card p-6 sm:p-8">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-[.2em] text-primary">First playable loop</p>
-              <h2 className="mt-1 text-2xl font-black">Matchweek simulator</h2>
-              <p className="mt-2 text-sm text-muted-foreground">Generate realistic sample performances, revalue the market, and roll straight into your next buy/sell cycle.</p>
+              <p className="text-xs font-semibold uppercase tracking-[.2em] text-amber-200">Real-performance updates</p>
+              <h2 className="mt-1 text-2xl font-black">Values are currently frozen</h2>
+              <p className="mt-2 max-w-3xl text-sm text-muted-foreground">No licensed performance provider is configured. FootballIQ will not generate replacement ratings or move values from simulated matches. Trading remains available at the displayed FootballIQ gameplay values while verified updates are offline.</p>
             </div>
             <div className="flex flex-wrap gap-2">
-              <button
-                onClick={() => void handleSimulateMatchweek()}
-                disabled={simulating || loading || !isValidSquad}
-                className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground disabled:opacity-45"
-              >
-                <PlayCircle className="size-4" />
-                {simulating ? 'Simulating…' : 'Simulate Matchweek'}
-              </button>
+              <span className="inline-flex items-center gap-2 rounded-xl border border-amber-300/25 bg-amber-200/10 px-4 py-2.5 text-sm font-semibold text-amber-100"><DatabaseZap className="size-4" /> Provider required</span>
               <Link href="/market/reveal" className="inline-flex items-center gap-2 rounded-xl border border-border px-4 py-2.5 text-sm font-semibold">
                 Open The Reveal
               </Link>
             </div>
           </div>
-          {!isValidSquad ? <p className="mt-3 text-xs text-amber-200">Build a complete 1-4-3-3 portfolio to unlock simulation.</p> : null}
+          {!isValidSquad ? <p className="mt-3 text-xs text-amber-200">Build a complete 1-4-3-3 portfolio to prepare for verified matchweek updates.</p> : null}
           {latestRevealWeek ? <p className="mt-2 text-xs text-muted-foreground">Latest Reveal available: {latestRevealWeek}</p> : null}
 
-          {latestResult ? (
-            <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-              <SummaryCard icon={<TrendingUp className="size-5" />} label="Biggest winner" value={latestResult.biggest_winner.player_name ?? 'N/A'} sub={`${latestResult.biggest_winner.delta >= 0 ? '+' : ''}${formatFiqCompact(Math.abs(latestResult.biggest_winner.delta))}`} />
-              <SummaryCard icon={<TrendingDown className="size-5" />} label="Biggest loser" value={latestResult.biggest_loser.player_name ?? 'N/A'} sub={`-${formatFiqCompact(Math.abs(latestResult.biggest_loser.delta))}`} />
-              <SummaryCard icon={<BarChart3 className="size-5" />} label="Weekly gain/loss" value={`${latestResult.weekly_portfolio_gain >= 0 ? '+' : ''}${formatFiqCompact(Math.abs(latestResult.weekly_portfolio_gain))}`} sub={latestResult.week_label} />
-              <SummaryCard icon={<Trophy className="size-5" />} label="Current ROI" value={`${latestResult.current_roi_pct >= 0 ? '+' : ''}${latestResult.current_roi_pct.toFixed(2)}%`} sub="Since starting balance" />
-              <SummaryCard icon={<Coins className="size-5" />} label="Total profit since start" value={`${latestResult.total_profit_since_start >= 0 ? '+' : ''}${formatFiqCompact(Math.abs(latestResult.total_profit_since_start))}`} sub={`${formatFiqCompact(latestResult.portfolio_after)} total`} />
-            </div>
-          ) : lastRun ? (
+          {lastRun ? (
             <div className="mt-4 rounded-xl border border-border bg-background/60 px-4 py-3 text-sm text-muted-foreground">
-              Latest run: {lastRun.week_label} · Weekly {lastRun.weekly_portfolio_gain >= 0 ? '+' : ''}{formatFiqCompact(Math.abs(lastRun.weekly_portfolio_gain))} · ROI {lastRun.current_roi_pct.toFixed(2)}%
+              Legacy development record: {lastRun.week_label} · Weekly {lastRun.weekly_portfolio_gain >= 0 ? '+' : ''}{formatFiqCompact(Math.abs(lastRun.weekly_portfolio_gain))} · ROI {lastRun.current_roi_pct.toFixed(2)}%. This is not a verified real-performance update.
             </div>
           ) : (
-            <div className="mt-4 rounded-xl border border-border bg-background/60 px-4 py-3 text-sm text-muted-foreground">No matchweek simulated yet. Build your portfolio and run your first week.</div>
+            <div className="mt-4 rounded-xl border border-border bg-background/60 px-4 py-3 text-sm text-muted-foreground">No verified performance update has been processed. Current values remain unchanged.</div>
           )}
       </section>
 

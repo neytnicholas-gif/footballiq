@@ -10,7 +10,7 @@ export function PlayerMarketReveal({ latest, history }: { latest: MarketRevealSu
     return (
       <section className="rounded-[2rem] border border-border bg-card p-6 sm:p-8">
         <h1 className="text-3xl font-black">The Reveal</h1>
-        <p className="mt-3 text-sm text-muted-foreground">No simulated matchweek has been completed yet.</p>
+        <p className="mt-3 text-sm text-muted-foreground">No verified performance update has been processed. Values remain frozen while the licensed provider is unavailable.</p>
         <div className="mt-4 flex flex-wrap gap-3">
           <Link href="/market/players" className="rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground">Browse players</Link>
           <Link href="/market" className="rounded-xl border border-border px-4 py-2 text-sm font-semibold">Return to Market</Link>
@@ -22,9 +22,9 @@ export function PlayerMarketReveal({ latest, history }: { latest: MarketRevealSu
   return (
     <div className="space-y-5">
       <section className="rounded-[2rem] border border-border bg-card p-6 sm:p-8">
-        <p className="text-xs font-semibold uppercase tracking-[.2em] text-primary">Matchweek completed</p>
+        <p className="text-xs font-semibold uppercase tracking-[.2em] text-amber-200">Legacy update record</p>
         <h1 className="mt-2 text-3xl font-black sm:text-4xl">The Reveal: {latest.week_label}</h1>
-        <p className="mt-2 text-sm text-muted-foreground">Your portfolio has been repriced using simulated football performance outcomes.</p>
+        <p className="mt-2 text-sm text-muted-foreground">This is a historical development-mode snapshot, not a verified real-performance update. Production value updates are frozen.</p>
 
         <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
           <Metric label="Previous portfolio value" value={formatFiqCompact(latest.previous_portfolio_value)} />
@@ -67,7 +67,7 @@ export function PlayerMarketReveal({ latest, history }: { latest: MarketRevealSu
             <ArrowRight className="size-4" />
           </Link>
           <Link href="/market" className="rounded-xl border border-border px-4 py-2 text-sm font-semibold">Continue to Market</Link>
-          <p className="self-center text-xs text-muted-foreground">Once your 11 holdings remain valid, you can simulate the next matchweek from Market.</p>
+          <p className="self-center text-xs text-muted-foreground">New updates require a finished fixture and verified provider appearances.</p>
         </div>
       </section>
 
@@ -90,7 +90,7 @@ export function PlayerMarketReveal({ latest, history }: { latest: MarketRevealSu
       </section>
 
       <section className="rounded-[2rem] border border-border bg-card p-6">
-        <h2 className="text-xl font-bold">Matchweek history</h2>
+        <h2 className="text-xl font-bold">Legacy update history</h2>
         <div className="mt-4 space-y-2">
           {history.map((run) => (
             <div key={`${run.scope_key}-${run.week_number}`} className="rounded-xl border border-border bg-background/60 px-3 py-2 text-sm">

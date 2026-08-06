@@ -315,6 +315,13 @@ export async function leaveFriendLeague(leagueId: number) {
 }
 
 export async function applySimulatedMatchweek(weekLabel: string, playerUpdates: Array<Record<string, unknown>>) {
+  if (process.env.NODE_ENV !== 'development') {
+    return {
+      data: null,
+      error: new Error('Simulated matchweeks are development-only and cannot run in production.'),
+    }
+  }
+
   const { data: authData } = await supabase.auth.getUser()
 
   if (!authData.user) {
