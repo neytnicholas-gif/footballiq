@@ -45,8 +45,8 @@ export function RefereeDebriefExperience() {
 
   return (
     <div className="space-y-5 rounded-[1.6rem] border border-border bg-card p-5 sm:p-7">
-      <header className="rounded-2xl border border-border bg-[linear-gradient(140deg,rgba(250,204,21,.2),rgba(255,255,255,.75))] p-5">
-        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-amber-700">Pro Referee Debrief</p>
+      <header className="rounded-2xl border border-border bg-[linear-gradient(140deg,rgba(250,204,21,.2),rgba(12,16,24,.96))] p-5">
+        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-amber-300">Pro Referee Debrief</p>
         <h2 className="mt-2 text-3xl font-black tracking-tight">Referee Debrief: Penalty-Area Decision</h2>
         <p className="mt-2 text-sm text-muted-foreground">Evaluate a staged incident, commit your call, then compare with a structured law and match-control breakdown.</p>
       </header>
@@ -80,8 +80,8 @@ export function RefereeDebriefExperience() {
       </section>
 
       {submitted ? (
-        <section className="rounded-2xl border border-amber-300 bg-amber-50 p-4">
-          <p className="inline-flex items-center gap-1 text-xs font-semibold uppercase tracking-[0.18em] text-amber-800"><CheckCircle2 className="size-3.5" /> Decision reveal</p>
+        <section className="rounded-2xl border border-amber-300/45 bg-amber-300/12 p-4">
+          <p className="inline-flex items-center gap-1 text-xs font-semibold uppercase tracking-[0.18em] text-amber-200"><CheckCircle2 className="size-3.5" /> Decision reveal</p>
           <RevealRow label="Correct decision" text="Foul. Penalty kick." />
           <RevealRow label="Law principle" text="A direct-free-kick foul inside own penalty area becomes a penalty if committed by defender against opponent." />
           <RevealRow label="Tempting alternative" text="No foul is incorrect because defender contact occurs on attacker path before any clean ball contact." />
@@ -91,7 +91,7 @@ export function RefereeDebriefExperience() {
           <RevealRow label="Sanction" text="Yellow card for reckless trip challenge in this staged scenario." />
           <RevealRow label="Match-control note" text="Decisive whistle and clear signal reduce mass confrontation in late high-stress moments." />
 
-          <div className="mt-3 rounded-xl border border-amber-200 bg-white p-3 text-sm text-amber-950">
+          <div className="mt-3 rounded-xl border border-amber-300/40 bg-background/70 p-3 text-sm text-amber-100">
             <p className="font-semibold">Completion</p>
             <p className="mt-1">You earned 120 Academy XP equivalent and logged one premium referee completion.</p>
             <p className="mt-1">Key learning point: In penalty area incidents, identify first contact and ball-contact sequence before evaluating sanction.</p>
@@ -136,9 +136,9 @@ function DecisionField({
 
 function RevealRow({ label, text }: { label: string; text: string }) {
   return (
-    <div className="mt-2 rounded-xl border border-amber-200 bg-white p-3">
-      <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-amber-700">{label}</p>
-      <p className="mt-1 text-sm text-amber-950">{text}</p>
+    <div className="mt-2 rounded-xl border border-amber-300/35 bg-background/70 p-3">
+      <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-amber-300">{label}</p>
+      <p className="mt-1 text-sm text-amber-100">{text}</p>
     </div>
   )
 }

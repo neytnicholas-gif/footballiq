@@ -1,3 +1,3 @@
 import { ModePage } from '@/components/mode-page'
 import { DailyChallenge } from '@/components/daily-challenge'
-export default function DailyPage(){return <ModePage theme="daily" eyebrow="One day • one key • full focus" title="Today’s FootballIQ" description="Five questions under one Europe/Brussels daily key. Practice any time, with one account reward per day."><DailyChallenge/></ModePage>}
+export default function DailyPage(){return <ModePage compact theme="daily" eyebrow="One day • one key • full focus" title="Today’s FootballIQ" description="Five match decisions generated from today’s Brussels date. Play anonymously, or sign in to save the single daily reward."><DailyChallenge/></ModePage>}

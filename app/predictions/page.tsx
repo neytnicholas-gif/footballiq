@@ -5,9 +5,10 @@ export default function PredictionsPage() {
   return (
     <ModePage
       theme="predictions"
-      eyebrow="Fixtures • probabilities • foresight"
-      title="Prediction Centre"
-      description="Evaluate each simulated fixture card, lock your 1/X/2 picks, and track prediction discipline over time."
+      compact
+      eyebrow="Five fixtures • one match card"
+      title="Matchday Predictions"
+      description="Read the matchup, choose 1, X or 2, and lock the complete card. This is a gameplay simulation—not a live fixture feed."
     >
       <PredictionsGame />
     </ModePage>

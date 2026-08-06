@@ -95,40 +95,93 @@ begin
 end;
 $$;
 
+revoke all on function public.create_profile_for_new_user() from public, anon, authenticated, service_role;
+
 drop trigger if exists on_auth_user_created on auth.users;
 create trigger on_auth_user_created after insert on auth.users for each row execute function public.create_profile_for_new_user();
+
+create or replace function public.set_profile_username(
+  p_username text
+)
+returns table (id uuid, username text)
+language plpgsql
+security definer
+set search_path = pg_catalog, public
+as $$
+declare
+  uid uuid := auth.uid();
+  clean_username text;
+begin
+  if uid is null then raise exception 'Not authenticated'; end if;
+
+  clean_username := btrim(p_username);
+  if char_length(clean_username) < 3 or char_length(clean_username) > 20 then
+    raise exception 'Invalid username length';
+  end if;
+  if clean_username !~ '^[A-Za-z0-9_]+$' then
+    raise exception 'Invalid username format';
+  end if;
+
+  insert into public.profiles (id, username)
+  values (uid, clean_username)
+  on conflict on constraint profiles_pkey do update
+  set username = excluded.username;
+
+  return query select p.id as id, p.username as username from public.profiles p where p.id = uid;
+end;
+$$;
+
+revoke all on function public.set_profile_username(text) from public, anon, authenticated, service_role;
+grant execute on function public.set_profile_username(text) to authenticated;
+
+alter table public.quiz_results add column if not exists completion_key text;
+drop index if exists public.quiz_results_first_completion;
+update public.quiz_results set completion_key = concat('legacy:', id::text) where completion_key is null;
+alter table public.quiz_results alter column completion_key set not null;
+alter table public.quiz_results drop constraint if exists quiz_results_completion_key_format;
+alter table public.quiz_results add constraint quiz_results_completion_key_format
+  check (char_length(completion_key) between 24 and 120 and completion_key ~ '^[A-Za-z0-9:_-]+$');
+create unique index if not exists quiz_results_user_completion_key_idx
+on public.quiz_results(user_id, completion_key);
+
+drop policy if exists "Users can insert own quiz results" on public.quiz_results;
 
 create or replace function public.complete_quiz(
   p_quiz_id text,
   p_score integer,
   p_total integer,
   p_xp integer,
-  p_activity_date date
+  p_completion_key text
 )
-returns void language plpgsql security definer set search_path = public as $$
+returns jsonb language plpgsql security definer set search_path = pg_catalog, public as $$
 declare
   uid uuid := auth.uid();
   previous_date date;
   next_streak integer;
   inserted_count integer;
+  activity_day date := (now() at time zone 'Europe/Brussels')::date;
 begin
   if uid is null then raise exception 'Not authenticated'; end if;
   if p_score < 0 or p_total <= 0 or p_score > p_total then raise exception 'Invalid quiz result'; end if;
+  if char_length(p_completion_key) < 24 or char_length(p_completion_key) > 120 then raise exception 'Invalid completion key length'; end if;
+  if p_completion_key !~ '^[A-Za-z0-9:_-]+$' then raise exception 'Invalid completion key format'; end if;
 
   insert into public.profiles (id) values (uid) on conflict (id) do nothing;
 
-  insert into public.quiz_results(user_id, quiz_id, score, total, xp_earned)
-  values (uid, p_quiz_id, p_score, p_total, p_xp)
-  on conflict (user_id, quiz_id) do nothing;
+  insert into public.quiz_results(user_id, quiz_id, completion_key, score, total, xp_earned)
+  values (uid, p_quiz_id, p_completion_key, p_score, p_total, p_xp)
+  on conflict (user_id, completion_key) do nothing;
 
   get diagnostics inserted_count = row_count;
-  if inserted_count = 0 then return; end if;
+  if inserted_count = 0 then
+    return jsonb_build_object('awarded', false, 'already_processed', true, 'completion_key', p_completion_key, 'activity_date', activity_day);
+  end if;
 
   select last_activity_date, current_streak into previous_date, next_streak from public.profiles where id = uid for update;
 
-  if previous_date = p_activity_date then
+  if previous_date = activity_day then
     next_streak := greatest(next_streak, 1);
-  elsif previous_date = p_activity_date - 1 then
+  elsif previous_date = activity_day - 1 then
     next_streak := next_streak + 1;
   else
     next_streak := 1;
@@ -144,12 +197,15 @@ begin
     streak = next_streak,
     current_streak = next_streak,
     longest_streak = greatest(longest_streak, next_streak),
-    last_activity_date = p_activity_date
+    last_activity_date = activity_day
   where id = uid;
+
+  return jsonb_build_object('awarded', true, 'already_processed', false, 'completion_key', p_completion_key, 'activity_date', activity_day);
 end;
 $$;
 
-grant execute on function public.complete_quiz(text, integer, integer, integer, date) to authenticated;
+revoke all on function public.complete_quiz(text, integer, integer, integer, text) from public, anon, authenticated, service_role;
+grant execute on function public.complete_quiz(text, integer, integer, integer, text) to authenticated;
 
 create or replace view public.public_leaderboard_profiles as
 select

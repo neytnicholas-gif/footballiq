@@ -13,7 +13,8 @@ import {
   getSecondsUntilBrusselsMidnight,
 } from '@/lib/daily'
 import { clearQuizProgress, loadQuizProgress, saveQuizProgress } from '@/lib/quiz-progress'
-import { saveQuizResult } from '@/lib/quiz-save'
+import { buildCompletionKey, saveQuizResult } from '@/lib/quiz-save'
+import { CalendarDays, Check, Clock3, Loader2, LockKeyhole, Share2, Trophy } from 'lucide-react'
 
 type DailyHistoryEntry = {
   key: string
@@ -90,9 +91,15 @@ export function DailyChallenge() {
     let active = true
 
     if (!user) {
-      setResumeState(null)
-      setCheckingProgress(false)
-      return
+      const timeout = window.setTimeout(() => {
+        if (!active) return
+        setResumeState(null)
+        setCheckingProgress(false)
+      }, 0)
+      return () => {
+        active = false
+        window.clearTimeout(timeout)
+      }
     }
 
     setCheckingProgress(true)
@@ -186,7 +193,7 @@ export function DailyChallenge() {
       score,
       total: items.length,
       xp: xpFor(score, items.length),
-      activityDate: dailyKey,
+      completionKey: buildCompletionKey(quizId, 'reward'),
     })
 
     if (error) {
@@ -284,53 +291,57 @@ export function DailyChallenge() {
   }
 
   return (
-    <div className="rounded-3xl border border-border bg-card p-5 sm:p-8">
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border pb-5">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-[.2em] text-primary">Daily Challenge</p>
-          <h2 className="mt-1 text-2xl font-semibold">{displayDate}</h2>
-          <p className="mt-1 text-sm text-muted-foreground">Resets in {formatCountdown(secondsLeft)} (Europe/Brussels)</p>
+    <div className="rounded-[1.35rem] border border-amber-300/15 bg-slate-950/55 p-4 sm:p-6">
+      <div className="flex flex-col gap-4 border-b border-slate-700/70 pb-5 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-start gap-3">
+          <span className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-amber-300/25 bg-amber-300/10"><CalendarDays className="size-5 text-amber-200" /></span>
+          <div>
+          <p className="text-[11px] font-bold uppercase tracking-[.2em] text-amber-200">Today’s event</p>
+          <h2 className="mt-1 text-xl font-bold text-slate-100 sm:text-2xl">{displayDate}</h2>
+          <p className="mt-1 inline-flex items-center gap-1.5 text-sm text-slate-400"><Clock3 className="size-3.5" /> Resets in {formatCountdown(secondsLeft)} · Europe/Brussels</p>
+          </div>
         </div>
-        <div className="rounded-xl bg-secondary px-4 py-2 text-sm">
-          Score <strong className="ml-2 text-primary">{score}</strong>
+        <div className="grid grid-cols-2 gap-2 sm:flex">
+          <div className="rounded-xl border border-slate-700 bg-slate-900/80 px-4 py-2 text-xs text-slate-400">Progress <strong className="ml-1 text-slate-100">{completed ? items.length : index + 1}/{items.length}</strong></div>
+          <div className="rounded-xl border border-amber-300/20 bg-amber-300/10 px-4 py-2 text-xs text-amber-100">Score <strong className="ml-1">{score}</strong></div>
         </div>
       </div>
 
-      {checkingProgress ? <div className="mt-5 rounded-2xl border border-border bg-secondary/30 p-4 text-sm text-muted-foreground">Checking saved progress…</div> : resumeState && !completed ? <div className="mt-5"><QuizProgressBanner title="Resume your quiz?" copy={`You left off at question ${resumeState.index + 1} of ${items.length} for today’s Daily Challenge.`} onContinue={continueProgress} onStartAgain={restartProgress} /></div> : null}
+      {checkingProgress ? <div className="mt-5 flex items-center gap-2 rounded-2xl border border-slate-700 bg-slate-900/70 p-4 text-sm text-slate-300"><Loader2 className="size-4 animate-spin text-amber-200" /> Checking saved progress…</div> : resumeState && !completed ? <div className="mt-5"><QuizProgressBanner title="Resume your quiz?" copy={`You left off at question ${resumeState.index + 1} of ${items.length} for today’s Daily Challenge.`} onContinue={continueProgress} onStartAgain={restartProgress} /></div> : null}
 
       {completed ? (
         <div className="mt-7 space-y-4">
-          <div className="rounded-2xl border border-border bg-secondary/40 p-5">
-            <p className="font-semibold">Today completed: {score}/{items.length}</p>
-            <p className="mt-2 text-sm text-muted-foreground">You can practice again, but account reward is limited to once per day.</p>
+          <div className="rounded-2xl border border-emerald-300/20 bg-emerald-300/10 p-5">
+            <div className="flex items-center gap-2 text-emerald-200"><Trophy className="size-5" /><p className="font-bold">Daily complete · {score}/{items.length}</p></div>
+            <p className="mt-2 text-sm leading-relaxed text-slate-300">Practice remains available. Account XP can only be credited once for today’s key.</p>
           </div>
 
           <div className="flex flex-wrap gap-3">
             {!user ? (
               <>
-                <Link href="/login" className="rounded-xl bg-primary px-5 py-2.5 font-medium text-primary-foreground">Sign in to save reward</Link>
-                <Link href="/signup" className="rounded-xl border border-border px-5 py-2.5 font-medium">Create account</Link>
+                <Link href="/login" className="inline-flex min-h-11 items-center rounded-xl bg-amber-300 px-5 py-2.5 text-sm font-bold text-slate-950 transition hover:bg-amber-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-200"><LockKeyhole className="mr-2 size-4" />Sign in to save reward</Link>
+                <Link href="/signup" className="inline-flex min-h-11 items-center rounded-xl border border-slate-600 bg-slate-900 px-5 py-2.5 text-sm font-semibold text-slate-100 transition hover:border-slate-400">Create account</Link>
               </>
             ) : (
               <button
                 onClick={() => void saveRewardOnce()}
                 disabled={savingReward || savedReward}
-                className="rounded-xl bg-primary px-5 py-2.5 font-medium text-primary-foreground disabled:opacity-50"
+                className="inline-flex min-h-11 items-center rounded-xl bg-amber-300 px-5 py-2.5 text-sm font-bold text-slate-950 transition hover:bg-amber-200 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {savingReward ? 'Saving reward...' : savedReward ? 'Reward saved' : 'Save today reward'}
               </button>
             )}
-            <button onClick={() => void shareResult()} className="rounded-xl border border-border px-5 py-2.5 font-medium">
-              {copied ? 'Copied!' : 'Share result'}
+            <button onClick={() => void shareResult()} className="inline-flex min-h-11 items-center rounded-xl border border-slate-600 bg-slate-900 px-5 py-2.5 text-sm font-semibold text-slate-100 transition hover:border-slate-400">
+              {copied ? <Check className="mr-2 size-4 text-emerald-300" /> : <Share2 className="mr-2 size-4" />}{copied ? 'Copied!' : 'Share result'}
             </button>
-            <button onClick={practiceAgain} className="rounded-xl border border-border px-5 py-2.5 font-medium">Practice again</button>
+            <button onClick={practiceAgain} className="min-h-11 rounded-xl border border-slate-600 bg-slate-900 px-5 py-2.5 text-sm font-semibold text-slate-100 transition hover:border-slate-400">Practice again</button>
           </div>
 
           {saveMessage && <p className="text-sm text-muted-foreground">{saveMessage}</p>}
 
-          <div className="rounded-2xl border border-border bg-background p-4">
-            <p className="text-xs font-semibold uppercase tracking-[.15em] text-muted-foreground">Recent daily history</p>
-            <div className="mt-3 space-y-1 text-sm text-muted-foreground">
+          <div className="rounded-2xl border border-slate-700 bg-slate-900/60 p-4">
+            <p className="text-xs font-semibold uppercase tracking-[.15em] text-slate-400">Recent daily history</p>
+            <div className="mt-3 space-y-1 text-sm text-slate-300">
               {Object.values(history)
                 .sort((a, b) => b.key.localeCompare(a.key))
                 .slice(0, 5)
@@ -342,11 +353,13 @@ export function DailyChallenge() {
         </div>
       ) : (
         <>
-          <div className="mt-7 flex items-center justify-between gap-3">
-            <p className="text-sm text-muted-foreground">Question {index + 1} of {items.length}</p>
-            <p className="text-xs text-muted-foreground">Daily key: {dailyKey}</p>
+          <div className="mt-6">
+            <div className="flex items-center justify-between gap-3 text-xs font-semibold text-slate-400"><span>Question {index + 1} of {items.length}</span><span className="font-mono">Key {dailyKey}</span></div>
+            <div className="mt-3 grid grid-cols-5 gap-1.5" aria-label={`${index + 1} of ${items.length} questions`}>
+              {items.map((_, step) => <span key={step} className={`h-1.5 rounded-full ${step <= index ? 'bg-amber-300' : 'bg-slate-700'}`} />)}
+            </div>
           </div>
-          <h3 className="mt-4 text-xl font-semibold leading-relaxed">{item.prompt}</h3>
+          <h3 className="mt-5 max-w-3xl text-lg font-bold leading-relaxed text-slate-100 sm:text-xl">{item.prompt}</h3>
           <div className="mt-5 grid gap-3">
             {item.options.map((option, optionIndex) => {
               const correct = selected !== null && optionIndex === item.answer
@@ -356,7 +369,7 @@ export function DailyChallenge() {
                   key={option}
                   onClick={() => choose(optionIndex)}
                   disabled={selected !== null}
-                  className={`rounded-2xl border p-4 text-left ${correct ? 'border-primary bg-primary/10' : wrong ? 'border-destructive bg-destructive/10' : 'border-border bg-background hover:border-primary/50'}`}
+                  className={`min-h-12 rounded-xl border p-4 text-left text-sm font-medium outline-none transition focus-visible:ring-2 focus-visible:ring-amber-200 ${correct ? 'border-emerald-300/50 bg-emerald-300/12 text-emerald-100' : wrong ? 'border-rose-300/50 bg-rose-300/10 text-rose-100' : 'border-slate-700 bg-slate-900/70 text-slate-200 hover:border-amber-300/40 hover:bg-slate-800'} disabled:cursor-default`}
                 >
                   {option}
                 </button>
@@ -364,14 +377,14 @@ export function DailyChallenge() {
             })}
           </div>
           {selected !== null && (
-            <div className="mt-6 rounded-2xl bg-secondary/40 p-5">
-              <p className="font-semibold">{selected === item.answer ? 'Correct.' : `Correct answer: ${item.options[item.answer]}`}</p>
-              <p className="mt-2 text-sm text-muted-foreground">{item.explanation}</p>
+            <div className="mt-5 rounded-2xl border border-slate-700 bg-slate-900/70 p-5">
+              <p className="font-bold text-slate-100">{selected === item.answer ? 'Correct.' : `Correct answer: ${item.options[item.answer]}`}</p>
+              <p className="mt-2 text-sm leading-relaxed text-slate-300">{item.explanation}</p>
               <div className="mt-4 flex flex-wrap gap-3">
                 {!finished ? (
-                  <button onClick={next} className="rounded-xl bg-primary px-5 py-2.5 font-medium text-primary-foreground">Next</button>
+                  <button onClick={next} className="min-h-11 rounded-xl bg-amber-300 px-5 py-2.5 text-sm font-bold text-slate-950 transition hover:bg-amber-200">Next question</button>
                 ) : (
-                  <button onClick={finishAndStore} className="rounded-xl bg-primary px-5 py-2.5 font-medium text-primary-foreground">Finish daily challenge</button>
+                  <button onClick={finishAndStore} className="min-h-11 rounded-xl bg-amber-300 px-5 py-2.5 text-sm font-bold text-slate-950 transition hover:bg-amber-200">Finish daily challenge</button>
                 )}
               </div>
             </div>

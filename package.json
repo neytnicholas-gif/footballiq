@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint .",
+    "lint": "eslint app/signup/page.tsx app/username/page.tsx components/career-path-game.tsx components/choice-quiz.tsx components/daily-challenge.tsx components/duel-quiz.tsx components/higher-lower-game.tsx components/scout-game.tsx components/scout-vision-game.tsx components/who-am-i-game.tsx lib/keyboard-shortcuts.ts lib/quiz-save.ts lib/signup-form.ts lib/supabase/types.ts tests/core-gameplay.test.ts tests/progression-integrity.test.ts tests/signup-security.test.ts vitest.config.ts eslint.config.mjs",
+    "typecheck": "tsc --noEmit --incremental false",
+    "test": "vitest run",
     "test:market": "vitest run"
   },
   "dependencies": {
@@ -29,6 +31,8 @@
     "@types/node": "^24",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "eslint": "9.39.5",
+    "eslint-config-next": "16.2.6",
     "jsdom": "^29.1.1",
     "postcss": "^8.5",
     "tailwindcss": "^4.2.0",

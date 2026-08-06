@@ -5,7 +5,7 @@ import { useAuth } from '@/components/auth-provider'
 import { QuizProgressBanner } from '@/components/quiz-progress-banner'
 import { clearQuizProgress, loadQuizProgress, saveQuizProgress } from '@/lib/quiz-progress'
 import { getRankProgress } from '@/lib/progression'
-import { saveQuizResult } from '@/lib/quiz-save'
+import { buildCompletionKey, createCompletionRunId, saveQuizResult } from '@/lib/quiz-save'
 
 type Item = { prompt: string; options: string[]; answer: number; explanation: string }
 type RewardStatus = 'idle' | 'saving' | 'saved' | 'already' | 'error'
@@ -28,6 +28,7 @@ export function ChoiceQuiz({ quizId, title, items, labels }: { quizId: string; t
   const [score, setScore] = useState(0)
   const [saved, setSaved] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [runKey, setRunKey] = useState(() => createCompletionRunId())
   const [rewardStatus, setRewardStatus] = useState<RewardStatus>('idle')
   const [resumeState, setResumeState] = useState<{ index: number; selected: number | null; score: number } | null>(null)
   const [checkingProgress, setCheckingProgress] = useState(Boolean(user))
@@ -42,9 +43,15 @@ export function ChoiceQuiz({ quizId, title, items, labels }: { quizId: string; t
     let active = true
 
     if (!user) {
-      setResumeState(null)
-      setCheckingProgress(false)
-      return
+      const timeout = window.setTimeout(() => {
+        if (!active) return
+        setResumeState(null)
+        setCheckingProgress(false)
+      }, 0)
+      return () => {
+        active = false
+        window.clearTimeout(timeout)
+      }
     }
 
     setCheckingProgress(true)
@@ -88,7 +95,7 @@ export function ChoiceQuiz({ quizId, title, items, labels }: { quizId: string; t
     if (!user || saved || saving) return
     setRewardStatus('saving')
     setSaving(true)
-    const { error, alreadyCompleted } = await saveQuizResult({ quizId, score, total: items.length, xp: baseXp })
+    const { error, alreadyCompleted } = await saveQuizResult({ quizId, score, total: items.length, xp: baseXp, completionKey: buildCompletionKey(quizId, runKey) })
     if (!error) {
       setSaved(true)
       setRewardStatus(alreadyCompleted ? 'already' : 'saved')
@@ -119,6 +126,7 @@ export function ChoiceQuiz({ quizId, title, items, labels }: { quizId: string; t
     setScore(0)
     setSaved(false)
     setRewardStatus('idle')
+    setRunKey(createCompletionRunId())
     setResumeState(null)
     void clearQuizProgress(quizId)
   }

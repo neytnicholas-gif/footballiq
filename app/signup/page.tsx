@@ -6,27 +6,87 @@ import { ArrowRight } from 'lucide-react'
 import { Logo } from '@/components/logo'
 import { SurfaceCard, StatusBadge } from '@/components/platform/primitives'
 import { supabase } from '@/lib/supabase'
+import {
+  getPasswordMismatchMessage,
+  getSignupErrorMessage,
+  getSignupSuccessMessage,
+  resendSignupConfirmation,
+  shouldBlockDoubleSubmission,
+  togglePasswordVisibility,
+} from '@/lib/signup-form'
 
 export default function SignupPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [resendLoading, setResendLoading] = useState(false)
   const [message, setMessage] = useState('')
-  const [success, setSuccess] = useState(false)
+  const [messageTone, setMessageTone] = useState<'neutral' | 'success' | 'error'>('neutral')
+  const [passwordError, setPasswordError] = useState('')
+  const [showResend, setShowResend] = useState(false)
 
   async function signUp(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
+    if (shouldBlockDoubleSubmission(loading) || shouldBlockDoubleSubmission(resendLoading)) {
+      return
+    }
+
+    const mismatchMessage = getPasswordMismatchMessage(password, confirmPassword)
+    if (mismatchMessage) {
+      setPasswordError(mismatchMessage)
+      setMessage('')
+      setMessageTone('error')
+      return
+    }
+
     setLoading(true)
     setMessage('')
+    setPasswordError('')
+    setMessageTone('neutral')
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
     })
     setLoading(false)
-    if (error) return setMessage(error.message)
-    setSuccess(true)
-    setMessage(data.session ? 'Account created. You can continue now.' : 'Account created. Check your email to confirm it, then sign in.')
+    if (error) {
+      const safeMessage = getSignupErrorMessage(error)
+      setShowResend(safeMessage === getSignupSuccessMessage(false))
+      setMessageTone(safeMessage === getSignupSuccessMessage(false) ? 'neutral' : 'error')
+      setMessage(safeMessage)
+      return
+    }
+
+    const hasSession = Boolean(data.session)
+    setShowResend(!hasSession)
+    setMessageTone(hasSession ? 'success' : 'neutral')
+    setMessage(getSignupSuccessMessage(hasSession))
+  }
+
+  async function resendConfirmation() {
+    if (shouldBlockDoubleSubmission(loading) || shouldBlockDoubleSubmission(resendLoading)) {
+      return
+    }
+
+    setResendLoading(true)
+    const result = await resendSignupConfirmation(supabase.auth, email, window.location.origin)
+    setResendLoading(false)
+    setMessage(result.message)
+    setMessageTone(result.tone)
+    setShowResend(true)
+  }
+
+  function onPasswordChange(value: string) {
+    setPassword(value)
+    setPasswordError('')
+  }
+
+  function onConfirmPasswordChange(value: string) {
+    setConfirmPassword(value)
+    setPasswordError('')
   }
 
   return (
@@ -50,10 +110,83 @@ export default function SignupPage() {
           <p className="text-sm font-medium uppercase tracking-widest text-primary">Account setup</p>
           <h2 className="mt-2 text-3xl font-black tracking-tight text-foreground">Create your account</h2>
           <form onSubmit={signUp} className="mt-6 space-y-4">
-            <label className="block text-sm font-medium text-foreground">Email<input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required className="mt-2 h-11 w-full rounded-xl border border-border bg-background px-4 outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/30" /></label>
-            <label className="block text-sm font-medium text-foreground">Password<input type="password" minLength={6} value={password} onChange={(e) => setPassword(e.target.value)} required className="mt-2 h-11 w-full rounded-xl border border-border bg-background px-4 outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/30" /></label>
-            {message && <p className="rounded-xl border border-border bg-secondary/50 p-3 text-sm text-muted-foreground">{message}</p>}
-            {!success && <button disabled={loading} className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-primary font-semibold text-primary-foreground disabled:opacity-60">{loading ? 'Creating…' : 'Create account'}<ArrowRight className="size-4" /></button>}
+            <label className="block text-sm font-medium text-foreground">Email<input name="email" type="email" autoComplete="email" autoCapitalize="none" value={email} onChange={(e) => setEmail(e.target.value)} required className="mt-2 h-11 w-full rounded-xl border border-border bg-background px-4 outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/30" /></label>
+            <label className="block text-sm font-medium text-foreground">
+              Password
+              <div className="relative mt-2">
+                <input
+                  name="password"
+                  type={showPassword ? 'text' : 'password'}
+                  autoComplete="new-password"
+                  minLength={6}
+                  value={password}
+                  onChange={(e) => onPasswordChange(e.target.value)}
+                  required
+                  className="h-11 w-full rounded-xl border border-border bg-background px-4 pr-20 outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/30"
+                />
+                <button
+                  type="button"
+                  aria-pressed={showPassword}
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                  onClick={() => setShowPassword(togglePasswordVisibility)}
+                  className="absolute inset-y-0 right-2 my-1 rounded-lg px-3 text-xs font-medium text-muted-foreground hover:bg-secondary/80 hover:text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
+                >
+                  {showPassword ? 'Hide' : 'Show'}
+                </button>
+              </div>
+            </label>
+            <label className="block text-sm font-medium text-foreground">
+              Confirm password
+              <div className="relative mt-2">
+                <input
+                  name="confirmPassword"
+                  type={showConfirmPassword ? 'text' : 'password'}
+                  autoComplete="new-password"
+                  minLength={6}
+                  value={confirmPassword}
+                  onChange={(e) => onConfirmPasswordChange(e.target.value)}
+                  required
+                  aria-describedby={passwordError ? 'confirm-password-error' : undefined}
+                  className="h-11 w-full rounded-xl border border-border bg-background px-4 pr-20 outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/30"
+                />
+                <button
+                  type="button"
+                  aria-pressed={showConfirmPassword}
+                  aria-label={showConfirmPassword ? 'Hide confirm password' : 'Show confirm password'}
+                  onClick={() => setShowConfirmPassword(togglePasswordVisibility)}
+                  className="absolute inset-y-0 right-2 my-1 rounded-lg px-3 text-xs font-medium text-muted-foreground hover:bg-secondary/80 hover:text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
+                >
+                  {showConfirmPassword ? 'Hide' : 'Show'}
+                </button>
+              </div>
+            </label>
+            {passwordError && <p id="confirm-password-error" role="alert" className="rounded-xl border border-destructive/25 bg-destructive/10 p-3 text-sm text-destructive">{passwordError}</p>}
+            {message && (
+              <p
+                role={messageTone === 'error' ? 'alert' : 'status'}
+                aria-live={messageTone === 'error' ? 'assertive' : 'polite'}
+                className={
+                  messageTone === 'error'
+                    ? 'rounded-xl border border-destructive/25 bg-destructive/10 p-3 text-sm text-destructive'
+                    : messageTone === 'success'
+                      ? 'rounded-xl border border-emerald-300/35 bg-emerald-400/10 p-3 text-sm text-emerald-200'
+                      : 'rounded-xl border border-border bg-secondary/50 p-3 text-sm text-muted-foreground'
+                }
+              >
+                {message}
+              </p>
+            )}
+            <button disabled={loading || resendLoading} className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-primary font-semibold text-primary-foreground disabled:opacity-60">{loading ? 'Creating…' : 'Create account'}<ArrowRight className="size-4" /></button>
+            {showResend && (
+              <button
+                type="button"
+                onClick={() => void resendConfirmation()}
+                disabled={loading || resendLoading}
+                className="inline-flex h-11 w-full items-center justify-center rounded-xl border border-border bg-background font-semibold text-foreground transition hover:border-primary/35 hover:bg-secondary/35 disabled:opacity-60"
+              >
+                {resendLoading ? 'Resending…' : 'Resend confirmation email'}
+              </button>
+            )}
           </form>
           <p className="mt-5 text-center text-sm text-muted-foreground"><Link href="/login" className="font-semibold text-primary hover:underline">Go to sign in</Link></p>
         </SurfaceCard>

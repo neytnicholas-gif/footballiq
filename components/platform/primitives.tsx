@@ -25,19 +25,19 @@ export function SectionHeader({
 export const SectionHeading = SectionHeader
 
 export function SurfaceCard({ className, children }: { className?: string; children: React.ReactNode }) {
-  return <div className={cn('rounded-[1.75rem] border border-border/80 bg-card shadow-[0_18px_50px_-36px_rgba(17,28,38,.28)]', className)}>{children}</div>
+  return <div className={cn('rounded-[1.75rem] border border-border/80 bg-card/88 shadow-[0_26px_70px_-42px_rgba(1,8,20,.8)] backdrop-blur-sm', className)}>{children}</div>
 }
 
 export function StatusBadge({ label, tone = 'neutral' }: { label: string; tone?: 'neutral' | 'good' | 'warn' | 'info' | 'pro' }) {
   const toneClass = tone === 'good'
-    ? 'border-emerald-300/80 bg-emerald-100 text-emerald-800'
+    ? 'border-emerald-300/35 bg-emerald-400/12 text-emerald-200'
     : tone === 'warn'
-      ? 'border-amber-300/80 bg-amber-100 text-amber-900'
+      ? 'border-amber-300/35 bg-amber-300/12 text-amber-200'
       : tone === 'info'
-        ? 'border-sky-300/80 bg-sky-100 text-sky-800'
+        ? 'border-sky-300/35 bg-sky-300/12 text-sky-200'
         : tone === 'pro'
-          ? 'border-indigo-300/80 bg-indigo-100 text-indigo-800'
-          : 'border-border bg-muted/70 text-foreground'
+          ? 'border-indigo-300/35 bg-indigo-300/14 text-indigo-200'
+          : 'border-border bg-secondary/70 text-foreground'
 
   return <span className={cn('inline-flex items-center gap-1 rounded-full border px-3 py-1 text-xs font-semibold', toneClass)}>{tone === 'pro' ? <Sparkles className="size-3.5" /> : null}{label}</span>
 }
@@ -94,30 +94,30 @@ export function ModeCard({
   className?: string
 }) {
   const accentClass = accent === 'scout'
-    ? 'from-emerald-100 to-cyan-50 text-emerald-800'
+    ? 'from-emerald-300/30 to-cyan-300/20 text-emerald-100'
     : accent === 'referee'
-      ? 'from-amber-100 to-rose-50 text-amber-800'
+      ? 'from-amber-300/28 to-rose-300/18 text-amber-100'
       : accent === 'duels'
-        ? 'from-sky-100 to-indigo-50 text-sky-800'
+        ? 'from-sky-300/26 to-indigo-300/20 text-sky-100'
         : accent === 'daily'
-          ? 'from-amber-100 to-orange-50 text-orange-800'
+          ? 'from-amber-300/28 to-orange-300/18 text-orange-100'
           : accent === 'higher'
-            ? 'from-rose-100 to-orange-50 text-rose-700'
+            ? 'from-rose-300/28 to-orange-300/18 text-rose-100'
             : accent === 'career'
-              ? 'from-sky-100 to-cyan-50 text-sky-800'
+              ? 'from-sky-300/26 to-cyan-300/20 text-sky-100'
               : accent === 'mystery'
-                ? 'from-violet-100 to-sky-50 text-violet-800'
+                ? 'from-violet-300/26 to-sky-300/18 text-violet-100'
                 : 'from-secondary to-background text-foreground'
 
   const content = (
-    <div className={cn('group relative overflow-hidden rounded-[1.6rem] border border-border/80 bg-card p-5 transition-all duration-300 hover:-translate-y-0.5 hover:border-primary/45 hover:shadow-[0_18px_50px_-34px_rgba(17,28,38,.32)]', !playable && 'opacity-85', className)}>
+    <div className={cn('group relative overflow-hidden rounded-[1.6rem] border border-border/80 bg-card/86 p-5 transition-all duration-300 hover:-translate-y-0.5 hover:border-primary/45 hover:shadow-[0_24px_60px_-36px_rgba(5,20,40,.85)]', !playable && 'opacity-85', className)}>
       <div className="flex items-start justify-between gap-4">
         <div className={cn('flex size-12 items-center justify-center rounded-2xl border border-border/80 bg-gradient-to-br', accentClass)}>{icon}</div>
         <StatusBadge label={playable ? 'Playable now' : 'Unavailable'} tone={playable ? 'good' : 'neutral'} />
       </div>
       <h3 className="mt-4 text-2xl font-black tracking-tight text-foreground">{title}</h3>
       <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{description}</p>
-      {meta?.length ? <div className="mt-4 flex flex-wrap gap-2">{meta.map((item) => <span key={item} className="rounded-full border border-border bg-background px-3 py-1 text-xs font-semibold text-muted-foreground">{item}</span>)}</div> : null}
+      {meta?.length ? <div className="mt-4 flex flex-wrap gap-2">{meta.map((item) => <span key={item} className="rounded-full border border-border bg-background/70 px-3 py-1 text-xs font-semibold text-muted-foreground">{item}</span>)}</div> : null}
       <p className="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-primary">Open mode <ArrowRight className="size-4 transition group-hover:translate-x-0.5" /></p>
     </div>
   )
@@ -140,10 +140,10 @@ export function LockedPanel({
 }) {
   return (
     <SurfaceCard className="overflow-hidden">
-      <div className="border-b border-border bg-[linear-gradient(135deg,rgba(84,123,255,.12),rgba(56,206,163,.08))] p-5">
+      <div className="border-b border-border bg-[linear-gradient(135deg,rgba(84,123,255,.18),rgba(56,206,163,.12))] p-5">
         <div className="flex items-center justify-between gap-3">
           <p className="text-sm font-semibold text-foreground">Premium Experience</p>
-          <span className="inline-flex items-center gap-1 rounded-full border border-indigo-300 bg-indigo-100 px-3 py-1 text-xs font-semibold text-indigo-800">
+          <span className="inline-flex items-center gap-1 rounded-full border border-indigo-300/35 bg-indigo-300/14 px-3 py-1 text-xs font-semibold text-indigo-200">
             <Lock className="size-3" />
             Pro required
           </span>
@@ -154,7 +154,7 @@ export function LockedPanel({
       {preview ? <div className="p-5">{preview}</div> : null}
       {ctaHref ? (
         <div className="border-t border-border p-5 pt-0">
-          <Link href={ctaHref} className="inline-flex rounded-xl border border-indigo-300 bg-indigo-50 px-4 py-2 text-sm font-semibold text-indigo-800 transition hover:bg-indigo-100">
+          <Link href={ctaHref} className="inline-flex rounded-xl border border-indigo-300/35 bg-indigo-300/14 px-4 py-2 text-sm font-semibold text-indigo-100 transition hover:bg-indigo-300/20">
             {ctaLabel}
           </Link>
         </div>
@@ -173,7 +173,7 @@ export function EmptyState({ title, copy }: { title: string; copy: string }) {
 }
 
 export function LoadingState({ label = 'Loading…' }: { label?: string }) {
-  return <p className="text-sm text-muted-foreground">{label}</p>
+  return <p className="inline-flex rounded-lg border border-border bg-card/70 px-3 py-2 text-sm text-muted-foreground">{label}</p>
 }
 
 export function CallToAction({

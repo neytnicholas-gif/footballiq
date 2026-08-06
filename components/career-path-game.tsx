@@ -5,7 +5,7 @@ import { careerQuestions } from '@/lib/game-data'
 import { useAuth } from '@/components/auth-provider'
 import { QuizProgressBanner } from '@/components/quiz-progress-banner'
 import { clearQuizProgress, loadQuizProgress, saveQuizProgress } from '@/lib/quiz-progress'
-import { saveQuizResult } from '@/lib/quiz-save'
+import { buildCompletionKey, createCompletionRunId, saveQuizResult } from '@/lib/quiz-save'
 
 function seededShuffle<T>(items: T[], seed: number) {
   const copy = [...items]
@@ -25,6 +25,7 @@ export function CareerPathGame() {
   const [score, setScore] = useState(0)
   const [saved, setSaved] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [runKey, setRunKey] = useState(() => createCompletionRunId())
   const [shuffleSeed, setShuffleSeed] = useState(() => Date.now() % 233280)
   const [resumeState, setResumeState] = useState<{ index: number; selected: string | null; score: number; shuffleSeed: number } | null>(null)
   const [checkingProgress, setCheckingProgress] = useState(Boolean(user))
@@ -39,9 +40,15 @@ export function CareerPathGame() {
     let active = true
 
     if (!user) {
-      setResumeState(null)
-      setCheckingProgress(false)
-      return
+      const timeout = window.setTimeout(() => {
+        if (!active) return
+        setResumeState(null)
+        setCheckingProgress(false)
+      }, 0)
+      return () => {
+        active = false
+        window.clearTimeout(timeout)
+      }
     }
 
     setCheckingProgress(true)
@@ -107,6 +114,7 @@ export function CareerPathGame() {
   function restart() {
     const newSeed = Date.now() % 233280
     setShuffleSeed(newSeed)
+    setRunKey(createCompletionRunId())
     setIndex(0)
     setSelected(null)
     setScore(0)
@@ -118,7 +126,7 @@ export function CareerPathGame() {
   async function save() {
     if (!user || saved || saving) return
     setSaving(true)
-    const { error, alreadyCompleted } = await saveQuizResult({ quizId: 'career-path-1', score, total: careerQuestions.length, xp: 20 + score * 10 })
+    const { error, alreadyCompleted } = await saveQuizResult({ quizId: 'career-path-1', score, total: careerQuestions.length, xp: 20 + score * 10, completionKey: buildCompletionKey('career-path-1', runKey) })
     if (!error) {
       setSaved(true)
       void clearQuizProgress('career-path-1')

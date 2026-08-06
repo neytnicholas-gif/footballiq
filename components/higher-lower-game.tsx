@@ -5,7 +5,7 @@ import { higherLowerItems } from '@/lib/game-data'
 import { useAuth } from '@/components/auth-provider'
 import { QuizProgressBanner } from '@/components/quiz-progress-banner'
 import { clearQuizProgress, loadQuizProgress, saveQuizProgress } from '@/lib/quiz-progress'
-import { saveQuizResult } from '@/lib/quiz-save'
+import { buildCompletionKey, createCompletionRunId, saveQuizResult } from '@/lib/quiz-save'
 
 function seededShuffle<T>(items: T[], seed: number) {
   const copy = [...items]
@@ -27,6 +27,7 @@ export function HigherLowerGame() {
   const [over, setOver] = useState(false)
   const [saved, setSaved] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [runKey, setRunKey] = useState(() => createCompletionRunId())
   const [resumeState, setResumeState] = useState<{ index: number; streak: number; deckSeed: number } | null>(null)
   const [checkingProgress, setCheckingProgress] = useState(Boolean(user))
 
@@ -37,9 +38,15 @@ export function HigherLowerGame() {
     let active = true
 
     if (!user) {
-      setResumeState(null)
-      setCheckingProgress(false)
-      return
+      const timeout = window.setTimeout(() => {
+        if (!active) return
+        setResumeState(null)
+        setCheckingProgress(false)
+      }, 0)
+      return () => {
+        active = false
+        window.clearTimeout(timeout)
+      }
     }
 
     setCheckingProgress(true)
@@ -89,7 +96,7 @@ export function HigherLowerGame() {
     if (!user || saved || saving) return
     setSaving(true)
     const total = Math.max(1, deck.length - 1)
-    const { error, alreadyCompleted } = await saveQuizResult({ quizId: 'higher-lower-pl-goals', score: streak, total, xp: 20 + streak * 8 })
+    const { error, alreadyCompleted } = await saveQuizResult({ quizId: 'higher-lower-pl-goals', score: streak, total, xp: 20 + streak * 8, completionKey: buildCompletionKey('higher-lower-pl-goals', runKey) })
     if (!error) {
       setSaved(true)
       void clearQuizProgress('higher-lower-pl-goals')
@@ -110,6 +117,7 @@ export function HigherLowerGame() {
   function restart() {
     const newSeed = Date.now() % 233280
     setDeckSeed(newSeed)
+    setRunKey(createCompletionRunId())
     setIndex(1)
     setStreak(0)
     setOver(false)

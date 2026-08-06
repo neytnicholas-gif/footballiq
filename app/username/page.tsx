@@ -29,10 +29,9 @@ export default function UsernamePage() {
     setSaving(true)
     setMessage('')
 
-    const { error } = await supabase.from('profiles').upsert(
-      { id: user.id, username: value },
-      { onConflict: 'id' },
-    )
+    const { error } = await supabase.rpc('set_profile_username', {
+      p_username: value,
+    })
     setSaving(false)
     if (error) return setMessage(error.code === '23505' ? 'That username is already taken.' : error.message)
     await refreshProfile()

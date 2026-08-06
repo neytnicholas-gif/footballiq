@@ -44,15 +44,15 @@ export default function ProPage() {
       <SiteHeader />
       <section className="mx-auto max-w-7xl px-4 py-10 sm:px-6 sm:py-14">
         <SurfaceCard className="overflow-hidden">
-          <div className="bg-[linear-gradient(135deg,rgba(34,197,94,.22),rgba(59,130,246,.12),rgba(255,255,255,.85))] p-7 sm:p-10">
-            <p className="inline-flex items-center gap-2 rounded-full border border-primary/25 bg-white/70 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-primary">
+          <div className="bg-[linear-gradient(135deg,rgba(34,197,94,.18),rgba(59,130,246,.12),rgba(8,14,26,.96))] p-7 sm:p-10">
+            <p className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/12 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-primary">
               <Sparkles className="size-3.5" />
               FootballIQ Pro
             </p>
             <h1 className="mt-4 text-4xl font-black tracking-tight sm:text-6xl">Train like a scout. Think like a referee. Develop football intelligence.</h1>
             <p className="mt-4 max-w-3xl text-base leading-relaxed text-muted-foreground sm:text-lg">FootballIQ Pro is built for deeper judgement practice with structured learning, not just more quiz volume.</p>
             <div className="mt-5 flex flex-wrap items-center gap-3">
-              {membership.plan === 'pro' ? <ProBadge /> : <span className="rounded-full border border-amber-300 bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-900">Free plan</span>}
+              {membership.plan === 'pro' ? <ProBadge /> : <span className="rounded-full border border-amber-300/40 bg-amber-300/14 px-3 py-1 text-xs font-semibold text-amber-200">Free plan</span>}
               <span className="rounded-full border border-border bg-card/70 px-3 py-1 text-xs font-semibold">Early access phase · Pricing coming soon</span>
             </div>
           </div>
@@ -88,12 +88,12 @@ export default function ProPage() {
         </section>
 
         {process.env.NODE_ENV !== 'production' && isLocalDevHost() && user ? (
-          <section className="mt-7 rounded-2xl border border-amber-300 bg-amber-50 p-5">
-            <p className="text-sm font-semibold text-amber-900">Local development Pro testing</p>
-            <p className="mt-1 text-sm text-amber-900/85">This override only works on localhost in non-production builds and does not expose a public production switch.</p>
+          <section className="mt-7 rounded-2xl border border-amber-300/45 bg-amber-300/12 p-5">
+            <p className="text-sm font-semibold text-amber-200">Local development Pro testing</p>
+            <p className="mt-1 text-sm text-amber-100/85">This override only works on localhost in non-production builds and does not expose a public production switch.</p>
             <div className="mt-3 flex gap-3">
-              <button onClick={() => { setDevLocalProOverride(true); window.location.reload() }} className="rounded-lg border border-amber-400 bg-white px-3 py-2 text-sm font-semibold text-amber-900">Enable local Pro override</button>
-              <button onClick={() => { setDevLocalProOverride(false); window.location.reload() }} className="rounded-lg border border-amber-400 bg-white px-3 py-2 text-sm font-semibold text-amber-900">Disable local Pro override</button>
+              <button onClick={() => { setDevLocalProOverride(true); window.location.reload() }} className="rounded-lg border border-amber-300/45 bg-amber-300/15 px-3 py-2 text-sm font-semibold text-amber-100">Enable local Pro override</button>
+              <button onClick={() => { setDevLocalProOverride(false); window.location.reload() }} className="rounded-lg border border-amber-300/45 bg-amber-300/15 px-3 py-2 text-sm font-semibold text-amber-100">Disable local Pro override</button>
             </div>
           </section>
         ) : null}
@@ -104,9 +104,9 @@ export default function ProPage() {
 
 function Block({ title, items, tone }: { title: string; items: string[]; tone: 'good' | 'next' | 'planned' }) {
   const toneClass = tone === 'good'
-    ? 'border-emerald-300/70 bg-emerald-50'
+    ? 'border-emerald-300/40 bg-emerald-300/12'
     : tone === 'next'
-      ? 'border-sky-300/70 bg-sky-50'
+      ? 'border-sky-300/40 bg-sky-300/12'
       : 'border-border bg-muted/50'
 
   return (

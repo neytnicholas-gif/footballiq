@@ -72,6 +72,7 @@ export type Database = {
           id: number
           user_id: string
           quiz_id: string
+          completion_key: string | null
           score: number
           total: number
           xp_earned: number
@@ -83,6 +84,7 @@ export type Database = {
           id?: number
           user_id: string
           quiz_id: string
+          completion_key?: string | null
           score: number
           total: number
           xp_earned?: number
@@ -94,6 +96,7 @@ export type Database = {
           id?: number
           user_id?: string
           quiz_id?: string
+          completion_key?: string | null
           score?: number
           total?: number
           xp_earned?: number
@@ -717,10 +720,23 @@ export type Database = {
           p_score: number
           p_total: number
           p_xp: number
-          p_activity_date: string
-          p_attempt_id?: string | null
+          p_completion_key: string
         }
-        Returns: undefined
+        Returns: {
+          awarded: boolean
+          already_processed: boolean
+          completion_key: string
+          activity_date: string
+        }
+      }
+      set_profile_username: {
+        Args: {
+          p_username: string
+        }
+        Returns: {
+          id: string
+          username: string | null
+        }[]
       }
       market_buy_player: {
         Args: {

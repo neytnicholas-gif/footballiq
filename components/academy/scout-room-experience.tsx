@@ -82,7 +82,7 @@ export function ScoutRoomExperience() {
 
   return (
     <div className="space-y-6 rounded-[1.6rem] border border-border bg-card p-5 sm:p-7">
-      <header className="rounded-2xl border border-border bg-[linear-gradient(140deg,rgba(34,197,94,.18),rgba(255,255,255,.7))] p-5">
+      <header className="rounded-2xl border border-border bg-[linear-gradient(140deg,rgba(34,197,94,.18),rgba(10,17,24,.95))] p-5">
         <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">Pro Scout Room</p>
         <h2 className="mt-2 text-3xl font-black tracking-tight">Scout Room: Player Evaluation</h2>
         <p className="mt-2 text-sm text-muted-foreground">Review dossier evidence, write your judgement, then compare with an expert-style report structure.</p>
@@ -170,8 +170,8 @@ export function ScoutRoomExperience() {
           </article>
 
           {submitted ? (
-            <article className="rounded-2xl border border-emerald-300 bg-emerald-50 p-4">
-              <p className="inline-flex items-center gap-1 text-xs font-semibold uppercase tracking-[0.18em] text-emerald-800"><CheckCircle2 className="size-3.5" /> Expert debrief</p>
+            <article className="rounded-2xl border border-emerald-300/45 bg-emerald-300/12 p-4">
+              <p className="inline-flex items-center gap-1 text-xs font-semibold uppercase tracking-[0.18em] text-emerald-200"><CheckCircle2 className="size-3.5" /> Expert debrief</p>
               <DebriefRow label="Observation" text="Kovares shows repeatable left-foot progression and communication habits in a high-line structure." />
               <DebriefRow label="Interpretation" text="Technical and perceptual profile suggests starter upside if transition defending stabilizes." />
               <DebriefRow label="Alternative explanation" text="Current clean possession actions may be partly protected by stable pivot support." />
@@ -179,7 +179,7 @@ export function ScoutRoomExperience() {
               <DebriefRow label="Recommendation" text="Recommend with targeted follow-up scouting in higher tempo fixtures." />
               <DebriefRow label="Confidence" text="Medium-high confidence due repeatability in core passing and communication actions." />
 
-              <div className="mt-3 rounded-xl border border-emerald-200 bg-white p-3 text-sm text-emerald-950">
+              <div className="mt-3 rounded-xl border border-emerald-300/40 bg-background/70 p-3 text-sm text-emerald-100">
                 <p className="font-semibold">Completion</p>
                 <p className="mt-1">You earned 120 Academy XP equivalent and logged one premium scouting completion.</p>
                 <p className="mt-1">Key learning: Separate production from context before final recommendation.</p>
@@ -233,9 +233,9 @@ function TogglePill({ label, active, onClick }: { label: string; active: boolean
 
 function DebriefRow({ label, text }: { label: string; text: string }) {
   return (
-    <div className="mt-2 rounded-xl border border-emerald-200 bg-white p-3">
-      <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-emerald-700">{label}</p>
-      <p className="mt-1 text-sm text-emerald-950">{text}</p>
+    <div className="mt-2 rounded-xl border border-emerald-300/35 bg-background/70 p-3">
+      <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-emerald-300">{label}</p>
+      <p className="mt-1 text-sm text-emerald-100">{text}</p>
     </div>
   )
 }

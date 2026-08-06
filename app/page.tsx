@@ -1,221 +1,189 @@
 'use client'
 
 import Link from 'next/link'
-import { ArrowRight, BookOpen, Flag, Globe2, Radar, ShieldCheck, Sparkles, Trophy } from 'lucide-react'
+import { ArrowRight, CalendarDays, Flag, Radar, ShieldCheck, Sparkles, Trophy } from 'lucide-react'
 import { SiteHeader } from '@/components/site-header'
+import { SiteFooter } from '@/components/site-footer'
 import { useAuth } from '@/components/auth-provider'
 import { getRankProgress } from '@/lib/progression'
-import { CallToAction, ModeCard, ProgressCard, SectionHeader, StatCard, SurfaceCard, StatusBadge } from '@/components/platform/primitives'
 
-const coreModes = [
-  {
-    title: 'Scout Vision',
-    description: 'Read a dossier, separate evidence from projection, and justify a recruitment recommendation.',
-    href: '/quizzes/would-you-scout-him',
-    icon: <Radar className="size-5" />,
-    accent: 'scout' as const,
-    meta: ['6 dossiers', 'judgement flow', 'evidence-led'],
-  },
+const featuredModes = [
   {
     title: 'Referee Arena',
-    description: 'Commit to laws, restarts and sanctions under pressure with structured post-decision feedback.',
+    description: 'Read each incident, commit to a call, and get immediate law-based feedback.',
     href: '/quizzes/referee-decisions',
-    icon: <ShieldCheck className="size-5" />,
-    accent: 'referee' as const,
-    meta: ['10 scenarios', 'decision control', 'law 12'],
+    icon: ShieldCheck,
+    tag: 'Flagship judgement',
+  },
+  {
+    title: 'Scout Vision',
+    description: 'Judge dossiers and decide if the evidence is strong enough to act on.',
+    href: '/quizzes/would-you-scout-him',
+    icon: Radar,
+    tag: 'Talent ID',
   },
   {
     title: 'Football Duels',
-    description: 'Fast stat battles with instant reveal, combos and replayable packs across football topics.',
+    description: 'Fast decision rounds across football stats, memory and match context.',
     href: '/quizzes/football-duels',
-    icon: <Trophy className="size-5" />,
-    accent: 'duels' as const,
-    meta: ['8 packs', 'replayable', 'timed or relaxed'],
+    icon: Trophy,
+    tag: 'Quick rounds',
   },
   {
-    title: 'Daily Challenge',
-    description: 'One Brussels-based key each day to keep the habit alive and build a genuine streak.',
-    href: '/daily',
-    icon: <Sparkles className="size-5" />,
-    accent: 'daily' as const,
-    meta: ['5 questions', 'daily key', 'streaks'],
-  },
-]
-
-const principles = [
-  {
-    title: 'Scouting judgment',
-    copy: 'Spot the signal, explain the risk, and decide whether the evidence is worth following.',
-    icon: <Radar className="size-5" />,
-  },
-  {
-    title: 'Refereeing decisions',
-    copy: 'Judge the incident, the restart, and the discipline with clarity instead of guesswork.',
-    icon: <Flag className="size-5" />,
-  },
-  {
-    title: 'Evidence-based thinking',
-    copy: 'Every mode asks for a reasoned choice and then shows why it held up or failed.',
-    icon: <BookOpen className="size-5" />,
-  },
-  {
-    title: 'Progress you can feel',
-    copy: 'XP, rating, levels, streaks and leaderboards make improvement visible over time.',
-    icon: <Globe2 className="size-5" />,
+    title: 'Predictions',
+    description: 'Lock pre-match calls and build a long-term record of football intuition.',
+    href: '/predictions',
+    icon: Flag,
+    tag: 'Pre-kickoff calls',
   },
 ]
 
 export default function HomePage() {
-  const { user, profile, loading, membership } = useAuth()
+  const { user, profile } = useAuth()
   const rank = getRankProgress(profile?.xp ?? 0)
-  const accuracy = profile && profile.total_answers > 0 ? Math.round((profile.correct_answers / profile.total_answers) * 100) : null
-  const streakLabel = profile ? `${profile.current_streak} day${profile.current_streak === 1 ? '' : 's'}` : 'Sign in to track'
+  const accuracy = formatAccuracy(profile?.correct_answers ?? 0, profile?.total_answers ?? 0)
+  const streakLabel = user ? formatDayCount(profile?.current_streak ?? 0) : 'Sign in to track'
 
   return (
-    <main className="min-h-screen bg-background">
+    <main className="relative min-h-screen bg-[#060b13] text-slate-100">
+      <div aria-hidden="true" className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_18%_4%,rgba(45,212,191,.12),transparent_32%),radial-gradient(circle_at_84%_10%,rgba(59,130,246,.14),transparent_28%),linear-gradient(180deg,rgba(4,8,16,0),rgba(4,8,16,.75)_58%,rgba(4,8,16,1))]" />
       <SiteHeader />
+      <div className="relative">
+        <section className="mx-auto grid max-w-7xl gap-6 px-4 pb-8 pt-8 sm:px-6 sm:pt-10 lg:grid-cols-[1.18fr_.82fr] lg:items-stretch">
+          <div className="relative overflow-hidden rounded-3xl border border-white/12 bg-[linear-gradient(155deg,rgba(10,17,30,.96),rgba(7,13,23,.88))] p-6 shadow-[0_30px_90px_-52px_rgba(16,185,129,.4)] sm:p-8">
+            <div aria-hidden="true" className="absolute inset-0 bg-[radial-gradient(circle_at_16%_18%,rgba(16,185,129,.18),transparent_32%),radial-gradient(circle_at_90%_8%,rgba(56,189,248,.12),transparent_28%)]" />
+            <div aria-hidden="true" className="absolute -right-10 top-8 hidden h-64 w-64 rounded-full border border-white/10 bg-[radial-gradient(circle,rgba(255,255,255,.2),rgba(255,255,255,0)_64%)] opacity-40 lg:block" />
+            <div aria-hidden="true" className="absolute inset-y-14 right-[-20%] hidden w-[56%] rounded-[2.3rem] border border-emerald-300/10 bg-[repeating-linear-gradient(90deg,transparent_0_13%,rgba(255,255,255,.03)_13%_26%),linear-gradient(180deg,rgba(255,255,255,.05),rgba(255,255,255,.01))] [transform:perspective(820px)_rotateX(60deg)_rotateZ(-10deg)] lg:block" />
 
-      <section className="mx-auto max-w-7xl px-4 pb-6 pt-8 sm:px-6 sm:pt-10">
-        <SurfaceCard className="overflow-hidden border-primary/15">
-          <div className="grid gap-8 p-6 sm:p-8 lg:grid-cols-[1.08fr_.92fr] lg:items-center">
-            <div>
-              <StatusBadge label="FootballIQ Product Experience" tone="good" />
-              <h1 className="mt-4 max-w-3xl text-4xl font-black tracking-tight text-foreground sm:text-6xl lg:text-7xl">
-                Train football judgement with evidence, pressure and progression.
-              </h1>
-              <p className="mt-4 max-w-2xl text-base leading-relaxed text-muted-foreground sm:text-lg">
-                FootballIQ turns scouting, refereeing and football memory into a polished product with clear decisions, quick feedback and real progression signals.
+            <div className="relative max-w-xl">
+              <p className="inline-flex items-center gap-2 rounded-full border border-emerald-300/30 bg-emerald-400/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.23em] text-emerald-200">
+                <Sparkles className="size-3.5" />
+                FootballIQ
               </p>
-              <div className="mt-6 flex flex-wrap gap-3">
-                <Link href="/quizzes" className="inline-flex h-11 items-center gap-2 rounded-xl bg-primary px-5 text-sm font-semibold text-primary-foreground shadow-[0_16px_30px_-20px_rgba(34,197,94,.35)]">
-                  Start with modes
+              <h1 className="mt-5 text-4xl font-black tracking-tight text-slate-50 sm:text-5xl lg:text-6xl">
+                Think you know football?
+              </h1>
+              <p className="mt-4 max-w-lg text-base leading-relaxed text-slate-300 sm:text-lg">
+                Test your decisions, knowledge and eye for the game.
+              </p>
+
+              <div className="mt-7 flex flex-wrap items-center gap-3">
+                <Link href="/quizzes/referee-decisions" className="inline-flex h-11 items-center gap-2 rounded-xl bg-emerald-400 px-6 text-sm font-semibold text-slate-950 shadow-[0_18px_46px_-20px_rgba(16,185,129,.55)] transition hover:-translate-y-0.5 hover:bg-emerald-300">
+                  Play now
                   <ArrowRight className="size-4" />
                 </Link>
-                <Link href="/leaderboard" className="inline-flex h-11 items-center rounded-xl border border-border bg-card px-5 text-sm font-semibold text-foreground transition hover:border-primary/35 hover:bg-secondary/40">
-                  See leaderboards
+                <Link href="/quizzes" className="inline-flex h-11 items-center rounded-xl border border-white/15 bg-white/5 px-5 text-sm font-semibold text-slate-200 transition hover:border-emerald-300/45 hover:bg-white/10">
+                  Explore games
                 </Link>
               </div>
-              <div className="mt-8 flex flex-wrap gap-2">
-                <StatusBadge label="Scout Vision" tone="good" />
-                <StatusBadge label="Referee Arena" tone="warn" />
-                <StatusBadge label="Football Duels" tone="info" />
-                <StatusBadge label="Daily Challenge" tone="neutral" />
-              </div>
             </div>
-
-            <SurfaceCard className="relative overflow-hidden border-border/70 bg-[linear-gradient(180deg,rgba(255,255,255,.98),rgba(248,250,252,.96))] p-5">
-              <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(54,206,163,.12),transparent_34%),radial-gradient(circle_at_80%_18%,rgba(56,123,255,.12),transparent_30%),radial-gradient(circle_at_50%_100%,rgba(255,186,67,.12),transparent_30%)]" />
-              <div className="relative grid gap-3 sm:grid-cols-2">
-                <div className="rounded-2xl border border-border bg-white/90 p-4 shadow-sm sm:col-span-2">
-                  <div className="flex items-center justify-between gap-3">
-                    <div>
-                      <p className="text-xs font-semibold uppercase tracking-[0.22em] text-primary">Analysis board</p>
-                      <h2 className="mt-2 text-2xl font-black tracking-tight text-foreground">Read the game before you answer.</h2>
-                    </div>
-                    <div className="rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">Bright mode</div>
-                  </div>
-                  <div className="mt-4 grid gap-3 sm:grid-cols-3">
-                    <MiniTile title="Zones" copy="Pitch and dossier cues" accent="bg-emerald-100 text-emerald-800" />
-                    <MiniTile title="Evidence" copy="Scouting details and laws" accent="bg-sky-100 text-sky-800" />
-                    <MiniTile title="Decision" copy="Commit, then debrief" accent="bg-amber-100 text-amber-800" />
-                  </div>
-                </div>
-                <AnalysisChip label="Confidence" value="High" />
-                <AnalysisChip label="Streak" value={streakLabel} />
-                <AnalysisChip label="Rank" value={rank.current.title} />
-                <AnalysisChip label="XP" value={profile?.xp.toLocaleString() ?? 'Track it'} />
-              </div>
-            </SurfaceCard>
           </div>
-        </SurfaceCard>
-      </section>
 
-      <section className="mx-auto max-w-7xl px-4 py-8 sm:px-6">
-        <SectionHeader
-          eyebrow="Core experiences"
-          title="A clear product selector, not a cluttered quiz list"
-          copy="Every mode is clickable, playable and clearly framed around the skill it trains."
-        />
-        <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-          {coreModes.map((mode) => <ModeCard key={mode.title} {...mode} playable />)}
-        </div>
-      </section>
+          <div className="grid gap-3 rounded-3xl border border-white/10 bg-[#0a1422]/90 p-4 sm:grid-cols-2 sm:p-5 lg:grid-cols-1">
+            <HeroMetric label="Primary skill" value="Decision making" hint="Referee and scouting judgement" />
+            <HeroMetric label="Daily format" value="5 questions" hint="One challenge per day" />
+            <HeroMetric label="Progress loop" value="XP + rank" hint="Real profile progression" />
+          </div>
+        </section>
 
-      <section className="mx-auto max-w-7xl px-4 py-8 sm:px-6">
-        <SectionHeader
-          eyebrow="Why it feels different"
-          title="Football-native, not generic SaaS"
-          copy="The product language comes from football analysis: zones, dossiers, confidence, decisions and performance movement."
-        />
-        <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-          {principles.map((item) => (
-            <SurfaceCard key={item.title} className="p-5">
-              <div className="flex size-11 items-center justify-center rounded-2xl bg-primary/10 text-primary">{item.icon}</div>
-              <h3 className="mt-4 text-xl font-black tracking-tight text-foreground">{item.title}</h3>
-              <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{item.copy}</p>
-            </SurfaceCard>
-          ))}
-        </div>
-      </section>
-
-      <section className="mx-auto max-w-7xl px-4 py-8 sm:px-6">
-        <SectionHeader
-          eyebrow="Progression preview"
-          title="Real signals already in the product"
-          copy="No fake testimonials or invented user counts. These are the actual progression signals FootballIQ tracks."
-        />
-        <div className="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          <StatCard label="Current rank" value={`${rank.current.emoji} ${rank.current.title}`} hint={rank.next ? `${rank.remaining} XP to ${rank.next.title}` : 'Maximum rank reached'} />
-          <StatCard label="XP" value={profile ? profile.xp.toLocaleString() : 'Sign in'} hint="Profile progression" />
-          <StatCard label="Accuracy" value={accuracy === null ? '—' : `${accuracy}%`} hint={profile ? 'Based on answered questions' : 'Track your answer quality'} />
-          <StatCard label="Streak" value={streakLabel} hint={profile ? 'Daily consistency signal' : 'Anonymous players can still play'} />
-        </div>
-      </section>
-
-      <section className="mx-auto max-w-7xl px-4 py-8 sm:px-6">
-        <SectionHeader
-          eyebrow="Product proof"
-          title="A serious product that still feels approachable"
-          copy="The site should encourage immediate play while showing that FootballIQ is about analysis, reasoning and improvement."
-        />
-        <div className="mt-5 grid gap-4 lg:grid-cols-[1fr_1fr]">
-          <SurfaceCard className="p-6">
-            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-primary">What you can do now</p>
-            <ul className="mt-4 space-y-3 text-sm text-muted-foreground">
-              <li>• Play Scout Vision, Referee Arena, Football Duels and Daily Challenge</li>
-              <li>• Track XP, levels, ratings, streaks and leaderboard position</li>
-              <li>• Resume unfinished sessions after signing in</li>
-              <li>• Compare your result with structured feedback</li>
-            </ul>
-          </SurfaceCard>
-          <SurfaceCard className="p-6">
-            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-primary">Your next step</p>
-            <h3 className="mt-3 text-2xl font-black tracking-tight text-foreground">Start anonymously or sign in to save progress.</h3>
-            <p className="mt-2 text-sm leading-relaxed text-muted-foreground">Anonymous visitors can still play the core experiences. Signed-in users get a persistent profile, streak tracking and the leaderboard view.</p>
-            <div className="mt-4 flex flex-wrap gap-3">
-              {!loading && !user ? <Link href="/login" className="inline-flex rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground">Sign in</Link> : <Link href="/profile" className="inline-flex rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground">Open profile</Link>}
-              <Link href="/daily" className="inline-flex rounded-xl border border-border bg-background px-4 py-2.5 text-sm font-semibold text-foreground">Play Daily</Link>
+        <section className="mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-8">
+          <div className="flex flex-wrap items-end justify-between gap-3">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-emerald-300">Featured experiences</p>
+              <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-100 sm:text-3xl">Choose a mode and start quickly</h2>
             </div>
-          </SurfaceCard>
-        </div>
-      </section>
+            <Link href="/quizzes" className="text-sm font-semibold text-emerald-300 transition hover:text-emerald-200">See all games</Link>
+          </div>
+          <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+            {featuredModes.map((mode) => {
+              const Icon = mode.icon
+              return (
+                <Link key={mode.title} href={mode.href} className="group rounded-2xl border border-white/12 bg-[#0a1422]/95 p-5 transition hover:-translate-y-0.5 hover:border-emerald-300/45 hover:shadow-[0_22px_55px_-35px_rgba(16,185,129,.55)]">
+                  <div className="flex items-start justify-between gap-3">
+                    <span className="flex size-11 items-center justify-center rounded-xl border border-emerald-300/30 bg-emerald-400/10 text-emerald-200">
+                      <Icon className="size-5" />
+                    </span>
+                    <span className="rounded-full border border-white/15 bg-white/5 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-slate-300">Playable</span>
+                  </div>
+                  <h3 className="mt-4 text-xl font-black tracking-tight text-slate-100">{mode.title}</h3>
+                  <p className="mt-2 text-sm leading-relaxed text-slate-300">{mode.description}</p>
+                  <p className="mt-4 text-xs font-semibold uppercase tracking-[0.16em] text-emerald-300">{mode.tag}</p>
+                </Link>
+              )
+            })}
+          </div>
+        </section>
 
-      <section className="mx-auto max-w-7xl px-4 py-8 sm:px-6">
-        <CallToAction
-          title="Choose a mode and get straight into football decisions."
-          copy={membership.plan === 'pro' ? 'You already have access to the current core modes and progression tools.' : 'Free play is live across the core modes, with more structured progress tracking once you create an account.'}
-          primary={<Link href="/quizzes" className="inline-flex rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground">Open modes</Link>}
-          secondary={<Link href="/leaderboard" className="inline-flex rounded-xl border border-border bg-background px-4 py-2.5 text-sm font-semibold text-foreground">View leaderboard</Link>}
-        />
-      </section>
+        <section className="mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-8">
+          <div className="rounded-3xl border border-white/12 bg-[#0a1422]/96 p-5 sm:p-6">
+            <div className="grid items-center gap-5 lg:grid-cols-[1.2fr_.8fr]">
+              <div>
+                <p className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-emerald-300">
+                  <CalendarDays className="size-4" />
+                  Daily + progression
+                </p>
+                <h2 className="mt-3 text-2xl font-black tracking-tight text-slate-100">Return each day. Keep your level moving.</h2>
+                <p className="mt-2 max-w-xl text-sm leading-relaxed text-slate-300">Daily Challenge gives one shared run each day, while XP, rank and streak track real profile progress.</p>
+                <Link href="/daily" className="mt-4 inline-flex h-10 items-center rounded-xl bg-emerald-400 px-4 text-sm font-semibold text-slate-950 transition hover:bg-emerald-300">Play Daily Challenge</Link>
+              </div>
+              <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-1">
+                <StripStat label="Rank" value={user ? rank.current.title : 'Sign in'} />
+                <StripStat label="XP" value={user ? (profile?.xp ?? 0).toLocaleString() : 'Track it'} />
+                <StripStat label="Streak" value={streakLabel} />
+                <StripStat label="Accuracy" value={user ? accuracy : 'Track it'} />
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section className="mx-auto max-w-7xl px-4 pb-10 pt-6 sm:px-6 sm:pb-12 sm:pt-8">
+          <div className="rounded-3xl border border-white/12 bg-[linear-gradient(140deg,rgba(8,16,28,.96),rgba(8,16,28,.8))] px-6 py-7 sm:px-8">
+            <div className="flex flex-wrap items-center justify-between gap-4">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-emerald-300">Ready to start?</p>
+                <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-100">Make your first decision now.</h2>
+              </div>
+              <Link href="/quizzes/referee-decisions" className="inline-flex h-11 items-center gap-2 rounded-xl bg-emerald-400 px-5 text-sm font-semibold text-slate-950 transition hover:-translate-y-0.5 hover:bg-emerald-300">
+                Play now
+                <ArrowRight className="size-4" />
+              </Link>
+            </div>
+          </div>
+        </section>
+
+        <SiteFooter />
+      </div>
     </main>
   )
 }
 
-function MiniTile({ title, copy, accent }: { title: string; copy: string; accent: string }) {
-  return <div className={`rounded-2xl border border-border px-4 py-3 ${accent}`}><p className="text-xs font-semibold uppercase tracking-[0.18em]">{title}</p><p className="mt-1 text-sm leading-relaxed text-current/80">{copy}</p></div>
+function HeroMetric({ label, value, hint }: { label: string; value: string; hint: string }) {
+  return (
+    <div className="rounded-2xl border border-white/12 bg-[#0d1a2b] p-4">
+      <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">{label}</p>
+      <p className="mt-2 text-lg font-black tracking-tight text-slate-100">{value}</p>
+      <p className="mt-1 text-xs text-slate-400">{hint}</p>
+    </div>
+  )
 }
 
-function AnalysisChip({ label, value }: { label: string; value: string }) {
-  return <div className="rounded-2xl border border-border bg-background/80 p-4"><p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">{label}</p><p className="mt-2 text-lg font-black tracking-tight text-foreground">{value}</p></div>
+function StripStat({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-xl border border-white/12 bg-[#0d1a2b] px-3 py-2.5">
+      <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">{label}</p>
+      <p className="mt-1 text-sm font-semibold text-slate-100">{value}</p>
+    </div>
+  )
+}
+
+function formatAccuracy(correct: number, total: number): string {
+  if (!total) {
+    return '—'
+  }
+  return `${Math.round((correct / total) * 100)}%`
+}
+
+function formatDayCount(days: number): string {
+  const safeDays = Number.isFinite(days) ? Math.max(0, days) : 0
+  return `${safeDays} day${safeDays === 1 ? '' : 's'}`
 }

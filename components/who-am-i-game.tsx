@@ -5,7 +5,7 @@ import { whoAmIQuestions } from '@/lib/game-data'
 import { useAuth } from '@/components/auth-provider'
 import { QuizProgressBanner } from '@/components/quiz-progress-banner'
 import { clearQuizProgress, loadQuizProgress, saveQuizProgress } from '@/lib/quiz-progress'
-import { saveQuizResult } from '@/lib/quiz-save'
+import { buildCompletionKey, createCompletionRunId, saveQuizResult } from '@/lib/quiz-save'
 
 export function WhoAmIGame() {
   const { user, refreshProfile } = useAuth()
@@ -16,6 +16,7 @@ export function WhoAmIGame() {
   const [revealed, setRevealed] = useState(false)
   const [saved, setSaved] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [runKey, setRunKey] = useState(() => createCompletionRunId())
   const [resumeState, setResumeState] = useState<{ index: number; clues: number; guess: string; score: number; revealed: boolean } | null>(null)
   const [checkingProgress, setCheckingProgress] = useState(Boolean(user))
   const q = whoAmIQuestions[index]
@@ -25,9 +26,15 @@ export function WhoAmIGame() {
     let active = true
 
     if (!user) {
-      setResumeState(null)
-      setCheckingProgress(false)
-      return
+      const timeout = window.setTimeout(() => {
+        if (!active) return
+        setResumeState(null)
+        setCheckingProgress(false)
+      }, 0)
+      return () => {
+        active = false
+        window.clearTimeout(timeout)
+      }
     }
 
     setCheckingProgress(true)
@@ -112,13 +119,14 @@ export function WhoAmIGame() {
     setScore(0)
     setRevealed(false)
     setSaved(false)
+    setRunKey(createCompletionRunId())
     setResumeState(null)
     void clearQuizProgress('who-am-i-1')
   }
   async function save() {
     if (!user || saved || saving) return
     setSaving(true)
-    const { error, alreadyCompleted } = await saveQuizResult({ quizId: 'who-am-i-1', score, total: 40, xp: 20 + score * 3 })
+    const { error, alreadyCompleted } = await saveQuizResult({ quizId: 'who-am-i-1', score, total: 40, xp: 20 + score * 3, completionKey: buildCompletionKey('who-am-i-1', runKey) })
     if (!error) {
       setSaved(true)
       void clearQuizProgress('who-am-i-1')

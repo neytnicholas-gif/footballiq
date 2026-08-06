@@ -3,7 +3,7 @@
 import { useMemo, useState } from 'react'
 import { ArrowRight, Check, Eye, RotateCcw, TriangleAlert, X } from 'lucide-react'
 import { useAuth } from '@/components/auth-provider'
-import { saveQuizResult } from '@/lib/quiz-save'
+import { buildCompletionKey, createCompletionRunId, saveQuizResult } from '@/lib/quiz-save'
 import { cn } from '@/lib/utils'
 
 type ScoutDecision = 'strong-follow' | 'follow' | 'monitor' | 'do-not-pursue'
@@ -223,6 +223,7 @@ export function ScoutVisionGame() {
   const [selected, setSelected] = useState<ScoutDecision | null>(null)
   const [score, setScore] = useState(0)
   const [saved, setSaved] = useState(false)
+  const [runKey, setRunKey] = useState(() => createCompletionRunId())
   const scenario = scenarios[index]
   const complete = index === scenarios.length - 1 && selected !== null
 
@@ -250,6 +251,7 @@ export function ScoutVisionGame() {
     setSelected(null)
     setScore(0)
     setSaved(false)
+    setRunKey(createCompletionRunId())
   }
 
   async function save() {
@@ -260,6 +262,7 @@ export function ScoutVisionGame() {
       score,
       total: scenarios.length,
       xp,
+      completionKey: buildCompletionKey('would-you-scout-v1', runKey),
     })
     if (!error) {
       setSaved(true)

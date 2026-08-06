@@ -50,51 +50,23 @@ const socials = [
 
 export function SiteFooter() {
   return (
-    <footer id="contact" className="relative border-t border-border">
-      <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6">
-        {/* Contact CTA */}
-        <div className="relative overflow-hidden rounded-3xl border border-border bg-card p-8 text-center sm:p-12">
-          <div
-            aria-hidden="true"
-            className="absolute left-1/2 top-0 size-64 -translate-x-1/2 rounded-full bg-primary/10 blur-[110px]"
-          />
-          <div className="relative">
-            <h2 className="text-balance text-2xl font-semibold tracking-tight sm:text-3xl">
-              Ready to test your football brain?
-            </h2>
-            <p className="mx-auto mt-3 max-w-md text-pretty text-muted-foreground">
-              Build your eight-player portfolio in Player Market, then sharpen your judgement in Scout Vision, Referee Arena and Football Duels.
-            </p>
-            <div className="mt-7 flex flex-col justify-center gap-3 sm:flex-row">
-              <Button
-                size="lg"
-                nativeButton={false}
-                render={<a href="/market" />}
-                className="h-12 rounded-xl px-7 font-medium glow-green"
-              >
-                Open Player Market
-              </Button>
-              <Button
-                size="lg"
-                variant="outline"
-                nativeButton={false}
-                render={<a href={`mailto:${BRAND.supportEmail}`} />}
-                className="h-12 rounded-xl border-border bg-transparent px-7 font-medium hover:bg-secondary"
-              >
-                <Mail className="size-4" />
-                Contact Us
-              </Button>
-            </div>
-          </div>
-        </div>
-
-        {/* Footer grid */}
-        <div className="mt-14 flex flex-col gap-10 md:flex-row md:items-start md:justify-between">
+    <footer id="contact" className="relative border-t border-border bg-background/95">
+      <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 sm:py-12">
+        <div className="flex flex-col gap-10 md:flex-row md:items-start md:justify-between">
           <div className="max-w-xs">
             <Logo />
             <p className="mt-4 text-sm leading-relaxed text-muted-foreground">
-              Football duels, referee scenarios and interactive quizzes for people who love the details of the game.
+              Football quizzes and judgement challenges built for people who care about the details of the game.
             </p>
+            <Button
+              variant="outline"
+              nativeButton={false}
+              render={<a href={`mailto:${BRAND.supportEmail}`} />}
+              className="mt-5 h-10 rounded-lg border-border bg-secondary/30 px-4 text-sm font-semibold text-foreground hover:bg-secondary/60"
+            >
+              <Mail className="size-4" />
+              Contact
+            </Button>
           </div>
 
           <nav aria-label="Footer">
@@ -125,7 +97,7 @@ export function SiteFooter() {
                   key={social.label}
                   href={social.href}
                   aria-label={social.label}
-                  className="flex size-10 items-center justify-center rounded-xl border border-border text-muted-foreground transition-colors hover:border-primary/40 hover:text-primary"
+                  className="flex size-10 items-center justify-center rounded-xl border border-border text-muted-foreground transition-colors hover:border-primary/45 hover:text-primary"
                 >
                   <social.icon className="size-5" />
                 </a>
@@ -134,7 +106,7 @@ export function SiteFooter() {
           </div>
         </div>
 
-        <div className="mt-12 flex flex-col items-center justify-between gap-3 border-t border-border pt-6 text-sm text-muted-foreground sm:flex-row">
+        <div className="mt-10 flex flex-col items-center justify-between gap-3 border-t border-border pt-5 text-sm text-muted-foreground sm:flex-row">
           <p>© FootballIQ</p>
           <p>Made for football minds worldwide. No official league affiliation.</p>
         </div>

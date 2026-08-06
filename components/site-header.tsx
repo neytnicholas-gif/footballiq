@@ -10,8 +10,9 @@ import { cn } from '@/lib/utils'
 
 const links = [
   ['Home', '/'],
-  ['Modes', '/quizzes'],
+  ['Games', '/quizzes'],
   ['Daily', '/daily'],
+  ['Predictions', '/predictions'],
   ['Leaderboard', '/leaderboard'],
   ['Profile', '/profile'],
 ]
@@ -30,33 +31,33 @@ export function SiteHeader() {
   const authBlock = !authResolved
     ? <span className="h-10 w-24 animate-pulse rounded-xl bg-secondary/60" aria-hidden="true" />
     : showSignedOutCta
-      ? <Link href="/login" className="rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-[0_16px_30px_-20px_rgba(34,197,94,.7)]">Sign in</Link>
+      ? <Link href="/login" className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground shadow-[0_14px_34px_-18px_rgba(16,185,129,.65)] transition hover:bg-primary/90">Sign in</Link>
       : user && !profile?.username
-        ? <Link href="/username" className="rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-[0_16px_30px_-20px_rgba(34,197,94,.7)]">Choose username</Link>
+        ? <Link href="/username" className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground shadow-[0_14px_34px_-18px_rgba(16,185,129,.65)] transition hover:bg-primary/90">Choose username</Link>
       : (
         <div className="flex items-center gap-2">
-          <Link href="/profile" className="rounded-xl border border-border bg-card px-4 py-2 text-sm transition hover:border-primary/35 hover:bg-secondary/40">
+          <Link href="/profile" className="rounded-lg border border-border bg-secondary/30 px-3 py-2 text-sm text-foreground transition hover:border-primary/40 hover:bg-secondary/55">
             <span className="mr-2 rounded-full bg-primary px-2 py-1 text-xs font-semibold text-primary-foreground">{Math.max(1, Math.floor((profile?.xp ?? 0) / 250) + 1)}</span>
             {profile?.username ?? 'Profile'}
           </Link>
-          <button onClick={() => void signOut()} className="hidden rounded-xl border border-border bg-card px-3 py-2 text-sm text-muted-foreground transition hover:text-foreground sm:block">Log out</button>
+          <button onClick={() => void signOut()} className="hidden rounded-lg border border-border bg-secondary/25 px-3 py-2 text-sm text-muted-foreground transition hover:border-primary/30 hover:text-foreground sm:block">Log out</button>
         </div>
       )
 
   return (
-    <header className="sticky top-0 z-40 border-b border-border/80 bg-[color-mix(in_oklch,var(--background)_88%,white_12%)] backdrop-blur-xl">
-      <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3.5 sm:px-6">
+    <header className="sticky top-0 z-40 border-b border-border/60 bg-background/92 backdrop-blur-xl">
+      <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3 sm:px-6">
         <Logo />
 
-        <nav className="hidden items-center gap-1 rounded-full border border-border/80 bg-card/90 p-1 md:flex">
+        <nav className="hidden items-center gap-1 rounded-xl border border-border/80 bg-card/50 p-1 md:flex">
           {links.map(([label, href]) => (
             <Link
               key={href}
               href={href}
               aria-current={pathname === href ? 'page' : undefined}
               className={cn(
-                'rounded-full px-3.5 py-1.5 text-sm transition',
-                pathname === href ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:bg-secondary hover:text-foreground',
+                'rounded-lg px-3 py-1.5 text-sm transition',
+                pathname === href ? 'bg-primary text-primary-foreground shadow-[0_12px_28px_-16px_rgba(16,185,129,.7)]' : 'text-muted-foreground hover:bg-secondary/70 hover:text-foreground',
               )}
             >
               {label}
@@ -65,23 +66,23 @@ export function SiteHeader() {
         </nav>
 
         <div className="flex items-center gap-2">
-          {membership.plan === 'pro' ? <span className="hidden items-center gap-1 rounded-full border border-indigo-300 bg-indigo-100 px-2.5 py-1 text-xs font-semibold text-indigo-800 sm:inline-flex"><Crown className="size-3" /> Pro</span> : null}
+          {membership.plan === 'pro' ? <span className="hidden items-center gap-1 rounded-full border border-indigo-300/40 bg-indigo-300/14 px-2.5 py-1 text-xs font-semibold text-indigo-200 sm:inline-flex"><Crown className="size-3" /> Pro</span> : null}
           {authBlock}
-          <button onClick={() => setMobileOpen((value) => !value)} className="inline-flex size-10 items-center justify-center rounded-xl border border-border bg-card md:hidden" aria-label={mobileOpen ? 'Close menu' : 'Open menu'}>
+          <button onClick={() => setMobileOpen((value) => !value)} className="inline-flex size-10 items-center justify-center rounded-lg border border-border bg-secondary/30 text-foreground md:hidden" aria-label={mobileOpen ? 'Close menu' : 'Open menu'}>
             {mobileOpen ? <X className="size-5" /> : <Menu className="size-5" />}
           </button>
         </div>
       </div>
 
       {mobileOpen ? (
-        <nav className="border-t border-border bg-card/95 p-3 md:hidden">
+        <nav className="border-t border-border bg-background/98 p-3 md:hidden">
           <div className="grid gap-1">
             {links.map(([label, href]) => (
-              <Link key={href} href={href} onClick={closeMobile} className={cn('rounded-lg px-3 py-2 text-sm transition', pathname === href ? 'bg-primary/10 font-semibold text-primary' : 'text-muted-foreground hover:bg-secondary hover:text-foreground')}>
+              <Link key={href} href={href} onClick={closeMobile} className={cn('rounded-lg px-3 py-2 text-sm transition', pathname === href ? 'bg-primary/15 font-semibold text-primary' : 'text-muted-foreground hover:bg-secondary/70 hover:text-foreground')}>
                 {label}
               </Link>
             ))}
-            {authResolved && user && !profile?.username ? <Link href="/username" onClick={closeMobile} className="rounded-lg px-3 py-2 text-sm font-semibold text-primary transition hover:bg-primary/10">Finish profile</Link> : null}
+            {authResolved && user && !profile?.username ? <Link href="/username" onClick={closeMobile} className="rounded-lg px-3 py-2 text-sm font-semibold text-emerald-300 transition hover:bg-emerald-400/10">Finish profile</Link> : null}
             {!showSignedOutCta && user ? (
               <button onClick={() => { closeMobile(); void signOut() }} className="rounded-lg border border-border px-3 py-2 text-left text-sm text-muted-foreground transition hover:text-foreground">
                 Log out

@@ -35,13 +35,13 @@ export default function AcademyPage() {
       <SiteHeader />
       <section className="mx-auto max-w-7xl px-4 py-10 sm:px-6 sm:py-14">
         <SurfaceCard className="overflow-hidden">
-          <div className="bg-[linear-gradient(130deg,rgba(40,197,130,.2),rgba(35,134,255,.12),rgba(255,255,255,.9))] p-7 sm:p-10">
+          <div className="bg-[linear-gradient(130deg,rgba(40,197,130,.18),rgba(35,134,255,.12),rgba(7,14,26,.96))] p-7 sm:p-10">
             <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">FootballIQ Academy</p>
             <h1 className="mt-3 text-4xl font-black tracking-tight sm:text-6xl">Structured learning pathways for football judgement</h1>
             <p className="mt-3 max-w-3xl text-muted-foreground">Build your scout and referee thinking with staged modules, practical decisions and professional debriefs.</p>
             <div className="mt-4 flex flex-wrap items-center gap-3">
               {membership.plan === 'pro' ? <ProBadge /> : <span className="rounded-full border border-border bg-card/80 px-3 py-1 text-xs font-semibold">Free plan active</span>}
-              <Link href="/pro" className="rounded-full border border-indigo-300 bg-indigo-50 px-3 py-1 text-xs font-semibold text-indigo-800">Compare Free vs Pro</Link>
+              <Link href="/pro" className="rounded-full border border-indigo-300/40 bg-indigo-300/14 px-3 py-1 text-xs font-semibold text-indigo-200">Compare Free vs Pro</Link>
             </div>
           </div>
         </SurfaceCard>
@@ -74,7 +74,7 @@ export default function AcademyPage() {
               <div key={item.key} className="rounded-xl border border-border bg-background/70 p-3">
                 <div className="flex items-center justify-between gap-2">
                   <p className="font-semibold">{item.title}</p>
-                  <span className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${item.type === 'pro' ? 'border border-indigo-300 bg-indigo-100 text-indigo-800' : 'border border-emerald-300 bg-emerald-100 text-emerald-800'}`}>
+                  <span className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${item.type === 'pro' ? 'border border-indigo-300/40 bg-indigo-300/14 text-indigo-200' : 'border border-emerald-300/40 bg-emerald-300/14 text-emerald-200'}`}>
                     {item.type.toUpperCase()}
                   </span>
                 </div>

@@ -5,7 +5,7 @@ import { useAuth } from '@/components/auth-provider'
 import { QuizProgressBanner } from '@/components/quiz-progress-banner'
 import { clearQuizProgress, loadQuizProgress, saveQuizProgress } from '@/lib/quiz-progress'
 import { getRankProgress } from '@/lib/progression'
-import { saveQuizResult } from '@/lib/quiz-save'
+import { buildCompletionKey, createCompletionRunId, saveQuizResult } from '@/lib/quiz-save'
 import { scoutQuestions, type ScoutDecision } from '@/lib/game-data'
 
 const decisionOptions: ScoutDecision[] = ['Strongly follow', 'Follow', 'Monitor', 'Do not pursue']
@@ -18,6 +18,7 @@ export function ScoutGame() {
   const [saved, setSaved] = useState(false)
   const [saving, setSaving] = useState(false)
   const [alreadyCredited, setAlreadyCredited] = useState(false)
+  const [runKey, setRunKey] = useState(() => createCompletionRunId())
   const [resumeState, setResumeState] = useState<{ index: number; selected: ScoutDecision | null; score: number } | null>(null)
   const [checkingProgress, setCheckingProgress] = useState(Boolean(user))
 
@@ -43,9 +44,15 @@ export function ScoutGame() {
     let active = true
 
     if (!user) {
-      setResumeState(null)
-      setCheckingProgress(false)
-      return
+      const timeout = window.setTimeout(() => {
+        if (!active) return
+        setResumeState(null)
+        setCheckingProgress(false)
+      }, 0)
+      return () => {
+        active = false
+        window.clearTimeout(timeout)
+      }
     }
 
     setCheckingProgress(true)
@@ -101,7 +108,7 @@ export function ScoutGame() {
   async function saveResult() {
     if (!user || saved || saving) return
     setSaving(true)
-    const { error, alreadyCompleted } = await saveQuizResult({ quizId: 'would-you-scout-1', score, total: maxScore, xp })
+    const { error, alreadyCompleted } = await saveQuizResult({ quizId: 'would-you-scout-1', score, total: maxScore, xp, completionKey: buildCompletionKey('would-you-scout-1', runKey) })
     if (!error) {
       setSaved(true)
       setAlreadyCredited(alreadyCompleted)
@@ -117,6 +124,7 @@ export function ScoutGame() {
     setScore(0)
     setSaved(false)
     setAlreadyCredited(false)
+    setRunKey(createCompletionRunId())
     setResumeState(null)
     void clearQuizProgress('would-you-scout-1')
   }
@@ -181,7 +189,7 @@ export function ScoutGame() {
           </div>
         </section>
 
-        <section className="rounded-2xl border border-border bg-[linear-gradient(180deg,rgba(54,206,163,.07),rgba(255,255,255,.95))] p-5">
+        <section className="rounded-2xl border border-border bg-[linear-gradient(180deg,rgba(54,206,163,.09),rgba(8,14,24,.92))] p-5">
           {checkingProgress ? <div className="rounded-xl border border-border bg-background/70 p-4 text-sm text-muted-foreground">Checking saved progress…</div> : resumeState && !saved ? <div className="mb-4"><QuizProgressBanner title="Resume your quiz?" copy={`You left off at dossier ${resumeState.index + 1} of ${scoutQuestions.length}.`} onContinue={continueProgress} onStartAgain={restart} /></div> : null}
           {!selected ? (
             <div className="h-full rounded-xl border border-dashed border-border p-4 text-sm text-muted-foreground">
