@@ -14,6 +14,7 @@ import {
   loadPlayerValueHistory,
   refreshMyMarketPortfolio,
 } from '@/lib/market/client'
+import { buildSampleSeasonStats } from '@/lib/market/sample-data'
 import type { MarketHolding, MarketPlayer, MarketSeasonStats, MarketValueHistoryPoint } from '@/lib/market/types'
 
 export default function PlayerMarketDetailPage() {
@@ -52,9 +53,14 @@ export default function PlayerMarketDetailPage() {
       return
     }
 
+    const isDemoPlayer = currentPlayer.provenance_status === 'owner_seed_demo'
     const [statsResult, historyResult, portfolioResult] = await Promise.all([
-      loadPlayerSeasonStats(currentPlayer.id),
-      loadPlayerValueHistory(currentPlayer.id),
+      isDemoPlayer
+        ? Promise.resolve({ data: buildSampleSeasonStats(marketPlayers).filter((row) => row.player_id === currentPlayer.id), error: null })
+        : loadPlayerSeasonStats(currentPlayer.id),
+      isDemoPlayer
+        ? Promise.resolve({ data: [] as MarketValueHistoryPoint[], error: null })
+        : loadPlayerValueHistory(currentPlayer.id),
       user
         ? (async () => {
             await refreshMyMarketPortfolio()

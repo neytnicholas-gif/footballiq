@@ -51,7 +51,8 @@ export async function loadMarketPlayers() {
 
   const remoteRows = ((data as MarketPlayer[] | null) ?? [])
   let rows = remoteRows
-  if (rows.length === 0 || error) {
+  const usingFallback = rows.length === 0 || Boolean(error)
+  if (usingFallback) {
     rows = buildSampleMarketPlayers()
   }
 
@@ -62,7 +63,10 @@ export async function loadMarketPlayers() {
 
   return {
     data: rows,
-    error: error as Error | null,
+    // Missing optional Market tables are an expected preview state. The UI
+    // already labels these rows as demonstration data, so do not expose raw
+    // database schema errors to public visitors.
+    error: usingFallback ? null : error as Error | null,
   }
 }
 
@@ -109,13 +113,14 @@ export async function loadMarketSeasonStats() {
     .order('season', { ascending: false })
 
   let rows = (data as MarketSeasonStats[] | null) ?? []
-  if (rows.length === 0 || error) {
+  const usingFallback = rows.length === 0 || Boolean(error)
+  if (usingFallback) {
     rows = buildSampleSeasonStats(buildSampleMarketPlayers())
   }
 
   return {
     data: rows,
-    error: error as Error | null,
+    error: usingFallback ? null : error as Error | null,
   }
 }
 
