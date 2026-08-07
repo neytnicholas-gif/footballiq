@@ -1,13 +1,20 @@
 'use client'
 
 import Link from 'next/link'
-import { ArrowRight, CalendarDays, Flag, Radar, ShieldCheck, Sparkles, Trophy } from 'lucide-react'
+import { ArrowRight, CalendarDays, Flag, Radar, ShieldCheck, Sparkles, Trophy, Workflow } from 'lucide-react'
 import { SiteHeader } from '@/components/site-header'
 import { SiteFooter } from '@/components/site-footer'
 import { useAuth } from '@/components/auth-provider'
 import { getRankProgress } from '@/lib/progression'
 
 const featuredModes = [
+  {
+    title: 'Tactical Lab',
+    description: 'Solve build-up, pressing, transition and game-state problems, then learn the principle behind each choice.',
+    href: '/quizzes/tactical-lab',
+    icon: Workflow,
+    tag: 'Tactical decisions',
+  },
   {
     title: 'Referee Arena',
     description: 'Read each incident, commit to a call, and get immediate law-based feedback.',
@@ -61,15 +68,15 @@ export default function HomePage() {
                 FootballIQ
               </p>
               <h1 className="mt-5 text-4xl font-black tracking-tight text-slate-50 sm:text-5xl lg:text-6xl">
-                Think you know football?
+                Train your football IQ.
               </h1>
               <p className="mt-4 max-w-lg text-base leading-relaxed text-slate-300 sm:text-lg">
-                Test your decisions, knowledge and eye for the game.
+                Practise the referee, scouting and tactical decisions that separate watching the game from understanding it.
               </p>
 
               <div className="mt-7 flex flex-wrap items-center gap-3">
                 <Link href="/quizzes/referee-decisions" className="inline-flex h-11 items-center gap-2 rounded-xl bg-emerald-400 px-6 text-sm font-semibold text-slate-950 shadow-[0_18px_46px_-20px_rgba(16,185,129,.55)] transition hover:-translate-y-0.5 hover:bg-emerald-300">
-                  Play now
+                  Make a decision
                   <ArrowRight className="size-4" />
                 </Link>
                 <Link href="/quizzes" className="inline-flex h-11 items-center rounded-xl border border-white/15 bg-white/5 px-5 text-sm font-semibold text-slate-200 transition hover:border-emerald-300/45 hover:bg-white/10">
@@ -90,11 +97,11 @@ export default function HomePage() {
           <div className="flex flex-wrap items-end justify-between gap-3">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.2em] text-emerald-300">Featured experiences</p>
-              <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-100 sm:text-3xl">Choose a mode and start quickly</h2>
+              <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-100 sm:text-3xl">Knowledge is the start. Judgement is the test.</h2>
             </div>
             <Link href="/quizzes" className="text-sm font-semibold text-emerald-300 transition hover:text-emerald-200">See all games</Link>
           </div>
-          <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+          <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-5">
             {featuredModes.map((mode) => {
               const Icon = mode.icon
               return (

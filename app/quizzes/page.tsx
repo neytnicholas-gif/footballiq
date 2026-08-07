@@ -1,10 +1,12 @@
 import Link from 'next/link'
-import { ArrowRight, Brain, Flag, Gamepad2, GitBranch, Search, Sparkles, TrendingUp, Trophy } from 'lucide-react'
+import { ArrowRight, Brain, Flag, Gamepad2, GitBranch, Search, Sparkles, TrendingUp, Trophy, Workflow } from 'lucide-react'
 import { SiteHeader } from '@/components/site-header'
 import { duelPacks } from '@/lib/duel-packs'
 import { careerQuestions, higherLowerItems, refereeQuestions, scoutQuestions, whoAmIQuestions } from '@/lib/game-data'
+import { tacticalScenarios } from '@/lib/tactical-scenarios'
 
 const modes = [
+  { title: 'Tactical Lab', description: 'Read the game state, choose the strongest action and learn the principle behind it.', href: '/quizzes/tactical-lab', icon: Workflow, accent: 'cyan', count: `${tacticalScenarios.length} scenarios`, duration: '8–12 min', skill: 'Tactics' },
   { title: 'Scout Vision', description: 'Evaluate player dossiers, weigh the evidence and make a recruitment call.', href: '/quizzes/would-you-scout-him', icon: Brain, accent: 'emerald', count: `${scoutQuestions.length} dossiers`, duration: '10–15 min', skill: 'Scouting' },
   { title: 'Referee Arena', description: 'Decide fouls, sanctions and restarts, then review the law-led debrief.', href: '/quizzes/referee-decisions', icon: Flag, accent: 'amber', count: `${refereeQuestions.length} scenarios`, duration: '8–12 min', skill: 'Laws' },
   { title: 'Football Duels', description: 'Pick winners in fast stat battles across leagues, trophies and records.', href: '/quizzes/football-duels', icon: Trophy, accent: 'blue', count: `${duelPacks.length} packs`, duration: '5–10 min', skill: 'Knowledge' },
@@ -21,6 +23,7 @@ const accentStyles = {
   rose: 'border-rose-300/25 bg-rose-300/10 text-rose-200',
   violet: 'border-violet-300/25 bg-violet-300/10 text-violet-200',
   sky: 'border-sky-300/25 bg-sky-300/10 text-sky-200',
+  cyan: 'border-cyan-300/25 bg-cyan-300/10 text-cyan-200',
 } as const
 
 export default function QuizzesPage() {
@@ -34,7 +37,7 @@ export default function QuizzesPage() {
             <div className="max-w-3xl">
               <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-[.22em] text-emerald-300"><Gamepad2 className="size-4" /> Games catalogue</p>
               <h1 className="mt-3 text-3xl font-black tracking-tight sm:text-5xl">Choose your football challenge.</h1>
-              <p className="mt-3 max-w-2xl text-sm leading-relaxed text-slate-300 sm:text-base">Seven distinct ways to train judgement, recall and football knowledge. Every game shown below is available now.</p>
+              <p className="mt-3 max-w-2xl text-sm leading-relaxed text-slate-300 sm:text-base">Train referee, scouting and tactical judgement alongside football knowledge. Every game shown below is available now.</p>
             </div>
             <div className="flex gap-6 border-l border-slate-700 pl-5">
               <div><p className="text-2xl font-black text-white">{modes.length}</p><p className="text-xs text-slate-400">Playable games</p></div>
