@@ -54,6 +54,18 @@ describe('rolling performance and value controls', () => {
     expect(calculatePerformanceValueUpdate({ position: 'MID', currentValue: 8_000_000, rollingWeekMovement: 0, performances: [] })).toBeNull()
   })
 
+  it('recomputes the rolling average deterministically after a corrected rating', () => {
+    const history = [
+      performance(7, 90, '2026-08-10T14:00:00Z'),
+      performance(7.2, 90, '2026-08-17T14:00:00Z'),
+      performance(6.8, 90, '2026-08-24T14:00:00Z'),
+    ]
+    const original = calculateRollingRating(history)!
+    const corrected = calculateRollingRating([history[0]!, history[1]!, performance(8.4, 90, '2026-08-24T14:00:00Z')])!
+    expect(corrected.rating).toBeGreaterThan(original.rating)
+    expect(calculateRollingRating([...history].reverse())!.rating).toBe(original.rating)
+  })
+
   it('enforces weekly caps, floors, ceilings, and 0.1m increments', () => {
     const strong = performance(10, 90, '2026-09-05T14:00:00Z')
     const weak = performance(1, 90, '2026-09-05T14:00:00Z')
