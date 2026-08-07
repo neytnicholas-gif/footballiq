@@ -13,7 +13,7 @@ export function BallIcon({ className }: { className?: string }) {
 
 export function Logo({ className }: { className?: string }) {
   return (
-    <Link href="/" className={cn('group flex items-center gap-2', className)}>
+    <Link href="/" className={cn('group flex items-center gap-2 text-foreground', className)} aria-label="FootballIQ home">
       <span className="flex size-9 items-center justify-center rounded-xl bg-primary text-primary-foreground transition-transform group-hover:rotate-12">
         <BallIcon className="size-5" />
       </span>
