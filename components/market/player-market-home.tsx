@@ -250,7 +250,7 @@ export function PlayerMarketHome() {
         <div className="rounded-[2rem] border border-border bg-card p-6">
           <div className="mb-4 flex items-center justify-between">
             <h2 className="text-xl font-bold">Market movers</h2>
-            <Link href="/market/players?trend=risers" className="text-sm font-semibold text-primary">Filter movers</Link>
+            <Link href="/market/players" className="text-sm font-semibold text-primary">Open marketplace</Link>
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
             <div>

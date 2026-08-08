@@ -12,6 +12,8 @@ import type { MarketHolding, MarketPlayer, MarketSeasonStats } from '@/lib/marke
 
 type SortKey = 'value-desc' | 'value-asc' | 'change-desc' | 'change-asc' | 'form-desc' | 'name-asc'
 
+const PLAYER_PAGE_SIZE = 36
+
 export function PlayerMarketBrowser({
   players,
   holdings,
@@ -39,6 +41,7 @@ export function PlayerMarketBrowser({
   const [trend, setTrend] = useState<'all' | 'rising' | 'falling'>('all')
   const [priceRange, setPriceRange] = useState<'all' | 'low' | 'mid' | 'high'>('all')
   const [sortKey, setSortKey] = useState<SortKey>('value-desc')
+  const [visibleCount, setVisibleCount] = useState(PLAYER_PAGE_SIZE)
   const [busyId, setBusyId] = useState<number | null>(null)
   const [notice, setNotice] = useState<{ kind: 'success' | 'error' | 'info'; message: string } | null>(null)
 
@@ -98,6 +101,11 @@ export function PlayerMarketBrowser({
 
     return rows
   }, [players, search, position, club, trend, priceRange, sortKey])
+  const visiblePlayers = useMemo(() => filtered.slice(0, visibleCount), [filtered, visibleCount])
+
+  function resetCatalogueWindow() {
+    setVisibleCount(PLAYER_PAGE_SIZE)
+  }
 
   async function handleBuy(player: MarketPlayer) {
     setBusyId(player.id)
@@ -183,21 +191,21 @@ export function PlayerMarketBrowser({
             <span className="mb-1 block text-xs text-muted-foreground">Search</span>
             <div className="flex items-center rounded-xl border border-border bg-background px-3">
               <Search className="size-4 text-muted-foreground" />
-              <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Player or club" className="w-full bg-transparent px-2 py-2 text-sm outline-none" />
+              <input value={search} onChange={(event) => { setSearch(event.target.value); resetCatalogueWindow() }} placeholder="Player or club" className="w-full bg-transparent px-2 py-2 text-sm outline-none" />
             </div>
           </label>
 
-          <FilterSelect label="Position" value={position} onChange={setPosition} options={['ALL', 'GK', 'DEF', 'MID', 'FWD']} />
-          <FilterSelect label="Club" value={club} onChange={setClub} options={clubs} />
-          <FilterSelect label="Trend" value={trend} onChange={setTrend} options={['all', 'rising', 'falling']} />
-          <FilterSelect label="Price" value={priceRange} onChange={setPriceRange} options={['all', 'low', 'mid', 'high']} />
+          <FilterSelect label="Position" value={position} onChange={(value) => { setPosition(value); resetCatalogueWindow() }} options={['ALL', 'GK', 'DEF', 'MID', 'FWD']} />
+          <FilterSelect label="Club" value={club} onChange={(value) => { setClub(value); resetCatalogueWindow() }} options={clubs} />
+          <FilterSelect label="Trend" value={trend} onChange={(value) => { setTrend(value); resetCatalogueWindow() }} options={['all', 'rising', 'falling']} />
+          <FilterSelect label="Price" value={priceRange} onChange={(value) => { setPriceRange(value); resetCatalogueWindow() }} options={['all', 'low', 'mid', 'high']} />
         </div>
 
         <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
-          <p className="text-sm text-muted-foreground">{filtered.length} players shown</p>
+          <p className="text-sm text-muted-foreground">Showing {Math.min(visibleCount, filtered.length)} of {filtered.length} players</p>
           <label className="inline-flex items-center gap-2 rounded-xl border border-border bg-background px-3 py-2 text-sm">
             <ArrowUpDown className="size-4 text-muted-foreground" />
-            <select value={sortKey} onChange={(event) => setSortKey(event.target.value as SortKey)} className="bg-transparent outline-none">
+            <select value={sortKey} onChange={(event) => { setSortKey(event.target.value as SortKey); resetCatalogueWindow() }} className="bg-transparent outline-none">
               <option value="value-desc">Highest value</option>
               <option value="value-asc">Lowest value</option>
               <option value="change-desc">Biggest risers</option>
@@ -214,6 +222,7 @@ export function PlayerMarketBrowser({
               setTrend('all')
               setPriceRange('all')
               setSortKey('value-desc')
+              resetCatalogueWindow()
             }}
             className="rounded-xl border border-border px-3 py-2 text-sm font-semibold"
           >
@@ -231,7 +240,7 @@ export function PlayerMarketBrowser({
           </div>
         ) : null}
         <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-          {filtered.map((player) => {
+          {visiblePlayers.map((player) => {
             const delta = player.current_value - player.previous_value
             const pct = player.previous_value > 0 ? ((delta / player.previous_value) * 100).toFixed(2) : '0.00'
             const owned = holdingsSet.has(player.id)
@@ -335,6 +344,18 @@ export function PlayerMarketBrowser({
             )
           })}
         </div>
+        {visibleCount < filtered.length ? (
+          <div className="mt-6 flex flex-col items-center gap-2 border-t border-emerald-950/10 pt-5">
+            <button
+              type="button"
+              onClick={() => setVisibleCount((count) => Math.min(count + PLAYER_PAGE_SIZE, filtered.length))}
+              className="rounded-xl bg-emerald-900 px-6 py-3 text-sm font-bold text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-emerald-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-800"
+            >
+              Show 36 more players
+            </button>
+            <p className="text-xs text-slate-500">{filtered.length - visibleCount} more available in this result</p>
+          </div>
+        ) : null}
       </section>
     </div>
   )

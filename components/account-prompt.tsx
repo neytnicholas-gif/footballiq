@@ -28,7 +28,7 @@ export function AccountPrompt() {
 
   useEffect(() => {
     if (!mounted || loading || user || dismissed) return
-    const timer = window.setTimeout(() => setReadyToShow(true), 1800)
+    const timer = window.setTimeout(() => setReadyToShow(true), 8000)
     return () => window.clearTimeout(timer)
   }, [dismissed, loading, mounted, user])
 
@@ -60,20 +60,20 @@ export function AccountPrompt() {
 
   return (
     <div className="pointer-events-none fixed inset-x-0 bottom-3 z-40 px-3 sm:bottom-5 sm:px-6">
-      <div className="pointer-events-auto mx-auto flex w-full max-w-xl items-start gap-3 rounded-3xl border border-primary/20 bg-card/96 p-3.5 shadow-2xl shadow-black/15 backdrop-blur-xl sm:p-4" role="region" aria-label="Create account prompt">
-        <div className="flex size-10 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+      <div className="pointer-events-auto mx-auto flex w-full max-w-xl items-start gap-2.5 rounded-2xl border border-primary/20 bg-card/96 p-3 shadow-2xl shadow-black/15 backdrop-blur-xl sm:gap-3 sm:rounded-3xl sm:p-4" role="region" aria-label="Create account prompt">
+        <div className="hidden size-10 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary sm:flex">
           <Sparkles className="size-5" />
         </div>
         <div className="min-w-0 flex-1">
-          <p className="text-sm font-semibold text-foreground">Make your progress count</p>
-          <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
-            Create a free account to save unfinished quizzes, earn XP, level up, track your stats and compete on leaderboards.
+          <p className="text-sm font-semibold text-foreground">Save your FootballIQ progress</p>
+          <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground sm:mt-1 sm:text-sm">
+            Create a free account to keep your portfolio, XP and game progress across devices.
           </p>
-          <div className="mt-3 flex flex-wrap gap-2.5">
-            <Link href="/signup" className="rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">
+          <div className="mt-2 flex flex-wrap gap-2 sm:mt-3 sm:gap-2.5">
+            <Link href="/signup" className="rounded-xl bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary sm:px-4 sm:text-sm">
               Create free account
             </Link>
-            <button onClick={dismiss} className="rounded-xl border border-border bg-background px-4 py-2 text-sm font-semibold text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">
+            <button onClick={dismiss} className="rounded-xl border border-border bg-background px-3 py-2 text-xs font-semibold text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary sm:px-4 sm:text-sm">
               Maybe later
             </button>
           </div>
