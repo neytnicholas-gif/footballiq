@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
-import { ArrowUpDown, Clock3, Search, Shield, Star } from 'lucide-react'
+import { ArrowUpDown, Clock3, Search, Shield, Sparkles, Star, WalletCards } from 'lucide-react'
 import { MarketPlayerChip } from '@/components/market/market-player-chip'
 import { buyMarketPlayer, sellMarketPlayer, toggleMarketWatchlist } from '@/lib/market/client'
 import { canBuyPosition, countFormation } from '@/lib/market/formation'
@@ -141,17 +141,34 @@ export function PlayerMarketBrowser({
 
   return (
     <div className="space-y-5">
-      <section className="rounded-[2rem] border border-border bg-card p-5 sm:p-7">
-        <h1 className="text-3xl font-black sm:text-4xl">Player market</h1>
-        <p className="mt-2 text-sm text-muted-foreground">Build your 11-player investment portfolio. Buy players before verified performances move their FootballIQ game price.</p>
+      <section className="relative overflow-hidden rounded-[2rem] border border-emerald-900/10 bg-gradient-to-br from-white via-emerald-50/80 to-slate-100/90 p-5 shadow-[0_24px_70px_-55px_rgba(6,78,59,.65)] sm:p-7">
+        <div className="pointer-events-none absolute -right-20 -top-24 size-72 rounded-full border-[38px] border-emerald-500/[.06]" />
+        <div className="relative flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <p className="mb-2 inline-flex items-center gap-2 rounded-full border border-emerald-700/15 bg-emerald-900/[.06] px-3 py-1 text-[10px] font-black uppercase tracking-[.2em] text-emerald-900"><Sparkles className="size-3" /> FootballIQ Exchange</p>
+            <h1 className="text-3xl font-black tracking-tight text-slate-950 sm:text-4xl">Player market</h1>
+            <p className="mt-2 max-w-2xl text-sm text-slate-600">Build your 11-player investment portfolio. Buy players before verified performances move their FootballIQ game price.</p>
+          </div>
+          <div className="rounded-2xl border border-emerald-900/10 bg-white/80 px-4 py-3 shadow-sm backdrop-blur">
+            <p className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[.16em] text-slate-500"><WalletCards className="size-3.5 text-emerald-700" /> Available cash</p>
+            <p className="mt-1 text-xl font-black text-slate-950">{formatFiqCompact(availableCash)}</p>
+            <p className="text-[10px] text-slate-500">{userSignedIn ? 'Account portfolio' : 'Saved on this device'}</p>
+          </div>
+        </div>
         {players[0]?.data_source_label.includes('Sportmonks') ? (
-          <div className="mt-4 rounded-2xl border border-primary/30 bg-primary/10 px-4 py-3 text-sm">
-            <p className="font-semibold text-primary">Verified Premier League market · {players.length} players live</p>
-            <p className="mt-1 text-xs text-muted-foreground">Player identities and current squads come from Sportmonks. These are FootballIQ game prices—not real transfer values. Opening prices stay fixed until verified ratings and minutes trigger transparent movement.</p>
+          <div className="relative mt-4 rounded-2xl border border-emerald-700/20 bg-emerald-950/[.055] px-4 py-3 text-sm">
+            <p className="font-bold text-emerald-900">Verified Premier League market · {players.length} players live</p>
+            <p className="mt-1 text-xs text-slate-600">Player identities and current squads come from Sportmonks. These are FootballIQ game prices—not real transfer values. Opening prices stay fixed until verified ratings and minutes trigger transparent movement.</p>
           </div>
         ) : null}
 
-        <div className="mt-4 grid gap-3 rounded-2xl border border-border bg-background/60 p-3 text-sm sm:grid-cols-2 lg:grid-cols-6">
+        <div className="relative mt-3 grid gap-2 sm:grid-cols-3">
+          <MarketStatus label="Market phase" value="Opening prices" note="Trade before the first verified movement" />
+          <MarketStatus label="Movement signal" value="Rating + minutes" note="Real completed-fixture evidence only" />
+          <MarketStatus label="Price protection" value="Freeze if missing" note="Never estimate or invent performance" />
+        </div>
+
+        <div className="relative mt-4 grid gap-3 rounded-2xl border border-emerald-900/10 bg-white/65 p-3 text-sm backdrop-blur sm:grid-cols-2 lg:grid-cols-6">
           <FormationPill label="GK" value={`${formation.GK}/1`} />
           <FormationPill label="DEF" value={`${formation.DEF}/4`} />
           <FormationPill label="MID" value={`${formation.MID}/3`} />
@@ -206,7 +223,7 @@ export function PlayerMarketBrowser({
         {notice ? <Notice kind={notice.kind} message={notice.message} /> : null}
       </section>
 
-      <section className="rounded-[2rem] border border-border bg-card p-4 sm:p-6">
+      <section className="rounded-[2rem] border border-emerald-900/10 bg-emerald-950/[.035] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,.85)] sm:p-6">
         {filtered.length === 0 ? (
           <div className="rounded-2xl border border-border bg-background/60 p-5 text-sm text-muted-foreground">
             No players match these filters. Clear filters or adjust your search to find new investment options.
@@ -230,16 +247,17 @@ export function PlayerMarketBrowser({
             const trendPct = Number(pct)
 
             return (
-              <article key={player.id} className="group rounded-2xl border border-border bg-background/70 p-4 [contain-intrinsic-size:0_420px] [content-visibility:auto] transition hover:border-primary/45 hover:shadow-[0_18px_50px_-38px_rgba(83,240,166,.95)]">
+              <article key={player.id} className="group relative overflow-hidden rounded-2xl border border-emerald-950/10 bg-gradient-to-br from-white via-white to-emerald-50/70 p-4 [contain-intrinsic-size:0_420px] [content-visibility:auto] shadow-[0_12px_35px_-30px_rgba(6,78,59,.65)] transition duration-200 hover:-translate-y-0.5 hover:border-emerald-600/35 hover:shadow-[0_22px_55px_-34px_rgba(6,78,59,.6)]">
+                <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-emerald-400/80 via-teal-300/55 to-transparent" />
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex min-w-0 items-center gap-3">
                     <MarketPlayerChip player={player} />
                     <div className="min-w-0">
-                      <p className="truncate font-semibold">{player.display_name}</p>
-                      <p className="truncate text-xs text-muted-foreground">{player.club_name} · {player.position}</p>
+                      <p className="truncate text-base font-black tracking-tight text-slate-950">{player.display_name}</p>
+                      <p className="truncate text-xs font-medium text-slate-500">{player.club_name} · {player.position}</p>
                     </div>
                   </div>
-                  <span className="rounded-full border border-border px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">{player.position}</span>
+                  <span className="rounded-full border border-emerald-900/10 bg-emerald-950/[.055] px-2 py-1 text-[10px] font-black uppercase tracking-wide text-emerald-900">{player.position}</span>
                 </div>
 
                 <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
@@ -255,7 +273,7 @@ export function PlayerMarketBrowser({
                   {player.decision_support_note ?? 'Use recent movement and minutes profile to assess whether this player is undervalued.'}
                 </p>
 
-                <div className="mt-3 rounded-xl border border-border bg-card/50 px-3 py-2">
+                <div className="mt-3 rounded-xl border border-emerald-900/10 bg-emerald-950/[.04] px-3 py-2">
                   <p className="mb-2 text-[10px] uppercase tracking-[.18em] text-muted-foreground">Recorded value movement</p>
                   <Sparkline points={[player.previous_value, player.current_value]} positive={trendDelta >= 0} />
                 </div>
@@ -338,7 +356,7 @@ function Sparkline({ points, positive }: { points: number[]; positive: boolean }
 function InfoCell({ label, value, strong = false, tone = 'default' }: { label: string; value: string; strong?: boolean; tone?: 'default' | 'up' | 'down' }) {
   const color = tone === 'up' ? 'text-primary' : tone === 'down' ? 'text-destructive' : 'text-foreground'
   return (
-    <div className="rounded-lg border border-border bg-card/35 p-2">
+    <div className="rounded-lg border border-emerald-950/[.08] bg-white/75 p-2 shadow-[inset_0_1px_0_rgba(255,255,255,.8)]">
       <p className="text-[10px] uppercase tracking-wide text-muted-foreground">{label}</p>
       <p className={`mt-1 ${strong ? 'font-semibold' : ''} ${color}`}>{value}</p>
     </div>
@@ -347,9 +365,19 @@ function InfoCell({ label, value, strong = false, tone = 'default' }: { label: s
 
 function FormationPill({ label, value, subtle }: { label: string; value: string; subtle?: string }) {
   return (
-    <div className="rounded-xl border border-border bg-card/55 px-3 py-2">
+    <div className="rounded-xl border border-emerald-950/10 bg-white/75 px-3 py-2 shadow-sm">
       <p className="text-[10px] uppercase tracking-[.15em] text-muted-foreground">{label}</p>
       <p className="mt-1 text-sm font-semibold text-primary">{value}{subtle ? <span className="ml-1 text-[10px] font-medium text-muted-foreground">{subtle}</span> : null}</p>
+    </div>
+  )
+}
+
+function MarketStatus({ label, value, note }: { label: string; value: string; note: string }) {
+  return (
+    <div className="rounded-xl border border-emerald-950/[.08] bg-white/55 px-3 py-2.5 backdrop-blur">
+      <p className="text-[9px] font-bold uppercase tracking-[.16em] text-slate-500">{label}</p>
+      <p className="mt-0.5 text-sm font-black text-slate-900">{value}</p>
+      <p className="mt-0.5 text-[10px] leading-snug text-slate-500">{note}</p>
     </div>
   )
 }
