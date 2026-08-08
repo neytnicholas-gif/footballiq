@@ -18,6 +18,10 @@ export type TheSportsDbTrialReport = {
   statisticsFieldCoverage: Record<string, number>
   observedRosterFields: string[]
   observedStatisticsFields: string[]
+  recentLeagueEventCount: number
+  eventResultRows: number
+  eventResultFieldCoverage: Record<string, number>
+  observedEventResultFields: string[]
   liveSoccerEvents: number
   writesPerformed: 0
   valuesChanged: 0
@@ -73,10 +77,11 @@ export function createTheSportsDbClient(apiKey = process.env.THESPORTSDB_API_KEY
 
 export async function runTheSportsDbTrial(apiKey = process.env.THESPORTSDB_API_KEY): Promise<TheSportsDbTrialReport> {
   const client = createTheSportsDbClient(apiKey)
-  const [arsenalPlayersPayload, teamsPayload, livescorePayload] = await Promise.all([
+  const [arsenalPlayersPayload, teamsPayload, livescorePayload, recentEventsPayload] = await Promise.all([
     client.get('/list/players/133604'),
     client.get('/list/teams/4328'),
     client.get('/livescore/soccer'),
+    client.get('/schedule/previous/league/4328'),
   ])
   const arsenalPlayers = firstRecordArray(arsenalPlayersPayload)
   const teams = firstRecordArray(teamsPayload)
@@ -88,6 +93,7 @@ export async function runTheSportsDbTrial(apiKey = process.env.THESPORTSDB_API_K
   )))
   const players = leaguePlayerLists.flat()
   const liveEvents = firstRecordArray(livescorePayload)
+  const recentEvents = firstRecordArray(recentEventsPayload)
   const uniquePlayers = [...new Map(players.map((player) => [String(player.idPlayer ?? player.id ?? ''), player])).values()]
     .filter((player) => String(player.idPlayer ?? player.id ?? '').length > 0)
   const samplePlayerId = uniquePlayers
@@ -101,6 +107,13 @@ export async function runTheSportsDbTrial(apiKey = process.env.THESPORTSDB_API_K
     await client.get(`/lookup/player_stats/${encodeURIComponent(String(id))}`),
   )))
   const stats = statsByPlayer.flat()
+  const eventIds = recentEvents
+    .map((event) => event.idEvent ?? event.id)
+    .filter((id): id is string | number => typeof id === 'string' || typeof id === 'number')
+    .slice(0, 5)
+  const eventResults = (await Promise.all(eventIds.map(async (id) => firstRecordArray(
+    await client.get(`/lookup/event_results/${encodeURIComponent(String(id))}`),
+  )))).flat()
 
   return {
     provider: 'TheSportsDB',
@@ -136,6 +149,17 @@ export async function runTheSportsDbTrial(apiKey = process.env.THESPORTSDB_API_K
     }),
     observedRosterFields: observedFields(uniquePlayers),
     observedStatisticsFields: observedFields(stats),
+    recentLeagueEventCount: recentEvents.length,
+    eventResultRows: eventResults.length,
+    eventResultFieldCoverage: fieldCoverage(eventResults, {
+      playerIdentity: ['idPlayer', 'id'],
+      eventIdentity: ['idEvent'],
+      minutes: ['intMinutes', 'minutes'],
+      goals: ['intGoals', 'goals'],
+      assists: ['intAssists', 'assists'],
+      rating: ['strRating', 'fltRating', 'intRating', 'rating'],
+    }),
+    observedEventResultFields: observedFields(eventResults),
     liveSoccerEvents: liveEvents.length,
     writesPerformed: 0,
     valuesChanged: 0,

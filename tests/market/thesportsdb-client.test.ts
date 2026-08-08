@@ -14,15 +14,18 @@ describe('TheSportsDB server-only trial client', () => {
       .mockResolvedValueOnce(new Response(JSON.stringify({ list: [{ idPlayer: 'p-1' }, { idPlayer: 'p-2' }] }), { status: 200 }))
       .mockResolvedValueOnce(new Response(JSON.stringify({ teams: [{ idTeam: 't-1' }] }), { status: 200 }))
       .mockResolvedValueOnce(new Response(JSON.stringify({ livescore: [{ idEvent: 'e-1' }] }), { status: 200 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ events: [{ idEvent: 'e-1' }] }), { status: 200 }))
       .mockResolvedValueOnce(new Response(JSON.stringify({ players: [{ idPlayer: 'p-1' }, { idPlayer: 'p-2' }] }), { status: 200 }))
       .mockResolvedValueOnce(new Response(JSON.stringify({ playerstats: [{ idPlayer: 'p-1', intAppearances: '12', intGoals: '4' }] }), { status: 200 }))
       .mockResolvedValueOnce(new Response(JSON.stringify({ playerstats: [] }), { status: 200 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ results: [{ idEvent: 'e-1', idPlayer: 'p-1', intMinutes: '90', intGoals: '1', strRating: '7.5' }] }), { status: 200 }))
 
     const report = await runTheSportsDbTrial('private-test-key')
 
     expect(report).toMatchObject({ authenticated: true, arsenalPlayerCount: 2, premierLeagueTeamCount: 1, uniquePremierLeaguePlayerCount: 2, playerStatsRows: 1, statsPlayersSampled: 2, playersWithStats: 1, liveSoccerEvents: 1, writesPerformed: 0, valuesChanged: 0 })
     expect(report.statisticsFieldCoverage).toMatchObject({ appearances: 100, goals: 100, assists: 0, rating: 0 })
-    expect(fetchMock).toHaveBeenCalledTimes(6)
+    expect(report.eventResultFieldCoverage).toMatchObject({ playerIdentity: 100, minutes: 100, goals: 100, assists: 0, rating: 100 })
+    expect(fetchMock).toHaveBeenCalledTimes(8)
     for (const [, init] of fetchMock.mock.calls) {
       expect(init?.headers).toEqual({ 'X-API-KEY': 'private-test-key' })
     }
