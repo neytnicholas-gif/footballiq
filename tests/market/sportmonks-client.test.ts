@@ -21,11 +21,16 @@ describe('Sportmonks coverage trial client', () => {
         { player_id: 10, details: [detail('MINUTES_PLAYED', 90), detail('RATING', 7.4)] },
         { player_id: 20, details: [detail('MINUTES_PLAYED', 0)] },
       ] }))
+      .mockResolvedValueOnce(response({ id: 564, currentSeason: { id: 100 } }))
+      .mockResolvedValueOnce(response({ id: 82, currentSeason: { id: 101 } }))
+      .mockResolvedValueOnce(response({ id: 384, currentSeason: { id: 102 } }))
+      .mockResolvedValueOnce(response({ id: 301, currentSeason: { id: 103 } }))
 
     const report = await runSportmonksCoverageTrial('private-token')
 
     expect(report).toMatchObject({ teamCount: 2, uniquePlayerCount: 2, usablePlayerCount: 2, lineupRows: 2, appearedPlayers: 1, playersWithRatings: 1, writesPerformed: 0, valuesChanged: 0 })
-    expect(fetchMock).toHaveBeenCalledTimes(5)
+    expect(report.topFiveLeagueAccess.every((league) => league.accessible)).toBe(true)
+    expect(fetchMock).toHaveBeenCalledTimes(9)
     for (const [url, init] of fetchMock.mock.calls) {
       expect(String(url)).not.toContain('private-token')
       expect(init?.headers).toEqual({ Authorization: 'private-token' })

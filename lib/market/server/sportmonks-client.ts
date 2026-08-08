@@ -1,6 +1,13 @@
 const BASE_URL = 'https://api.sportmonks.com/v3/football'
 const PREMIER_LEAGUE_ID = 8
 const VERIFIED_SAMPLE_FIXTURE_ID = 19427734
+const TOP_FIVE_LEAGUES = [
+  { id: 8, name: 'Premier League' },
+  { id: 564, name: 'La Liga' },
+  { id: 82, name: 'Bundesliga' },
+  { id: 384, name: 'Serie A' },
+  { id: 301, name: 'Ligue 1' },
+] as const
 
 type JsonRecord = Record<string, unknown>
 
@@ -23,6 +30,7 @@ export type SportmonksCoverageReport = {
   playersWithRatings: number
   ratingAvailabilityPercent: number
   minutesAvailabilityPercent: number
+  topFiveLeagueAccess: Array<{ id: number; name: string; accessible: boolean; currentSeasonId: string | null }>
   writesPerformed: 0
   valuesChanged: 0
 }
@@ -121,6 +129,15 @@ export async function runSportmonksCoverageTrial(apiToken = process.env.SPORTMON
   const appearedPlayers = minutes.filter((value) => value !== null && value > 0).length
   const playersWithMinutes = minutes.filter((value) => value !== null).length
   const playersWithRatings = ratings.filter((value) => value !== null).length
+  const otherLeagueResults = await Promise.allSettled(TOP_FIVE_LEAGUES.slice(1).map(async ({ id }) => (
+    record(await client.get(`/leagues/${id}?include=currentSeason`))
+  )))
+  const topFiveLeagueAccess = TOP_FIVE_LEAGUES.map(({ id, name }, index) => {
+    const result = otherLeagueResults[index - 1]
+    const row = index === 0 ? league : result?.status === 'fulfilled' ? result.value : null
+    const currentSeason = row ? relation(row, 'currentseason', 'currentSeason') : null
+    return { id, name, accessible: Boolean(row && currentSeason?.id), currentSeasonId: currentSeason?.id ? String(currentSeason.id) : null }
+  })
 
   return {
     provider: 'Sportmonks Football API', mode: 'read_only', authenticated: true,
@@ -130,6 +147,7 @@ export async function runSportmonksCoverageTrial(apiToken = process.env.SPORTMON
     playersWithMinutes, playersWithRatings,
     ratingAvailabilityPercent: appearedPlayers ? Math.round((playersWithRatings / appearedPlayers) * 10_000) / 100 : 0,
     minutesAvailabilityPercent: lineups.length ? Math.round((playersWithMinutes / lineups.length) * 10_000) / 100 : 0,
+    topFiveLeagueAccess,
     writesPerformed: 0, valuesChanged: 0,
   }
 }
