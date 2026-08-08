@@ -45,13 +45,39 @@ describe('Sportmonks coverage trial client', () => {
         { player_id: 10, player: { id: 10, display_name: 'Alex Keeper', date_of_birth: '2000-01-01' }, team: { id: 1, name: 'North FC' }, position: { developer_name: 'GOALKEEPER' } },
         { player_id: 20, player: { id: 20, display_name: 'Sam Striker', date_of_birth: '2002-01-01' }, team: { id: 1, name: 'North FC' }, position: { developer_name: 'FORWARD' } },
       ]))
+      .mockResolvedValueOnce(response({ id: 99, fixtures: [] }))
 
     const catalogue = await buildSportmonksPremierLeagueCatalogue('private-token')
 
-    expect(catalogue).toMatchObject({ competition: 'Premier League', seasonId: '99', playerCount: 2 })
+    expect(catalogue).toMatchObject({ competition: 'Premier League', seasonId: '99', playerCount: 2, marketPhase: 'opening', completedFixturesApplied: 0 })
     expect(catalogue.players.map((player) => player.display_name)).toEqual(['Sam Striker', 'Alex Keeper'])
     expect(catalogue.players.every((player) => player.active && player.provenance_status === 'verified')).toBe(true)
     expect(catalogue.players.every((player) => player.current_value === player.previous_value)).toBe(true)
-    expect(fetchMock).toHaveBeenCalledTimes(3)
+    expect(fetchMock).toHaveBeenCalledTimes(4)
+  })
+
+  it('moves prices only from finished fixtures with verified ratings and minutes', async () => {
+    const detail = (developer_name: string, value: number) => ({ data: { value }, type: { developer_name } })
+    vi.spyOn(globalThis, 'fetch')
+      .mockResolvedValueOnce(response({ id: 8, currentSeason: { id: 99, name: '2026/2027' } }))
+      .mockResolvedValueOnce(response([{ id: 1 }]))
+      .mockResolvedValueOnce(response([
+        { player_id: 20, player: { id: 20, display_name: 'Sam Striker', date_of_birth: '2002-01-01' }, team: { id: 1, name: 'North FC' }, position: { developer_name: 'FORWARD' } },
+        { player_id: 30, player: { id: 30, display_name: 'No Rating', date_of_birth: '2001-01-01' }, team: { id: 1, name: 'North FC' }, position: { developer_name: 'MIDFIELDER' } },
+      ]))
+      .mockResolvedValueOnce(response({ id: 99, fixtures: [{ id: 500, round_id: 1, starting_at: '2026-08-15 14:00:00', state: { short_name: 'FT' } }] }))
+      .mockResolvedValueOnce(response({ id: 500, lineups: [
+        { id: 1, fixture_id: 500, player_id: 20, details: [detail('MINUTES_PLAYED', 90), detail('RATING', 8.1)] },
+        { id: 2, fixture_id: 500, player_id: 30, details: [detail('MINUTES_PLAYED', 90)] },
+      ] }))
+
+    const catalogue = await buildSportmonksPremierLeagueCatalogue('private-token')
+    const moved = catalogue.players.find((player) => player.id === 20)!
+    const frozen = catalogue.players.find((player) => player.id === 30)!
+
+    expect(catalogue).toMatchObject({ marketPhase: 'verified_movement', completedFixturesApplied: 1, ratedPlayerCount: 1 })
+    expect(moved.current_value).toBeGreaterThan(moved.opening_season_value)
+    expect(moved.matchweek_performance_history).toEqual([{ week: 1, rating: 8.1, minutes: 90 }])
+    expect(frozen.current_value).toBe(frozen.opening_season_value)
   })
 })

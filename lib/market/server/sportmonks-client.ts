@@ -1,4 +1,6 @@
 import { toMarketSlug } from '@/lib/market/provider'
+import type { ValidatedPerformance } from '@/lib/market/performance-ingestion'
+import { calculatePerformanceValueUpdate } from '@/lib/market/real-valuation'
 import type { MarketPlayer, MarketPosition } from '@/lib/market/types'
 
 const BASE_URL = 'https://api.sportmonks.com/v3/football'
@@ -119,7 +121,24 @@ export type SportmonksMarketCatalogue = {
   seasonName: string | null
   generatedAt: string
   playerCount: number
+  marketPhase: 'opening' | 'verified_movement'
+  completedFixturesApplied: number
+  ratedPlayerCount: number
+  latestCompletedAt: string | null
   players: MarketPlayer[]
+}
+
+function isFinishedFixture(row: JsonRecord) {
+  const state = relation(row, 'state')
+  const value = String(state?.developer_name ?? state?.short_name ?? '').toUpperCase().replace(/[\s-]+/g, '_')
+  return ['FT', 'AET', 'AFTER_EXTRA_TIME', 'FINISHED'].includes(value)
+}
+
+function fixtureDate(row: JsonRecord) {
+  const value = textValue(row.starting_at)
+  if (!value) return null
+  const parsed = new Date(/(?:Z|[+-]\d{2}:?\d{2})$/i.test(value) ? value : `${value.replace(' ', 'T')}Z`)
+  return Number.isNaN(parsed.getTime()) ? null : parsed.toISOString()
 }
 
 export function createSportmonksClient(apiToken = process.env.SPORTMONKS_API_TOKEN) {
@@ -206,10 +225,43 @@ export async function buildSportmonksPremierLeagueCatalogue(apiToken = process.e
   const squads = (await Promise.all(teamIds.map(async (teamId) => records(await client.get(
     `/squads/seasons/${encodeURIComponent(seasonId)}/teams/${encodeURIComponent(String(teamId))}?include=player;team;position`,
   ))))).flat()
+  const seasonSchedule = record(await client.get(`/seasons/${encodeURIComponent(seasonId)}?include=fixtures.state`))
+  const completedFixtures = relationRows(seasonSchedule ?? {}, 'fixtures')
+    .filter((fixture) => isFinishedFixture(fixture) && fixtureDate(fixture))
+    .sort((a, b) => Date.parse(fixtureDate(b)!) - Date.parse(fixtureDate(a)!))
+    .slice(0, 10)
+  const fixtureLineups = await Promise.all(completedFixtures.map(async (fixture) => ({
+    fixture,
+    payload: record(await client.get(`/fixtures/${encodeURIComponent(String(fixture.id))}?include=lineups.details.type`)),
+  })))
   const now = new Date().toISOString()
   const seen = new Set<number>()
   const slugs = new Set<string>()
   const players: MarketPlayer[] = []
+  const performancesByPlayer = new Map<number, ValidatedPerformance[]>()
+
+  for (const { fixture, payload } of fixtureLineups) {
+    const lineups = payload ? relationRows(payload, 'lineups') : []
+    const matchDate = fixtureDate(fixture)
+    if (!matchDate) continue
+    for (const lineup of lineups) {
+      const playerId = Number(lineup.player_id)
+      const minutes = numericDetail(lineup, 'MINUTES_PLAYED')
+      const rating = numericDetail(lineup, 'RATING')
+      if (!Number.isSafeInteger(playerId) || !Number.isInteger(minutes) || minutes! <= 0 || minutes! > 130 || rating === null || rating < 0 || rating > 10) continue
+      const providerFixtureId = String(fixture.id)
+      const event: ValidatedPerformance = {
+        providerAppearanceId: String(lineup.id ?? `${providerFixtureId}-${playerId}`), providerFixtureId, providerPlayerId: String(playerId),
+        minutesPlayed: minutes!, rating, appeared: true, verificationStatus: 'verified', sourceName: 'Sportmonks Football API',
+        sourceReference: `sportmonks-fixture-${providerFixtureId}`, retrievedAt: now,
+        idempotencyKey: `Sportmonks Football API:${providerFixtureId}:${playerId}`, eligibleForValuation: true,
+        matchDate, gameweek: Number.isInteger(Number(fixture.round_id)) ? Number(fixture.round_id) : null,
+      }
+      const history = performancesByPlayer.get(playerId) ?? []
+      history.push(event)
+      performancesByPlayer.set(playerId, history)
+    }
+  }
 
   for (const row of squads) {
     const player = relation(row, 'player')
@@ -221,20 +273,30 @@ export async function buildSportmonksPremierLeagueCatalogue(apiToken = process.e
     if (!Number.isSafeInteger(id) || id <= 0 || seen.has(id) || !position || !name || !clubName) continue
     seen.add(id)
     const age = playerAge(player ?? {})
-    const value = openingGameValue(position, age)
+    const openingValue = openingGameValue(position, age)
+    const performances = (performancesByPlayer.get(id) ?? []).sort((a, b) => Date.parse(b.matchDate) - Date.parse(a.matchDate))
+    const currentUpdate = calculatePerformanceValueUpdate({ position, currentValue: openingValue, rollingWeekMovement: 0, performances })
+    const previousUpdate = calculatePerformanceValueUpdate({ position, currentValue: openingValue, rollingWeekMovement: 0, performances: performances.slice(1) })
+    const value = currentUpdate?.newValue ?? openingValue
+    const previousValue = previousUpdate?.newValue ?? openingValue
     const baseSlug = toMarketSlug(name)
     const slug = slugs.has(baseSlug) ? `${baseSlug}-${id}` : baseSlug
     slugs.add(slug)
     players.push({
       id, slug, display_name: name, short_name: textValue(player?.short_name ?? player?.common_name), club_name: clubName,
       position, age, nationality: textValue(player?.nationality_name ?? player?.nationality), active: true,
-      current_value: value, previous_value: value, opening_season_value: value,
+      current_value: value, previous_value: previousValue, opening_season_value: openingValue,
       value_updated_at: now, data_updated_at: now,
       data_source_label: 'Sportmonks verified squad data · FootballIQ opening price',
       source_reference: `sportmonks-player-${id}`, provenance_status: 'verified', owner_verified: true,
       is_trade_locked: false, trade_lock_reason: null, trade_lock_started_at: null, trade_lock_ends_at: null,
-      value_trend: 'flat', recent_form_indicator: 'steady', role_security_indicator: 'rotation', availability_status: 'available',
-      decision_support_note: 'Opening game price. Future moves only occur after verified ratings and minutes are available.',
+      value_trend: value > previousValue ? 'rising' : value < previousValue ? 'falling' : 'flat',
+      recent_form_indicator: currentUpdate ? currentUpdate.rollingRating >= 7.2 ? 'hot' : currentUpdate.rollingRating < 6.5 ? 'cool' : 'steady' : 'steady',
+      role_security_indicator: performances[0]?.minutesPlayed && performances[0].minutesPlayed >= 75 ? 'secure' : 'rotation', availability_status: 'available',
+      decision_support_note: currentUpdate
+        ? `Verified ${currentUpdate.appearancesUsed}-appearance rolling rating: ${currentUpdate.rollingRating.toFixed(2)}. Latest movement follows FootballIQ v2 controls.`
+        : 'Opening game price. This value remains frozen until verified ratings and minutes are available.',
+      matchweek_performance_history: performances.slice(0, 5).reverse().map((event, index) => ({ week: event.gameweek ?? index + 1, rating: event.rating!, minutes: event.minutesPlayed })),
       created_at: now, updated_at: now,
     })
   }
@@ -242,6 +304,10 @@ export async function buildSportmonksPremierLeagueCatalogue(apiToken = process.e
   players.sort((a, b) => b.current_value - a.current_value || a.display_name.localeCompare(b.display_name))
   return {
     provider: 'Sportmonks Football API', competition: 'Premier League', seasonId,
-    seasonName: textValue(season?.name), generatedAt: now, playerCount: players.length, players,
+    seasonName: textValue(season?.name), generatedAt: now, playerCount: players.length,
+    marketPhase: performancesByPlayer.size > 0 ? 'verified_movement' : 'opening',
+    completedFixturesApplied: completedFixtures.length, ratedPlayerCount: performancesByPlayer.size,
+    latestCompletedAt: completedFixtures[0] ? fixtureDate(completedFixtures[0]) : null,
+    players,
   }
 }

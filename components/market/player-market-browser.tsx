@@ -47,6 +47,7 @@ export function PlayerMarketBrowser({
   const watchSet = useMemo(() => new Set(watchlist), [watchlist])
   const playersById = useMemo(() => new Map(players.map((player) => [player.id, player])), [players])
   const formation = useMemo(() => countFormation(holdings, playersById), [holdings, playersById])
+  const marketHasMoved = useMemo(() => players.some((player) => player.current_value !== player.opening_season_value), [players])
   const filtered = useMemo(() => {
     let rows = [...players]
 
@@ -158,12 +159,12 @@ export function PlayerMarketBrowser({
         {players[0]?.data_source_label.includes('Sportmonks') ? (
           <div className="relative mt-4 rounded-2xl border border-emerald-700/20 bg-emerald-950/[.055] px-4 py-3 text-sm">
             <p className="font-bold text-emerald-900">Verified Premier League market · {players.length} players live</p>
-            <p className="mt-1 text-xs text-slate-600">Player identities and current squads come from Sportmonks. These are FootballIQ game prices—not real transfer values. Opening prices stay fixed until verified ratings and minutes trigger transparent movement.</p>
+            <p className="mt-1 text-xs text-slate-600">Player identities and current squads come from Sportmonks. These are FootballIQ game prices—not real transfer values. {marketHasMoved ? 'Price movement is calculated from verified completed-fixture ratings and minutes.' : 'Opening prices stay fixed until verified ratings and minutes trigger transparent movement.'}</p>
           </div>
         ) : null}
 
         <div className="relative mt-3 grid gap-2 sm:grid-cols-3">
-          <MarketStatus label="Market phase" value="Opening prices" note="Trade before the first verified movement" />
+          <MarketStatus label="Market phase" value={marketHasMoved ? 'Verified movement' : 'Opening prices'} note={marketHasMoved ? 'Latest completed fixtures are priced in' : 'Trade before the first verified movement'} />
           <MarketStatus label="Movement signal" value="Rating + minutes" note="Real completed-fixture evidence only" />
           <MarketStatus label="Price protection" value="Freeze if missing" note="Never estimate or invent performance" />
         </div>
@@ -243,6 +244,7 @@ export function PlayerMarketBrowser({
               && availableCash >= player.current_value
               && canBuyPosition(player.position, formation)
             const stat = statsByPlayerId[player.id]
+            const latestPerformance = player.matchweek_performance_history?.at(-1)
             const trendDelta = delta
             const trendPct = Number(pct)
 
@@ -264,8 +266,8 @@ export function PlayerMarketBrowser({
                   <InfoCell label="Current value" value={formatFiqCompact(player.current_value)} strong />
                   <InfoCell label="Value move" value={`${trendDelta >= 0 ? '+' : ''}${formatFiqCompact(Math.abs(trendDelta))} (${trendPct >= 0 ? '+' : ''}${trendPct.toFixed(2)}%)`} tone={trendDelta >= 0 ? 'up' : 'down'} />
                   <InfoCell label="Age" value={player.age ? String(player.age) : 'N/A'} />
-                  <InfoCell label="Minutes" value={String(stat?.minutes ?? 'N/A')} />
-                  <InfoCell label="Recent rating" value={stat?.average_rating ? stat.average_rating.toFixed(2) : 'N/A'} />
+                  <InfoCell label="Latest minutes" value={String(latestPerformance?.minutes ?? stat?.minutes ?? 'N/A')} />
+                  <InfoCell label="Rolling rating" value={latestPerformance?.rating ? latestPerformance.rating.toFixed(2) : stat?.average_rating ? stat.average_rating.toFixed(2) : 'N/A'} />
                   <InfoCell label="Role security" value={player.role_security_indicator ?? (stat?.starts && stat.starts >= 24 ? 'Secure' : 'Rotation')} />
                 </div>
 
