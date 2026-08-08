@@ -261,6 +261,7 @@ export type Database = {
           short_name: string | null
           club_name: string
           position: 'GK' | 'DEF' | 'MID' | 'FWD'
+          age: number | null
           nationality: string | null
           active: boolean
           current_value: number
@@ -272,6 +273,10 @@ export type Database = {
           source_reference: string | null
           provenance_status: string
           owner_verified: boolean
+          is_trade_locked: boolean
+          trade_lock_reason: string | null
+          trade_lock_started_at: string | null
+          trade_lock_ends_at: string | null
           created_at: string
           updated_at: string
         }
@@ -282,6 +287,7 @@ export type Database = {
           short_name?: string | null
           club_name: string
           position: 'GK' | 'DEF' | 'MID' | 'FWD'
+          age?: number | null
           nationality?: string | null
           active?: boolean
           current_value: number
@@ -293,6 +299,10 @@ export type Database = {
           source_reference?: string | null
           provenance_status?: string
           owner_verified?: boolean
+          is_trade_locked?: boolean
+          trade_lock_reason?: string | null
+          trade_lock_started_at?: string | null
+          trade_lock_ends_at?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -303,6 +313,7 @@ export type Database = {
           short_name?: string | null
           club_name?: string
           position?: 'GK' | 'DEF' | 'MID' | 'FWD'
+          age?: number | null
           nationality?: string | null
           active?: boolean
           current_value?: number
@@ -314,6 +325,10 @@ export type Database = {
           source_reference?: string | null
           provenance_status?: string
           owner_verified?: boolean
+          is_trade_locked?: boolean
+          trade_lock_reason?: string | null
+          trade_lock_started_at?: string | null
+          trade_lock_ends_at?: string | null
           created_at?: string
           updated_at?: string
         }
