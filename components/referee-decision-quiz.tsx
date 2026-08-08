@@ -5,80 +5,13 @@ import { ArrowRight, BadgeCheck, Flame, RotateCcw, ShieldCheck, Trophy, X } from
 import { Button } from '@/components/ui/button'
 import { Reveal } from '@/components/reveal'
 import { cn } from '@/lib/utils'
+import { refereeScenarios } from '@/lib/referee-scenarios'
 
-type Scenario = {
-  id: number
-  category: string
-  difficulty: 'Easy' | 'Medium' | 'Hard'
-  title: string
-  situation: string
-  options: string[]
-  answer: string
-  explanation: string
+const SESSION_SIZE = 10
+
+function refereeSession(offset: number) {
+  return Array.from({ length: SESSION_SIZE }, (_, index) => refereeScenarios[(offset + index * 7) % refereeScenarios.length])
 }
-
-const scenarios: Scenario[] = [
-  {
-    id: 1,
-    category: 'Restart',
-    difficulty: 'Easy',
-    title: 'Goalkeeper handles a deliberate pass',
-    situation:
-      'A defender deliberately kicks the ball back to his goalkeeper. The goalkeeper picks it up inside the penalty area.',
-    options: ['Play on', 'Indirect free kick', 'Direct free kick', 'Dropped ball'],
-    answer: 'Indirect free kick',
-    explanation:
-      'When a goalkeeper handles a deliberate kick from a teammate, the restart is an indirect free kick from where the handling occurred, subject to the goal-area exception.',
-  },
-  {
-    id: 2,
-    category: 'Disciplinary',
-    difficulty: 'Medium',
-    title: 'Stopping a promising attack',
-    situation:
-      'An attacker breaks through midfield with two teammates ahead. A defender pulls his shirt and stops the attack before he can release the pass.',
-    options: ['No card', 'Yellow card', 'Red card', 'Second whistle only'],
-    answer: 'Yellow card',
-    explanation:
-      'This is normally SPA: stopping a promising attack. It is usually a caution unless the criteria for DOGSO are clearly present.',
-  },
-  {
-    id: 3,
-    category: 'DOGSO',
-    difficulty: 'Hard',
-    title: 'Penalty plus card decision',
-    situation:
-      'A striker is one-on-one with the goalkeeper inside the penalty area. A defender makes no attempt to play the ball and pulls him down from behind.',
-    options: ['Penalty only', 'Penalty + yellow', 'Penalty + red', 'Indirect free kick + yellow'],
-    answer: 'Penalty + red',
-    explanation:
-      'If DOGSO occurs in the penalty area and there is no genuine attempt to play the ball, the punishment remains a red card plus penalty.',
-  },
-  {
-    id: 4,
-    category: 'Advantage',
-    difficulty: 'Medium',
-    title: 'Advantage or whistle?',
-    situation:
-      'A midfielder is fouled, but the ball immediately rolls to his teammate who has space to attack with numbers forward.',
-    options: ['Stop play immediately', 'Play advantage', 'Dropped ball', 'Book the fouled player'],
-    answer: 'Play advantage',
-    explanation:
-      'If the non-offending team has a clear attacking benefit, playing advantage is usually the better decision. The referee can still return to caution the offender later if needed.',
-  },
-  {
-    id: 5,
-    category: 'Handball',
-    difficulty: 'Hard',
-    title: 'Arm above shoulder',
-    situation:
-      'A defender jumps to block a cross. The ball hits his arm, which is raised clearly above shoulder height and makes his body bigger.',
-    options: ['No handball', 'Handball', 'Indirect free kick', 'Only handball if intentional'],
-    answer: 'Handball',
-    explanation:
-      'An arm above shoulder height that makes the body bigger is usually punishable unless the player has a very clear footballing justification for that movement.',
-  },
-]
 
 function getLevel(rating: number) {
   if (rating >= 1250) return 'Professional Referee'
@@ -88,6 +21,7 @@ function getLevel(rating: number) {
 }
 
 export function RefereeDecisionQuiz() {
+  const [sessionOffset, setSessionOffset] = useState(0)
   const [index, setIndex] = useState(0)
   const [selected, setSelected] = useState<string | null>(null)
   const [answered, setAnswered] = useState(false)
@@ -96,6 +30,7 @@ export function RefereeDecisionQuiz() {
   const [played, setPlayed] = useState(0)
   const [streak, setStreak] = useState(0)
   const [bestStreak, setBestStreak] = useState(0)
+  const scenarios = useMemo(() => refereeSession(sessionOffset), [sessionOffset])
 
   const scenario = scenarios[index]
   const isCorrect = selected === scenario.answer
@@ -132,6 +67,7 @@ export function RefereeDecisionQuiz() {
   }
 
   function restart() {
+    setSessionOffset((current) => (current + SESSION_SIZE) % refereeScenarios.length)
     setIndex(0)
     setSelected(null)
     setAnswered(false)
@@ -221,6 +157,7 @@ export function RefereeDecisionQuiz() {
                       {isCorrect ? 'Correct decision.' : 'Not the best decision.'} Answer: {scenario.answer}
                     </p>
                     <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{scenario.explanation}</p>
+                    <p className="mt-2 text-sm leading-relaxed text-muted-foreground"><strong className="text-foreground">Law principle:</strong> {scenario.principle}</p>
                   </div>
                 </div>
                 <div className="mt-5 flex justify-end">

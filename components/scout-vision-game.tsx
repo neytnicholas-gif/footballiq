@@ -5,27 +5,11 @@ import { ArrowRight, Check, Eye, RotateCcw, TriangleAlert, X } from 'lucide-reac
 import { useAuth } from '@/components/auth-provider'
 import { buildCompletionKey, createCompletionRunId, saveQuizResult } from '@/lib/quiz-save'
 import { cn } from '@/lib/utils'
+import { expandedScoutScenarios, type ExpandedScoutScenario } from '@/lib/scout-scenario-expansion'
 
 type ScoutDecision = 'strong-follow' | 'follow' | 'monitor' | 'do-not-pursue'
 
-type ScoutScenario = {
-  id: string
-  playerCode: string
-  age: number
-  position: string
-  context: string
-  observation: string[]
-  strengths: string[]
-  concerns: string[]
-  development: string
-  recommended: ScoutDecision
-  rationale: {
-    observation: string
-    interpretation: string
-    missing: string
-  }
-  heatmap: number[]
-}
+type ScoutScenario = Omit<ExpandedScoutScenario, 'difficulty'>
 
 const decisionLabels: Record<ScoutDecision, string> = {
   'strong-follow': 'Strongly follow',
@@ -34,7 +18,7 @@ const decisionLabels: Record<ScoutDecision, string> = {
   'do-not-pursue': 'Do not pursue',
 }
 
-const scenarios: ScoutScenario[] = [
+const baseScenarios: ScoutScenario[] = [
   {
     id: 'scout-1',
     playerCode: 'SV-11',
@@ -217,6 +201,14 @@ const scenarios: ScoutScenario[] = [
   },
 ]
 
+const allScenarios: ExpandedScoutScenario[] = [
+  ...baseScenarios.map((scenario, index) => ({
+    ...scenario,
+    difficulty: (['Starter', 'Sharp', 'Expert'] as const)[index % 3],
+  })),
+  ...expandedScoutScenarios,
+]
+
 export function ScoutVisionGame() {
   const { user, refreshProfile } = useAuth()
   const [index, setIndex] = useState(0)
@@ -224,6 +216,8 @@ export function ScoutVisionGame() {
   const [score, setScore] = useState(0)
   const [saved, setSaved] = useState(false)
   const [runKey, setRunKey] = useState(() => createCompletionRunId())
+  const [sessionOffset, setSessionOffset] = useState(0)
+  const scenarios = useMemo(() => Array.from({ length: 10 }, (_, item) => allScenarios[(sessionOffset + item * 7) % allScenarios.length]), [sessionOffset])
   const scenario = scenarios[index]
   const complete = index === scenarios.length - 1 && selected !== null
 
@@ -247,6 +241,7 @@ export function ScoutVisionGame() {
   }
 
   function restart() {
+    setSessionOffset((current) => (current + 10) % allScenarios.length)
     setIndex(0)
     setSelected(null)
     setScore(0)
@@ -280,6 +275,7 @@ export function ScoutVisionGame() {
               {scenario.playerCode} • {scenario.position} • {scenario.age}
             </h2>
             <p className="mt-2 text-sm text-muted-foreground">{scenario.context}</p>
+            <p className="mt-2 text-xs font-semibold uppercase tracking-wider text-primary">{scenario.difficulty}</p>
           </div>
           <div className="rounded-2xl border border-border bg-background/70 px-4 py-3 text-right">
             <p className="text-xs uppercase tracking-wider text-muted-foreground">Scenario</p>

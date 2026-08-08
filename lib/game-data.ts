@@ -1,3 +1,6 @@
+import { refereeScenarios } from './referee-scenarios'
+import { expandedScoutScenarios } from './scout-scenario-expansion'
+
 export type HigherLowerItem = { name: string; value: number; detail: string }
 export type WhoAmIQuestion = { answer: string; clues: string[] }
 export type CareerQuestion = { answer: string; clubs: string[]; hint: string }
@@ -71,7 +74,7 @@ export const careerQuestions: CareerQuestion[] = [
   { answer: 'Edinson Cavani', clubs: ['Danubio', 'Palermo', 'Napoli', 'PSG', 'Manchester United', 'Valencia', 'Boca Juniors'], hint: 'Uruguayan striker' },
 ]
 
-export const refereeQuestions: RefereeQuestion[] = [
+export const legacyRefereeQuestions: RefereeQuestion[] = [
   { scenario: 'A defender deliberately handles the ball on the goal line and prevents a certain goal. What is the correct decision?', options: ['Penalty only', 'Penalty and yellow card', 'Penalty and red card', 'Indirect free kick'], answer: 2, explanation: 'Deliberately denying a goal by handball is a sending-off offence, with a penalty if it occurs inside the penalty area.' },
   { scenario: 'An attacker is fouled in the penalty area while attempting to play the ball. The defender makes a genuine attempt to challenge for it and denies an obvious goal-scoring opportunity.', options: ['Penalty and red card', 'Penalty and yellow card', 'Penalty only', 'Indirect free kick and yellow card'], answer: 1, explanation: 'For a genuine attempt to play/challenge for the ball inside the penalty area, DOGSO is generally reduced from red to yellow.' },
   { scenario: 'A player removes their shirt while celebrating a goal.', options: ['No action', 'Verbal warning', 'Yellow card', 'Red card'], answer: 2, explanation: 'Removing the shirt during a goal celebration is a mandatory caution.' },
@@ -84,7 +87,14 @@ export const refereeQuestions: RefereeQuestion[] = [
   { scenario: 'Two players from the same team collide and one suffers a serious head injury while play continues.', options: ['Always wait until the ball is out', 'Stop play immediately for serious injury', 'Award a free kick', 'Send off the other player'], answer: 1, explanation: 'The referee should stop play for a serious injury, especially a suspected head injury, even when no offence occurred.' },
 ]
 
-export const scoutQuestions: ScoutQuestion[] = [
+export const refereeQuestions: RefereeQuestion[] = refereeScenarios.map((scenario) => ({
+  scenario: scenario.situation,
+  options: scenario.options,
+  answer: scenario.options.indexOf(scenario.answer),
+  explanation: `${scenario.explanation} Principle: ${scenario.principle}`,
+}))
+
+const baseScoutQuestions: ScoutQuestion[] = [
   {
     id: 'SV-01',
     title: 'The explosive winger',
@@ -305,4 +315,36 @@ export const scoutQuestions: ScoutQuestion[] = [
     qaConcern: 'Needs clearer baseline for what counts as lower youth level.',
     qaRevision: 'Specify competition tier to improve judgement consistency.',
   },
+]
+
+const recommendationLabel: Record<string, ScoutDecision> = {
+  'strong-follow': 'Strongly follow',
+  follow: 'Follow',
+  monitor: 'Monitor',
+  'do-not-pursue': 'Do not pursue',
+}
+
+export const scoutQuestions: ScoutQuestion[] = [
+  ...baseScoutQuestions,
+  ...expandedScoutScenarios.map((scenario) => ({
+    id: scenario.playerCode,
+    title: `${scenario.position} dossier: ${scenario.playerCode}`,
+    profile: [`${scenario.age} years old`, scenario.context, ...scenario.observation],
+    summary: scenario.rationale.interpretation,
+    strongestDecision: recommendationLabel[scenario.recommended],
+    confidence: (scenario.difficulty === 'Starter' ? 'High' : scenario.difficulty === 'Sharp' ? 'Medium' : 'Low') as ScoutQuestion['confidence'],
+    observation: scenario.rationale.observation,
+    interpretation: scenario.rationale.interpretation,
+    strengths: scenario.strengths.join('; '),
+    concerns: scenario.concerns.join('; '),
+    missingInformation: scenario.rationale.missing,
+    alternativeView: 'A neighbouring recommendation can be defensible when a club weights role fit, development capacity or risk differently.',
+    recommendedAction: `${recommendationLabel[scenario.recommended]} and collect the missing evidence before escalating commitment.`,
+    nextScoutingStep: scenario.rationale.missing,
+    confidenceReason: `The ${scenario.difficulty.toLowerCase()} scenario contains useful evidence but remains context-dependent.`,
+    weakerAlternatives: 'More absolute decisions are weaker because the evidence is a bounded observation sample rather than complete proof.',
+    qaVerdict: 'launch-ready' as const,
+    qaConcern: 'Synthetic fictional dossier; never present it as a real player report.',
+    qaRevision: 'Retain context, uncertainty and missing-evidence language in every version.',
+  })),
 ]

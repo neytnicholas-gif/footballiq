@@ -2,8 +2,13 @@ import Link from 'next/link'
 import { ArrowRight, Brain, Flag, Gamepad2, GitBranch, Search, Sparkles, TrendingUp, Trophy, Workflow } from 'lucide-react'
 import { SiteHeader } from '@/components/site-header'
 import { duelPacks } from '@/lib/duel-packs'
-import { careerQuestions, higherLowerItems, refereeQuestions, scoutQuestions, whoAmIQuestions } from '@/lib/game-data'
+import { careerQuestions, higherLowerItems, whoAmIQuestions } from '@/lib/game-data'
 import { tacticalScenarios } from '@/lib/tactical-scenarios'
+import { refereeScenarios } from '@/lib/referee-scenarios'
+import { scoutScenarioCount } from '@/lib/scout-scenario-expansion'
+
+const refereeQuestions = refereeScenarios
+const scoutQuestions = { length: scoutScenarioCount }
 
 const modes = [
   { title: 'Tactical Lab', description: 'Read the game state, choose the strongest action and learn the principle behind it.', href: '/quizzes/tactical-lab', icon: Workflow, accent: 'cyan', count: `${tacticalScenarios.length} scenarios`, duration: '8–12 min', skill: 'Tactics' },
