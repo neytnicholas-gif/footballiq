@@ -146,12 +146,12 @@ export async function loadPlayerValueHistory(playerId: number) {
 
 export async function loadMyPortfolioData() {
   const { data: authData, error: authError } = await supabase.auth.getUser()
-  if (authError) return { error: authError as Error, portfolio: null, holdings: [], transactions: [], watchlist: [] as number[] }
   if (!authData.user) {
     const { data: players } = await loadMarketPlayers()
     const anon = buildAnonymousPortfolio(players, readAnonymousState())
     return { error: null, portfolio: anon.portfolio, holdings: anon.holdings, transactions: anon.transactions, watchlist: anon.watchlist }
   }
+  if (authError) return { error: authError as Error, portfolio: null, holdings: [], transactions: [], watchlist: [] as number[] }
 
   const userId = authData.user.id
 

@@ -230,7 +230,7 @@ export function PlayerMarketBrowser({
             const trendPct = Number(pct)
 
             return (
-              <article key={player.id} className="group rounded-2xl border border-border bg-background/70 p-4 transition hover:border-primary/45 hover:shadow-[0_18px_50px_-38px_rgba(83,240,166,.95)]">
+              <article key={player.id} className="group rounded-2xl border border-border bg-background/70 p-4 [contain-intrinsic-size:0_420px] [content-visibility:auto] transition hover:border-primary/45 hover:shadow-[0_18px_50px_-38px_rgba(83,240,166,.95)]">
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex min-w-0 items-center gap-3">
                     <MarketPlayerChip player={player} />
