@@ -53,7 +53,13 @@ export async function loadMarketPlayers() {
   let rows = remoteRows
   const usingFallback = rows.length === 0 || Boolean(error)
   if (usingFallback) {
-    rows = buildSampleMarketPlayers()
+    try {
+      const response = await fetch('/api/market/catalogue')
+      const payload = response.ok ? await response.json() as { players?: MarketPlayer[] } : null
+      rows = Array.isArray(payload?.players) && payload.players.length > 0 ? payload.players : buildSampleMarketPlayers()
+    } catch {
+      rows = buildSampleMarketPlayers()
+    }
   }
 
   if (!user) {

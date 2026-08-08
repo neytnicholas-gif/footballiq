@@ -143,7 +143,13 @@ export function PlayerMarketBrowser({
     <div className="space-y-5">
       <section className="rounded-[2rem] border border-border bg-card p-5 sm:p-7">
         <h1 className="text-3xl font-black sm:text-4xl">Player market</h1>
-        <p className="mt-2 text-sm text-muted-foreground">Build your 11-player investment portfolio. Every card shows value movement, form context and role security.</p>
+        <p className="mt-2 text-sm text-muted-foreground">Build your 11-player investment portfolio. Buy players before verified performances move their FootballIQ game price.</p>
+        {players[0]?.data_source_label.includes('Sportmonks') ? (
+          <div className="mt-4 rounded-2xl border border-primary/30 bg-primary/10 px-4 py-3 text-sm">
+            <p className="font-semibold text-primary">Verified Premier League market · {players.length} players live</p>
+            <p className="mt-1 text-xs text-muted-foreground">Player identities and current squads come from Sportmonks. These are FootballIQ game prices—not real transfer values. Opening prices stay fixed until verified ratings and minutes trigger transparent movement.</p>
+          </div>
+        ) : null}
 
         <div className="mt-4 grid gap-3 rounded-2xl border border-border bg-background/60 p-3 text-sm sm:grid-cols-2 lg:grid-cols-6">
           <FormationPill label="GK" value={`${formation.GK}/1`} />
