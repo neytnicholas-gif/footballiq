@@ -90,8 +90,9 @@ export function PlayerMarketHome() {
 
   const movers = useMemo(() => {
     const sorted = [...players].sort((a, b) => (b.current_value - b.previous_value) - (a.current_value - a.previous_value))
-    const risers = sorted.slice(0, 4)
+    const risers = sorted.filter((player) => player.current_value > player.previous_value).slice(0, 4)
     const fallers = [...players]
+      .filter((player) => player.current_value < player.previous_value)
       .sort((a, b) => (a.current_value - a.previous_value) - (b.current_value - b.previous_value))
       .slice(0, 4)
     return { risers, fallers }
@@ -144,7 +145,7 @@ export function PlayerMarketHome() {
           <SummaryCard icon={<Wallet className="size-5" />} label="Total account value" value={portfolio ? formatFiqCompact(portfolio.total_account_value) : '100.0m FIQ'} sub={portfolio ? formatFiqLong(portfolio.total_account_value) : 'Create an account to track your market account'} />
           <SummaryCard icon={<Coins className="size-5" />} label="Available balance" value={portfolio ? formatFiqCompact(portfolio.available_balance) : '100.0m FIQ'} sub={portfolio ? `Starting balance ${formatFiqCompact(portfolio.starting_balance)}` : 'No cash purchases. No withdrawals.'} />
           <SummaryCard icon={<BarChart3 className="size-5" />} label="Portfolio value" value={portfolio ? formatFiqCompact(portfolio.portfolio_value) : '0.0m FIQ'} sub={portfolio ? `${holdings.length}/${MARKET_MAX_PORTFOLIO_SIZE} slots used` : '11-player portfolio target'} />
-          <SummaryCard icon={<TrendingUp className="size-5" />} label="Realised profit/loss" value={portfolio ? formatChange(portfolio.realized_profit_loss) : '0'} sub={user ? tradesMessage : 'Sign in to start trading'} />
+          <SummaryCard icon={<TrendingUp className="size-5" />} label="Realised profit/loss" value={portfolio ? formatChange(portfolio.realized_profit_loss) : '0'} sub={tradesMessage || 'Three buys and three sales available daily'} />
         </div>
 
         <div className="mt-3 rounded-xl border border-border bg-background/60 px-4 py-3 text-xs text-muted-foreground">
@@ -165,18 +166,18 @@ export function PlayerMarketHome() {
       <section className="rounded-[2rem] border border-border bg-card p-6 sm:p-8">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-[.2em] text-amber-200">Real-performance updates</p>
-              <h2 className="mt-1 text-2xl font-black">Values are currently frozen</h2>
-              <p className="mt-2 max-w-3xl text-sm text-muted-foreground">No licensed performance provider is configured. FootballIQ will not generate replacement ratings or move values from simulated matches. Trading remains available at the displayed FootballIQ gameplay values while verified updates are offline.</p>
+              <p className="text-xs font-semibold uppercase tracking-[.2em] text-emerald-800">Verified-performance engine</p>
+              <h2 className="mt-1 text-2xl font-black">{players.some((player) => player.current_value !== player.opening_season_value) ? 'Verified price movement is live' : 'Opening market is live'}</h2>
+              <p className="mt-2 max-w-3xl text-sm text-muted-foreground">Sportmonks supplies current squads plus completed-fixture ratings and minutes. FootballIQ recalculates eligible prices hourly and freezes any player whose evidence is missing.</p>
             </div>
             <div className="flex flex-wrap gap-2">
-              <span className="inline-flex items-center gap-2 rounded-xl border border-amber-300/25 bg-amber-200/10 px-4 py-2.5 text-sm font-semibold text-amber-100"><DatabaseZap className="size-4" /> Provider required</span>
+              <span className="inline-flex items-center gap-2 rounded-xl border border-emerald-700/20 bg-emerald-700/10 px-4 py-2.5 text-sm font-semibold text-emerald-900"><DatabaseZap className="size-4" /> Sportmonks verified</span>
               <Link href="/market/reveal" className="inline-flex items-center gap-2 rounded-xl border border-border px-4 py-2.5 text-sm font-semibold">
                 Open The Reveal
               </Link>
             </div>
           </div>
-          {!isValidSquad ? <p className="mt-3 text-xs text-amber-200">Build a complete 1-4-3-3 portfolio to prepare for verified matchweek updates.</p> : null}
+          {!isValidSquad ? <p className="mt-3 text-xs text-emerald-800">Build a complete 1-4-3-3 portfolio to prepare for verified matchweek updates.</p> : null}
           {latestRevealWeek ? <p className="mt-2 text-xs text-muted-foreground">Latest Reveal available: {latestRevealWeek}</p> : null}
 
           {lastRun ? (
@@ -184,7 +185,7 @@ export function PlayerMarketHome() {
               Legacy development record: {lastRun.week_label} · Weekly {lastRun.weekly_portfolio_gain >= 0 ? '+' : ''}{formatFiqCompact(Math.abs(lastRun.weekly_portfolio_gain))} · ROI {lastRun.current_roi_pct.toFixed(2)}%. This is not a verified real-performance update.
             </div>
           ) : (
-            <div className="mt-4 rounded-xl border border-border bg-background/60 px-4 py-3 text-sm text-muted-foreground">No verified performance update has been processed. Current values remain unchanged.</div>
+            <div className="mt-4 rounded-xl border border-border bg-background/60 px-4 py-3 text-sm text-muted-foreground">The 2026/27 market is in its opening phase. Prices will move after the first completed fixture supplies eligible ratings and minutes.</div>
           )}
       </section>
 
@@ -195,7 +196,7 @@ export function PlayerMarketHome() {
             <div>
               <h2 className="text-xl font-bold">Anonymous Market mode is active.</h2>
               <p className="mt-2 text-sm text-muted-foreground">
-                Your portfolio is saved locally on this device. Create an account anytime for persistent cross-device history and leaderboard access.
+                Your portfolio is saved locally on this device. Account-backed cross-device syncing will activate only after the protected market database passes staging approval.
               </p>
             </div>
           </div>
@@ -255,6 +256,7 @@ export function PlayerMarketHome() {
             <div>
               <p className="mb-2 text-xs font-semibold uppercase tracking-[.2em] text-primary">Top risers</p>
               <div className="space-y-2">
+                {movers.risers.length === 0 ? <p className="rounded-xl border border-border bg-background/60 px-3 py-3 text-xs text-muted-foreground">Waiting for the first verified movement.</p> : null}
                 {movers.risers.map((player) => (
                   <MoverRow key={player.id} player={player} positive />
                 ))}
@@ -263,6 +265,7 @@ export function PlayerMarketHome() {
             <div>
               <p className="mb-2 text-xs font-semibold uppercase tracking-[.2em] text-destructive">Top fallers</p>
               <div className="space-y-2">
+                {movers.fallers.length === 0 ? <p className="rounded-xl border border-border bg-background/60 px-3 py-3 text-xs text-muted-foreground">No verified fallers yet.</p> : null}
                 {movers.fallers.map((player) => (
                   <MoverRow key={player.id} player={player} positive={false} />
                 ))}

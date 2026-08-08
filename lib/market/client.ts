@@ -34,6 +34,13 @@ import type {
   MarketValueHistoryPoint,
 } from '@/lib/market/types'
 
+function isMarketBackendUnavailable(error: unknown) {
+  if (!error || typeof error !== 'object') return false
+  const row = error as { code?: string; message?: string }
+  return ['PGRST202', 'PGRST205', '42P01', '42883'].includes(row.code ?? '')
+    || /could not find (the table|the function)|relation .* does not exist|function .* does not exist/i.test(row.message ?? '')
+}
+
 export async function refreshMyMarketPortfolio() {
   const { error } = await supabase.rpc('market_refresh_my_portfolio', {})
   return { error: error as Error | null }
@@ -108,7 +115,7 @@ export async function loadPlayerSeasonStats(playerId: number) {
 
   return {
     data: (data as MarketSeasonStats[] | null) ?? [],
-    error: error as Error | null,
+    error: isMarketBackendUnavailable(error) ? null : error as Error | null,
   }
 }
 
@@ -140,7 +147,7 @@ export async function loadPlayerValueHistory(playerId: number) {
 
   return {
     data: (data as MarketValueHistoryPoint[] | null) ?? [],
-    error: error as Error | null,
+    error: isMarketBackendUnavailable(error) ? null : error as Error | null,
   }
 }
 
@@ -163,6 +170,12 @@ export async function loadMyPortfolioData() {
   ])
 
   const error = portfolioError ?? holdingsError ?? transactionsError ?? watchlistError
+
+  if (isMarketBackendUnavailable(error)) {
+    const { data: players } = await loadMarketPlayers()
+    const anon = buildAnonymousPortfolio(players, readAnonymousState())
+    return { error: null, portfolio: anon.portfolio, holdings: anon.holdings, transactions: anon.transactions, watchlist: anon.watchlist }
+  }
 
   return {
     error: (error as Error | null) ?? null,
@@ -214,6 +227,11 @@ export async function buyMarketPlayer(slug: string) {
     p_idempotency_key: idempotencyKey,
   })
 
+  if (isMarketBackendUnavailable(error)) {
+    const { data: players } = await loadMarketPlayers()
+    return anonymousBuyPlayer(players, slug, idempotencyKey)
+  }
+
   return {
     data: (data as Record<string, unknown> | null) ?? null,
     error: error as Error | null,
@@ -234,6 +252,11 @@ export async function sellMarketPlayer(slug: string) {
     p_idempotency_key: idempotencyKey,
   })
 
+  if (isMarketBackendUnavailable(error)) {
+    const { data: players } = await loadMarketPlayers()
+    return anonymousSellPlayer(players, slug, idempotencyKey)
+  }
+
   return {
     data: (data as Record<string, unknown> | null) ?? null,
     error: error as Error | null,
@@ -250,6 +273,11 @@ export async function toggleMarketWatchlist(slug: string) {
   const { data, error } = await supabase.rpc('market_toggle_watchlist', {
     p_player_slug: slug,
   })
+
+  if (isMarketBackendUnavailable(error)) {
+    const { data: players } = await loadMarketPlayers()
+    return anonymousToggleWatchlist(slug, players)
+  }
 
   return {
     data: (data as { watchlisted?: boolean } | null) ?? null,

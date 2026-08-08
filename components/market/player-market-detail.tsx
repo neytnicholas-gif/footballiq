@@ -102,7 +102,7 @@ export function PlayerMarketDetail({
 
   return (
     <div className="space-y-5">
-      <section className="rounded-[2rem] border border-border bg-card p-6 sm:p-8">
+      <section className="rounded-[2rem] border border-emerald-950/10 bg-gradient-to-br from-white via-white to-emerald-50/70 p-6 shadow-[0_24px_70px_-55px_rgba(6,78,59,.65)] sm:p-8">
         <div className="flex flex-wrap items-start justify-between gap-5">
           <div className="flex items-start gap-4">
             <MarketPlayerChip player={player} />
@@ -123,14 +123,14 @@ export function PlayerMarketDetail({
         </div>
 
         <div className="mt-5 grid gap-4 lg:grid-cols-[1.3fr_.7fr]">
-          <div className="rounded-2xl border border-border bg-background/60 p-4">
+          <div className="rounded-2xl border border-emerald-950/10 bg-white/70 p-4">
             <p className="text-xs font-semibold uppercase tracking-[.2em] text-muted-foreground">Value history</p>
             <div className="mt-3 h-40 overflow-hidden rounded-xl border border-border bg-card p-3">
               <ValueHistoryChart points={history} currentValue={player.current_value} />
             </div>
           </div>
 
-          <div className="rounded-2xl border border-border bg-background/60 p-4">
+          <div className="rounded-2xl border border-emerald-950/10 bg-white/70 p-4">
             <p className="text-xs font-semibold uppercase tracking-[.2em] text-muted-foreground">Trade controls</p>
             <div className="mt-3 space-y-2">
               <button

@@ -10,7 +10,7 @@ export function PlayerMarketReveal({ latest, history }: { latest: MarketRevealSu
     return (
       <section className="rounded-[2rem] border border-border bg-card p-6 sm:p-8">
         <h1 className="text-3xl font-black">The Reveal</h1>
-        <p className="mt-3 text-sm text-muted-foreground">No verified performance update has been processed. Values remain frozen while the licensed provider is unavailable.</p>
+        <p className="mt-3 text-sm text-muted-foreground">The verified engine is ready. The 2026/27 market is still in its opening phase, so The Reveal will unlock after a completed fixture supplies eligible Sportmonks ratings and minutes.</p>
         <div className="mt-4 flex flex-wrap gap-3">
           <Link href="/market/players" className="rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground">Browse players</Link>
           <Link href="/market" className="rounded-xl border border-border px-4 py-2 text-sm font-semibold">Return to Market</Link>

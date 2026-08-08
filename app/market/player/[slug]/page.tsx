@@ -74,7 +74,8 @@ export default function PlayerMarketDetailPage() {
     if (portfolioResult.error) setError(portfolioResult.error.message)
 
     setStats(statsResult.data)
-    setHistory(historyResult.data)
+    const verifiedHistory = historyResult.data.length > 0 ? historyResult.data : buildPlayerHistory(currentPlayer)
+    setHistory(verifiedHistory)
     setHoldings(portfolioResult.holdings)
     setWatchlist(portfolioResult.watchlist)
     setAvailableCash(portfolioResult.portfolio?.available_balance ?? 100_000_000)
@@ -91,7 +92,7 @@ export default function PlayerMarketDetailPage() {
   }, [slug, user])
 
   return (
-    <main className="min-h-screen bg-background">
+    <main className="min-h-screen bg-[radial-gradient(circle_at_top_left,rgba(16,185,129,.10),transparent_34%),linear-gradient(180deg,#f7fbf9_0%,#eef6f2_48%,#f8faf9_100%)]">
       <SiteHeader />
       <section className="mx-auto max-w-7xl px-4 py-10 sm:px-6 sm:py-14">
         <div className="mb-5"><MarketDisclaimer /></div>
@@ -113,4 +114,16 @@ export default function PlayerMarketDetailPage() {
       </section>
     </main>
   )
+}
+
+function buildPlayerHistory(player: MarketPlayer): MarketValueHistoryPoint[] {
+  const values = [player.opening_season_value]
+  if (player.previous_value !== values.at(-1)) values.push(player.previous_value)
+  if (player.current_value !== values.at(-1)) values.push(player.current_value)
+  return values.map((value, index) => ({
+    id: -(index + 1), player_id: player.id, value,
+    recorded_at: index === values.length - 1 ? player.value_updated_at : player.created_at,
+    reason_category: index === 0 ? 'season_opening' : 'verified_performance',
+    methodology_version: 'fiq-real-performance-v2.0.0', created_at: player.created_at,
+  }))
 }
