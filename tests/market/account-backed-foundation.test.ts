@@ -2,8 +2,12 @@ import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
 
-const migration = readFileSync(
-  resolve(process.cwd(), 'supabase/migrations/20260801000040_market_guest_account_import.sql'),
+const compatibilityMigration = readFileSync(
+  resolve(process.cwd(), 'supabase/migrations/20260808211648_staging_market_app_compatibility.sql'),
+  'utf8',
+)
+const importMigration = readFileSync(
+  resolve(process.cwd(), 'supabase/migrations/20260808224500_staging_guest_squad_import.sql'),
   'utf8',
 )
 
@@ -11,27 +15,26 @@ const client = readFileSync(resolve(process.cwd(), 'lib/market/client.ts'), 'utf
 const authProvider = readFileSync(resolve(process.cwd(), 'components/auth-provider.tsx'), 'utf8')
 
 describe('account-backed Market foundation', () => {
-  it('keeps private Market mutations behind authenticated RPCs', () => {
-    expect(migration).toMatch(/drop policy if exists "Users insert own holdings"/i)
-    expect(migration).toMatch(/revoke all on table public\.market_holdings from anon, authenticated/i)
-    expect(migration).toMatch(/grant select on table public\.market_holdings to authenticated/i)
-    expect(migration).toMatch(/grant execute on function public\.market_buy_player\(text, text\) to authenticated/i)
-    expect(migration).not.toMatch(/grant (insert|update|delete|all).*market_holdings to authenticated/i)
+  it('keeps app mutations behind authenticated slug-based RPCs', () => {
+    expect(compatibilityMigration).toMatch(/revoke all on function public\.market_buy_player\(text,text\) from public,anon/i)
+    expect(compatibilityMigration).toMatch(/grant execute on function public\.market_buy_player\(text,text\) to authenticated/i)
+    expect(compatibilityMigration).toMatch(/pg_advisory_xact_lock/i)
+    expect(compatibilityMigration).not.toMatch(/grant (insert|update|delete|all).*market_holdings to authenticated/i)
   })
 
-  it('removes global price-changing functions from normal users', () => {
-    expect(migration).toMatch(/revoke all on function public\.market_admin_update_player_value[\s\S]*from public, anon, authenticated/i)
-    expect(migration).toMatch(/revoke all on function public\.market_apply_simulated_matchweek[\s\S]*from public, anon, authenticated/i)
-    expect(migration).not.toMatch(/grant execute on function public\.market_apply_simulated_matchweek[\s\S]*to authenticated/i)
+  it('exposes account reads through an owner-scoped snapshot', () => {
+    expect(compatibilityMigration).toMatch(/create or replace function public\.market_app_portfolio_snapshot/i)
+    expect(compatibilityMigration).toMatch(/where p\.user_id=uid/i)
+    expect(compatibilityMigration).toMatch(/revoke all on function public\.market_app_portfolio_snapshot\(\) from public,anon/i)
   })
 
   it('imports guest selections once without accepting client balances or prices', () => {
-    expect(migration).toMatch(/create table if not exists public\.market_guest_imports/i)
-    expect(migration).toMatch(/create or replace function public\.market_import_guest_squad/i)
-    expect(migration).toMatch(/if requested_count > 11/i)
-    expect(migration).toMatch(/holdings_gk > 1 or holdings_def > 4 or holdings_mid > 3 or holdings_fwd > 3/i)
-    expect(migration).toMatch(/select uid, id, current_value, current_value, 0/i)
-    expect(migration).not.toMatch(/p_(balance|cash|acquisition_value)/i)
+    expect(compatibilityMigration).toMatch(/create table if not exists public\.market_guest_imports/i)
+    expect(importMigration).toMatch(/create or replace function public\.market_import_guest_squad/i)
+    expect(importMigration).toMatch(/requested_count > settings_row\.maximum_holdings/i)
+    expect(importMigration).toMatch(/gk_count > 1 or def_count > 4 or mid_count > 3 or fwd_count > 3/i)
+    expect(importMigration).toMatch(/mp\.current_price_minor,\s*mp\.current_price_minor, 0/i)
+    expect(importMigration).not.toMatch(/p_(balance|cash|acquisition_value|price)/i)
   })
 
   it('attempts guest migration after authentication and only clears local state after success', () => {

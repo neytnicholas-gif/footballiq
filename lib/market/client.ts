@@ -107,24 +107,20 @@ export async function loadMarketPlayers() {
   const { data: authData } = await supabase.auth.getUser()
   const user = authData.user
 
-  const { data, error } = await supabase
-    .from('market_players')
-    .select('*')
-    .eq('active', true)
-    .order('current_value', { ascending: false })
-
-  const remoteRows = ((data as MarketPlayer[] | null) ?? [])
-  let rows = remoteRows
-  const usingFallback = rows.length === 0 || Boolean(error)
-  if (usingFallback) {
-    try {
-      const response = await fetch('/api/market/catalogue')
-      const payload = response.ok ? await response.json() as { players?: MarketPlayer[] } : null
-      rows = Array.isArray(payload?.players) && payload.players.length > 0 ? payload.players : buildSampleMarketPlayers()
-    } catch {
-      rows = buildSampleMarketPlayers()
-    }
+  // The verified provider catalogue is the canonical app-shaped read model.
+  // Account-backed trades resolve its stable slug to the normalized UUID row
+  // inside the database, so provider IDs never become trusted write inputs.
+  let rows: MarketPlayer[] = []
+  try {
+    const response = await fetch('/api/market/catalogue')
+    const payload = response.ok ? await response.json() as { players?: MarketPlayer[] } : null
+    rows = Array.isArray(payload?.players) ? payload.players : []
+  } catch {
+    // The local demo below keeps the page useful during a provider outage.
   }
+
+  const usingFallback = rows.length === 0
+  if (usingFallback) rows = buildSampleMarketPlayers()
 
   if (!user) {
     const anonState = readAnonymousState()
@@ -136,7 +132,7 @@ export async function loadMarketPlayers() {
     // Missing optional Market tables are an expected preview state. The UI
     // already labels these rows as demonstration data, so do not expose raw
     // database schema errors to public visitors.
-    error: usingFallback ? null : error as Error | null,
+    error: null as Error | null,
   }
 }
 
@@ -216,6 +212,28 @@ export async function loadMyPortfolioData() {
     return { error: null, portfolio: anon.portfolio, holdings: anon.holdings, transactions: anon.transactions, watchlist: anon.watchlist }
   }
   if (authError) return { error: authError as Error, portfolio: null, holdings: [], transactions: [], watchlist: [] as number[] }
+
+  const { data: snapshotData, error: snapshotError } = await supabase.rpc('market_app_portfolio_snapshot', {})
+  if (!snapshotError) {
+    const snapshot = (snapshotData as {
+      portfolio?: MarketPortfolio | null
+      holdings?: MarketHolding[]
+      transactions?: MarketTransaction[]
+      watchlist?: number[]
+    } | null) ?? null
+
+    return {
+      error: null,
+      portfolio: snapshot?.portfolio ?? null,
+      holdings: snapshot?.holdings ?? [],
+      transactions: snapshot?.transactions ?? [],
+      watchlist: snapshot?.watchlist ?? [],
+    }
+  }
+
+  if (!isMarketBackendUnavailable(snapshotError)) {
+    return { error: snapshotError as Error, portfolio: null, holdings: [], transactions: [], watchlist: [] as number[] }
+  }
 
   const userId = authData.user.id
 

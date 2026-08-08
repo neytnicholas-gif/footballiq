@@ -20,9 +20,11 @@ describe('server-only Market catalogue synchronization', () => {
     expect(service).toMatch(/buildSportmonksPremierLeagueCatalogue/)
   })
 
-  it('upserts the complete catalogue in bounded batches by stable slug', () => {
+  it('upserts the complete normalized catalogue in bounded batches', () => {
     expect(service).toMatch(/const BATCH_SIZE = 100/)
-    expect(service).toMatch(/upsert\(rows, \{ onConflict: 'slug' \}\)/)
+    expect(service).toMatch(/onConflict: 'season_id,provider_player_id'/)
+    expect(service).toMatch(/source_type: 'licensed_provider'/)
+    expect(service).toMatch(/app_player_id: player\.id/)
     expect(service).toMatch(/synced \+= rows\.length/)
   })
 })

@@ -777,6 +777,10 @@ export type Database = {
         Args: Record<string, never>
         Returns: undefined
       }
+      market_app_portfolio_snapshot: {
+        Args: Record<string, never>
+        Returns: Record<string, unknown>
+      }
       market_import_guest_squad: {
         Args: {
           p_player_slugs: string[]
