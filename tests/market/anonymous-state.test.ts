@@ -4,11 +4,13 @@ import {
   anonymousBuyPlayer,
   anonymousSellPlayer,
   anonymousToggleWatchlist,
+  clearAnonymousState,
   createDefaultAnonymousState,
   readAnonymousState,
   writeAnonymousState,
 } from '@/lib/market/anonymous-state'
 import { buildSampleMarketPlayers } from '@/lib/market/sample-data'
+import { MARKET_CREDITS_STARTING_BALANCE } from '@/lib/market/format'
 
 describe('anonymous market state', () => {
   const players = buildSampleMarketPlayers()
@@ -40,6 +42,16 @@ describe('anonymous market state', () => {
 
     const loaded = readAnonymousState()
     expect(loaded.cash).toBeCloseTo(123.45, 5)
+  })
+
+  it('clears guest state only when account import has succeeded', () => {
+    const state = createDefaultAnonymousState()
+    state.cash = 42_000_000
+    writeAnonymousState(state)
+    expect(readAnonymousState().cash).toBe(42_000_000)
+
+    clearAnonymousState()
+    expect(readAnonymousState().cash).toBe(MARKET_CREDITS_STARTING_BALANCE)
   })
 
   it('buys and sells with cash + duplicate validation', () => {

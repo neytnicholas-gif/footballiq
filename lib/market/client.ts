@@ -14,6 +14,7 @@ import {
   anonymousToggleWatchlist,
   applyAnonymousOverrides,
   buildAnonymousPortfolio,
+  clearAnonymousState,
   readAnonymousState,
 } from '@/lib/market/anonymous-state'
 import { buildSampleMarketPlayers, buildSampleSeasonStats } from '@/lib/market/sample-data'
@@ -39,6 +40,62 @@ function isMarketBackendUnavailable(error: unknown) {
   const row = error as { code?: string; message?: string }
   return ['PGRST202', 'PGRST205', '42P01', '42883'].includes(row.code ?? '')
     || /could not find (the table|the function)|relation .* does not exist|function .* does not exist/i.test(row.message ?? '')
+}
+
+export type GuestMarketImportResult = {
+  ok: boolean
+  imported: boolean
+  reason?: 'already_imported' | 'account_already_initialized'
+  holdings?: number
+  watchlist?: number
+  available_balance?: number
+  pricing?: 'current_market_value'
+}
+
+export async function importAnonymousMarketStateToAccount() {
+  const { data: authData, error: authError } = await supabase.auth.getUser()
+  if (authError || !authData.user) {
+    return { data: null, error: authError as Error | null }
+  }
+
+  const state = readAnonymousState()
+  const hasGuestProgress = state.holdings.length > 0 || state.watchlist.length > 0
+  if (!hasGuestProgress) return { data: null, error: null }
+
+  const { data: players, error: playersError } = await loadMarketPlayers()
+  if (playersError) return { data: null, error: playersError }
+
+  const playersById = new Map(players.map((player) => [player.id, player]))
+  const playerSlugs = state.holdings
+    .map((holding) => playersById.get(holding.player_id)?.slug)
+    .filter((slug): slug is string => Boolean(slug))
+  const watchlistSlugs = state.watchlist
+    .map((playerId) => playersById.get(playerId)?.slug)
+    .filter((slug): slug is string => Boolean(slug))
+
+  if (playerSlugs.length !== state.holdings.length) {
+    return { data: null, error: new Error('Guest portfolio could not be matched to the current player catalogue.') }
+  }
+
+  const { data, error } = await supabase.rpc('market_import_guest_squad', {
+    p_player_slugs: playerSlugs,
+    p_watchlist_slugs: watchlistSlugs,
+  })
+
+  if (error) return { data: null, error: error as Error }
+
+  const result = (data as GuestMarketImportResult | null) ?? null
+  if (result?.ok) {
+    clearAnonymousState()
+    try {
+      window.sessionStorage.setItem('fiq-market-account-import-result-v1', JSON.stringify(result))
+      window.dispatchEvent(new CustomEvent('fiq-market-account-imported', { detail: result }))
+    } catch {
+      // The import is already durable; a blocked status banner is non-critical.
+    }
+  }
+
+  return { data: result, error: null }
 }
 
 export async function refreshMyMarketPortfolio() {

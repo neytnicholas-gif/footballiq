@@ -24,6 +24,19 @@ const PROFILE_COLUMNS =
 const PROFILE_COLUMNS_LEGACY =
   'id, username, rating, xp, streak, quizzes_completed, correct_answers, total_answers, perfect_quizzes, current_streak, longest_streak, last_activity_date, created_at, updated_at'
 
+const marketImportAttempts = new Set<string>()
+
+async function importGuestMarketOnce(userId: string) {
+  if (marketImportAttempts.has(userId)) return
+  marketImportAttempts.add(userId)
+  const { importAnonymousMarketStateToAccount } = await import('@/lib/market/client')
+  const { error } = await importAnonymousMarketStateToAccount()
+  if (error) {
+    marketImportAttempts.delete(userId)
+    console.warn('Guest Market import deferred:', error.message)
+  }
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null)
   const [profile, setProfile] = useState<Profile | null>(null)
@@ -112,13 +125,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     void (async () => {
       const { data } = await supabase.auth.getSession()
       if (!mounted) return
-      setSession(data.session)
       if (data.session?.user) {
         setProfileLoading(true)
         await loadProfile(data.session.user.id)
+        await importGuestMarketOnce(data.session.user.id)
         if (!mounted) return
+        setSession(data.session)
         setProfileLoading(false)
       } else {
+        setSession(null)
         setProfile(null)
         setProfileLoading(false)
       }
@@ -127,7 +142,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const { data: subscription } = supabase.auth.onAuthStateChange((_event, nextSession) => {
       const previousUserId = sessionRef.current?.user?.id
-      setSession(nextSession)
       if (nextSession?.user) {
         setProfileLoading(true)
         const currentUserId = nextSession.user.id
@@ -138,9 +152,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
         void (async () => {
           await loadProfile(currentUserId)
-          if (mounted) setProfileLoading(false)
+          await importGuestMarketOnce(currentUserId)
+          if (mounted) {
+            setSession(nextSession)
+            setProfileLoading(false)
+          }
         })()
       } else {
+        setSession(null)
         setProfile(null)
         setProfileLoading(false)
       }

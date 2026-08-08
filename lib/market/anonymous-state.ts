@@ -81,6 +81,12 @@ export function writeAnonymousState(state: MarketAnonymousState) {
   storage.setItem(STORAGE_KEY, JSON.stringify({ ...state, last_updated_at: nowIso() }))
 }
 
+export function clearAnonymousState() {
+  const storage = safeStorage()
+  if (!storage) return
+  storage.removeItem(STORAGE_KEY)
+}
+
 export function applyAnonymousOverrides(players: MarketPlayer[], state: MarketAnonymousState) {
   return players.map((player) => {
     const override = state.player_overrides[String(player.id)]

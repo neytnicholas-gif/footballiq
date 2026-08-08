@@ -115,7 +115,7 @@ export function PlayerMarketPortfolio({
               const player = playersById.get(holding.player_id)
               if (!player) return null
               return (
-                <Link key={holding.id} href={`/market/player/${encodeURIComponent(player.slug)}`} className="grid grid-cols-[1fr_auto_auto] items-center gap-3 rounded-2xl border border-border bg-background/70 p-3">
+                <Link key={holding.id} href={`/market/player/${encodeURIComponent(player.slug)}`} className="grid gap-3 rounded-2xl border border-border bg-background/70 p-3 sm:grid-cols-[1fr_auto_auto] sm:items-center">
                   <div className="flex min-w-0 items-center gap-3">
                     <MarketPlayerChip player={player} />
                     <div className="min-w-0">
@@ -123,11 +123,11 @@ export function PlayerMarketPortfolio({
                       <p className="truncate text-xs text-muted-foreground">{player.club_name} · {player.position}</p>
                     </div>
                   </div>
-                  <div className="text-right text-sm">
+                  <div className="flex items-center justify-between text-sm sm:block sm:text-right">
                     <p className="text-muted-foreground">Purchase price</p>
                     <p>{formatFiqCompact(holding.acquisition_value)}</p>
                   </div>
-                  <div className="text-right text-sm">
+                  <div className="flex items-center justify-between text-sm sm:block sm:text-right">
                     <p className="text-muted-foreground">Now</p>
                     <p>{formatFiqCompact(holding.current_value_snapshot)}</p>
                     <p className={holding.unrealized_profit_loss >= 0 ? 'text-primary' : 'text-destructive'}>
