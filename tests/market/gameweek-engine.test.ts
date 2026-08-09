@@ -7,6 +7,7 @@ const portfolioRepair = readFileSync('supabase/migrations/20260809214500_keep_po
 const priceBook = readFileSync('supabase/migrations/20260809215500_publish_authoritative_price_book.sql', 'utf8')
 const catalogueRoute = readFileSync('app/api/market/catalogue/route.ts', 'utf8')
 const priceBookGrants = readFileSync('supabase/migrations/20260809220000_grant_price_book_sources.sql', 'utf8')
+const publicCatalogue = readFileSync('supabase/migrations/20260809234500_publish_database_backed_market_catalogue.sql', 'utf8')
 const route = readFileSync('app/api/market/process-gameweek/route.ts', 'utf8')
 
 describe('verified gameweek engine', () => {
@@ -45,7 +46,9 @@ describe('verified gameweek engine', () => {
   it('serves one database price consistently across market and portfolio surfaces', () => {
     expect(priceBook).toContain('market_public_price_book_v1')
     expect(priceBook).toContain('security invoker')
-    expect(catalogueRoute).toContain("client.rpc('market_public_price_book_v1')")
+    expect(catalogueRoute).toContain("client.rpc('market_public_catalogue_v1')")
+    expect(publicCatalogue).toContain('security invoker')
+    expect(publicCatalogue).toContain('player.current_price_minor')
     expect(catalogueRoute).not.toContain('applyPreviewValueExperiment')
     expect(priceBookGrants).toContain('grant select on table public.market_valuation_events to anon,authenticated')
   })

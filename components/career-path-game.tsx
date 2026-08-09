@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { careerQuestions } from '@/lib/game-data'
 import { useAuth } from '@/components/auth-provider'
 import { QuizProgressBanner } from '@/components/quiz-progress-banner'
@@ -27,6 +27,7 @@ export function CareerPathGame() {
   const [saving, setSaving] = useState(false)
   const [runKey, setRunKey] = useState(() => createCompletionRunId())
   const [shuffleSeed, setShuffleSeed] = useState(() => Date.now() % 233280)
+  const initialShuffleSeed = useRef(shuffleSeed)
   const [resumeState, setResumeState] = useState<{ index: number; selected: string | null; score: number; shuffleSeed: number } | null>(null)
   const [checkingProgress, setCheckingProgress] = useState(Boolean(user))
   const q = careerQuestions[index]
@@ -62,7 +63,7 @@ export function CareerPathGame() {
           index: savedIndex,
           selected: typeof savedState.selected === 'string' ? savedState.selected : null,
           score: typeof savedState.score === 'number' ? savedState.score : progress.score,
-          shuffleSeed: typeof savedState.shuffleSeed === 'number' ? savedState.shuffleSeed : shuffleSeed,
+          shuffleSeed: typeof savedState.shuffleSeed === 'number' ? savedState.shuffleSeed : initialShuffleSeed.current,
         })
       } else {
         setResumeState(null)

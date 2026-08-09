@@ -129,7 +129,7 @@ export function DuelQuiz({ pack, onComplete }: { pack: DuelPack; onComplete?: (p
     }
   }, [pack.id, pack.questions.length, progressQuizId, user])
 
-  async function persistProgress(snapshot: SavedDuelProgress, status: 'in_progress' | 'completed' = 'in_progress') {
+  const persistProgress = useCallback(async (snapshot: SavedDuelProgress, status: 'in_progress' | 'completed' = 'in_progress') => {
     await saveQuizProgress({
       quizId: progressQuizId,
       currentIndex: snapshot.index,
@@ -138,7 +138,7 @@ export function DuelQuiz({ pack, onComplete }: { pack: DuelPack; onComplete?: (p
       progress: snapshot,
       status,
     })
-  }
+  }, [progressQuizId])
 
   const lockAnswer = useCallback((choice: Choice | 'timeout') => {
     if (answered) return
@@ -182,7 +182,7 @@ export function DuelQuiz({ pack, onComplete }: { pack: DuelPack; onComplete?: (p
         timeLeft,
       })
     }
-  }, [answer, answered, bestCombo, combo, index, pack.id, points, questions, score, speed, timeLeft])
+  }, [answer, answered, bestCombo, combo, index, pack.id, persistProgress, points, questions, score, speed, timeLeft])
 
   useEffect(() => {
     if (speed !== 'timed' || answered || showResults) return

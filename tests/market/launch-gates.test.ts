@@ -9,6 +9,17 @@ describe('Player Market launch gates', () => {
     const route = read('app/api/market/catalogue/route.ts')
     expect(route).not.toContain("VERCEL_ENV !== 'preview'")
     expect(route).toContain('opening_price_minor')
+    expect(route).toContain("client.rpc('market_public_catalogue_v1')")
+    expect(route).not.toContain('buildSportmonksCombinedCatalogue')
+    expect(route).toContain('s-maxage=60')
+  })
+
+  it('publishes only verified database catalogue rows and removes broad public writes', () => {
+    const sql = read('supabase/migrations/20260809234500_publish_database_backed_market_catalogue.sql')
+    expect(sql).toContain('market_public_catalogue_v1')
+    expect(sql).toContain('security invoker')
+    expect(sql).toContain('catalogue.status = \'active\'')
+    expect(sql).toContain('revoke insert, update, delete, truncate, references, trigger')
   })
 
   it('never fakes authenticated trade success using anonymous state', () => {
@@ -21,11 +32,33 @@ describe('Player Market launch gates', () => {
     expect(sell).not.toContain('isMarketBackendUnavailable(error)')
   })
 
+  it('does not substitute browser-local Reveals for a signed-in account', () => {
+    const client = read('lib/market/client.ts')
+    const reveals = client.slice(client.indexOf('export async function loadMyRevealHistory'), client.indexOf('export async function loadMyLatestReveal'))
+    expect(reveals).toContain("rpc('market_my_reveals'")
+    expect(reveals).toContain("error: error ? error as Error")
+    expect(reveals.indexOf('loadRevealHistory')).toBeGreaterThan(reveals.indexOf('if (authData.user)'))
+  })
+
+  it('refreshes catalogue prices and skips already processed paid fixture calls', () => {
+    const client = read('lib/market/client.ts')
+    const sportmonks = read('lib/market/server/sportmonks-client.ts')
+    const engine = read('lib/market/server/gameweek-engine.ts')
+    expect(client).toContain('VERIFIED_CATALOGUE_TTL_MS = 60_000')
+    expect(client).toContain("cache: 'no-store'")
+    expect(sportmonks).toContain('processedFixtureIds.has(String(fixture.id))')
+    expect(engine).toContain("select('provider_fixture_id')")
+    expect(engine).toContain('verified-gameweek-heartbeat:')
+  })
+
   it('removes obsolete RPCs and indexes rolling appearances', () => {
     const sql = read('supabase/migrations/20260809223000_close_final_market_launch_gates.sql')
     expect(sql).toContain('drop function if exists public.market_buy_player(uuid, text, integer)')
     expect(sql).toContain('drop function if exists public.market_sell_player(uuid, text)')
     expect(sql).toContain('market_player_match_stats_player_fixture_date_idx')
+    const revoked = read('supabase/migrations/20260810002000_revoke_obsolete_market_rpcs.sql')
+    expect(revoked).toContain('market_public_players_v1() from public, anon, authenticated')
+    expect(revoked).toContain('market_get_portfolio_snapshot() from public, anon, authenticated')
   })
 
   it('protects provider diagnostics and publishes security headers', () => {

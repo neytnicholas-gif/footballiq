@@ -1,77 +1,109 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
-import { buildSportmonksBundesligaCatalogue, buildSportmonksCombinedCatalogue, buildSportmonksLaLigaCatalogue, buildSportmonksLigue1Catalogue, buildSportmonksPremierLeagueCatalogue, buildSportmonksSerieACatalogue } from '@/lib/market/server/sportmonks-client'
 import type { MarketPlayer } from '@/lib/market/types'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
-type PriceBookRow = {
+type PublicCatalogueRow = {
   provider_player_id: string
+  app_player_id: number
+  slug: string
+  display_name: string
+  club_name: string
+  competition_key: string
+  competition_name: string
+  position_group: MarketPlayer['position']
+  age: number | null
+  nationality: string | null
   opening_price_minor: number
   current_price_minor: number
   previous_price_minor: number
   latest_rating_milli: number | null
-  value_updated_at: string
+  availability_status: MarketPlayer['availability_status']
+  data_updated_at: string
+  source_reference: string | null
 }
 
-async function applyAuthoritativePriceBook(players: MarketPlayer[]) {
+async function loadAuthoritativeCatalogue(competition: string | null) {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
   const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-  if (!url?.trim() || !key?.trim()) throw new Error('The authoritative market price book is not configured.')
-  const client = createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false } })
-  const { data, error } = await client.rpc('market_public_price_book_v1')
-  if (error) throw new Error(`The authoritative market price book is unavailable: ${error.message}`)
-  const priceBook = new Map(((data ?? []) as PriceBookRow[]).map((row) => [String(row.provider_player_id), row]))
-  const backed = players.flatMap((player) => {
-    const row = priceBook.get(String(player.id))
-    if (!row) return []
+  if (!url?.trim() || !key?.trim()) throw new Error('The authoritative market catalogue is not configured.')
+  const client = createClient(url, key, {
+    auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
+  })
+  const { data, error } = await client.rpc('market_public_catalogue_v1')
+  if (error) throw new Error(`The authoritative player catalogue is unavailable: ${error.message}`)
+
+  const rows = ((data ?? []) as PublicCatalogueRow[])
+    .filter((row) => !competition || row.competition_key === competition)
+  const players = rows.map((row): MarketPlayer => {
     const currentValue = Number(row.current_price_minor)
     const previousValue = Number(row.previous_price_minor)
     const latestRating = row.latest_rating_milli === null ? null : Number(row.latest_rating_milli) / 1000
-    return [{
-      ...player,
+    return {
+      id: Number(row.app_player_id),
+      slug: row.slug,
+      display_name: row.display_name,
+      short_name: null,
+      club_name: row.club_name,
+      competition_key: row.competition_key,
+      competition_name: row.competition_name,
+      position: row.position_group,
+      age: row.age,
+      nationality: row.nationality,
+      active: true,
       opening_season_value: Number(row.opening_price_minor),
       current_value: currentValue,
       previous_value: previousValue,
-      value_updated_at: row.value_updated_at,
+      value_updated_at: row.data_updated_at,
+      data_updated_at: row.data_updated_at,
       data_source_label: 'Sportmonks identity · FootballIQ authoritative price book',
-      value_trend: currentValue > previousValue ? 'rising' as const : currentValue < previousValue ? 'falling' as const : 'flat' as const,
+      source_reference: row.source_reference,
+      provenance_status: 'verified',
+      owner_verified: true,
+      is_trade_locked: false,
+      trade_lock_reason: null,
+      trade_lock_started_at: null,
+      trade_lock_ends_at: null,
+      availability_status: row.availability_status ?? 'available',
+      value_trend: currentValue > previousValue ? 'rising' : currentValue < previousValue ? 'falling' : 'flat',
+      recent_form_indicator: latestRating === null ? 'steady' : latestRating >= 7.5 ? 'hot' : latestRating < 6.5 ? 'cool' : 'steady',
+      role_security_indicator: 'rotation',
       decision_support_note: latestRating === null
         ? 'Opening game price. This value remains frozen until verified ratings and minutes are processed.'
         : `Latest processed Sportmonks rating: ${latestRating.toFixed(2)}. The database price book is authoritative.`,
-    }]
+      matchweek_performance_history: [],
+      created_at: row.data_updated_at,
+      updated_at: row.data_updated_at,
+    }
   })
-  if (backed.length === 0) throw new Error('The authoritative market price book did not match the provider catalogue.')
-  return backed.sort((a, b) => b.current_value - a.current_value || a.display_name.localeCompare(b.display_name))
+  if (players.length === 0) throw new Error('The authoritative player catalogue is empty.')
+  return players.sort((a, b) => b.current_value - a.current_value || a.display_name.localeCompare(b.display_name))
 }
 
 export async function GET(request: Request) {
   try {
     const competition = new URL(request.url).searchParams.get('competition')
-    const catalogue = competition === 'ligue-1'
-      ? await buildSportmonksLigue1Catalogue()
-      : competition === 'serie-a'
-      ? await buildSportmonksSerieACatalogue()
-      : competition === 'bundesliga'
-      ? await buildSportmonksBundesligaCatalogue()
-      : competition === 'la-liga'
-        ? await buildSportmonksLaLigaCatalogue()
-      : competition === 'premier-league'
-        ? await buildSportmonksPremierLeagueCatalogue()
-        : await buildSportmonksCombinedCatalogue()
-    const players = await applyAuthoritativePriceBook(catalogue.players)
-    const responseCatalogue = 'competitions' in catalogue
-      ? {
-          ...catalogue,
-          players,
-          playerCount: players.length,
-          competitions: catalogue.competitions.map((competitionSummary) => ({ ...competitionSummary, players: undefined })),
-        }
-      : { ...catalogue, players, playerCount: players.length }
-
-    return NextResponse.json(responseCatalogue, {
-      headers: { 'Cache-Control': 'private, no-store' },
+    const players = await loadAuthoritativeCatalogue(competition)
+    const grouped = new Map<string, { key: string; name: string; playerCount: number }>()
+    for (const player of players) {
+      const key = player.competition_key ?? 'unknown'
+      const current = grouped.get(key)
+      grouped.set(key, {
+        key,
+        name: player.competition_name ?? key,
+        playerCount: (current?.playerCount ?? 0) + 1,
+      })
+    }
+    return NextResponse.json({
+      source: 'database-verified-sportmonks',
+      generatedAt: new Date().toISOString(),
+      players,
+      playerCount: players.length,
+      competitions: Array.from(grouped.values()),
+    }, {
+      headers: { 'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300' },
     })
   } catch (error) {
     const message = error instanceof Error ? error.message : 'The verified player catalogue could not be loaded.'

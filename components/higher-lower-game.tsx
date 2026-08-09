@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { higherLowerItems } from '@/lib/game-data'
 import { useAuth } from '@/components/auth-provider'
 import { QuizProgressBanner } from '@/components/quiz-progress-banner'
@@ -21,6 +21,7 @@ function seededShuffle<T>(items: T[], seed: number) {
 export function HigherLowerGame() {
   const { user, refreshProfile } = useAuth()
   const [deckSeed, setDeckSeed] = useState(() => Date.now() % 233280)
+  const initialDeckSeed = useRef(deckSeed)
   const deck = useMemo(() => seededShuffle(higherLowerItems, deckSeed), [deckSeed])
   const [index, setIndex] = useState(1)
   const [streak, setStreak] = useState(0)
@@ -59,7 +60,7 @@ export function HigherLowerGame() {
         setResumeState({
           index: savedIndex,
           streak: typeof savedState.streak === 'number' ? savedState.streak : progress.score,
-          deckSeed: typeof savedState.deckSeed === 'number' ? savedState.deckSeed : deckSeed,
+          deckSeed: typeof savedState.deckSeed === 'number' ? savedState.deckSeed : initialDeckSeed.current,
         })
       } else {
         setResumeState(null)

@@ -58,10 +58,14 @@ export type GuestMarketImportResult = {
 }
 
 let verifiedCatalogueRequest: Promise<MarketPlayer[]> | null = null
+let verifiedCatalogueFetchedAt = 0
+const VERIFIED_CATALOGUE_TTL_MS = 60_000
 
 function fetchVerifiedMarketPlayers() {
-  if (!verifiedCatalogueRequest) {
-    verifiedCatalogueRequest = fetch('/api/market/catalogue')
+  const now = Date.now()
+  if (!verifiedCatalogueRequest || now - verifiedCatalogueFetchedAt >= VERIFIED_CATALOGUE_TTL_MS) {
+    verifiedCatalogueFetchedAt = now
+    verifiedCatalogueRequest = fetch('/api/market/catalogue', { cache: 'no-store' })
       .then(async (response) => {
         if (!response.ok) throw new Error('The verified player catalogue request failed.')
         const payload = await response.json() as { players?: MarketPlayer[] }
@@ -72,6 +76,7 @@ function fetchVerifiedMarketPlayers() {
       })
       .catch((error) => {
         verifiedCatalogueRequest = null
+        verifiedCatalogueFetchedAt = 0
         throw error
       })
   }
@@ -645,7 +650,10 @@ export async function loadMyRevealHistory(limit = 12): Promise<{ data: MarketRev
   if (authData.user) {
     const { data, error } = await (supabase as any).rpc('market_my_reveals', { p_limit: limit })
     if (!error && Array.isArray(data)) return { data: data as MarketRevealSummary[], error: null }
-    if (error && !isMarketBackendUnavailable(error)) return { data: [], error: error as Error }
+    return {
+      data: [],
+      error: error ? error as Error : new Error('The account Reveal response was invalid.'),
+    }
   }
   return {
     data: loadRevealHistory(scopeKey, limit),

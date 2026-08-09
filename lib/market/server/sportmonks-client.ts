@@ -493,7 +493,10 @@ function mondayFor(date: Date) {
   return monday
 }
 
-export async function fetchSportmonksCompletedGameweeks(apiToken = process.env.SPORTMONKS_API_TOKEN): Promise<SportmonksCompletedGameweek[]> {
+export async function fetchSportmonksCompletedGameweeks(
+  apiToken = process.env.SPORTMONKS_API_TOKEN,
+  processedFixtureIds: ReadonlySet<string> = new Set(),
+): Promise<SportmonksCompletedGameweek[]> {
   const client = createSportmonksClient(apiToken)
   const leagueConfigs = [
     { id: PREMIER_LEAGUE_ID, name: 'Premier League' },
@@ -517,8 +520,9 @@ export async function fetchSportmonksCompletedGameweeks(apiToken = process.env.S
     return date !== null && Date.parse(date) >= cutoff
   })
     .sort((a, b) => Date.parse(fixtureDate(b)!) - Date.parse(fixtureDate(a)!))
-  if (finished.length === 0) throw new Error('No completed Sportmonks fixtures with verified dates are available yet.')
-  const selected = finished
+  if (finished.length === 0) return []
+  const selected = finished.filter((fixture) => !processedFixtureIds.has(String(fixture.id)))
+  if (selected.length === 0) return []
   const updatesByWeek = new Map<string, SportmonksGameweekUpdate[]>()
 
   for (let offset = 0; offset < selected.length; offset += 5) {
@@ -552,7 +556,7 @@ export async function fetchSportmonksCompletedGameweeks(apiToken = process.env.S
       }
     }
   }
-  if (finished.length > 0 && updatesByWeek.size === 0) throw new Error('Completed fixtures could not be converted into verified player updates; valuation was aborted safely.')
+  if (selected.length > 0 && updatesByWeek.size === 0) throw new Error('Completed fixtures could not be converted into verified player updates; valuation was aborted safely.')
   if (updatesByWeek.size === 0) throw new Error('Completed fixtures did not contain eligible Sportmonks ratings and minutes.')
 
   return [...updatesByWeek.entries()].map(([key, updates]) => {
