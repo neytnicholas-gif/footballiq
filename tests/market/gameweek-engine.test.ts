@@ -3,6 +3,9 @@ import { describe, expect, it } from 'vitest'
 
 const foundation = readFileSync('supabase/migrations/20260809203000_market_gameweek_engine.sql', 'utf8')
 const migration = readFileSync('supabase/migrations/20260809213000_harden_verified_gameweek_pipeline.sql', 'utf8')
+const portfolioRepair = readFileSync('supabase/migrations/20260809214500_keep_portfolio_prices_authoritative.sql', 'utf8')
+const priceBook = readFileSync('supabase/migrations/20260809215500_publish_authoritative_price_book.sql', 'utf8')
+const catalogueRoute = readFileSync('app/api/market/catalogue/route.ts', 'utf8')
 const route = readFileSync('app/api/market/process-gameweek/route.ts', 'utf8')
 
 describe('verified gameweek engine', () => {
@@ -30,6 +33,19 @@ describe('verified gameweek engine', () => {
     expect(migration).toContain('600000')
     expect(migration).toContain('with totals as')
     expect(migration).not.toContain('for pf in select id from public.market_portfolios')
+  })
+
+  it('uses the player price as the authoritative value in every portfolio read', () => {
+    expect(portfolioRepair).toContain("'current_value_snapshot',mp.current_price_minor")
+    expect(portfolioRepair).toContain("'total_account_value',p.cash_balance_minor+live_holdings")
+    expect(portfolioRepair).toContain('update public.market_holdings h set')
+  })
+
+  it('serves one database price consistently across market and portfolio surfaces', () => {
+    expect(priceBook).toContain('market_public_price_book_v1')
+    expect(priceBook).toContain('security invoker')
+    expect(catalogueRoute).toContain("client.rpc('market_public_price_book_v1')")
+    expect(catalogueRoute).not.toContain('applyPreviewValueExperiment')
   })
 
   it('requires a server secret at the cron boundary', () => {
