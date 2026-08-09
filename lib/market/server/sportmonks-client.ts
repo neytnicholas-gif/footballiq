@@ -5,6 +5,7 @@ import type { MarketPlayer, MarketPosition } from '@/lib/market/types'
 
 const BASE_URL = 'https://api.sportmonks.com/v3/football'
 const PREMIER_LEAGUE_ID = 8
+const LA_LIGA_ID = 564
 const VERIFIED_SAMPLE_FIXTURE_ID = 19427734
 const TOP_FIVE_LEAGUES = [
   { id: 8, name: 'Premier League' },
@@ -116,7 +117,9 @@ function openingGameValue(position: MarketPosition, age: number | null) {
 
 export type SportmonksMarketCatalogue = {
   provider: 'Sportmonks Football API'
-  competition: 'Premier League'
+  competition: 'Premier League' | 'La Liga'
+  competitionKey: 'premier-league' | 'la-liga'
+  leagueId: number
   seasonId: string
   seasonName: string | null
   generatedAt: string
@@ -213,12 +216,17 @@ export async function runSportmonksCoverageTrial(apiToken = process.env.SPORTMON
   }
 }
 
-export async function buildSportmonksPremierLeagueCatalogue(apiToken = process.env.SPORTMONKS_API_TOKEN): Promise<SportmonksMarketCatalogue> {
+type SupportedMarketLeague = Pick<SportmonksMarketCatalogue, 'competition' | 'competitionKey' | 'leagueId'>
+
+async function buildSportmonksLeagueCatalogue(
+  leagueConfig: SupportedMarketLeague,
+  apiToken = process.env.SPORTMONKS_API_TOKEN,
+): Promise<SportmonksMarketCatalogue> {
   const client = createSportmonksClient(apiToken)
-  const league = record(await client.get(`/leagues/${PREMIER_LEAGUE_ID}?include=currentSeason`))
+  const league = record(await client.get(`/leagues/${leagueConfig.leagueId}?include=currentSeason`))
   const season = league ? relation(league, 'currentseason', 'currentSeason') : null
   const seasonId = String(season?.id ?? '')
-  if (!seasonId) throw new Error('Premier League current-season access is unavailable.')
+  if (!seasonId) throw new Error(`${leagueConfig.competition} current-season access is unavailable.`)
 
   const teams = records(await client.get(`/teams/seasons/${encodeURIComponent(seasonId)}`))
   const teamIds = teams.map((team) => team.id).filter((id): id is string | number => typeof id === 'string' || typeof id === 'number')
@@ -279,11 +287,12 @@ export async function buildSportmonksPremierLeagueCatalogue(apiToken = process.e
     const previousUpdate = calculatePerformanceValueUpdate({ position, currentValue: openingValue, rollingWeekMovement: 0, performances: performances.slice(1) })
     const value = currentUpdate?.newValue ?? openingValue
     const previousValue = previousUpdate?.newValue ?? openingValue
-    const baseSlug = toMarketSlug(name)
+    const baseSlug = `${toMarketSlug(name)}${leagueConfig.competitionKey === 'la-liga' ? '-la-liga' : ''}`
     const slug = slugs.has(baseSlug) ? `${baseSlug}-${id}` : baseSlug
     slugs.add(slug)
     players.push({
       id, slug, display_name: name, short_name: textValue(player?.short_name ?? player?.common_name), club_name: clubName,
+      competition_key: leagueConfig.competitionKey, competition_name: leagueConfig.competition,
       position, age, nationality: textValue(player?.nationality_name ?? player?.nationality), active: true,
       current_value: value, previous_value: previousValue, opening_season_value: openingValue,
       value_updated_at: now, data_updated_at: now,
@@ -303,11 +312,36 @@ export async function buildSportmonksPremierLeagueCatalogue(apiToken = process.e
 
   players.sort((a, b) => b.current_value - a.current_value || a.display_name.localeCompare(b.display_name))
   return {
-    provider: 'Sportmonks Football API', competition: 'Premier League', seasonId,
+    provider: 'Sportmonks Football API', competition: leagueConfig.competition,
+    competitionKey: leagueConfig.competitionKey, leagueId: leagueConfig.leagueId, seasonId,
     seasonName: textValue(season?.name), generatedAt: now, playerCount: players.length,
     marketPhase: performancesByPlayer.size > 0 ? 'verified_movement' : 'opening',
     completedFixturesApplied: completedFixtures.length, ratedPlayerCount: performancesByPlayer.size,
     latestCompletedAt: completedFixtures[0] ? fixtureDate(completedFixtures[0]) : null,
     players,
+  }
+}
+
+export function buildSportmonksPremierLeagueCatalogue(apiToken = process.env.SPORTMONKS_API_TOKEN) {
+  return buildSportmonksLeagueCatalogue({ leagueId: PREMIER_LEAGUE_ID, competition: 'Premier League', competitionKey: 'premier-league' }, apiToken)
+}
+
+export function buildSportmonksLaLigaCatalogue(apiToken = process.env.SPORTMONKS_API_TOKEN) {
+  return buildSportmonksLeagueCatalogue({ leagueId: LA_LIGA_ID, competition: 'La Liga', competitionKey: 'la-liga' }, apiToken)
+}
+
+export async function buildSportmonksCombinedCatalogue(apiToken = process.env.SPORTMONKS_API_TOKEN) {
+  const [premierLeague, laLiga] = await Promise.all([
+    buildSportmonksPremierLeagueCatalogue(apiToken),
+    buildSportmonksLaLigaCatalogue(apiToken),
+  ])
+  return {
+    provider: 'Sportmonks Football API' as const,
+    competition: 'Premier League + La Liga',
+    generatedAt: new Date().toISOString(),
+    playerCount: premierLeague.playerCount + laLiga.playerCount,
+    competitions: [premierLeague, laLiga],
+    players: [...premierLeague.players, ...laLiga.players]
+      .sort((a, b) => b.current_value - a.current_value || a.display_name.localeCompare(b.display_name)),
   }
 }

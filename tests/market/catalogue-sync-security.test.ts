@@ -17,7 +17,8 @@ describe('server-only Market catalogue synchronization', () => {
     expect(service).toMatch(/import 'server-only'/)
     expect(service).toMatch(/process\.env\.SUPABASE_SERVICE_ROLE_KEY/)
     expect(service).not.toMatch(/NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY/)
-    expect(service).toMatch(/buildSportmonksPremierLeagueCatalogue/)
+    expect(service).toMatch(/buildSportmonksCombinedCatalogue/)
+    expect(service).toMatch(/market_active_catalogues/)
   })
 
   it('upserts the complete normalized catalogue in bounded batches', () => {

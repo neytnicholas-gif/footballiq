@@ -2,7 +2,8 @@ import 'server-only'
 
 import { createHash } from 'node:crypto'
 import { createClient } from '@supabase/supabase-js'
-import { buildSportmonksPremierLeagueCatalogue } from '@/lib/market/server/sportmonks-client'
+import { buildSportmonksCombinedCatalogue } from '@/lib/market/server/sportmonks-client'
+import type { SportmonksMarketCatalogue } from '@/lib/market/server/sportmonks-client'
 
 const BATCH_SIZE = 100
 
@@ -32,9 +33,7 @@ function seasonDates(seasonName: string) {
   }
 }
 
-export async function syncSportmonksCatalogueToSupabase() {
-  const catalogue = await buildSportmonksPremierLeagueCatalogue()
-  const admin = createAdminClient()
+async function syncLeagueCatalogue(admin: ReturnType<typeof createAdminClient>, catalogue: SportmonksMarketCatalogue) {
   const seasonId = `sportmonks-${catalogue.seasonId}`
   const seasonName = catalogue.seasonName ?? String(catalogue.seasonId)
   const now = new Date().toISOString()
@@ -45,7 +44,7 @@ export async function syncSportmonksCatalogueToSupabase() {
   const { error: seasonError } = await admin.from('market_seasons').upsert({
     id: seasonId,
     name: `${catalogue.competition} ${seasonName}`,
-    competition_key: 'premier-league',
+    competition_key: catalogue.competitionKey,
     season_key: seasonName,
     ...seasonDates(seasonName),
     is_active: true,
@@ -125,11 +124,26 @@ export async function syncSportmonksCatalogueToSupabase() {
     synced += rows.length
   }
 
-  const { error: settingsError } = await admin.from('market_settings').update({
-    active_season_id: seasonId,
-    active_catalogue_id: catalogueRow.id,
-  }).eq('id', 1)
-  if (settingsError) throw new Error(`Market activation failed: ${settingsError.message}`)
+  const { error: activationError } = await admin.from('market_active_catalogues').upsert({
+    catalogue_id: catalogueRow.id,
+    season_id: seasonId,
+    competition_key: catalogue.competitionKey,
+    activated_at: now,
+  }, { onConflict: 'catalogue_id' })
+  if (activationError) throw new Error(`Catalogue activation failed: ${activationError.message}`)
 
   return { synced, competition: catalogue.competition, seasonId, seasonName, source: catalogue.provider, generatedAt: catalogue.generatedAt }
+}
+
+export async function syncSportmonksCatalogueToSupabase() {
+  const combined = await buildSportmonksCombinedCatalogue()
+  const admin = createAdminClient()
+  const results = []
+  for (const catalogue of combined.competitions) results.push(await syncLeagueCatalogue(admin, catalogue))
+  return {
+    synced: results.reduce((total, result) => total + result.synced, 0),
+    competition: combined.competition,
+    generatedAt: combined.generatedAt,
+    competitions: results,
+  }
 }

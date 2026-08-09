@@ -37,6 +37,7 @@ export function PlayerMarketBrowser({
 }) {
   const [search, setSearch] = useState('')
   const [position, setPosition] = useState<'ALL' | 'GK' | 'DEF' | 'MID' | 'FWD'>('ALL')
+  const [competition, setCompetition] = useState('ALL')
   const [club, setClub] = useState('ALL')
   const [trend, setTrend] = useState<'all' | 'rising' | 'falling'>('all')
   const [priceRange, setPriceRange] = useState<'all' | 'low' | 'mid' | 'high'>('all')
@@ -46,6 +47,7 @@ export function PlayerMarketBrowser({
   const [notice, setNotice] = useState<{ kind: 'success' | 'error' | 'info'; message: string } | null>(null)
 
   const clubs = useMemo(() => ['ALL', ...new Set(players.map((player) => player.club_name))], [players])
+  const competitions = useMemo(() => ['ALL', ...new Set(players.map((player) => player.competition_name).filter((name): name is string => Boolean(name)))], [players])
   const holdingsSet = useMemo(() => new Set(holdings.map((item) => item.player_id)), [holdings])
   const watchSet = useMemo(() => new Set(watchlist), [watchlist])
   const playersById = useMemo(() => new Map(players.map((player) => [player.id, player])), [players])
@@ -65,6 +67,10 @@ export function PlayerMarketBrowser({
 
     if (position !== 'ALL') {
       rows = rows.filter((player) => player.position === position)
+    }
+
+    if (competition !== 'ALL') {
+      rows = rows.filter((player) => player.competition_name === competition)
     }
 
     if (club !== 'ALL') {
@@ -100,7 +106,7 @@ export function PlayerMarketBrowser({
     })
 
     return rows
-  }, [players, search, position, club, trend, priceRange, sortKey])
+  }, [players, search, position, competition, club, trend, priceRange, sortKey])
   const visiblePlayers = useMemo(() => filtered.slice(0, visibleCount), [filtered, visibleCount])
 
   function resetCatalogueWindow() {
@@ -166,7 +172,7 @@ export function PlayerMarketBrowser({
         </div>
         {players[0]?.data_source_label.includes('Sportmonks') ? (
           <div className="relative mt-4 rounded-2xl border border-emerald-700/20 bg-emerald-950/[.055] px-4 py-3 text-sm">
-            <p className="font-bold text-emerald-900">Verified Premier League market · {players.length} players live</p>
+            <p className="font-bold text-emerald-900">Verified Premier League + La Liga market · {players.length} players live</p>
             <p className="mt-1 text-xs text-slate-600">Player identities and current squads come from Sportmonks. These are FootballIQ game prices—not real transfer values. {marketHasMoved ? 'Price movement is calculated from verified completed-fixture ratings and minutes.' : 'Opening prices stay fixed until verified ratings and minutes trigger transparent movement.'}</p>
           </div>
         ) : null}
@@ -186,7 +192,7 @@ export function PlayerMarketBrowser({
           <FormationPill label="Sales today" value={String(salesRemaining)} subtle="remaining" />
         </div>
 
-        <div className="mt-5 grid gap-3 md:grid-cols-2 lg:grid-cols-6">
+        <div className="mt-5 grid gap-3 md:grid-cols-2 lg:grid-cols-7">
           <label className="lg:col-span-2">
             <span className="mb-1 block text-xs text-muted-foreground">Search</span>
             <div className="flex items-center rounded-xl border border-border bg-background px-3">
@@ -196,6 +202,7 @@ export function PlayerMarketBrowser({
           </label>
 
           <FilterSelect label="Position" value={position} onChange={(value) => { setPosition(value); resetCatalogueWindow() }} options={['ALL', 'GK', 'DEF', 'MID', 'FWD']} />
+          <FilterSelect label="League" value={competition} onChange={(value) => { setCompetition(value); setClub('ALL'); resetCatalogueWindow() }} options={competitions} />
           <FilterSelect label="Club" value={club} onChange={(value) => { setClub(value); resetCatalogueWindow() }} options={clubs} />
           <FilterSelect label="Trend" value={trend} onChange={(value) => { setTrend(value); resetCatalogueWindow() }} options={['all', 'rising', 'falling']} />
           <FilterSelect label="Price" value={priceRange} onChange={(value) => { setPriceRange(value); resetCatalogueWindow() }} options={['all', 'low', 'mid', 'high']} />
@@ -218,6 +225,7 @@ export function PlayerMarketBrowser({
             onClick={() => {
               setSearch('')
               setPosition('ALL')
+              setCompetition('ALL')
               setClub('ALL')
               setTrend('all')
               setPriceRange('all')
@@ -265,7 +273,7 @@ export function PlayerMarketBrowser({
                     <MarketPlayerChip player={player} />
                     <div className="min-w-0">
                       <p className="truncate text-base font-black tracking-tight text-slate-950">{player.display_name}</p>
-                      <p className="truncate text-xs font-medium text-slate-500">{player.club_name} · {player.position}</p>
+                      <p className="truncate text-xs font-medium text-slate-500">{player.club_name} · {player.competition_name ?? 'FootballIQ'} · {player.position}</p>
                     </div>
                   </div>
                   <span className="rounded-full border border-emerald-900/10 bg-emerald-950/[.055] px-2 py-1 text-[10px] font-black uppercase tracking-wide text-emerald-900">{player.position}</span>

@@ -12,6 +12,8 @@ export type MarketPlayer = {
   display_name: string
   short_name: string | null
   club_name: string
+  competition_key?: 'premier-league' | 'la-liga' | string
+  competition_name?: string
   position: MarketPosition
   age?: number | null
   nationality: string | null
