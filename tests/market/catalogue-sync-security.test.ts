@@ -3,6 +3,7 @@ import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
 
 const route = readFileSync(resolve(process.cwd(), 'app/api/market/sync-catalogue/route.ts'), 'utf8')
+const catalogueRoute = readFileSync(resolve(process.cwd(), 'app/api/market/catalogue/route.ts'), 'utf8')
 const service = readFileSync(resolve(process.cwd(), 'lib/market/server/catalogue-sync.ts'), 'utf8')
 
 describe('server-only Market catalogue synchronization', () => {
@@ -29,5 +30,10 @@ describe('server-only Market catalogue synchronization', () => {
     expect(service).toMatch(/synced \+= rows\.length/)
     expect(service).toMatch(/stalePlayerIds/)
     expect(service).toMatch(/availability_status: 'inactive'/)
+  })
+
+  it('keeps league-specific catalogue requests dynamic while provider calls remain cached', () => {
+    expect(catalogueRoute).toMatch(/dynamic = 'force-dynamic'/)
+    expect(catalogueRoute).toMatch(/new URL\(request\.url\)\.searchParams\.get\('competition'\)/)
   })
 })

@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server'
-import { auditSportmonksBundesligaSeasons, buildSportmonksBundesligaCatalogue, buildSportmonksCombinedCatalogue, buildSportmonksLaLigaCatalogue, buildSportmonksPremierLeagueCatalogue } from '@/lib/market/server/sportmonks-client'
+import { buildSportmonksBundesligaCatalogue, buildSportmonksCombinedCatalogue, buildSportmonksLaLigaCatalogue, buildSportmonksPremierLeagueCatalogue } from '@/lib/market/server/sportmonks-client'
 
 export const runtime = 'nodejs'
-export const revalidate = 3600
+export const dynamic = 'force-dynamic'
 
 export async function GET(request: Request) {
   if (process.env.VERCEL_ENV !== 'preview') {
@@ -10,9 +10,7 @@ export async function GET(request: Request) {
   }
   try {
     const competition = new URL(request.url).searchParams.get('competition')
-    const catalogue = competition === 'bundesliga-diagnostic'
-      ? { competition: 'Bundesliga diagnostic', seasons: await auditSportmonksBundesligaSeasons() }
-      : competition === 'bundesliga'
+    const catalogue = competition === 'bundesliga'
       ? await buildSportmonksBundesligaCatalogue()
       : competition === 'la-liga'
         ? await buildSportmonksLaLigaCatalogue()
