@@ -9,6 +9,7 @@ import { useAuth } from '@/components/auth-provider'
 import {
   calculateTradesRemaining,
   loadMarketPlayers,
+  loadMyGameweekStatus,
   loadMyPortfolioData,
   loadPlayerSeasonStats,
   loadPlayerValueHistory,
@@ -28,8 +29,8 @@ export default function PlayerMarketDetailPage() {
   const [holdings, setHoldings] = useState<MarketHolding[]>([])
   const [watchlist, setWatchlist] = useState<number[]>([])
   const [availableCash, setAvailableCash] = useState(100_000_000)
-  const [buysRemaining, setBuysRemaining] = useState(3)
-  const [salesRemaining, setSalesRemaining] = useState(3)
+  const [buysRemaining, setBuysRemaining] = useState(11)
+  const [salesRemaining, setSalesRemaining] = useState(11)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
@@ -54,7 +55,7 @@ export default function PlayerMarketDetailPage() {
     }
 
     const isDemoPlayer = currentPlayer.provenance_status === 'owner_seed_demo'
-    const [statsResult, historyResult, portfolioResult] = await Promise.all([
+    const [statsResult, historyResult, portfolioResult, gameweekStatus] = await Promise.all([
       isDemoPlayer
         ? Promise.resolve({ data: buildSampleSeasonStats(marketPlayers).filter((row) => row.player_id === currentPlayer.id), error: null })
         : loadPlayerSeasonStats(currentPlayer.id),
@@ -67,6 +68,7 @@ export default function PlayerMarketDetailPage() {
             return loadMyPortfolioData()
           })()
         : loadMyPortfolioData(),
+      loadMyGameweekStatus(),
     ])
 
     if (statsResult.error) setError(statsResult.error.message)
@@ -81,8 +83,8 @@ export default function PlayerMarketDetailPage() {
     setAvailableCash(portfolioResult.portfolio?.available_balance ?? 100_000_000)
 
     const remaining = calculateTradesRemaining(portfolioResult.transactions)
-    setBuysRemaining(remaining.buysRemaining)
-    setSalesRemaining(remaining.salesRemaining)
+    setBuysRemaining(gameweekStatus.data?.signings_remaining ?? remaining.buysRemaining)
+    setSalesRemaining(gameweekStatus.data ? 11 : remaining.salesRemaining)
 
     setLoading(false)
   }

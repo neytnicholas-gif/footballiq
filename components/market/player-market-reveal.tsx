@@ -10,7 +10,7 @@ export function PlayerMarketReveal({ latest, history }: { latest: MarketRevealSu
     return (
       <section className="rounded-[2rem] border border-border bg-card p-6 sm:p-8">
         <h1 className="text-3xl font-black">The Reveal</h1>
-        <p className="mt-3 text-sm text-muted-foreground">The verified engine is ready. The 2026/27 market is still in its opening phase, so The Reveal will unlock after a completed fixture supplies eligible Sportmonks ratings and minutes.</p>
+        <p className="mt-3 text-sm text-muted-foreground">The Reveal unlocks when a completed gameweek supplies verified Sportmonks ratings and minutes. Every eligible player is processed once, then your portfolio movement is saved here.</p>
         <div className="mt-4 flex flex-wrap gap-3">
           <Link href="/market/players" className="rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground">Browse players</Link>
           <Link href="/market" className="rounded-xl border border-border px-4 py-2 text-sm font-semibold">Return to Market</Link>
@@ -22,9 +22,9 @@ export function PlayerMarketReveal({ latest, history }: { latest: MarketRevealSu
   return (
     <div className="space-y-5">
       <section className="rounded-[2rem] border border-border bg-card p-6 sm:p-8">
-        <p className="text-xs font-semibold uppercase tracking-[.2em] text-amber-200">Legacy update record</p>
+        <p className="text-xs font-semibold uppercase tracking-[.2em] text-emerald-800">Verified gameweek reveal</p>
         <h1 className="mt-2 text-3xl font-black sm:text-4xl">The Reveal: {latest.week_label}</h1>
-        <p className="mt-2 text-sm text-muted-foreground">This is a historical development-mode snapshot, not a verified real-performance update. Production value updates are frozen.</p>
+        <p className="mt-2 text-sm text-muted-foreground">Completed-match ratings and minutes have repriced your holdings. Sell a riser, hold your conviction, or use one of your 11 new gameweek signings.</p>
 
         <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
           <Metric label="Previous portfolio value" value={formatFiqCompact(latest.previous_portfolio_value)} />
@@ -90,7 +90,7 @@ export function PlayerMarketReveal({ latest, history }: { latest: MarketRevealSu
       </section>
 
       <section className="rounded-[2rem] border border-border bg-card p-6">
-        <h2 className="text-xl font-bold">Legacy update history</h2>
+        <h2 className="text-xl font-bold">Gameweek history</h2>
         <div className="mt-4 space-y-2">
           {history.map((run) => (
             <div key={`${run.scope_key}-${run.week_number}`} className="rounded-xl border border-border bg-background/60 px-3 py-2 text-sm">

@@ -8,6 +8,7 @@ import {
   calculateTradesRemaining,
   loadMatchweekRuns,
   loadMyRevealHistory,
+  loadMyGameweekStatus,
   loadMarketPlayers,
   loadMyPortfolioData,
   refreshMyMarketPortfolio,
@@ -24,8 +25,8 @@ export default function PlayerMarketPortfolioPage() {
   const [watchlist, setWatchlist] = useState<number[]>([])
   const [runs, setRuns] = useState<MarketMatchweekRun[]>([])
   const [reveals, setReveals] = useState<MarketRevealSummary[]>([])
-  const [buysRemaining, setBuysRemaining] = useState(3)
-  const [salesRemaining, setSalesRemaining] = useState(3)
+  const [buysRemaining, setBuysRemaining] = useState(11)
+  const [salesRemaining, setSalesRemaining] = useState(11)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [importResult, setImportResult] = useState<GuestMarketImportResult | null>(null)
@@ -58,7 +59,7 @@ export default function PlayerMarketPortfolioPage() {
       setLoading(true)
       setError('')
 
-      const [{ data: marketPlayers, error: playerError }, portfolioData, runsResult, revealsResult] = await Promise.all([
+      const [{ data: marketPlayers, error: playerError }, portfolioData, runsResult, revealsResult, gameweekStatus] = await Promise.all([
         loadMarketPlayers(),
         (async () => {
           if (user) await refreshMyMarketPortfolio()
@@ -66,6 +67,7 @@ export default function PlayerMarketPortfolioPage() {
         })(),
         loadMatchweekRuns(12),
         loadMyRevealHistory(12),
+        loadMyGameweekStatus(),
       ])
 
       if (!active) return
@@ -84,8 +86,8 @@ export default function PlayerMarketPortfolioPage() {
       setReveals(revealsResult.data)
 
       const remaining = calculateTradesRemaining(portfolioData.transactions)
-      setBuysRemaining(remaining.buysRemaining)
-      setSalesRemaining(remaining.salesRemaining)
+      setBuysRemaining(gameweekStatus.data?.signings_remaining ?? remaining.buysRemaining)
+      setSalesRemaining(gameweekStatus.data ? 11 : remaining.salesRemaining)
 
       setLoading(false)
     })()

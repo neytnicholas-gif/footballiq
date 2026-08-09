@@ -5,7 +5,7 @@ import { SiteHeader } from '@/components/site-header'
 import { PlayerMarketBrowser } from '@/components/market/player-market-browser'
 import { MarketDisclaimer } from '@/components/market/market-disclaimer'
 import { useAuth } from '@/components/auth-provider'
-import { calculateTradesRemaining, loadMarketPlayers, loadMarketSeasonStats, loadMyPortfolioData, refreshMyMarketPortfolio } from '@/lib/market/client'
+import { calculateTradesRemaining, loadMarketPlayers, loadMarketSeasonStats, loadMyGameweekStatus, loadMyPortfolioData, refreshMyMarketPortfolio } from '@/lib/market/client'
 import type { MarketHolding, MarketPlayer, MarketSeasonStats } from '@/lib/market/types'
 
 export default function PlayerMarketPlayersPage() {
@@ -14,8 +14,8 @@ export default function PlayerMarketPlayersPage() {
   const [holdings, setHoldings] = useState<MarketHolding[]>([])
   const [watchlist, setWatchlist] = useState<number[]>([])
   const [statsByPlayerId, setStatsByPlayerId] = useState<Record<number, MarketSeasonStats | undefined>>({})
-  const [buysRemaining, setBuysRemaining] = useState(3)
-  const [salesRemaining, setSalesRemaining] = useState(3)
+  const [buysRemaining, setBuysRemaining] = useState(11)
+  const [salesRemaining, setSalesRemaining] = useState(11)
   const [availableCash, setAvailableCash] = useState(100_000_000)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -43,14 +43,14 @@ export default function PlayerMarketPlayersPage() {
       await refreshMyMarketPortfolio()
     }
 
-    const portfolioData = await loadMyPortfolioData()
+    const [portfolioData, gameweekStatus] = await Promise.all([loadMyPortfolioData(), loadMyGameweekStatus()])
     if (portfolioData.error) setError(portfolioData.error.message)
     setHoldings(portfolioData.holdings)
     setWatchlist(portfolioData.watchlist)
     setAvailableCash(portfolioData.portfolio?.available_balance ?? 100_000_000)
     const remaining = calculateTradesRemaining(portfolioData.transactions)
-    setBuysRemaining(remaining.buysRemaining)
-    setSalesRemaining(remaining.salesRemaining)
+    setBuysRemaining(gameweekStatus.data?.signings_remaining ?? remaining.buysRemaining)
+    setSalesRemaining(gameweekStatus.data ? 11 : remaining.salesRemaining)
 
     setLoading(false)
   }

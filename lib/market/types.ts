@@ -117,6 +117,20 @@ export type MarketTransaction = {
   idempotency_key: string
 }
 
+export type MarketGameweekStatus = {
+  gameweek_id: string
+  gameweek_key: string
+  week_number: number
+  label: string
+  state: 'open' | 'processing' | 'revealed' | 'closed' | 'failed'
+  opens_at: string
+  closes_at: string
+  signings_used: number
+  signings_remaining: number
+  sales_count: number
+  maximum_signings: 11
+}
+
 export type MarketValueHistoryPoint = {
   id: number
   player_id: number

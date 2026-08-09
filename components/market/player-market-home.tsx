@@ -11,6 +11,7 @@ import { MarketPlayerChip } from '@/components/market/market-player-chip'
 import {
   calculateTradesRemaining,
   loadMyLatestReveal,
+  loadMyGameweekStatus,
   loadLatestMatchweekRun,
   loadMarketPlayers,
   loadMyPortfolioData,
@@ -20,8 +21,6 @@ import {
   formatChange,
   formatFiqCompact,
   formatFiqLong,
-  MARKET_DAILY_BUY_LIMIT,
-  MARKET_DAILY_SELL_LIMIT,
   MARKET_MAX_PORTFOLIO_SIZE,
 } from '@/lib/market/format'
 import type { MarketHolding, MarketMatchweekRun, MarketPlayer, MarketPortfolio } from '@/lib/market/types'
@@ -46,13 +45,14 @@ export function PlayerMarketHome() {
     setLoading(true)
     setError('')
 
-    const [{ data: playerRows, error: playerError }, portfolioData, latestRunData] = await Promise.all([
+    const [{ data: playerRows, error: playerError }, portfolioData, latestRunData, gameweekStatus] = await Promise.all([
       loadMarketPlayers(),
       (async () => {
         if (user) await refreshMyMarketPortfolio()
         return loadMyPortfolioData()
       })(),
       loadLatestMatchweekRun(),
+      loadMyGameweekStatus(),
     ])
 
     if (playerError) {
@@ -73,7 +73,9 @@ export function PlayerMarketHome() {
     setLastRun(latestRunData.data)
 
     const remaining = calculateTradesRemaining(portfolioData.transactions)
-    setTradesMessage(`${remaining.buysRemaining}/${MARKET_DAILY_BUY_LIMIT} buys left · ${remaining.salesRemaining}/${MARKET_DAILY_SELL_LIMIT} sales left today`)
+    setTradesMessage(gameweekStatus.data
+      ? `${gameweekStatus.data.signings_remaining}/11 signings left in ${gameweekStatus.data.label}`
+      : `${remaining.buysRemaining} preview buys left today`)
 
     const revealResult = await loadMyLatestReveal()
     setLatestRevealWeek(revealResult.data?.week_label ?? null)
@@ -149,7 +151,7 @@ export function PlayerMarketHome() {
           <SummaryCard icon={<Wallet className="size-5" />} label="Total account value" value={portfolio ? formatFiqCompact(portfolio.total_account_value) : '100.0m FIQ'} sub={portfolio ? formatFiqLong(portfolio.total_account_value) : 'Create an account to track your market account'} />
           <SummaryCard icon={<Coins className="size-5" />} label="Available balance" value={portfolio ? formatFiqCompact(portfolio.available_balance) : '100.0m FIQ'} sub={portfolio ? `Starting balance ${formatFiqCompact(portfolio.starting_balance)}` : 'No cash purchases. No withdrawals.'} />
           <SummaryCard icon={<BarChart3 className="size-5" />} label="Portfolio value" value={portfolio ? formatFiqCompact(portfolio.portfolio_value) : '0.0m FIQ'} sub={portfolio ? `${holdings.length}/${MARKET_MAX_PORTFOLIO_SIZE} slots used` : '11-player portfolio target'} />
-          <SummaryCard icon={<TrendingUp className="size-5" />} label="Realised profit/loss" value={portfolio ? formatChange(portfolio.realized_profit_loss) : '0'} sub={tradesMessage || 'Three buys and three sales available daily'} />
+          <SummaryCard icon={<TrendingUp className="size-5" />} label="Realised profit/loss" value={portfolio ? formatChange(portfolio.realized_profit_loss) : '0'} sub={tradesMessage || '11 new signings available each gameweek'} />
         </div>
 
         <div className="mt-3 rounded-xl border border-border bg-background/60 px-4 py-3 text-xs text-muted-foreground">
@@ -172,7 +174,7 @@ export function PlayerMarketHome() {
             <div>
               <p className="text-xs font-semibold uppercase tracking-[.2em] text-emerald-800">Verified-performance engine</p>
               <h2 className="mt-1 text-2xl font-black">{previewExperimentActive ? '11-player preview experiment is live' : players.some((player) => player.current_value !== player.opening_season_value) ? 'Verified price movement is live' : 'Opening market is live'}</h2>
-              <p className="mt-2 max-w-3xl text-sm text-muted-foreground">{previewExperimentActive ? 'A controlled set of ratings and minutes is running through the real FootballIQ valuation rules. It proves the portfolio loop without presenting test evidence as a completed fixture.' : 'Sportmonks supplies current squads plus completed-fixture ratings and minutes. FootballIQ recalculates eligible prices hourly and freezes any player whose evidence is missing.'}</p>
+              <p className="mt-2 max-w-3xl text-sm text-muted-foreground">{previewExperimentActive ? 'A controlled set of ratings and minutes is running through the real FootballIQ valuation rules. It proves the portfolio loop without presenting test evidence as a completed fixture.' : 'Sportmonks supplies current squads plus completed-fixture ratings and minutes. FootballIQ processes eligible prices after verified gameweeks and freezes any player whose evidence is missing.'}</p>
             </div>
             <div className="flex flex-wrap gap-2">
               <span className="inline-flex items-center gap-2 rounded-xl border border-emerald-700/20 bg-emerald-700/10 px-4 py-2.5 text-sm font-semibold text-emerald-900"><DatabaseZap className="size-4" /> {previewExperimentActive ? 'Controlled preview data' : 'Sportmonks verified'}</span>

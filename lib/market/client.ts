@@ -22,6 +22,7 @@ import type {
   MarketFriendLeague,
   MarketFriendLeagueLeaderboardRow,
   MarketFriendLeagueMember,
+  MarketGameweekStatus,
   MarketHolding,
   MarketLeaderboardRow,
   MarketMatchweekApplyResult,
@@ -423,6 +424,14 @@ export function calculateTradesRemaining(transactions: MarketTransaction[]) {
   }
 }
 
+export async function loadMyGameweekStatus(): Promise<{ data: MarketGameweekStatus | null; error: Error | null }> {
+  const { data: authData } = await supabase.auth.getUser()
+  if (!authData.user) return { data: null, error: null }
+  const { data, error } = await (supabase as any).rpc('market_my_gameweek_status', {})
+  if (isMarketBackendUnavailable(error)) return { data: null, error: null }
+  return { data: (data as MarketGameweekStatus | null) ?? null, error: error as Error | null }
+}
+
 export async function buyMarketPlayer(slug: string, playerId?: number) {
   const idempotencyKey = createMarketRequestKey(`buy-${slug}`)
 
@@ -650,6 +659,11 @@ export async function loadMatchweekRuns(limit = 12): Promise<{ data: MarketMatch
 export async function loadMyRevealHistory(limit = 12): Promise<{ data: MarketRevealSummary[]; error: Error | null }> {
   const { data: authData } = await supabase.auth.getUser()
   const scopeKey = authData.user?.id ?? 'anon'
+  if (authData.user) {
+    const { data, error } = await (supabase as any).rpc('market_my_reveals', { p_limit: limit })
+    if (!error && Array.isArray(data)) return { data: data as MarketRevealSummary[], error: null }
+    if (error && !isMarketBackendUnavailable(error)) return { data: [], error: error as Error }
+  }
   return {
     data: loadRevealHistory(scopeKey, limit),
     error: null,
@@ -657,10 +671,6 @@ export async function loadMyRevealHistory(limit = 12): Promise<{ data: MarketRev
 }
 
 export async function loadMyLatestReveal(): Promise<{ data: MarketRevealSummary | null; error: Error | null }> {
-  const { data: authData } = await supabase.auth.getUser()
-  const scopeKey = authData.user?.id ?? 'anon'
-  return {
-    data: loadLatestReveal(scopeKey),
-    error: null,
-  }
+  const result = await loadMyRevealHistory(1)
+  return { data: result.data[0] ?? null, error: result.error }
 }

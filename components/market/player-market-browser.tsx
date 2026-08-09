@@ -195,7 +195,7 @@ export function PlayerMarketBrowser({
           <FormationPill label="DEF" value={`${formation.DEF}/4`} />
           <FormationPill label="MID" value={`${formation.MID}/3`} />
           <FormationPill label="FWD" value={`${formation.FWD}/3`} />
-          <FormationPill label="Buys today" value={String(buysRemaining)} subtle="remaining" />
+          <FormationPill label="Gameweek signings" value={String(buysRemaining)} subtle="remaining of 11" />
           <FormationPill label="Sales today" value={String(salesRemaining)} subtle="remaining" />
         </div>
 
@@ -340,7 +340,7 @@ export function PlayerMarketBrowser({
                           : availableCash < player.current_value
                             ? 'Insufficient cash for this purchase.'
                           : buysRemaining <= 0
-                            ? 'Daily buy limit reached.'
+                            ? 'Gameweek signing limit reached.'
                             : 'Not available for buy right now.'}
                   </p>
                 ) : null}

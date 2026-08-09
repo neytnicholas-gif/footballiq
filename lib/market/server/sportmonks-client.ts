@@ -134,6 +134,25 @@ export type SportmonksMarketCatalogue = {
   players: MarketPlayer[]
 }
 
+export type SportmonksGameweekUpdate = {
+  provider_player_id: string
+  provider_fixture_id: string
+  fixture_date: string
+  started: boolean
+  minutes_played: number
+  rating: number
+  retrieved_at: string
+}
+
+export type SportmonksCompletedGameweek = {
+  gameweekKey: string
+  weekNumber: number
+  label: string
+  opensAt: string
+  closesAt: string
+  updates: SportmonksGameweekUpdate[]
+}
+
 function isFinishedFixture(row: JsonRecord) {
   const state = relation(row, 'state')
   const value = String(state?.developer_name ?? state?.short_name ?? '').toUpperCase().replace(/[\s-]+/g, '_')
@@ -443,5 +462,64 @@ export async function buildSportmonksCombinedCatalogue(apiToken = process.env.SP
     unavailableCompetitions,
     players: competitions.flatMap((catalogue) => catalogue.players)
       .sort((a, b) => b.current_value - a.current_value || a.display_name.localeCompare(b.display_name)),
+  }
+}
+
+export async function fetchSportmonksCompletedGameweek(apiToken = process.env.SPORTMONKS_API_TOKEN): Promise<SportmonksCompletedGameweek> {
+  const client = createSportmonksClient(apiToken)
+  const leagueConfigs = [
+    { id: PREMIER_LEAGUE_ID, name: 'Premier League' },
+    { id: LA_LIGA_ID, name: 'La Liga' },
+    { id: LIGUE_1_ID, name: 'Ligue 1' },
+  ] as const
+  const retrievedAt = new Date().toISOString()
+  const fixtures: JsonRecord[] = []
+
+  for (const leagueConfig of leagueConfigs) {
+    const league = record(await client.get(`/leagues/${leagueConfig.id}?include=currentSeason`))
+    const season = league ? relation(league, 'currentseason', 'currentSeason') : null
+    if (!season?.id) continue
+    const schedule = record(await client.get(`/seasons/${encodeURIComponent(String(season.id))}?include=fixtures.state`))
+    fixtures.push(...relationRows(schedule ?? {}, 'fixtures').filter(isFinishedFixture))
+  }
+
+  const finished = fixtures.filter((fixture) => fixtureDate(fixture))
+    .sort((a, b) => Date.parse(fixtureDate(b)!) - Date.parse(fixtureDate(a)!))
+  if (finished.length === 0) throw new Error('No completed Sportmonks fixtures with verified dates are available yet.')
+  const latest = finished[0]!
+  const latestRound = Number(latest.round_id)
+  const selected = Number.isInteger(latestRound)
+    ? finished.filter((fixture) => Number(fixture.round_id) === latestRound)
+    : finished.filter((fixture) => fixtureDate(fixture)!.slice(0, 10) === fixtureDate(latest)!.slice(0, 10))
+  const updates: SportmonksGameweekUpdate[] = []
+
+  for (const fixture of selected) {
+    const providerFixtureId = String(fixture.id)
+    const payload = record(await client.get(`/fixtures/${encodeURIComponent(providerFixtureId)}?include=lineups.details.type;state`))
+    for (const lineup of payload ? relationRows(payload, 'lineups') : []) {
+      const playerId = Number(lineup.player_id)
+      const minutes = numericDetail(lineup, 'MINUTES_PLAYED')
+      const rating = numericDetail(lineup, 'RATING')
+      if (!Number.isSafeInteger(playerId) || !Number.isInteger(minutes) || minutes! <= 0 || minutes! > 130 || rating === null || rating < 0 || rating > 10) continue
+      updates.push({
+        provider_player_id: String(playerId), provider_fixture_id: providerFixtureId,
+        fixture_date: fixtureDate(fixture)!, started: Boolean(lineup.type_id === 11 || lineup.formation_position),
+        minutes_played: minutes!, rating, retrieved_at: retrievedAt,
+      })
+    }
+  }
+  if (updates.length === 0) throw new Error('Completed fixtures did not contain eligible Sportmonks ratings and minutes.')
+
+  const fixtureDay = fixtureDate(latest)!.slice(0, 10)
+  const weekNumber = Number.isInteger(latestRound) && latestRound > 0 ? latestRound : Number(fixtureDay.replaceAll('-', '').slice(-4))
+  const opensAt = new Date(`${fixtureDay}T00:00:00.000Z`)
+  opensAt.setUTCDate(opensAt.getUTCDate() - 6)
+  const closesAt = new Date(opensAt)
+  closesAt.setUTCDate(closesAt.getUTCDate() + 7)
+  return {
+    gameweekKey: `sportmonks-${weekNumber}-${fixtureDay}`,
+    weekNumber,
+    label: `Gameweek ${weekNumber}`,
+    opensAt: opensAt.toISOString(), closesAt: closesAt.toISOString(), updates,
   }
 }
