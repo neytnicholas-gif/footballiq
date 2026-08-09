@@ -273,6 +273,30 @@ button, a {
   .mode-game { border-radius: 1.4rem; }
 }
 
+/* Market pages deliberately use a bright exchange surface. Keep their semantic
+   colours light even when the visitor's system theme is dark. */
+.market-theme {
+  color-scheme: light;
+  --background: oklch(0.986 0.006 97);
+  --foreground: oklch(0.236 0.028 246);
+  --card: oklch(0.998 0.002 98);
+  --card-foreground: oklch(0.236 0.028 246);
+  --popover: oklch(0.998 0.002 98);
+  --popover-foreground: oklch(0.236 0.028 246);
+  --primary: oklch(0.61 0.154 170);
+  --primary-foreground: oklch(0.985 0.004 96);
+  --secondary: oklch(0.951 0.009 236);
+  --secondary-foreground: oklch(0.315 0.026 246);
+  --muted: oklch(0.964 0.007 115);
+  --muted-foreground: oklch(0.42 0.018 250);
+  --accent: oklch(0.752 0.14 91);
+  --accent-foreground: oklch(0.23 0.025 92);
+  --destructive: oklch(0.56 0.21 25);
+  --border: oklch(0.86 0.014 235);
+  --input: oklch(0.89 0.014 235);
+  --ring: oklch(0.61 0.154 170);
+}
+
 .mode-referee { --mode-accent: 245 184 33; --mode-accent-2: 231 76 60; --mode-panel: 20 15 10; background: radial-gradient(circle at 50% -8%,rgb(245 184 33/.18),transparent 20rem),radial-gradient(circle at 15% 15%,rgb(231 76 60/.12),transparent 28rem),linear-gradient(180deg,#0f1118,#0d1017); }
 .mode-referee .mode-game { background: linear-gradient(180deg,#11151d,#0b1017); border-color: rgb(245 184 33 / .16); box-shadow: 0 34px 90px -52px rgb(245 184 33 / .3); }
 .mode-referee .mode-hero:before,.mode-referee .mode-hero:after { content:""; position:absolute; top:-5rem; width:11rem; height:18rem; background:radial-gradient(ellipse,rgb(255 255 255/.35),transparent 65%); transform:rotate(19deg); filter:blur(3px); }

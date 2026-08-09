@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { buildSportmonksBundesligaCatalogue, buildSportmonksCombinedCatalogue, buildSportmonksLaLigaCatalogue, buildSportmonksLigue1Catalogue, buildSportmonksPremierLeagueCatalogue, buildSportmonksSerieACatalogue } from '@/lib/market/server/sportmonks-client'
+import { applyPreviewValueExperiment } from '@/lib/market/server/preview-experiment'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -21,15 +22,17 @@ export async function GET(request: Request) {
       : competition === 'premier-league'
         ? await buildSportmonksPremierLeagueCatalogue()
         : await buildSportmonksCombinedCatalogue()
+    const experiment = await applyPreviewValueExperiment(catalogue.players)
     const responseCatalogue = 'competitions' in catalogue
       ? {
           ...catalogue,
+          players: experiment.players,
           competitions: catalogue.competitions.map((competitionSummary) => ({ ...competitionSummary, players: undefined })),
         }
-      : catalogue
+      : { ...catalogue, players: experiment.players }
 
     return NextResponse.json(responseCatalogue, {
-      headers: { 'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=86400' },
+      headers: { 'Cache-Control': experiment.active ? 'private, no-store' : 'public, s-maxage=3600, stale-while-revalidate=86400' },
     })
   } catch (error) {
     const message = error instanceof Error ? error.message : 'The verified player catalogue could not be loaded.'

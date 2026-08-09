@@ -37,6 +37,10 @@ export function PlayerMarketHome() {
   const [tradesMessage, setTradesMessage] = useState('')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const previewExperimentActive = useMemo(() => players.some((player) => player.data_source_label.includes('preview valuation experiment')), [players])
+  const previewPlayers = useMemo(() => players.filter((player) => player.data_source_label.includes('preview valuation experiment')), [players])
+  const previewBefore = useMemo(() => previewPlayers.reduce((total, player) => total + player.previous_value, 0), [previewPlayers])
+  const previewAfter = useMemo(() => previewPlayers.reduce((total, player) => total + player.current_value, 0), [previewPlayers])
 
   async function load() {
     setLoading(true)
@@ -167,11 +171,11 @@ export function PlayerMarketHome() {
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[.2em] text-emerald-800">Verified-performance engine</p>
-              <h2 className="mt-1 text-2xl font-black">{players.some((player) => player.current_value !== player.opening_season_value) ? 'Verified price movement is live' : 'Opening market is live'}</h2>
-              <p className="mt-2 max-w-3xl text-sm text-muted-foreground">Sportmonks supplies current squads plus completed-fixture ratings and minutes. FootballIQ recalculates eligible prices hourly and freezes any player whose evidence is missing.</p>
+              <h2 className="mt-1 text-2xl font-black">{previewExperimentActive ? '11-player preview experiment is live' : players.some((player) => player.current_value !== player.opening_season_value) ? 'Verified price movement is live' : 'Opening market is live'}</h2>
+              <p className="mt-2 max-w-3xl text-sm text-muted-foreground">{previewExperimentActive ? 'A controlled set of ratings and minutes is running through the real FootballIQ valuation rules. It proves the portfolio loop without presenting test evidence as a completed fixture.' : 'Sportmonks supplies current squads plus completed-fixture ratings and minutes. FootballIQ recalculates eligible prices hourly and freezes any player whose evidence is missing.'}</p>
             </div>
             <div className="flex flex-wrap gap-2">
-              <span className="inline-flex items-center gap-2 rounded-xl border border-emerald-700/20 bg-emerald-700/10 px-4 py-2.5 text-sm font-semibold text-emerald-900"><DatabaseZap className="size-4" /> Sportmonks verified</span>
+              <span className="inline-flex items-center gap-2 rounded-xl border border-emerald-700/20 bg-emerald-700/10 px-4 py-2.5 text-sm font-semibold text-emerald-900"><DatabaseZap className="size-4" /> {previewExperimentActive ? 'Controlled preview data' : 'Sportmonks verified'}</span>
               <Link href="/market/reveal" className="inline-flex items-center gap-2 rounded-xl border border-border px-4 py-2.5 text-sm font-semibold">
                 Open The Reveal
               </Link>
@@ -188,6 +192,35 @@ export function PlayerMarketHome() {
             <div className="mt-4 rounded-xl border border-border bg-background/60 px-4 py-3 text-sm text-muted-foreground">The 2026/27 market is in its opening phase. Prices will move after the first completed fixture supplies eligible ratings and minutes.</div>
           )}
       </section>
+
+      {previewExperimentActive ? (
+        <section className="rounded-[2rem] border border-amber-500/30 bg-gradient-to-br from-amber-50 via-white to-emerald-50 p-6 text-slate-950 shadow-sm sm:p-8">
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div>
+              <p className="text-xs font-black uppercase tracking-[.2em] text-amber-800">Isolated engine proof · not your account</p>
+              <h2 className="mt-1 text-2xl font-black">Complete 1-4-3-3 valuation trial</h2>
+              <p className="mt-2 max-w-3xl text-sm text-slate-600">Eleven controlled ratings have been processed by the production valuation formula. Test players are trade-locked, so this proof cannot alter your cash, holdings, leaderboard rank, or transaction history.</p>
+            </div>
+            <span className="rounded-xl border border-emerald-700/20 bg-emerald-700/10 px-4 py-2 text-sm font-bold text-emerald-900">{previewPlayers.length}/11 players processed</span>
+          </div>
+          <div className="mt-5 grid gap-3 sm:grid-cols-3">
+            <SummaryCard icon={<Coins className="size-5" />} label="Squad before" value={formatFiqCompact(previewBefore)} sub="Opening game prices" />
+            <SummaryCard icon={<TrendingUp className="size-5" />} label="Squad after" value={formatFiqCompact(previewAfter)} sub="Rating + minutes applied" />
+            <SummaryCard icon={<BarChart3 className="size-5" />} label="Net movement" value={formatChange(previewAfter - previewBefore)} sub="Across rising, falling and flat outcomes" />
+          </div>
+          <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+            {previewPlayers.map((player) => {
+              const delta = player.current_value - player.previous_value
+              return (
+                <Link key={player.id} href={`/market/player/${encodeURIComponent(player.slug)}`} className="flex items-center justify-between rounded-xl border border-slate-200 bg-white/80 px-3 py-2 text-sm text-slate-900 transition hover:border-emerald-500">
+                  <span><strong>{player.display_name}</strong><span className="ml-2 text-xs text-slate-500">{player.position}</span></span>
+                  <span className={delta > 0 ? 'font-bold text-emerald-700' : delta < 0 ? 'font-bold text-red-700' : 'font-bold text-slate-600'}>{delta > 0 ? '+' : delta < 0 ? '−' : ''}{formatFiqCompact(Math.abs(delta))}</span>
+                </Link>
+              )
+            })}
+          </div>
+        </section>
+      ) : null}
 
       {!user ? (
         <section className="rounded-[2rem] border border-border bg-card p-6 sm:p-8">
