@@ -100,6 +100,7 @@ describe('Sportmonks coverage trial client', () => {
     vi.spyOn(globalThis, 'fetch')
       .mockResolvedValueOnce(response({ id: 82, currentSeason: { id: 28321, name: '2026/2027' } }))
       .mockResolvedValueOnce(response([{ id: 20, name: 'Berlin FC' }]))
+      .mockResolvedValueOnce(response([]))
       .mockResolvedValueOnce(response([
         { player_id: 88, player: { id: 88, display_name: 'Max Example', date_of_birth: '2000-01-01' }, team: { id: 20, name: 'Berlin FC' }, position: { developer_name: 'DEFENDER' } },
       ]))

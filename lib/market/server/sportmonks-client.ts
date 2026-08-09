@@ -174,9 +174,15 @@ export async function runSportmonksCoverageTrial(apiToken = process.env.SPORTMON
 
   const teams = records(await client.get(`/teams/seasons/${encodeURIComponent(seasonId)}`))
   const teamIds = teams.map((team) => team.id).filter((id): id is string | number => typeof id === 'string' || typeof id === 'number')
-  const squads = (await Promise.all(teamIds.map(async (teamId) => records(await client.get(
-    `/squads/seasons/${encodeURIComponent(seasonId)}/teams/${encodeURIComponent(String(teamId))}?include=player;team;position`,
-  ))))).flat()
+  const squads = (await Promise.all(teamIds.map(async (teamId) => {
+    const seasonSquad = records(await client.get(
+      `/squads/seasons/${encodeURIComponent(seasonId)}/teams/${encodeURIComponent(String(teamId))}?include=player;team;position`,
+    ))
+    if (seasonSquad.length) return seasonSquad
+    return records(await client.get(
+      `/squads/teams/${encodeURIComponent(String(teamId))}?include=player;team;position`,
+    ))
+  }))).flat()
   const uniquePlayers = new Map(squads.map((row) => [String(row.player_id ?? relation(row, 'player')?.id ?? ''), row]))
   uniquePlayers.delete('')
   const usablePlayers = [...uniquePlayers.values()].filter((row) => mapPosition(row))
@@ -231,9 +237,15 @@ async function buildSportmonksLeagueCatalogue(
 
   const teams = records(await client.get(`/teams/seasons/${encodeURIComponent(seasonId)}`))
   const teamIds = teams.map((team) => team.id).filter((id): id is string | number => typeof id === 'string' || typeof id === 'number')
-  const squads = (await Promise.all(teamIds.map(async (teamId) => records(await client.get(
-    `/squads/seasons/${encodeURIComponent(seasonId)}/teams/${encodeURIComponent(String(teamId))}?include=player;team;position`,
-  ))))).flat()
+  const squads = (await Promise.all(teamIds.map(async (teamId) => {
+    const seasonSquad = records(await client.get(
+      `/squads/seasons/${encodeURIComponent(seasonId)}/teams/${encodeURIComponent(String(teamId))}?include=player;team;position`,
+    ))
+    if (seasonSquad.length) return seasonSquad
+    return records(await client.get(
+      `/squads/teams/${encodeURIComponent(String(teamId))}?include=player;team;position`,
+    ))
+  }))).flat()
   const seasonSchedule = record(await client.get(`/seasons/${encodeURIComponent(seasonId)}?include=fixtures.state`))
   const completedFixtures = relationRows(seasonSchedule ?? {}, 'fixtures')
     .filter((fixture) => isFinishedFixture(fixture) && fixtureDate(fixture))
