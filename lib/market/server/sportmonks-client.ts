@@ -335,6 +335,17 @@ export function buildSportmonksBundesligaCatalogue(apiToken = process.env.SPORTM
   return buildSportmonksLeagueCatalogue({ leagueId: BUNDESLIGA_ID, competition: 'Bundesliga', competitionKey: 'bundesliga' }, apiToken)
 }
 
+export async function auditSportmonksBundesligaSeasons(apiToken = process.env.SPORTMONKS_API_TOKEN) {
+  const client = createSportmonksClient(apiToken)
+  const seasons = records(await client.get(`/seasons?filter=leagueIds:${BUNDESLIGA_ID}`))
+    .sort((a, b) => Number(b.id) - Number(a.id))
+    .slice(0, 8)
+  return Promise.all(seasons.map(async (season) => {
+    const teams = records(await client.get(`/teams/seasons/${encodeURIComponent(String(season.id))}`))
+    return { id: String(season.id), name: textValue(season.name), teamCount: teams.length }
+  }))
+}
+
 export async function buildSportmonksCombinedCatalogue(apiToken = process.env.SPORTMONKS_API_TOKEN) {
   const [premierLeague, laLiga, bundesliga] = await Promise.all([
     buildSportmonksPremierLeagueCatalogue(apiToken),
