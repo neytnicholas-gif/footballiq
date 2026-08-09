@@ -347,19 +347,45 @@ export function buildSportmonksBundesligaCatalogue(apiToken = process.env.SPORTM
   return buildSportmonksLeagueCatalogue({ leagueId: BUNDESLIGA_ID, competition: 'Bundesliga', competitionKey: 'bundesliga' }, apiToken)
 }
 
+export function catalogueCoverage(catalogue: SportmonksMarketCatalogue) {
+  return {
+    playerCount: catalogue.players.length,
+    clubCount: new Set(catalogue.players.map((player) => player.club_name)).size,
+  }
+}
+
+export function isCatalogueReady(catalogue: SportmonksMarketCatalogue) {
+  const coverage = catalogueCoverage(catalogue)
+  return coverage.clubCount >= 16 && coverage.playerCount >= 300
+}
+
 export async function buildSportmonksCombinedCatalogue(apiToken = process.env.SPORTMONKS_API_TOKEN) {
-  const [premierLeague, laLiga, bundesliga] = await Promise.all([
+  const [premierLeague, laLiga, bundesligaResult] = await Promise.all([
     buildSportmonksPremierLeagueCatalogue(apiToken),
     buildSportmonksLaLigaCatalogue(apiToken),
-    buildSportmonksBundesligaCatalogue(apiToken),
+    buildSportmonksBundesligaCatalogue(apiToken).then(
+      (catalogue) => ({ catalogue, error: null }),
+      (error: unknown) => ({ catalogue: null, error: error instanceof Error ? error.message : 'Provider request failed' }),
+    ),
   ])
+  const optionalCatalogues = bundesligaResult.catalogue && isCatalogueReady(bundesligaResult.catalogue)
+    ? [bundesligaResult.catalogue]
+    : []
+  const competitions = [premierLeague, laLiga, ...optionalCatalogues]
+  const bundesligaCoverage = bundesligaResult.catalogue ? catalogueCoverage(bundesligaResult.catalogue) : null
   return {
     provider: 'Sportmonks Football API' as const,
-    competition: 'Premier League + La Liga + Bundesliga',
+    competition: competitions.map((catalogue) => catalogue.competition).join(' + '),
     generatedAt: new Date().toISOString(),
-    playerCount: premierLeague.playerCount + laLiga.playerCount + bundesliga.playerCount,
-    competitions: [premierLeague, laLiga, bundesliga],
-    players: [...premierLeague.players, ...laLiga.players, ...bundesliga.players]
+    playerCount: competitions.reduce((total, catalogue) => total + catalogue.playerCount, 0),
+    competitions,
+    unavailableCompetitions: optionalCatalogues.length ? [] : [{
+      competition: 'Bundesliga',
+      reason: bundesligaResult.error ?? 'Current provider squad coverage is incomplete',
+      playerCount: bundesligaCoverage?.playerCount ?? 0,
+      clubCount: bundesligaCoverage?.clubCount ?? 0,
+    }],
+    players: competitions.flatMap((catalogue) => catalogue.players)
       .sort((a, b) => b.current_value - a.current_value || a.display_name.localeCompare(b.display_name)),
   }
 }

@@ -48,6 +48,7 @@ export function PlayerMarketBrowser({
 
   const clubs = useMemo(() => ['ALL', ...new Set(players.map((player) => player.club_name))], [players])
   const competitions = useMemo(() => ['ALL', ...new Set(players.map((player) => player.competition_name).filter((name): name is string => Boolean(name)))], [players])
+  const liveCompetitionLabel = competitions.filter((name) => name !== 'ALL').join(' + ')
   const holdingsSet = useMemo(() => new Set(holdings.map((item) => item.player_id)), [holdings])
   const watchSet = useMemo(() => new Set(watchlist), [watchlist])
   const playersById = useMemo(() => new Map(players.map((player) => [player.id, player])), [players])
@@ -172,7 +173,7 @@ export function PlayerMarketBrowser({
         </div>
         {players[0]?.data_source_label.includes('Sportmonks') ? (
           <div className="relative mt-4 rounded-2xl border border-emerald-700/20 bg-emerald-950/[.055] px-4 py-3 text-sm">
-            <p className="font-bold text-emerald-900">Verified Premier League + La Liga + Bundesliga market · {players.length} players live</p>
+            <p className="font-bold text-emerald-900">Verified {liveCompetitionLabel} market · {players.length} players live</p>
             <p className="mt-1 text-xs text-slate-600">Player identities and current squads come from Sportmonks. These are FootballIQ game prices—not real transfer values. {marketHasMoved ? 'Price movement is calculated from verified completed-fixture ratings and minutes.' : 'Opening prices stay fixed until verified ratings and minutes trigger transparent movement.'}</p>
           </div>
         ) : null}
