@@ -414,7 +414,7 @@ export async function buildSportmonksCombinedCatalogue(apiToken = process.env.SP
     buildSportmonksPremierLeagueCatalogue(apiToken),
     buildSportmonksLaLigaCatalogue(apiToken),
     ...[
-      buildSportmonksSerieACatalogue(apiToken),
+      buildSportmonksLigue1Catalogue(apiToken),
     ].map((promise) => promise.then(
         (catalogue) => ({ catalogue, error: null }),
         (error: unknown) => ({ catalogue: null, error: error instanceof Error ? error.message : 'Provider request failed' }),
