@@ -177,13 +177,24 @@ export async function runSportmonksCoverageTrial(apiToken = process.env.SPORTMON
   const teams = records(await client.get(`/teams/seasons/${encodeURIComponent(seasonId)}`))
   const teamIds = teams.map((team) => team.id).filter((id): id is string | number => typeof id === 'string' || typeof id === 'number')
   const squads = (await Promise.all(teamIds.map(async (teamId) => {
+    const team = teams.find((candidate) => String(candidate.id) === String(teamId))
     const seasonSquad = records(await client.get(
       `/squads/seasons/${encodeURIComponent(seasonId)}/teams/${encodeURIComponent(String(teamId))}?include=player;team;position`,
     ))
     if (seasonSquad.length) return seasonSquad
-    return records(await client.get(
+    const currentSquad = records(await client.get(
       `/squads/teams/${encodeURIComponent(String(teamId))}?include=player;team;position`,
     ))
+    if (currentSquad.length) return currentSquad
+    const extendedSquad = records(await client.get(
+      `/squads/teams/${encodeURIComponent(String(teamId))}/extended?include=position`,
+    ))
+    return extendedSquad.map((player) => ({
+      player_id: player.id,
+      player,
+      team,
+      position: relation(player, 'position'),
+    }))
   }))).flat()
   const uniquePlayers = new Map(squads.map((row) => [String(row.player_id ?? relation(row, 'player')?.id ?? ''), row]))
   uniquePlayers.delete('')
@@ -240,13 +251,24 @@ async function buildSportmonksLeagueCatalogue(
   const teams = records(await client.get(`/teams/seasons/${encodeURIComponent(seasonId)}`))
   const teamIds = teams.map((team) => team.id).filter((id): id is string | number => typeof id === 'string' || typeof id === 'number')
   const squads = (await Promise.all(teamIds.map(async (teamId) => {
+    const team = teams.find((candidate) => String(candidate.id) === String(teamId))
     const seasonSquad = records(await client.get(
       `/squads/seasons/${encodeURIComponent(seasonId)}/teams/${encodeURIComponent(String(teamId))}?include=player;team;position`,
     ))
     if (seasonSquad.length) return seasonSquad
-    return records(await client.get(
+    const currentSquad = records(await client.get(
       `/squads/teams/${encodeURIComponent(String(teamId))}?include=player;team;position`,
     ))
+    if (currentSquad.length) return currentSquad
+    const extendedSquad = records(await client.get(
+      `/squads/teams/${encodeURIComponent(String(teamId))}/extended?include=position`,
+    ))
+    return extendedSquad.map((player) => ({
+      player_id: player.id,
+      player,
+      team,
+      position: relation(player, 'position'),
+    }))
   }))).flat()
   const seasonSchedule = record(await client.get(`/seasons/${encodeURIComponent(seasonId)}?include=fixtures.state`))
   const completedFixtures = relationRows(seasonSchedule ?? {}, 'fixtures')
@@ -374,9 +396,7 @@ export async function buildSportmonksCombinedCatalogue(apiToken = process.env.SP
     buildSportmonksPremierLeagueCatalogue(apiToken),
     buildSportmonksLaLigaCatalogue(apiToken),
     ...[
-      buildSportmonksBundesligaCatalogue(apiToken),
       buildSportmonksSerieACatalogue(apiToken),
-      buildSportmonksLigue1Catalogue(apiToken),
     ].map((promise) => promise.then(
         (catalogue) => ({ catalogue, error: null }),
         (error: unknown) => ({ catalogue: null, error: error instanceof Error ? error.message : 'Provider request failed' }),
