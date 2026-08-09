@@ -385,7 +385,7 @@ async function buildSportmonksLeagueCatalogue(
       position, age, nationality: textValue(player?.nationality_name ?? player?.nationality), active: true,
       current_value: value, previous_value: previousValue, opening_season_value: openingValue,
       value_updated_at: now, data_updated_at: now,
-      data_source_label: 'Sportmonks verified squad data · FootballIQ opening price',
+      data_source_label: 'Sportmonks-sourced squad data · FootballIQ opening game price',
       source_reference: `sportmonks-player-${id}`, provenance_status: 'verified', owner_verified: true,
       is_trade_locked: false, trade_lock_reason: null, trade_lock_started_at: null, trade_lock_ends_at: null,
       value_trend: value > previousValue ? 'rising' : value < previousValue ? 'falling' : 'flat',

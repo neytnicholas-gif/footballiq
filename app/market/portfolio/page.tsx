@@ -26,7 +26,6 @@ export default function PlayerMarketPortfolioPage() {
   const [runs, setRuns] = useState<MarketMatchweekRun[]>([])
   const [reveals, setReveals] = useState<MarketRevealSummary[]>([])
   const [buysRemaining, setBuysRemaining] = useState(11)
-  const [salesRemaining, setSalesRemaining] = useState(11)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [importResult, setImportResult] = useState<GuestMarketImportResult | null>(null)
@@ -87,7 +86,6 @@ export default function PlayerMarketPortfolioPage() {
 
       const remaining = calculateTradesRemaining(portfolioData.transactions)
       setBuysRemaining(gameweekStatus.data?.signings_remaining ?? remaining.buysRemaining)
-      setSalesRemaining(gameweekStatus.data ? 11 : remaining.salesRemaining)
 
       setLoading(false)
     })()
@@ -122,7 +120,6 @@ export default function PlayerMarketPortfolioPage() {
             runs={runs}
             reveals={reveals}
             buysRemaining={buysRemaining}
-            salesRemaining={salesRemaining}
           />
         )}
       </section>

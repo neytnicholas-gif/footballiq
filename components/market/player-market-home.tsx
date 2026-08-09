@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
 import { ArrowRight, BarChart3, Coins, DatabaseZap, Lock, Trophy, TrendingDown, TrendingUp, Users, Wallet } from 'lucide-react'
 import { countFormation } from '@/lib/market/formation'
@@ -41,7 +41,7 @@ export function PlayerMarketHome() {
   const previewBefore = useMemo(() => previewPlayers.reduce((total, player) => total + player.previous_value, 0), [previewPlayers])
   const previewAfter = useMemo(() => previewPlayers.reduce((total, player) => total + player.current_value, 0), [previewPlayers])
 
-  async function load() {
+  const load = useCallback(async () => {
     setLoading(true)
     setError('')
 
@@ -81,17 +81,19 @@ export function PlayerMarketHome() {
     setLatestRevealWeek(revealResult.data?.week_label ?? null)
 
     setLoading(false)
-  }
+  }, [user])
 
   useEffect(() => {
-    void load()
-  }, [user])
+    const timer = window.setTimeout(() => void load(), 0)
+    return () => window.clearTimeout(timer)
+  }, [load])
 
   useEffect(() => {
     if (typeof window === 'undefined') return
     const key = `fiq-market-onboarding-dismissed:${user?.id ?? 'anon'}`
     const stored = window.localStorage.getItem(key)
-    setOnboardingDismissed(stored === '1')
+    const timer = window.setTimeout(() => setOnboardingDismissed(stored === '1'), 0)
+    return () => window.clearTimeout(timer)
   }, [user])
 
   const movers = useMemo(() => {
@@ -133,7 +135,7 @@ export function PlayerMarketHome() {
 
         {!onboardingDismissed ? (
           <div className="mt-5 rounded-2xl border border-primary/25 bg-primary/10 px-4 py-3 text-sm">
-            <p className="font-semibold">You are not picking a fantasy team. You are investing in footballers you believe are undervalued.</p>
+            <p className="font-semibold">Build a game squad and predict which verified performances will improve FootballIQ prices.</p>
             <button
               className="mt-2 rounded-lg border border-border bg-background/60 px-3 py-1.5 text-xs font-semibold"
               onClick={() => {
@@ -151,7 +153,7 @@ export function PlayerMarketHome() {
           <SummaryCard icon={<Wallet className="size-5" />} label="Total account value" value={portfolio ? formatFiqCompact(portfolio.total_account_value) : '100.0m FIQ'} sub={portfolio ? formatFiqLong(portfolio.total_account_value) : 'Create an account to track your market account'} />
           <SummaryCard icon={<Coins className="size-5" />} label="Available balance" value={portfolio ? formatFiqCompact(portfolio.available_balance) : '100.0m FIQ'} sub={portfolio ? `Starting balance ${formatFiqCompact(portfolio.starting_balance)}` : 'No cash purchases. No withdrawals.'} />
           <SummaryCard icon={<BarChart3 className="size-5" />} label="Portfolio value" value={portfolio ? formatFiqCompact(portfolio.portfolio_value) : '0.0m FIQ'} sub={portfolio ? `${holdings.length}/${MARKET_MAX_PORTFOLIO_SIZE} slots used` : '11-player portfolio target'} />
-          <SummaryCard icon={<TrendingUp className="size-5" />} label="Realised profit/loss" value={portfolio ? formatChange(portfolio.realized_profit_loss) : '0'} sub={tradesMessage || '11 new signings available each gameweek'} />
+          <SummaryCard icon={<TrendingUp className="size-5" />} label="Realised game gain/loss" value={portfolio ? formatChange(portfolio.realized_profit_loss) : '0'} sub={tradesMessage || '11 new signings available each gameweek'} />
         </div>
 
         <div className="mt-3 rounded-xl border border-border bg-background/60 px-4 py-3 text-xs text-muted-foreground">
@@ -177,7 +179,7 @@ export function PlayerMarketHome() {
               <p className="mt-2 max-w-3xl text-sm text-muted-foreground">{previewExperimentActive ? 'A controlled set of ratings and minutes is running through the real FootballIQ valuation rules. It proves the portfolio loop without presenting test evidence as a completed fixture.' : 'Sportmonks supplies current squads plus completed-fixture ratings and minutes. FootballIQ processes eligible prices after verified gameweeks and freezes any player whose evidence is missing.'}</p>
             </div>
             <div className="flex flex-wrap gap-2">
-              <span className="inline-flex items-center gap-2 rounded-xl border border-emerald-700/20 bg-emerald-700/10 px-4 py-2.5 text-sm font-semibold text-emerald-900"><DatabaseZap className="size-4" /> {previewExperimentActive ? 'Controlled preview data' : 'Sportmonks verified'}</span>
+              <span className="inline-flex items-center gap-2 rounded-xl border border-emerald-700/20 bg-emerald-700/10 px-4 py-2.5 text-sm font-semibold text-emerald-900"><DatabaseZap className="size-4" /> {previewExperimentActive ? 'Controlled preview data' : 'Sportmonks-sourced catalogue'}</span>
               <Link href="/market/reveal" className="inline-flex items-center gap-2 rounded-xl border border-border px-4 py-2.5 text-sm font-semibold">
                 Open The Reveal
               </Link>
@@ -240,7 +242,7 @@ export function PlayerMarketHome() {
 
       {!loading && holdings.length === 0 ? (
         <section className="rounded-[2rem] border border-primary/25 bg-primary/10 p-6 sm:p-8">
-          <h2 className="text-2xl font-black">Fast start: make your first investment in under 30 seconds</h2>
+          <h2 className="text-2xl font-black">Fast start: make your first squad signing in under 30 seconds</h2>
           <p className="mt-2 text-sm text-muted-foreground">Formation is strict: 1 GK, 4 DEF, 3 MID, 3 FWD. Start with a goalkeeper and core defenders, then complete midfield and attack.</p>
           <div className="mt-4 flex flex-wrap gap-3">
             <Link href="/market/players" className="rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground">Open player marketplace</Link>
@@ -319,7 +321,7 @@ export function PlayerMarketHome() {
           <SocialStub icon={<Trophy className="size-4" />} title="Top Traders" value="Coming live in Phase 2" hint="Highest average return over last 14 days" />
           <SocialStub icon={<Wallet className="size-4" />} title="Highest Portfolio" value="Coming live in Phase 2" hint="Largest total account value this week" />
           <SocialStub icon={<TrendingUp className="size-4" />} title="Biggest Weekly Gain" value="Coming live in Phase 2" hint="Strongest week-on-week performance" />
-          <SocialStub icon={<Coins className="size-4" />} title="Most Profitable Trade" value="Coming live in Phase 2" hint="Single highest realized sell profit" />
+          <SocialStub icon={<Coins className="size-4" />} title="Biggest Game Gain" value="Coming live in Phase 2" hint="Largest realised FIQ Credit gain" />
           <SocialStub icon={<Users className="size-4" />} title="Friends" value="Coming live in Phase 2" hint="Invite friends and build private leagues" />
           <SocialStub icon={<BarChart3 className="size-4" />} title="Market Leaderboard" value="Live now" hint="Track daily, weekly and season performance" />
         </div>

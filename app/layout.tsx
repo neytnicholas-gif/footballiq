@@ -3,6 +3,7 @@ import type { Metadata, Viewport } from 'next'
 import { IBM_Plex_Mono, Sora } from 'next/font/google'
 import { AuthProvider } from '@/components/auth-provider'
 import { AccountPrompt } from '@/components/account-prompt'
+import { SiteFooter } from '@/components/site-footer'
 import { BRAND } from '@/lib/brand'
 import './globals.css'
 
@@ -67,6 +68,7 @@ export default function RootLayout({
         <AuthProvider>
           {children}
           <AccountPrompt />
+          <SiteFooter />
         </AuthProvider>
         {process.env.NODE_ENV === 'production' && <Analytics />}
       </body>

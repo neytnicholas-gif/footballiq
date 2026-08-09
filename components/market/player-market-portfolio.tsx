@@ -19,7 +19,6 @@ export function PlayerMarketPortfolio({
   runs,
   reveals,
   buysRemaining,
-  salesRemaining,
 }: {
   portfolio: MarketPortfolio | null
   players: MarketPlayer[]
@@ -30,7 +29,6 @@ export function PlayerMarketPortfolio({
   runs: MarketMatchweekRun[]
   reveals: MarketRevealSummary[]
   buysRemaining: number
-  salesRemaining: number
 }) {
   const playersById = useMemo(() => new Map(players.map((player) => [player.id, player])), [players])
   const formation = useMemo(() => countFormation(holdings, playersById), [holdings, playersById])
@@ -79,26 +77,26 @@ export function PlayerMarketPortfolio({
           <Metric label="Total account value" value={formatFiqCompact(portfolio.total_account_value)} />
           <Metric label="Available balance" value={formatFiqCompact(portfolio.available_balance)} />
           <Metric label="Portfolio value" value={formatFiqCompact(portfolio.portfolio_value)} />
-          <Metric label="Realised profit/loss" value={`${portfolio.realized_profit_loss >= 0 ? '+' : ''}${formatFiqCompact(Math.abs(portfolio.realized_profit_loss))}`} tone={portfolio.realized_profit_loss >= 0 ? 'positive' : 'negative'} />
+          <Metric label="Realised game gain/loss" value={`${portfolio.realized_profit_loss >= 0 ? '+' : ''}${formatFiqCompact(Math.abs(portfolio.realized_profit_loss))}`} tone={portfolio.realized_profit_loss >= 0 ? 'positive' : 'negative'} />
         </div>
 
         <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <Metric label="Today movement" value={`${todayMovement >= 0 ? '+' : ''}${formatFiqCompact(Math.abs(todayMovement))}`} tone={todayMovement >= 0 ? 'positive' : 'negative'} />
           <Metric label="Season movement" value={`${seasonMovement >= 0 ? '+' : ''}${formatFiqCompact(Math.abs(seasonMovement))}`} tone={seasonMovement >= 0 ? 'positive' : 'negative'} />
           <Metric
-            label="Best investment"
+            label="Best performer"
             value={bestHolding ? formatFiqCompact(bestHolding.unrealized_profit_loss) : 'N/A'}
             tone={bestHolding && bestHolding.unrealized_profit_loss >= 0 ? 'positive' : 'default'}
           />
           <Metric
-            label="Worst investment"
+            label="Weakest performer"
             value={worstHolding ? `-${formatFiqCompact(Math.abs(worstHolding.unrealized_profit_loss))}` : 'N/A'}
             tone={worstHolding && worstHolding.unrealized_profit_loss < 0 ? 'negative' : 'default'}
           />
         </div>
 
         <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          <Metric label="Total profit/loss" value={`${totalProfitLoss >= 0 ? '+' : '-'}${formatFiqCompact(Math.abs(totalProfitLoss))}`} tone={totalProfitLoss >= 0 ? 'positive' : 'negative'} />
+          <Metric label="Total game gain/loss" value={`${totalProfitLoss >= 0 ? '+' : '-'}${formatFiqCompact(Math.abs(totalProfitLoss))}`} tone={totalProfitLoss >= 0 ? 'positive' : 'negative'} />
           <Metric label="Overall ROI" value={`${totalRoi >= 0 ? '+' : ''}${totalRoi.toFixed(2)}%`} tone={totalRoi >= 0 ? 'positive' : 'negative'} />
           <Metric label="Legacy update records" value={String(runs.length)} />
         </div>

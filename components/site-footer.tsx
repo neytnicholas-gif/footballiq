@@ -13,6 +13,9 @@ const navLinks = [
   { label: 'Predictions', href: '/predictions' },
   { label: 'Leaderboard', href: '/leaderboard' },
   { label: 'Sign in', href: '/login' },
+  { label: 'Terms', href: '/terms' },
+  { label: 'Privacy', href: '/privacy' },
+  { label: 'Game rules', href: '/game-rules' },
 ]
 
 function InstagramIcon({ className }: { className?: string }) {
@@ -108,7 +111,7 @@ export function SiteFooter() {
 
         <div className="mt-10 flex flex-col items-center justify-between gap-3 border-t border-border pt-5 text-sm text-muted-foreground sm:flex-row">
           <p>© FootballIQ</p>
-          <p>Made for football minds worldwide. No official league affiliation.</p>
+          <p>Free game credits only. No cash value, withdrawals or official league affiliation.</p>
         </div>
       </div>
     </footer>

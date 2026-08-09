@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useParams } from 'next/navigation'
 import { SiteHeader } from '@/components/site-header'
 import { PlayerMarketDetail } from '@/components/market/player-market-detail'
@@ -15,7 +15,6 @@ import {
   loadPlayerValueHistory,
   refreshMyMarketPortfolio,
 } from '@/lib/market/client'
-import { buildSampleSeasonStats } from '@/lib/market/sample-data'
 import type { MarketHolding, MarketPlayer, MarketSeasonStats, MarketValueHistoryPoint } from '@/lib/market/types'
 
 export default function PlayerMarketDetailPage() {
@@ -36,7 +35,7 @@ export default function PlayerMarketDetailPage() {
 
   const player = useMemo(() => players.find((entry) => entry.slug === slug) ?? null, [players, slug])
 
-  async function load() {
+  const load = useCallback(async () => {
     setLoading(true)
     setError('')
 
@@ -54,14 +53,9 @@ export default function PlayerMarketDetailPage() {
       return
     }
 
-    const isDemoPlayer = currentPlayer.provenance_status === 'owner_seed_demo'
     const [statsResult, historyResult, portfolioResult, gameweekStatus] = await Promise.all([
-      isDemoPlayer
-        ? Promise.resolve({ data: buildSampleSeasonStats(marketPlayers).filter((row) => row.player_id === currentPlayer.id), error: null })
-        : loadPlayerSeasonStats(currentPlayer.id),
-      isDemoPlayer
-        ? Promise.resolve({ data: [] as MarketValueHistoryPoint[], error: null })
-        : loadPlayerValueHistory(currentPlayer.id),
+      loadPlayerSeasonStats(currentPlayer.id),
+      loadPlayerValueHistory(currentPlayer.id),
       user
         ? (async () => {
             await refreshMyMarketPortfolio()
@@ -76,8 +70,7 @@ export default function PlayerMarketDetailPage() {
     if (portfolioResult.error) setError(portfolioResult.error.message)
 
     setStats(statsResult.data)
-    const verifiedHistory = historyResult.data.length > 0 ? historyResult.data : buildPlayerHistory(currentPlayer)
-    setHistory(verifiedHistory)
+    setHistory(historyResult.data)
     setHoldings(portfolioResult.holdings)
     setWatchlist(portfolioResult.watchlist)
     setAvailableCash(portfolioResult.portfolio?.available_balance ?? 100_000_000)
@@ -87,11 +80,12 @@ export default function PlayerMarketDetailPage() {
     setSalesRemaining(gameweekStatus.data ? 11 : remaining.salesRemaining)
 
     setLoading(false)
-  }
+  }, [slug, user])
 
   useEffect(() => {
-    void load()
-  }, [slug, user])
+    const timer = window.setTimeout(() => void load(), 0)
+    return () => window.clearTimeout(timer)
+  }, [load])
 
   return (
     <main className="market-theme min-h-screen bg-[radial-gradient(circle_at_top_left,rgba(16,185,129,.10),transparent_34%),linear-gradient(180deg,#f7fbf9_0%,#eef6f2_48%,#f8faf9_100%)]">
@@ -116,16 +110,4 @@ export default function PlayerMarketDetailPage() {
       </section>
     </main>
   )
-}
-
-function buildPlayerHistory(player: MarketPlayer): MarketValueHistoryPoint[] {
-  const values = [player.opening_season_value]
-  if (player.previous_value !== values.at(-1)) values.push(player.previous_value)
-  if (player.current_value !== values.at(-1)) values.push(player.current_value)
-  return values.map((value, index) => ({
-    id: -(index + 1), player_id: player.id, value,
-    recorded_at: index === values.length - 1 ? player.value_updated_at : player.created_at,
-    reason_category: index === 0 ? 'season_opening' : 'verified_performance',
-    methodology_version: 'fiq-real-performance-v2.0.0', created_at: player.created_at,
-  }))
 }

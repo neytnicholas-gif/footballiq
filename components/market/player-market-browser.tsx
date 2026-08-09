@@ -169,7 +169,7 @@ export function PlayerMarketBrowser({
           <div>
             <p className="mb-2 inline-flex items-center gap-2 rounded-full border border-emerald-700/15 bg-emerald-900/[.06] px-3 py-1 text-[10px] font-black uppercase tracking-[.2em] text-emerald-900"><Sparkles className="size-3" /> FootballIQ Exchange</p>
             <h1 className="text-3xl font-black tracking-tight text-slate-950 sm:text-4xl">Player market</h1>
-            <p className="mt-2 max-w-2xl text-sm text-slate-600">Build your 11-player investment portfolio. Buy players before verified performances move their FootballIQ game price.</p>
+            <p className="mt-2 max-w-2xl text-sm text-slate-600">Build your 11-player game squad. Sign players before verified performances move their FootballIQ game price.</p>
           </div>
           <div className="rounded-2xl border border-emerald-900/10 bg-white/80 px-4 py-3 shadow-sm backdrop-blur">
             <p className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[.16em] text-slate-500"><WalletCards className="size-3.5 text-emerald-700" /> Available cash</p>
@@ -251,7 +251,7 @@ export function PlayerMarketBrowser({
       <section className="rounded-[2rem] border border-emerald-900/10 bg-emerald-950/[.035] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,.85)] sm:p-6">
         {filtered.length === 0 ? (
           <div className="rounded-2xl border border-border bg-background/60 p-5 text-sm text-muted-foreground">
-            No players match these filters. Clear filters or adjust your search to find new investment options.
+            No players match these filters. Clear filters or adjust your search to find other squad options.
           </div>
         ) : null}
         <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
@@ -296,7 +296,7 @@ export function PlayerMarketBrowser({
                 </div>
 
                 <p className="mt-2 text-xs text-muted-foreground">
-                  {player.decision_support_note ?? 'Use recent movement and minutes profile to assess whether this player is undervalued.'}
+                  {player.decision_support_note ?? 'Use verified recent movement and minutes to assess this game selection.'}
                 </p>
 
                 <div className="mt-3 rounded-xl border border-emerald-900/10 bg-emerald-950/[.04] px-3 py-2">

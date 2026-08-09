@@ -3,7 +3,6 @@
 import Link from 'next/link'
 import { ArrowRight, CalendarDays, Flag, Radar, ShieldCheck, Sparkles, Trophy, Workflow } from 'lucide-react'
 import { SiteHeader } from '@/components/site-header'
-import { SiteFooter } from '@/components/site-footer'
 import { useAuth } from '@/components/auth-provider'
 import { getRankProgress } from '@/lib/progression'
 
@@ -158,7 +157,6 @@ export default function HomePage() {
           </div>
         </section>
 
-        <SiteFooter />
       </div>
     </main>
   )

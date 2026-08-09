@@ -161,6 +161,10 @@ export default function SignupPage() {
               </div>
             </label>
             {passwordError && <p id="confirm-password-error" role="alert" className="rounded-xl border border-destructive/25 bg-destructive/10 p-3 text-sm text-destructive">{passwordError}</p>}
+            <label className="flex items-start gap-3 rounded-xl border border-border bg-secondary/25 p-3 text-sm text-muted-foreground">
+              <input name="legalAcknowledgement" type="checkbox" required className="mt-1 size-4 accent-emerald-500" />
+              <span>I am at least 13, agree to the <Link href="/terms" target="_blank" className="font-semibold text-primary hover:underline">Terms of Use</Link>, and acknowledge the <Link href="/privacy" target="_blank" className="font-semibold text-primary hover:underline">Privacy Notice</Link>.</span>
+            </label>
             {message && (
               <p
                 role={messageTone === 'error' ? 'alert' : 'status'}
