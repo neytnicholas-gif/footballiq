@@ -6,6 +6,7 @@ const migration = readFileSync('supabase/migrations/20260809213000_harden_verifi
 const portfolioRepair = readFileSync('supabase/migrations/20260809214500_keep_portfolio_prices_authoritative.sql', 'utf8')
 const priceBook = readFileSync('supabase/migrations/20260809215500_publish_authoritative_price_book.sql', 'utf8')
 const catalogueRoute = readFileSync('app/api/market/catalogue/route.ts', 'utf8')
+const priceBookGrants = readFileSync('supabase/migrations/20260809220000_grant_price_book_sources.sql', 'utf8')
 const route = readFileSync('app/api/market/process-gameweek/route.ts', 'utf8')
 
 describe('verified gameweek engine', () => {
@@ -46,6 +47,7 @@ describe('verified gameweek engine', () => {
     expect(priceBook).toContain('security invoker')
     expect(catalogueRoute).toContain("client.rpc('market_public_price_book_v1')")
     expect(catalogueRoute).not.toContain('applyPreviewValueExperiment')
+    expect(priceBookGrants).toContain('grant select on table public.market_valuation_events to anon,authenticated')
   })
 
   it('requires a server secret at the cron boundary', () => {
