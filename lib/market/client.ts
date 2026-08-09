@@ -364,55 +364,48 @@ export async function loadMarketLeaderboard(metric: 'daily_gain' | 'weekly_gain'
     }
   }
 
-  // Staging originally shipped the playable-loop leaderboard contract. Keep the
-  // public page usable while that table is drained into the richer time-window
-  // view: the UI can still show total wealth, all-time gain and weekly movement.
-  if (/market_public_leaderboard\.(daily_gain|weekly_gain|monthly_gain|season_gain|all_time_gain|total_account_value).*does not exist/i.test(error.message)) {
-    const legacyResult = await supabase
-      .from('market_public_leaderboard')
-      .select('portfolio_id, display_name, total_wealth_minor, total_profit_minor, weekly_change_minor, return_basis_points')
-      .order('total_wealth_minor', { ascending: false })
-      .limit(100)
+  // Staging originally shipped the playable-loop leaderboard contract. PostgREST
+  // reports missing selected columns in more than one message format, so always
+  // try the compatible projection before treating the leaderboard as unavailable.
+  const legacyResult = await supabase
+    .from('market_public_leaderboard')
+    .select('portfolio_id, display_name, total_wealth_minor, total_profit_minor, weekly_change_minor, return_basis_points')
+    .order('total_wealth_minor', { ascending: false })
+    .limit(100)
 
-    if (!legacyResult.error) {
-      const legacyRows = (legacyResult.data ?? []) as unknown as Array<{
-        portfolio_id: string
-        display_name: string
-        total_wealth_minor: number
-        total_profit_minor: number
-        weekly_change_minor: number
-        return_basis_points: number
-      }>
-
-      return {
-        data: legacyRows.map((row) => ({
-          user_id: row.portfolio_id,
-          username: row.display_name,
-          total_account_value: Number(row.total_wealth_minor) || 0,
-          all_time_gain: Number(row.total_profit_minor) || 0,
-          daily_gain: 0,
-          weekly_gain: Number(row.weekly_change_minor) || 0,
-          monthly_gain: 0,
-          season_gain: 0,
-          daily_return_pct: 0,
-          weekly_return_pct: (Number(row.return_basis_points) || 0) / 100,
-          monthly_return_pct: 0,
-          season_return_pct: 0,
-          all_time_return_pct: (Number(row.return_basis_points) || 0) / 100,
-        })),
-        error: null,
-      }
-    }
+  if (!legacyResult.error) {
+    const legacyRows = (legacyResult.data ?? []) as unknown as Array<{
+      portfolio_id: string
+      display_name: string
+      total_wealth_minor: number
+      total_profit_minor: number
+      weekly_change_minor: number
+      return_basis_points: number
+    }>
 
     return {
-      data: [],
-      error: legacyResult.error as Error,
+      data: legacyRows.map((row) => ({
+        user_id: row.portfolio_id,
+        username: row.display_name,
+        total_account_value: Number(row.total_wealth_minor) || 0,
+        all_time_gain: Number(row.total_profit_minor) || 0,
+        daily_gain: 0,
+        weekly_gain: Number(row.weekly_change_minor) || 0,
+        monthly_gain: 0,
+        season_gain: 0,
+        daily_return_pct: 0,
+        weekly_return_pct: (Number(row.return_basis_points) || 0) / 100,
+        monthly_return_pct: 0,
+        season_return_pct: 0,
+        all_time_return_pct: (Number(row.return_basis_points) || 0) / 100,
+      })),
+      error: null,
     }
   }
 
   return {
     data: [],
-    error: new Error('Market rankings are temporarily unavailable. Please try again shortly.'),
+    error: legacyResult.error as Error,
   }
 }
 
