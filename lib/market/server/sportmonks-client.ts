@@ -90,7 +90,11 @@ function mapPosition(row: JsonRecord) {
 }
 
 function textValue(value: unknown) {
-  return typeof value === 'string' && value.trim() ? value.trim() : null
+  if (typeof value !== 'string' || !value.trim()) return null
+  const trimmed = value.trim()
+  if (!/[ÃÂâ]/.test(trimmed)) return trimmed
+  const repaired = Buffer.from(trimmed, 'latin1').toString('utf8')
+  return repaired.includes('\uFFFD') ? trimmed : repaired
 }
 
 function playerAge(player: JsonRecord) {

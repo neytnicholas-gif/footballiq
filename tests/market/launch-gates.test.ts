@@ -25,6 +25,9 @@ describe('Player Market launch gates', () => {
     const filtered = read('supabase/migrations/20260810003500_filter_public_market_catalogue.sql')
     expect(filtered).toContain('market_public_catalogue_v1(p_competition_key text)')
     expect(filtered).toContain('season.competition_key = p_competition_key')
+    const encodingRepair = read('supabase/migrations/20260810004500_repair_market_text_encoding.sql')
+    expect(encodingRepair).toContain("convert_from(convert_to(display_name, 'LATIN1'), 'UTF8')")
+    expect(read('lib/market/server/sportmonks-client.ts')).toContain("Buffer.from(trimmed, 'latin1').toString('utf8')")
   })
 
   it('never fakes authenticated trade success using anonymous state', () => {
