@@ -1,9 +1,8 @@
 import { supabase } from '@/lib/supabase'
 import {
   createMarketRequestKey,
-  MARKET_DAILY_BUY_LIMIT,
-  MARKET_DAILY_SELL_LIMIT,
-  toUtcDateKey,
+  MARKET_WEEKLY_SIGNING_LIMIT,
+  toUtcIsoWeekKey,
 } from '@/lib/market/format'
 import {
   anonymousApplySimulatedMatchweek,
@@ -336,12 +335,6 @@ export async function loadMyPortfolioData() {
 
   const error = portfolioError ?? holdingsError ?? transactionsError ?? watchlistError
 
-  if (isMarketBackendUnavailable(error)) {
-    const { data: players } = await loadMarketPlayers()
-    const anon = buildAnonymousPortfolio(players, readAnonymousState())
-    return { error: null, portfolio: anon.portfolio, holdings: anon.holdings, transactions: anon.transactions, watchlist: anon.watchlist }
-  }
-
   return {
     error: (error as Error | null) ?? null,
     portfolio: (portfolioData as MarketPortfolio | null) ?? null,
@@ -411,14 +404,14 @@ export async function loadMarketLeaderboard(metric: 'daily_gain' | 'weekly_gain'
 }
 
 export function calculateTradesRemaining(transactions: MarketTransaction[]) {
-  const today = toUtcDateKey()
-  const todays = transactions.filter((transaction) => transaction.trade_date_utc === today)
-  const buysUsed = todays.filter((transaction) => transaction.transaction_type === 'buy').length
-  const salesUsed = todays.filter((transaction) => transaction.transaction_type === 'sell').length
+  const currentWeek = toUtcIsoWeekKey()
+  const currentWeekTransactions = transactions.filter((transaction) => toUtcIsoWeekKey(new Date(transaction.created_at)) === currentWeek)
+  const buysUsed = currentWeekTransactions.filter((transaction) => transaction.transaction_type === 'buy').length
+  const salesUsed = currentWeekTransactions.filter((transaction) => transaction.transaction_type === 'sell').length
 
   return {
-    buysRemaining: Math.max(0, MARKET_DAILY_BUY_LIMIT - buysUsed),
-    salesRemaining: Math.max(0, MARKET_DAILY_SELL_LIMIT - salesUsed),
+    buysRemaining: Math.max(0, MARKET_WEEKLY_SIGNING_LIMIT - buysUsed),
+    salesRemaining: Number.MAX_SAFE_INTEGER,
     buysUsed,
     salesUsed,
   }
@@ -432,8 +425,8 @@ export async function loadMyGameweekStatus(): Promise<{ data: MarketGameweekStat
   return { data: (data as MarketGameweekStatus | null) ?? null, error: error as Error | null }
 }
 
-export async function buyMarketPlayer(slug: string, playerId?: number) {
-  const idempotencyKey = createMarketRequestKey(`buy-${slug}`)
+export async function buyMarketPlayer(slug: string, playerId?: number, requestKey?: string) {
+  const idempotencyKey = requestKey ?? createMarketRequestKey(`buy-${slug}`)
 
   const { data: authData } = await supabase.auth.getUser()
   if (!authData.user) {
@@ -446,19 +439,14 @@ export async function buyMarketPlayer(slug: string, playerId?: number) {
     p_idempotency_key: idempotencyKey,
   })
 
-  if (isMarketBackendUnavailable(error)) {
-    const { data: players } = await loadMarketPlayers()
-    return anonymousBuyPlayer(players, slug, idempotencyKey)
-  }
-
   return {
     data: (data as Record<string, unknown> | null) ?? null,
     error: error as Error | null,
   }
 }
 
-export async function sellMarketPlayer(slug: string, playerId?: number) {
-  const idempotencyKey = createMarketRequestKey(`sell-${slug}`)
+export async function sellMarketPlayer(slug: string, playerId?: number, requestKey?: string) {
+  const idempotencyKey = requestKey ?? createMarketRequestKey(`sell-${slug}`)
 
   const { data: authData } = await supabase.auth.getUser()
   if (!authData.user) {
@@ -470,11 +458,6 @@ export async function sellMarketPlayer(slug: string, playerId?: number) {
     p_player_slug: playerId ? String(playerId) : slug,
     p_idempotency_key: idempotencyKey,
   })
-
-  if (isMarketBackendUnavailable(error)) {
-    const { data: players } = await loadMarketPlayers()
-    return anonymousSellPlayer(players, slug, idempotencyKey)
-  }
 
   return {
     data: (data as Record<string, unknown> | null) ?? null,

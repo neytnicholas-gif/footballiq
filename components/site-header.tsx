@@ -69,14 +69,14 @@ export function SiteHeader() {
         <div className="flex items-center gap-2">
           {membership.plan === 'pro' ? <span className="hidden items-center gap-1 rounded-full border border-indigo-300/40 bg-indigo-300/14 px-2.5 py-1 text-xs font-semibold text-indigo-200 sm:inline-flex"><Crown className="size-3" /> Pro</span> : null}
           {authBlock}
-          <button onClick={() => setMobileOpen((value) => !value)} className="inline-flex size-10 items-center justify-center rounded-lg border border-border bg-secondary/30 text-foreground lg:hidden" aria-label={mobileOpen ? 'Close menu' : 'Open menu'}>
+          <button onClick={() => setMobileOpen((value) => !value)} className="inline-flex size-10 items-center justify-center rounded-lg border border-border bg-secondary/30 text-foreground outline-none focus-visible:ring-2 focus-visible:ring-primary lg:hidden" aria-label={mobileOpen ? 'Close menu' : 'Open menu'} aria-expanded={mobileOpen} aria-controls="mobile-primary-navigation">
             {mobileOpen ? <X className="size-5" /> : <Menu className="size-5" />}
           </button>
         </div>
       </div>
 
       {mobileOpen ? (
-        <nav className="border-t border-border bg-background/98 p-3 lg:hidden">
+        <nav id="mobile-primary-navigation" aria-label="Mobile primary navigation" className="border-t border-border bg-background/98 p-3 lg:hidden">
           <div className="grid gap-1">
             {links.map(([label, href]) => (
               <Link key={href} href={href} onClick={closeMobile} className={cn('rounded-lg px-3 py-2 text-sm transition', pathname === href ? 'bg-primary/15 font-semibold text-primary' : 'text-muted-foreground hover:bg-secondary/70 hover:text-foreground')}>

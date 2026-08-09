@@ -118,7 +118,7 @@ export default function SignupPage() {
                   name="password"
                   type={showPassword ? 'text' : 'password'}
                   autoComplete="new-password"
-                  minLength={6}
+                  minLength={8}
                   value={password}
                   onChange={(e) => onPasswordChange(e.target.value)}
                   required
@@ -142,7 +142,7 @@ export default function SignupPage() {
                   name="confirmPassword"
                   type={showConfirmPassword ? 'text' : 'password'}
                   autoComplete="new-password"
-                  minLength={6}
+                  minLength={8}
                   value={confirmPassword}
                   onChange={(e) => onConfirmPasswordChange(e.target.value)}
                   required

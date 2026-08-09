@@ -29,7 +29,6 @@ export default function PlayerMarketDetailPage() {
   const [watchlist, setWatchlist] = useState<number[]>([])
   const [availableCash, setAvailableCash] = useState(100_000_000)
   const [buysRemaining, setBuysRemaining] = useState(11)
-  const [salesRemaining, setSalesRemaining] = useState(11)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
@@ -77,7 +76,6 @@ export default function PlayerMarketDetailPage() {
 
     const remaining = calculateTradesRemaining(portfolioResult.transactions)
     setBuysRemaining(gameweekStatus.data?.signings_remaining ?? remaining.buysRemaining)
-    setSalesRemaining(gameweekStatus.data ? 11 : remaining.salesRemaining)
 
     setLoading(false)
   }, [slug, user])
@@ -103,7 +101,6 @@ export default function PlayerMarketDetailPage() {
             watchlist={watchlist}
             availableCash={availableCash}
             buysRemaining={buysRemaining}
-            salesRemaining={salesRemaining}
             onRefresh={load}
           />
         )}

@@ -9,7 +9,7 @@ import { MarketPlayerChip } from '@/components/market/market-player-chip'
 import { MarketTradeDialog } from '@/components/market/market-trade-dialog'
 import { buyMarketPlayer, sellMarketPlayer, toggleMarketWatchlist } from '@/lib/market/client'
 import { canBuyPosition, countFormation } from '@/lib/market/formation'
-import { formatFiqCompact, MARKET_MAX_PORTFOLIO_SIZE } from '@/lib/market/format'
+import { createMarketRequestKey, formatFiqCompact, MARKET_MAX_PORTFOLIO_SIZE } from '@/lib/market/format'
 import type { MarketHolding, MarketPlayer, MarketSeasonStats, MarketValueHistoryPoint } from '@/lib/market/types'
 
 export function PlayerMarketDetail({
@@ -21,7 +21,6 @@ export function PlayerMarketDetail({
   watchlist,
   availableCash,
   buysRemaining,
-  salesRemaining,
   onRefresh,
 }: {
   players: MarketPlayer[]
@@ -32,13 +31,12 @@ export function PlayerMarketDetail({
   watchlist: number[]
   availableCash: number
   buysRemaining: number
-  salesRemaining: number
   onRefresh: () => Promise<void>
 }) {
   const { user, refreshProfile } = useAuth()
   const [busy, setBusy] = useState<'buy' | 'sell' | 'watch' | null>(null)
   const [notice, setNotice] = useState<{ kind: 'success' | 'error' | 'info'; message: string } | null>(null)
-  const [tradeIntent, setTradeIntent] = useState<'buy' | 'sell' | null>(null)
+  const [tradeIntent, setTradeIntent] = useState<{ action: 'buy' | 'sell'; requestKey: string } | null>(null)
   const [renderedAt] = useState(() => Date.now())
 
   const holding = useMemo(() => holdings.find((item) => item.player_id === player.id) ?? null, [holdings, player.id])
@@ -59,10 +57,10 @@ export function PlayerMarketDetail({
     && availableCash >= player.current_value
     && hasPositionSlot
 
-  async function handleBuy() {
+  async function handleBuy(requestKey: string) {
     setBusy('buy')
     setNotice(null)
-    const { data, error } = await buyMarketPlayer(player.slug, player.id)
+    const { data, error } = await buyMarketPlayer(player.slug, player.id, requestKey)
     if (error) {
       setNotice({ kind: 'error', message: error.message })
       setBusy(null)
@@ -74,10 +72,10 @@ export function PlayerMarketDetail({
     setBusy(null)
   }
 
-  async function handleSell() {
+  async function handleSell(requestKey: string) {
     setBusy('sell')
     setNotice(null)
-    const { data, error } = await sellMarketPlayer(player.slug, player.id)
+    const { data, error } = await sellMarketPlayer(player.slug, player.id, requestKey)
     if (error) {
       setNotice({ kind: 'error', message: error.message })
       setBusy(null)
@@ -137,15 +135,15 @@ export function PlayerMarketDetail({
             <p className="text-xs font-semibold uppercase tracking-[.2em] text-muted-foreground">Trade controls</p>
             <div className="mt-3 space-y-2">
               <button
-                onClick={() => setTradeIntent('buy')}
+                onClick={() => setTradeIntent({ action: 'buy', requestKey: createMarketRequestKey(`buy-${player.slug}`) })}
                 disabled={!canBuy}
                 className="min-h-11 w-full rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-700 disabled:opacity-50"
               >
                 {busy === 'buy' ? 'Buying…' : lockActive ? 'Temporarily locked' : owned ? 'Already held' : !hasPositionSlot ? `${player.position} slot full` : availableCash < player.current_value ? 'Not enough cash' : holdings.length >= MARKET_MAX_PORTFOLIO_SIZE ? 'Portfolio full (11/11)' : 'Buy'}
               </button>
               <button
-                onClick={() => setTradeIntent('sell')}
-                disabled={!owned || salesRemaining <= 0 || busy !== null || lockActive}
+                onClick={() => setTradeIntent({ action: 'sell', requestKey: createMarketRequestKey(`sell-${player.slug}`) })}
+                disabled={!owned || busy !== null || lockActive}
                 className="min-h-11 w-full rounded-xl border border-border px-4 py-2.5 text-sm font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-700 disabled:opacity-50"
               >
                 {busy === 'sell' ? 'Selling…' : lockActive ? 'Temporarily locked' : 'Sell'}
@@ -226,9 +224,9 @@ export function PlayerMarketDetail({
       </section>
       {tradeIntent ? (
         <MarketTradeDialog
-          action={tradeIntent}
+          action={tradeIntent.action}
           playerName={player.display_name}
-          details={tradeIntent === 'buy'
+          details={tradeIntent.action === 'buy'
             ? [
                 { label: 'Current value', value: formatFiqCompact(player.current_value) },
                 { label: 'Available cash', value: formatFiqCompact(availableCash) },
@@ -244,8 +242,8 @@ export function PlayerMarketDetail({
           onConfirm={() => {
             const intent = tradeIntent
             setTradeIntent(null)
-            if (intent === 'buy') void handleBuy()
-            else void handleSell()
+            if (intent.action === 'buy') void handleBuy(intent.requestKey)
+            else void handleSell(intent.requestKey)
           }}
         />
       ) : null}
@@ -275,7 +273,7 @@ function Notice({ kind, message }: { kind: 'success' | 'error' | 'info'; message
       ? <AlertCircle className="size-4" />
       : <Clock3 className="size-4" />
 
-  return <p className={`mt-4 inline-flex items-center gap-2 rounded-xl border px-3 py-2 text-sm ${className}`}>{icon}{message}</p>
+  return <p role={kind === 'error' ? 'alert' : 'status'} aria-live={kind === 'error' ? 'assertive' : 'polite'} className={`mt-4 inline-flex items-center gap-2 rounded-xl border px-3 py-2 text-sm ${className}`}>{icon}{message}</p>
 }
 
 function Stat({ label, value }: { label: string; value: number | null }) {

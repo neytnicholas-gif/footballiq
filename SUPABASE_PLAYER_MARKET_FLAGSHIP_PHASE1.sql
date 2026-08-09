@@ -1,3 +1,5 @@
+-- ARCHIVED LEGACY REFERENCE — DO NOT APPLY. This targets the obsolete root MVP
+-- model. Current schema changes belong only in supabase/migrations/.
 -- FootballIQ Flagship Market Phase 1
 -- Apply AFTER SUPABASE_PLAYER_MARKET_MODEL_REVISION_V1.sql
 -- Manual apply only.

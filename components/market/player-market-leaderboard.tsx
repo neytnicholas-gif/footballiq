@@ -1,14 +1,13 @@
 'use client'
 
 import Link from 'next/link'
-import { useMemo, useState } from 'react'
 import { Crown, TrendingUp } from 'lucide-react'
 import type { MarketLeaderboardRow } from '@/lib/market/types'
 import { formatFiqCompact } from '@/lib/market/format'
 
-type Board = 'daily_gain' | 'weekly_gain' | 'monthly_gain' | 'season_gain' | 'all_time_gain' | 'total_account_value'
+export type MarketLeaderboardBoard = 'daily_gain' | 'weekly_gain' | 'monthly_gain' | 'season_gain' | 'all_time_gain' | 'total_account_value'
 
-const options: Array<{ id: Board; label: string; returnKey: keyof MarketLeaderboardRow }> = [
+const options: Array<{ id: MarketLeaderboardBoard; label: string; returnKey: keyof MarketLeaderboardRow }> = [
   { id: 'daily_gain', label: 'Daily gain', returnKey: 'daily_return_pct' },
   { id: 'weekly_gain', label: 'Weekly gain', returnKey: 'weekly_return_pct' },
   { id: 'monthly_gain', label: 'Monthly gain', returnKey: 'monthly_return_pct' },
@@ -17,13 +16,8 @@ const options: Array<{ id: Board; label: string; returnKey: keyof MarketLeaderbo
   { id: 'total_account_value', label: 'Total account value', returnKey: 'all_time_return_pct' },
 ]
 
-export function PlayerMarketLeaderboard({ rows }: { rows: MarketLeaderboardRow[] }) {
-  const [board, setBoard] = useState<Board>('daily_gain')
+export function PlayerMarketLeaderboard({ rows, board, onBoardChange }: { rows: MarketLeaderboardRow[]; board: MarketLeaderboardBoard; onBoardChange: (board: MarketLeaderboardBoard) => void }) {
   const currentMeta = options.find((item) => item.id === board) ?? options[0]
-
-  const sortedRows = useMemo(() => {
-    return [...rows].sort((a, b) => (Number(b[board]) || 0) - (Number(a[board]) || 0)).slice(0, 100)
-  }, [rows, board])
 
   return (
     <div className="space-y-5">
@@ -38,7 +32,7 @@ export function PlayerMarketLeaderboard({ rows }: { rows: MarketLeaderboardRow[]
 
         <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {options.map((option) => (
-            <button key={option.id} onClick={() => setBoard(option.id)} className={`rounded-xl border px-4 py-3 text-left text-sm ${board === option.id ? 'border-primary bg-primary/10 text-foreground' : 'border-border bg-background/60 text-muted-foreground'}`}>
+            <button key={option.id} onClick={() => onBoardChange(option.id)} aria-pressed={board === option.id} className={`rounded-xl border px-4 py-3 text-left text-sm outline-none focus-visible:ring-2 focus-visible:ring-primary ${board === option.id ? 'border-primary bg-primary/10 text-foreground' : 'border-border bg-background/60 text-muted-foreground'}`}>
               {option.label}
             </button>
           ))}
@@ -46,9 +40,9 @@ export function PlayerMarketLeaderboard({ rows }: { rows: MarketLeaderboardRow[]
       </section>
 
       <section className="rounded-[2rem] border border-border bg-card p-4 sm:p-6">
-        {sortedRows.length === 0 ? <p className="text-sm text-muted-foreground">No Player Market rankings yet.</p> : (
+        {rows.length === 0 ? <p className="text-sm text-muted-foreground">No Player Market rankings yet.</p> : (
           <div className="space-y-2">
-            {sortedRows.map((row, index) => {
+            {rows.map((row, index) => {
               const value = Number(row[board]) || 0
               const returnPct = Number(row[currentMeta.returnKey]) || 0
               return (

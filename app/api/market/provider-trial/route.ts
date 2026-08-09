@@ -1,13 +1,15 @@
 import { NextResponse } from 'next/server'
 import { runTheSportsDbTrial } from '@/lib/market/server/thesportsdb-client'
+import { isMarketAdminRequest } from '@/lib/market/server/admin-auth'
 
 export const runtime = 'nodejs'
 export const revalidate = 3600
 
-export async function GET() {
+export async function GET(request: Request) {
   if (process.env.VERCEL_ENV !== 'preview') {
     return NextResponse.json({ error: 'Provider trials are available on preview deployments only.' }, { status: 404 })
   }
+  if (!isMarketAdminRequest(request)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   try {
     return NextResponse.json(await runTheSportsDbTrial())

@@ -523,10 +523,15 @@ export async function fetchSportmonksCompletedGameweeks(apiToken = process.env.S
 
   for (let offset = 0; offset < selected.length; offset += 5) {
     const chunk = selected.slice(offset, offset + 5)
-    const payloads = await Promise.all(chunk.map(async (fixture) => ({
+    const settled = await Promise.allSettled(chunk.map(async (fixture) => ({
       fixture,
       payload: record(await client.get(`/fixtures/${encodeURIComponent(String(fixture.id))}?include=lineups.details.type;state`, { fresh: true })),
     })))
+    const payloads = settled.flatMap((result) => {
+      if (result.status === 'fulfilled') return [result.value]
+      console.error('[market-gameweek] fixture detail fetch failed', result.reason)
+      return []
+    })
     for (const { fixture, payload } of payloads) {
       const providerFixtureId = String(fixture.id)
       for (const lineup of payload ? relationRows(payload, 'lineups') : []) {
@@ -547,6 +552,7 @@ export async function fetchSportmonksCompletedGameweeks(apiToken = process.env.S
       }
     }
   }
+  if (finished.length > 0 && updatesByWeek.size === 0) throw new Error('Completed fixtures could not be converted into verified player updates; valuation was aborted safely.')
   if (updatesByWeek.size === 0) throw new Error('Completed fixtures did not contain eligible Sportmonks ratings and minutes.')
 
   return [...updatesByWeek.entries()].map(([key, updates]) => {

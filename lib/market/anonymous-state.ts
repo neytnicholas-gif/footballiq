@@ -1,4 +1,4 @@
-import { MARKET_CREDITS_STARTING_BALANCE, MARKET_MAX_PORTFOLIO_SIZE, toUtcDateKey } from '@/lib/market/format'
+import { MARKET_CREDITS_STARTING_BALANCE, MARKET_MAX_PORTFOLIO_SIZE, MARKET_WEEKLY_SIGNING_LIMIT, toUtcDateKey, toUtcIsoWeekKey } from '@/lib/market/format'
 import { countFormation } from '@/lib/market/formation'
 import type {
   MarketAnonymousState,
@@ -159,6 +159,9 @@ function ensureCanBuy(players: MarketPlayer[], state: MarketAnonymousState, play
   if (state.holdings.some((holding) => holding.player_id === player.id)) return 'You already hold this player.'
   if (state.cash < player.current_value) return 'Insufficient cash for this purchase.'
   if (state.holdings.length >= MARKET_MAX_PORTFOLIO_SIZE) return 'Portfolio is already complete.'
+  const currentWeek = toUtcIsoWeekKey()
+  const signingsUsed = state.transactions.filter((transaction) => transaction.transaction_type === 'buy' && toUtcIsoWeekKey(new Date(transaction.created_at)) === currentWeek).length
+  if (signingsUsed >= MARKET_WEEKLY_SIGNING_LIMIT) return 'Gameweek signing limit reached.'
 
   const playersById = new Map(players.map((row) => [row.id, row]))
   const formation = countFormation(

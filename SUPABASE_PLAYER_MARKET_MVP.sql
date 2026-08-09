@@ -1,3 +1,5 @@
+-- ARCHIVED LEGACY REFERENCE — DO NOT APPLY. The canonical live UUID schema is
+-- versioned under supabase/migrations/. This file uses an obsolete bigint model.
 -- FootballIQ Player Market MVP schema + atomic trade RPCs
 -- Manual apply only. Do not auto-run in production pipelines.
 -- Safe to review and apply in Supabase SQL editor.

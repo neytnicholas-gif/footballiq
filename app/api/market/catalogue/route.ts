@@ -8,6 +8,7 @@ export const dynamic = 'force-dynamic'
 
 type PriceBookRow = {
   provider_player_id: string
+  opening_price_minor: number
   current_price_minor: number
   previous_price_minor: number
   latest_rating_milli: number | null
@@ -30,6 +31,7 @@ async function applyAuthoritativePriceBook(players: MarketPlayer[]) {
     const latestRating = row.latest_rating_milli === null ? null : Number(row.latest_rating_milli) / 1000
     return [{
       ...player,
+      opening_season_value: Number(row.opening_price_minor),
       current_value: currentValue,
       previous_value: previousValue,
       value_updated_at: row.value_updated_at,
@@ -45,9 +47,6 @@ async function applyAuthoritativePriceBook(players: MarketPlayer[]) {
 }
 
 export async function GET(request: Request) {
-  if (process.env.VERCEL_ENV !== 'preview') {
-    return NextResponse.json({ error: 'The verified market catalogue is currently enabled on preview only.' }, { status: 404 })
-  }
   try {
     const competition = new URL(request.url).searchParams.get('competition')
     const catalogue = competition === 'ligue-1'

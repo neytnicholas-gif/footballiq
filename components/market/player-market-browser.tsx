@@ -8,7 +8,7 @@ import { MarketPlayerChip } from '@/components/market/market-player-chip'
 import { MarketTradeDialog } from '@/components/market/market-trade-dialog'
 import { buyMarketPlayer, sellMarketPlayer, toggleMarketWatchlist } from '@/lib/market/client'
 import { canBuyPosition, countFormation } from '@/lib/market/formation'
-import { formatFiqCompact, MARKET_MAX_PORTFOLIO_SIZE } from '@/lib/market/format'
+import { createMarketRequestKey, formatFiqCompact, MARKET_MAX_PORTFOLIO_SIZE } from '@/lib/market/format'
 import type { MarketHolding, MarketPlayer, MarketSeasonStats } from '@/lib/market/types'
 
 type SortKey = 'value-desc' | 'value-asc' | 'change-desc' | 'change-asc' | 'form-desc' | 'name-asc'
@@ -22,7 +22,6 @@ export function PlayerMarketBrowser({
   statsByPlayerId,
   userSignedIn,
   buysRemaining,
-  salesRemaining,
   availableCash,
   onTradeAction,
 }: {
@@ -32,7 +31,6 @@ export function PlayerMarketBrowser({
   statsByPlayerId: Record<number, MarketSeasonStats | undefined>
   userSignedIn: boolean
   buysRemaining: number
-  salesRemaining: number
   availableCash: number
   onTradeAction: () => Promise<void>
 }) {
@@ -46,7 +44,7 @@ export function PlayerMarketBrowser({
   const [visibleCount, setVisibleCount] = useState(PLAYER_PAGE_SIZE)
   const [busyId, setBusyId] = useState<number | null>(null)
   const [notice, setNotice] = useState<{ kind: 'success' | 'error' | 'info'; message: string } | null>(null)
-  const [tradeIntent, setTradeIntent] = useState<{ action: 'buy' | 'sell'; player: MarketPlayer } | null>(null)
+  const [tradeIntent, setTradeIntent] = useState<{ action: 'buy' | 'sell'; player: MarketPlayer; requestKey: string } | null>(null)
   const [renderedAt] = useState(() => Date.now())
 
   const clubs = useMemo(() => ['ALL', ...new Set(players
@@ -120,10 +118,10 @@ export function PlayerMarketBrowser({
     setVisibleCount(PLAYER_PAGE_SIZE)
   }
 
-  async function handleBuy(player: MarketPlayer) {
+  async function handleBuy(player: MarketPlayer, requestKey: string) {
     setBusyId(player.id)
     setNotice(null)
-    const { data, error } = await buyMarketPlayer(player.slug, player.id)
+    const { data, error } = await buyMarketPlayer(player.slug, player.id, requestKey)
     if (error) {
       setNotice({ kind: 'error', message: error.message })
       setBusyId(null)
@@ -134,10 +132,10 @@ export function PlayerMarketBrowser({
     setBusyId(null)
   }
 
-  async function handleSell(player: MarketPlayer) {
+  async function handleSell(player: MarketPlayer, requestKey: string) {
     setBusyId(player.id)
     setNotice(null)
-    const { data, error } = await sellMarketPlayer(player.slug, player.id)
+    const { data, error } = await sellMarketPlayer(player.slug, player.id, requestKey)
     if (error) {
       setNotice({ kind: 'error', message: error.message })
       setBusyId(null)
@@ -306,15 +304,15 @@ export function PlayerMarketBrowser({
 
                 <div className="mt-3 flex flex-wrap gap-2">
                   <button
-                    onClick={() => setTradeIntent({ action: 'buy', player })}
+                    onClick={() => setTradeIntent({ action: 'buy', player, requestKey: createMarketRequestKey(`buy-${player.slug}`) })}
                     disabled={!canBuy || busyId !== null}
                     className="min-h-11 rounded-xl bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-700 disabled:opacity-45"
                   >
                     {busyId === player.id ? 'Processing…' : owned ? 'Held' : !canBuyPosition(player.position, formation) ? `${player.position} slot full` : availableCash < player.current_value ? 'Not enough cash' : buysRemaining <= 0 ? 'Buy limit reached' : 'Buy'}
                   </button>
                   <button
-                    onClick={() => setTradeIntent({ action: 'sell', player })}
-                    disabled={!owned || salesRemaining <= 0 || lockActive || busyId !== null}
+                    onClick={() => setTradeIntent({ action: 'sell', player, requestKey: createMarketRequestKey(`sell-${player.slug}`) })}
+                    disabled={!owned || lockActive || busyId !== null}
                     className="min-h-11 rounded-xl border border-border px-3 py-2 text-xs font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-700 disabled:opacity-45"
                   >
                     {busyId === player.id ? 'Processing…' : 'Sell'}
@@ -381,8 +379,8 @@ export function PlayerMarketBrowser({
           onConfirm={() => {
             const intent = tradeIntent
             setTradeIntent(null)
-            if (intent.action === 'buy') void handleBuy(intent.player)
-            else void handleSell(intent.player)
+            if (intent.action === 'buy') void handleBuy(intent.player, intent.requestKey)
+            else void handleSell(intent.player, intent.requestKey)
           }}
         />
       ) : null}
@@ -445,7 +443,7 @@ function Notice({ kind, message }: { kind: 'success' | 'error' | 'info'; message
     : kind === 'error'
       ? <Shield className="size-3.5" />
       : <Clock3 className="size-3.5" />
-  return <p className={`mt-3 inline-flex items-center gap-2 rounded-lg border px-2.5 py-1.5 text-xs ${className}`}>{icon}{message}</p>
+  return <p role={kind === 'error' ? 'alert' : 'status'} aria-live={kind === 'error' ? 'assertive' : 'polite'} className={`mt-3 inline-flex items-center gap-2 rounded-lg border px-2.5 py-1.5 text-xs ${className}`}>{icon}{message}</p>
 }
 
 function FilterSelect({ label, value, onChange, options }: { label: string; value: string; onChange: (value: string) => void; options: string[] }) {

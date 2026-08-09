@@ -1,7 +1,6 @@
 export const MARKET_CREDITS_STARTING_BALANCE = 100_000_000
 export const MARKET_MAX_PORTFOLIO_SIZE = 11
-export const MARKET_DAILY_BUY_LIMIT = 3
-export const MARKET_DAILY_SELL_LIMIT = 3
+export const MARKET_WEEKLY_SIGNING_LIMIT = 11
 
 export function formatFiqCompact(value: number) {
   const safe = Number.isFinite(value) ? value : 0
@@ -22,6 +21,15 @@ export function formatChange(value: number) {
 
 export function toUtcDateKey(date = new Date()) {
   return date.toISOString().slice(0, 10)
+}
+
+export function toUtcIsoWeekKey(date = new Date()) {
+  const value = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()))
+  const day = value.getUTCDay() || 7
+  value.setUTCDate(value.getUTCDate() + 4 - day)
+  const yearStart = new Date(Date.UTC(value.getUTCFullYear(), 0, 1))
+  const week = Math.ceil((((value.getTime() - yearStart.getTime()) / 86_400_000) + 1) / 7)
+  return `${value.getUTCFullYear()}-W${String(week).padStart(2, '0')}`
 }
 
 export function createMarketRequestKey(prefix: string) {
