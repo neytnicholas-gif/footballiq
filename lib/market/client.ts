@@ -160,14 +160,26 @@ export async function loadMarketSettings() {
 }
 
 export async function loadPlayerSeasonStats(playerId: number) {
+  const { data: playerRow, error: playerError } = await supabase
+    .from('market_players')
+    .select('id')
+    // The checked-in generated types predate the normalized provider schema deployed to staging.
+    // @ts-expect-error app_player_id exists in the verified staging schema.
+    .eq('app_player_id', playerId)
+    .maybeSingle()
+
+  if (playerError || !playerRow) {
+    return { data: [], error: isMarketBackendUnavailable(playerError) ? null : playerError as Error | null }
+  }
+
   const { data, error } = await supabase
     .from('player_season_stats')
-    .select('*')
-    .eq('player_id', playerId)
-    .order('season', { ascending: false })
+    .select('player_id,season_id,appearances,starts,minutes_played,goals,assists,clean_sheets,yellow_cards,red_cards,average_rating_milli,source_through_at,updated_at')
+    .eq('player_id', playerRow.id)
+    .order('season_id', { ascending: false })
 
   return {
-    data: (data as MarketSeasonStats[] | null) ?? [],
+    data: mapNormalizedSeasonStats(data, playerId),
     error: isMarketBackendUnavailable(error) ? null : error as Error | null,
   }
 }
@@ -175,10 +187,10 @@ export async function loadPlayerSeasonStats(playerId: number) {
 export async function loadMarketSeasonStats() {
   const { data, error } = await supabase
     .from('player_season_stats')
-    .select('*')
-    .order('season', { ascending: false })
+    .select('player_id,season_id,appearances,starts,minutes_played,goals,assists,clean_sheets,yellow_cards,red_cards,average_rating_milli,source_through_at,updated_at')
+    .order('season_id', { ascending: false })
 
-  let rows = (data as MarketSeasonStats[] | null) ?? []
+  let rows = mapNormalizedSeasonStats(data)
   const usingFallback = rows.length === 0 || Boolean(error)
   if (usingFallback) {
     rows = buildSampleSeasonStats(buildSampleMarketPlayers())
@@ -188,6 +200,62 @@ export async function loadMarketSeasonStats() {
     data: rows,
     error: usingFallback ? null : error as Error | null,
   }
+}
+
+type NormalizedSeasonStatRow = {
+  player_id: string
+  season_id: string
+  appearances: number
+  starts: number
+  minutes_played: number
+  goals: number
+  assists: number
+  clean_sheets: number
+  yellow_cards: number
+  red_cards: number
+  average_rating_milli: number | null
+  source_through_at: string | null
+  updated_at: string
+}
+
+function mapNormalizedSeasonStats(data: unknown, appPlayerId?: number): MarketSeasonStats[] {
+  if (!Array.isArray(data)) return []
+  return (data as NormalizedSeasonStatRow[]).map((row, index) => ({
+    id: index + 1,
+    player_id: appPlayerId ?? 0,
+    season: row.season_id.replace(/^sportmonks-/, ''),
+    competition_label: row.season_id,
+    appearances: row.appearances,
+    starts: row.starts,
+    minutes: row.minutes_played,
+    goals: row.goals,
+    assists: row.assists,
+    clean_sheets: row.clean_sheets,
+    yellow_cards: row.yellow_cards,
+    red_cards: row.red_cards,
+    shots: null,
+    shots_on_target: null,
+    chances_created: null,
+    key_passes: null,
+    passes_completed: null,
+    pass_accuracy: null,
+    tackles: null,
+    interceptions: null,
+    clearances: null,
+    blocks: null,
+    saves: null,
+    goals_conceded: null,
+    expected_goals: null,
+    expected_assists: null,
+    average_rating: row.average_rating_milli === null ? null : row.average_rating_milli / 1000,
+    data_source: 'Sportmonks Football API',
+    source_reference: null,
+    provenance_status: 'verified',
+    owner_verified: true,
+    last_verified_at: row.source_through_at,
+    created_at: row.updated_at,
+    updated_at: row.updated_at,
+  }))
 }
 
 export async function loadPlayerValueHistory(playerId: number) {
