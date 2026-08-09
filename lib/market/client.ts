@@ -606,6 +606,13 @@ export async function loadLatestMatchweekRun() {
     .limit(1)
     .maybeSingle()
 
+  if (isMarketBackendUnavailable(error)) {
+    return {
+      data: null,
+      error: null,
+    }
+  }
+
   return {
     data: (data as MarketMatchweekRun | null) ?? null,
     error: error as Error | null,
@@ -626,6 +633,13 @@ export async function loadMatchweekRuns(limit = 12): Promise<{ data: MarketMatch
     .select('*')
     .order('created_at', { ascending: false })
     .limit(limit)
+
+  if (isMarketBackendUnavailable(error)) {
+    return {
+      data: [],
+      error: null,
+    }
+  }
 
   return {
     data: (data as MarketMatchweekRun[] | null) ?? [],
