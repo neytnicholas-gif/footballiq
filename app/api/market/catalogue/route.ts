@@ -25,6 +25,8 @@ type PublicCatalogueRow = {
   source_reference: string | null
 }
 
+const SUPPORTED_COMPETITIONS = ['premier-league', 'la-liga', 'ligue-1'] as const
+
 async function loadAuthoritativeCatalogue(competition: string | null) {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
   const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
@@ -32,11 +34,16 @@ async function loadAuthoritativeCatalogue(competition: string | null) {
   const client = createClient(url, key, {
     auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
   })
-  const { data, error } = await client.rpc('market_public_catalogue_v1')
-  if (error) throw new Error(`The authoritative player catalogue is unavailable: ${error.message}`)
-
-  const rows = ((data ?? []) as PublicCatalogueRow[])
-    .filter((row) => !competition || row.competition_key === competition)
+  if (competition && !SUPPORTED_COMPETITIONS.includes(competition as typeof SUPPORTED_COMPETITIONS[number])) {
+    throw new Error('The requested competition is not supported.')
+  }
+  const keys = competition ? [competition] : [...SUPPORTED_COMPETITIONS]
+  const results = await Promise.all(keys.map((key) => client.rpc('market_public_catalogue_v1', {
+    p_competition_key: key,
+  })))
+  const failed = results.find((result) => result.error)
+  if (failed?.error) throw new Error(`The authoritative player catalogue is unavailable: ${failed.error.message}`)
+  const rows = results.flatMap((result) => (result.data ?? []) as PublicCatalogueRow[])
   const players = rows.map((row): MarketPlayer => {
     const currentValue = Number(row.current_price_minor)
     const previousValue = Number(row.previous_price_minor)

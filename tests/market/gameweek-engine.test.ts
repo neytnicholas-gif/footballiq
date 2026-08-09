@@ -46,7 +46,7 @@ describe('verified gameweek engine', () => {
   it('serves one database price consistently across market and portfolio surfaces', () => {
     expect(priceBook).toContain('market_public_price_book_v1')
     expect(priceBook).toContain('security invoker')
-    expect(catalogueRoute).toContain("client.rpc('market_public_catalogue_v1')")
+    expect(catalogueRoute).toContain("client.rpc('market_public_catalogue_v1', {")
     expect(publicCatalogue).toContain('security invoker')
     expect(publicCatalogue).toContain('player.current_price_minor')
     expect(catalogueRoute).not.toContain('applyPreviewValueExperiment')

@@ -9,7 +9,9 @@ describe('Player Market launch gates', () => {
     const route = read('app/api/market/catalogue/route.ts')
     expect(route).not.toContain("VERCEL_ENV !== 'preview'")
     expect(route).toContain('opening_price_minor')
-    expect(route).toContain("client.rpc('market_public_catalogue_v1')")
+    expect(route).toContain("client.rpc('market_public_catalogue_v1', {")
+    expect(route).toContain('Promise.all(keys.map')
+    expect(route).toContain('p_competition_key: key')
     expect(route).not.toContain('buildSportmonksCombinedCatalogue')
     expect(route).toContain('s-maxage=60')
   })
@@ -20,6 +22,9 @@ describe('Player Market launch gates', () => {
     expect(sql).toContain('security invoker')
     expect(sql).toContain('catalogue.status = \'active\'')
     expect(sql).toContain('revoke insert, update, delete, truncate, references, trigger')
+    const filtered = read('supabase/migrations/20260810003500_filter_public_market_catalogue.sql')
+    expect(filtered).toContain('market_public_catalogue_v1(p_competition_key text)')
+    expect(filtered).toContain('season.competition_key = p_competition_key')
   })
 
   it('never fakes authenticated trade success using anonymous state', () => {
