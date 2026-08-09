@@ -8,6 +8,7 @@ const PREMIER_LEAGUE_ID = 8
 const LA_LIGA_ID = 564
 const BUNDESLIGA_ID = 82
 const SERIE_A_ID = 384
+const LIGUE_1_ID = 301
 const VERIFIED_SAMPLE_FIXTURE_ID = 19427734
 const TOP_FIVE_LEAGUES = [
   { id: 8, name: 'Premier League' },
@@ -119,8 +120,8 @@ function openingGameValue(position: MarketPosition, age: number | null) {
 
 export type SportmonksMarketCatalogue = {
   provider: 'Sportmonks Football API'
-  competition: 'Premier League' | 'La Liga' | 'Bundesliga' | 'Serie A'
-  competitionKey: 'premier-league' | 'la-liga' | 'bundesliga' | 'serie-a'
+  competition: 'Premier League' | 'La Liga' | 'Bundesliga' | 'Serie A' | 'Ligue 1'
+  competitionKey: 'premier-league' | 'la-liga' | 'bundesliga' | 'serie-a' | 'ligue-1'
   leagueId: number
   seasonId: string
   seasonName: string | null
@@ -352,6 +353,10 @@ export function buildSportmonksSerieACatalogue(apiToken = process.env.SPORTMONKS
   return buildSportmonksLeagueCatalogue({ leagueId: SERIE_A_ID, competition: 'Serie A', competitionKey: 'serie-a' }, apiToken)
 }
 
+export function buildSportmonksLigue1Catalogue(apiToken = process.env.SPORTMONKS_API_TOKEN) {
+  return buildSportmonksLeagueCatalogue({ leagueId: LIGUE_1_ID, competition: 'Ligue 1', competitionKey: 'ligue-1' }, apiToken)
+}
+
 export function catalogueCoverage(catalogue: SportmonksMarketCatalogue) {
   return {
     playerCount: catalogue.players.length,
@@ -371,6 +376,7 @@ export async function buildSportmonksCombinedCatalogue(apiToken = process.env.SP
     ...[
       buildSportmonksBundesligaCatalogue(apiToken),
       buildSportmonksSerieACatalogue(apiToken),
+      buildSportmonksLigue1Catalogue(apiToken),
     ].map((promise) => promise.then(
         (catalogue) => ({ catalogue, error: null }),
         (error: unknown) => ({ catalogue: null, error: error instanceof Error ? error.message : 'Provider request failed' }),

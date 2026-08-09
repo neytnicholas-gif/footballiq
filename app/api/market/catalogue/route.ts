@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { buildSportmonksBundesligaCatalogue, buildSportmonksCombinedCatalogue, buildSportmonksLaLigaCatalogue, buildSportmonksPremierLeagueCatalogue, buildSportmonksSerieACatalogue } from '@/lib/market/server/sportmonks-client'
+import { buildSportmonksBundesligaCatalogue, buildSportmonksCombinedCatalogue, buildSportmonksLaLigaCatalogue, buildSportmonksLigue1Catalogue, buildSportmonksPremierLeagueCatalogue, buildSportmonksSerieACatalogue } from '@/lib/market/server/sportmonks-client'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -10,7 +10,9 @@ export async function GET(request: Request) {
   }
   try {
     const competition = new URL(request.url).searchParams.get('competition')
-    const catalogue = competition === 'serie-a'
+    const catalogue = competition === 'ligue-1'
+      ? await buildSportmonksLigue1Catalogue()
+      : competition === 'serie-a'
       ? await buildSportmonksSerieACatalogue()
       : competition === 'bundesliga'
       ? await buildSportmonksBundesligaCatalogue()

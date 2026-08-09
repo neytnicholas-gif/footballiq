@@ -1,7 +1,7 @@
 // @vitest-environment node
 
 import { describe, expect, it, vi } from 'vitest'
-import { buildSportmonksBundesligaCatalogue, buildSportmonksLaLigaCatalogue, buildSportmonksPremierLeagueCatalogue, buildSportmonksSerieACatalogue, createSportmonksClient, isCatalogueReady, runSportmonksCoverageTrial } from '@/lib/market/server/sportmonks-client'
+import { buildSportmonksBundesligaCatalogue, buildSportmonksLaLigaCatalogue, buildSportmonksLigue1Catalogue, buildSportmonksPremierLeagueCatalogue, buildSportmonksSerieACatalogue, createSportmonksClient, isCatalogueReady, runSportmonksCoverageTrial } from '@/lib/market/server/sportmonks-client'
 
 const response = (data: unknown) => new Response(JSON.stringify({ data }), { status: 200 })
 
@@ -127,6 +127,23 @@ describe('Sportmonks coverage trial client', () => {
 
     expect(catalogue).toMatchObject({ competition: 'Serie A', competitionKey: 'serie-a', leagueId: 384, seasonId: '27895', playerCount: 1 })
     expect(catalogue.players[0]).toMatchObject({ slug: 'marco-example-serie-a', competition_key: 'serie-a', competition_name: 'Serie A' })
+    expect(isCatalogueReady(catalogue)).toBe(false)
+  })
+
+  it('builds namespaced Ligue 1 players for the shared cross-league market', async () => {
+    vi.spyOn(globalThis, 'fetch')
+      .mockResolvedValueOnce(response({ id: 301, currentSeason: { id: 27962, name: '2026/2027' } }))
+      .mockResolvedValueOnce(response([{ id: 40, name: 'Paris FC' }]))
+      .mockResolvedValueOnce(response([]))
+      .mockResolvedValueOnce(response([
+        { player_id: 111, player: { id: 111, display_name: 'Pierre Example', date_of_birth: '2000-01-01' }, team: { id: 40, name: 'Paris FC' }, position: { developer_name: 'FORWARD' } },
+      ]))
+      .mockResolvedValueOnce(response({ id: 27962, fixtures: [] }))
+
+    const catalogue = await buildSportmonksLigue1Catalogue('private-token')
+
+    expect(catalogue).toMatchObject({ competition: 'Ligue 1', competitionKey: 'ligue-1', leagueId: 301, seasonId: '27962', playerCount: 1 })
+    expect(catalogue.players[0]).toMatchObject({ slug: 'pierre-example-ligue-1', competition_key: 'ligue-1', competition_name: 'Ligue 1' })
     expect(isCatalogueReady(catalogue)).toBe(false)
   })
 })
