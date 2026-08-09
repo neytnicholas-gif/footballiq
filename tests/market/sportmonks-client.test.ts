@@ -1,7 +1,7 @@
 // @vitest-environment node
 
 import { describe, expect, it, vi } from 'vitest'
-import { buildSportmonksBundesligaCatalogue, buildSportmonksLaLigaCatalogue, buildSportmonksPremierLeagueCatalogue, createSportmonksClient, isCatalogueReady, runSportmonksCoverageTrial } from '@/lib/market/server/sportmonks-client'
+import { buildSportmonksBundesligaCatalogue, buildSportmonksLaLigaCatalogue, buildSportmonksPremierLeagueCatalogue, buildSportmonksSerieACatalogue, createSportmonksClient, isCatalogueReady, runSportmonksCoverageTrial } from '@/lib/market/server/sportmonks-client'
 
 const response = (data: unknown) => new Response(JSON.stringify({ data }), { status: 200 })
 
@@ -110,6 +110,23 @@ describe('Sportmonks coverage trial client', () => {
 
     expect(catalogue).toMatchObject({ competition: 'Bundesliga', competitionKey: 'bundesliga', leagueId: 82, seasonId: '28321', playerCount: 1 })
     expect(catalogue.players[0]).toMatchObject({ slug: 'max-example-bundesliga', competition_key: 'bundesliga', competition_name: 'Bundesliga' })
+    expect(isCatalogueReady(catalogue)).toBe(false)
+  })
+
+  it('builds namespaced Serie A players for the shared cross-league market', async () => {
+    vi.spyOn(globalThis, 'fetch')
+      .mockResolvedValueOnce(response({ id: 384, currentSeason: { id: 27895, name: '2026/2027' } }))
+      .mockResolvedValueOnce(response([{ id: 30, name: 'Milano FC' }]))
+      .mockResolvedValueOnce(response([]))
+      .mockResolvedValueOnce(response([
+        { player_id: 99, player: { id: 99, display_name: 'Marco Example', date_of_birth: '2000-01-01' }, team: { id: 30, name: 'Milano FC' }, position: { developer_name: 'MIDFIELDER' } },
+      ]))
+      .mockResolvedValueOnce(response({ id: 27895, fixtures: [] }))
+
+    const catalogue = await buildSportmonksSerieACatalogue('private-token')
+
+    expect(catalogue).toMatchObject({ competition: 'Serie A', competitionKey: 'serie-a', leagueId: 384, seasonId: '27895', playerCount: 1 })
+    expect(catalogue.players[0]).toMatchObject({ slug: 'marco-example-serie-a', competition_key: 'serie-a', competition_name: 'Serie A' })
     expect(isCatalogueReady(catalogue)).toBe(false)
   })
 })

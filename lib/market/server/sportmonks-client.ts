@@ -7,6 +7,7 @@ const BASE_URL = 'https://api.sportmonks.com/v3/football'
 const PREMIER_LEAGUE_ID = 8
 const LA_LIGA_ID = 564
 const BUNDESLIGA_ID = 82
+const SERIE_A_ID = 384
 const VERIFIED_SAMPLE_FIXTURE_ID = 19427734
 const TOP_FIVE_LEAGUES = [
   { id: 8, name: 'Premier League' },
@@ -118,8 +119,8 @@ function openingGameValue(position: MarketPosition, age: number | null) {
 
 export type SportmonksMarketCatalogue = {
   provider: 'Sportmonks Football API'
-  competition: 'Premier League' | 'La Liga' | 'Bundesliga'
-  competitionKey: 'premier-league' | 'la-liga' | 'bundesliga'
+  competition: 'Premier League' | 'La Liga' | 'Bundesliga' | 'Serie A'
+  competitionKey: 'premier-league' | 'la-liga' | 'bundesliga' | 'serie-a'
   leagueId: number
   seasonId: string
   seasonName: string | null
@@ -347,6 +348,10 @@ export function buildSportmonksBundesligaCatalogue(apiToken = process.env.SPORTM
   return buildSportmonksLeagueCatalogue({ leagueId: BUNDESLIGA_ID, competition: 'Bundesliga', competitionKey: 'bundesliga' }, apiToken)
 }
 
+export function buildSportmonksSerieACatalogue(apiToken = process.env.SPORTMONKS_API_TOKEN) {
+  return buildSportmonksLeagueCatalogue({ leagueId: SERIE_A_ID, competition: 'Serie A', competitionKey: 'serie-a' }, apiToken)
+}
+
 export function catalogueCoverage(catalogue: SportmonksMarketCatalogue) {
   return {
     playerCount: catalogue.players.length,
@@ -360,31 +365,38 @@ export function isCatalogueReady(catalogue: SportmonksMarketCatalogue) {
 }
 
 export async function buildSportmonksCombinedCatalogue(apiToken = process.env.SPORTMONKS_API_TOKEN) {
-  const [premierLeague, laLiga, bundesligaResult] = await Promise.all([
+  const [premierLeague, laLiga, ...optionalResults] = await Promise.all([
     buildSportmonksPremierLeagueCatalogue(apiToken),
     buildSportmonksLaLigaCatalogue(apiToken),
-    buildSportmonksBundesligaCatalogue(apiToken).then(
-      (catalogue) => ({ catalogue, error: null }),
-      (error: unknown) => ({ catalogue: null, error: error instanceof Error ? error.message : 'Provider request failed' }),
-    ),
+    ...[
+      buildSportmonksBundesligaCatalogue(apiToken),
+      buildSportmonksSerieACatalogue(apiToken),
+    ].map((promise) => promise.then(
+        (catalogue) => ({ catalogue, error: null }),
+        (error: unknown) => ({ catalogue: null, error: error instanceof Error ? error.message : 'Provider request failed' }),
+      )),
   ])
-  const optionalCatalogues = bundesligaResult.catalogue && isCatalogueReady(bundesligaResult.catalogue)
-    ? [bundesligaResult.catalogue]
-    : []
+  const optionalCatalogues = optionalResults
+    .map((result) => result.catalogue)
+    .filter((catalogue): catalogue is SportmonksMarketCatalogue => Boolean(catalogue && isCatalogueReady(catalogue)))
   const competitions = [premierLeague, laLiga, ...optionalCatalogues]
-  const bundesligaCoverage = bundesligaResult.catalogue ? catalogueCoverage(bundesligaResult.catalogue) : null
+  const unavailableCompetitions = optionalResults.flatMap((result) => {
+    if (result.catalogue && isCatalogueReady(result.catalogue)) return []
+    const coverage = result.catalogue ? catalogueCoverage(result.catalogue) : null
+    return [{
+      competition: result.catalogue?.competition ?? 'Provider league',
+      reason: result.error ?? 'Current provider squad coverage is incomplete',
+      playerCount: coverage?.playerCount ?? 0,
+      clubCount: coverage?.clubCount ?? 0,
+    }]
+  })
   return {
     provider: 'Sportmonks Football API' as const,
     competition: competitions.map((catalogue) => catalogue.competition).join(' + '),
     generatedAt: new Date().toISOString(),
     playerCount: competitions.reduce((total, catalogue) => total + catalogue.playerCount, 0),
     competitions,
-    unavailableCompetitions: optionalCatalogues.length ? [] : [{
-      competition: 'Bundesliga',
-      reason: bundesligaResult.error ?? 'Current provider squad coverage is incomplete',
-      playerCount: bundesligaCoverage?.playerCount ?? 0,
-      clubCount: bundesligaCoverage?.clubCount ?? 0,
-    }],
+    unavailableCompetitions,
     players: competitions.flatMap((catalogue) => catalogue.players)
       .sort((a, b) => b.current_value - a.current_value || a.display_name.localeCompare(b.display_name)),
   }
