@@ -42,6 +42,12 @@ function isMarketBackendUnavailable(error: unknown) {
     || /could not find (the table|the function)|relation .* does not exist|function .* does not exist/i.test(row.message ?? '')
 }
 
+function isPermissionDenied(error: unknown) {
+  if (!error || typeof error !== 'object') return false
+  const row = error as { code?: string; message?: string }
+  return row.code === '42501' || /permission denied/i.test(row.message ?? '')
+}
+
 export type GuestMarketImportResult = {
   ok: boolean
   imported: boolean
@@ -169,7 +175,10 @@ export async function loadPlayerSeasonStats(playerId: number) {
     .maybeSingle()
 
   if (playerError || !playerRow) {
-    return { data: [], error: isMarketBackendUnavailable(playerError) ? null : playerError as Error | null }
+    return {
+      data: [],
+      error: isMarketBackendUnavailable(playerError) || isPermissionDenied(playerError) ? null : playerError as Error | null,
+    }
   }
 
   const { data, error } = await supabase
