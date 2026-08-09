@@ -172,7 +172,7 @@ export function PlayerMarketBrowser({
         </div>
         {players[0]?.data_source_label.includes('Sportmonks') ? (
           <div className="relative mt-4 rounded-2xl border border-emerald-700/20 bg-emerald-950/[.055] px-4 py-3 text-sm">
-            <p className="font-bold text-emerald-900">Verified Premier League + La Liga market · {players.length} players live</p>
+            <p className="font-bold text-emerald-900">Verified Premier League + La Liga + Bundesliga market · {players.length} players live</p>
             <p className="mt-1 text-xs text-slate-600">Player identities and current squads come from Sportmonks. These are FootballIQ game prices—not real transfer values. {marketHasMoved ? 'Price movement is calculated from verified completed-fixture ratings and minutes.' : 'Opening prices stay fixed until verified ratings and minutes trigger transparent movement.'}</p>
           </div>
         ) : null}

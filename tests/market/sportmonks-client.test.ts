@@ -1,7 +1,7 @@
 // @vitest-environment node
 
 import { describe, expect, it, vi } from 'vitest'
-import { buildSportmonksLaLigaCatalogue, buildSportmonksPremierLeagueCatalogue, createSportmonksClient, runSportmonksCoverageTrial } from '@/lib/market/server/sportmonks-client'
+import { buildSportmonksBundesligaCatalogue, buildSportmonksLaLigaCatalogue, buildSportmonksPremierLeagueCatalogue, createSportmonksClient, runSportmonksCoverageTrial } from '@/lib/market/server/sportmonks-client'
 
 const response = (data: unknown) => new Response(JSON.stringify({ data }), { status: 200 })
 
@@ -94,5 +94,20 @@ describe('Sportmonks coverage trial client', () => {
 
     expect(catalogue).toMatchObject({ competition: 'La Liga', competitionKey: 'la-liga', leagueId: 564, seasonId: '27965', playerCount: 1 })
     expect(catalogue.players[0]).toMatchObject({ slug: 'alex-example-la-liga', competition_key: 'la-liga', competition_name: 'La Liga' })
+  })
+
+  it('builds namespaced Bundesliga players for the shared cross-league market', async () => {
+    vi.spyOn(globalThis, 'fetch')
+      .mockResolvedValueOnce(response({ id: 82, currentSeason: { id: 28321, name: '2026/2027' } }))
+      .mockResolvedValueOnce(response([{ id: 20, name: 'Berlin FC' }]))
+      .mockResolvedValueOnce(response([
+        { player_id: 88, player: { id: 88, display_name: 'Max Example', date_of_birth: '2000-01-01' }, team: { id: 20, name: 'Berlin FC' }, position: { developer_name: 'DEFENDER' } },
+      ]))
+      .mockResolvedValueOnce(response({ id: 28321, fixtures: [] }))
+
+    const catalogue = await buildSportmonksBundesligaCatalogue('private-token')
+
+    expect(catalogue).toMatchObject({ competition: 'Bundesliga', competitionKey: 'bundesliga', leagueId: 82, seasonId: '28321', playerCount: 1 })
+    expect(catalogue.players[0]).toMatchObject({ slug: 'max-example-bundesliga', competition_key: 'bundesliga', competition_name: 'Bundesliga' })
   })
 })

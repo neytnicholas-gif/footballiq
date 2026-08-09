@@ -6,6 +6,7 @@ import type { MarketPlayer, MarketPosition } from '@/lib/market/types'
 const BASE_URL = 'https://api.sportmonks.com/v3/football'
 const PREMIER_LEAGUE_ID = 8
 const LA_LIGA_ID = 564
+const BUNDESLIGA_ID = 82
 const VERIFIED_SAMPLE_FIXTURE_ID = 19427734
 const TOP_FIVE_LEAGUES = [
   { id: 8, name: 'Premier League' },
@@ -117,8 +118,8 @@ function openingGameValue(position: MarketPosition, age: number | null) {
 
 export type SportmonksMarketCatalogue = {
   provider: 'Sportmonks Football API'
-  competition: 'Premier League' | 'La Liga'
-  competitionKey: 'premier-league' | 'la-liga'
+  competition: 'Premier League' | 'La Liga' | 'Bundesliga'
+  competitionKey: 'premier-league' | 'la-liga' | 'bundesliga'
   leagueId: number
   seasonId: string
   seasonName: string | null
@@ -287,7 +288,7 @@ async function buildSportmonksLeagueCatalogue(
     const previousUpdate = calculatePerformanceValueUpdate({ position, currentValue: openingValue, rollingWeekMovement: 0, performances: performances.slice(1) })
     const value = currentUpdate?.newValue ?? openingValue
     const previousValue = previousUpdate?.newValue ?? openingValue
-    const baseSlug = `${toMarketSlug(name)}${leagueConfig.competitionKey === 'la-liga' ? '-la-liga' : ''}`
+    const baseSlug = `${toMarketSlug(name)}${leagueConfig.competitionKey === 'premier-league' ? '' : `-${leagueConfig.competitionKey}`}`
     const slug = slugs.has(baseSlug) ? `${baseSlug}-${id}` : baseSlug
     slugs.add(slug)
     players.push({
@@ -330,18 +331,23 @@ export function buildSportmonksLaLigaCatalogue(apiToken = process.env.SPORTMONKS
   return buildSportmonksLeagueCatalogue({ leagueId: LA_LIGA_ID, competition: 'La Liga', competitionKey: 'la-liga' }, apiToken)
 }
 
+export function buildSportmonksBundesligaCatalogue(apiToken = process.env.SPORTMONKS_API_TOKEN) {
+  return buildSportmonksLeagueCatalogue({ leagueId: BUNDESLIGA_ID, competition: 'Bundesliga', competitionKey: 'bundesliga' }, apiToken)
+}
+
 export async function buildSportmonksCombinedCatalogue(apiToken = process.env.SPORTMONKS_API_TOKEN) {
-  const [premierLeague, laLiga] = await Promise.all([
+  const [premierLeague, laLiga, bundesliga] = await Promise.all([
     buildSportmonksPremierLeagueCatalogue(apiToken),
     buildSportmonksLaLigaCatalogue(apiToken),
+    buildSportmonksBundesligaCatalogue(apiToken),
   ])
   return {
     provider: 'Sportmonks Football API' as const,
-    competition: 'Premier League + La Liga',
+    competition: 'Premier League + La Liga + Bundesliga',
     generatedAt: new Date().toISOString(),
-    playerCount: premierLeague.playerCount + laLiga.playerCount,
-    competitions: [premierLeague, laLiga],
-    players: [...premierLeague.players, ...laLiga.players]
+    playerCount: premierLeague.playerCount + laLiga.playerCount + bundesliga.playerCount,
+    competitions: [premierLeague, laLiga, bundesliga],
+    players: [...premierLeague.players, ...laLiga.players, ...bundesliga.players]
       .sort((a, b) => b.current_value - a.current_value || a.display_name.localeCompare(b.display_name)),
   }
 }
