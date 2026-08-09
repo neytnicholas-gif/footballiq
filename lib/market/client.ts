@@ -423,7 +423,7 @@ export function calculateTradesRemaining(transactions: MarketTransaction[]) {
   }
 }
 
-export async function buyMarketPlayer(slug: string) {
+export async function buyMarketPlayer(slug: string, playerId?: number) {
   const idempotencyKey = createMarketRequestKey(`buy-${slug}`)
 
   const { data: authData } = await supabase.auth.getUser()
@@ -433,7 +433,7 @@ export async function buyMarketPlayer(slug: string) {
   }
 
   const { data, error } = await supabase.rpc('market_buy_player', {
-    p_player_slug: slug,
+    p_player_slug: playerId ? String(playerId) : slug,
     p_idempotency_key: idempotencyKey,
   })
 
@@ -448,7 +448,7 @@ export async function buyMarketPlayer(slug: string) {
   }
 }
 
-export async function sellMarketPlayer(slug: string) {
+export async function sellMarketPlayer(slug: string, playerId?: number) {
   const idempotencyKey = createMarketRequestKey(`sell-${slug}`)
 
   const { data: authData } = await supabase.auth.getUser()
@@ -458,7 +458,7 @@ export async function sellMarketPlayer(slug: string) {
   }
 
   const { data, error } = await supabase.rpc('market_sell_player', {
-    p_player_slug: slug,
+    p_player_slug: playerId ? String(playerId) : slug,
     p_idempotency_key: idempotencyKey,
   })
 
@@ -473,7 +473,7 @@ export async function sellMarketPlayer(slug: string) {
   }
 }
 
-export async function toggleMarketWatchlist(slug: string) {
+export async function toggleMarketWatchlist(slug: string, playerId?: number) {
   const { data: authData } = await supabase.auth.getUser()
   if (!authData.user) {
     const { data: players } = await loadMarketPlayers()
@@ -481,7 +481,7 @@ export async function toggleMarketWatchlist(slug: string) {
   }
 
   const { data, error } = await supabase.rpc('market_toggle_watchlist', {
-    p_player_slug: slug,
+    p_player_slug: playerId ? String(playerId) : slug,
   })
 
   if (isMarketBackendUnavailable(error)) {

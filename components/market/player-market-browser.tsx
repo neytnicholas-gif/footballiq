@@ -122,7 +122,7 @@ export function PlayerMarketBrowser({
   async function handleBuy(player: MarketPlayer) {
     setBusyId(player.id)
     setNotice(null)
-    const { data, error } = await buyMarketPlayer(player.slug)
+    const { data, error } = await buyMarketPlayer(player.slug, player.id)
     if (error) {
       setNotice({ kind: 'error', message: error.message })
       setBusyId(null)
@@ -136,7 +136,7 @@ export function PlayerMarketBrowser({
   async function handleSell(player: MarketPlayer) {
     setBusyId(player.id)
     setNotice(null)
-    const { data, error } = await sellMarketPlayer(player.slug)
+    const { data, error } = await sellMarketPlayer(player.slug, player.id)
     if (error) {
       setNotice({ kind: 'error', message: error.message })
       setBusyId(null)
@@ -149,7 +149,7 @@ export function PlayerMarketBrowser({
 
   async function handleWatchlist(player: MarketPlayer) {
     setBusyId(player.id)
-    const { data, error } = await toggleMarketWatchlist(player.slug)
+    const { data, error } = await toggleMarketWatchlist(player.slug, player.id)
     if (error) {
       setNotice({ kind: 'error', message: error.message })
       setBusyId(null)

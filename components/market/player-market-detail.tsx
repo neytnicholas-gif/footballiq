@@ -62,7 +62,7 @@ export function PlayerMarketDetail({
   async function handleBuy() {
     setBusy('buy')
     setNotice(null)
-    const { data, error } = await buyMarketPlayer(player.slug)
+    const { data, error } = await buyMarketPlayer(player.slug, player.id)
     if (error) {
       setNotice({ kind: 'error', message: error.message })
       setBusy(null)
@@ -77,7 +77,7 @@ export function PlayerMarketDetail({
   async function handleSell() {
     setBusy('sell')
     setNotice(null)
-    const { data, error } = await sellMarketPlayer(player.slug)
+    const { data, error } = await sellMarketPlayer(player.slug, player.id)
     if (error) {
       setNotice({ kind: 'error', message: error.message })
       setBusy(null)
@@ -92,7 +92,7 @@ export function PlayerMarketDetail({
   async function handleWatchlist() {
     setBusy('watch')
     setNotice(null)
-    const { data, error } = await toggleMarketWatchlist(player.slug)
+    const { data, error } = await toggleMarketWatchlist(player.slug, player.id)
     if (error) {
       setNotice({ kind: 'error', message: error.message })
       setBusy(null)
