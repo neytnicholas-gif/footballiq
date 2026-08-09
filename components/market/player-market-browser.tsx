@@ -196,7 +196,7 @@ export function PlayerMarketBrowser({
           <FormationPill label="MID" value={`${formation.MID}/3`} />
           <FormationPill label="FWD" value={`${formation.FWD}/3`} />
           <FormationPill label="Gameweek signings" value={String(buysRemaining)} subtle="remaining of 11" />
-          <FormationPill label="Sales today" value={String(salesRemaining)} subtle="remaining" />
+          <FormationPill label="Sales" value="No limit" subtle="free squad slots" />
         </div>
 
         <div className="mt-5 grid gap-3 md:grid-cols-2 lg:grid-cols-7">
