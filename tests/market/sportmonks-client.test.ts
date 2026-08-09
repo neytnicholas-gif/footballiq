@@ -146,6 +146,23 @@ describe('Sportmonks coverage trial client', () => {
     expect(catalogue.players[0]).toMatchObject({ id: 120, display_name: 'Extended Player', club_name: 'Milano FC', position: 'MID' })
   })
 
+  it('uses the team player relation when all squad endpoints are empty', async () => {
+    vi.spyOn(globalThis, 'fetch')
+      .mockResolvedValueOnce(response({ id: 384, currentSeason: { id: 27895, name: '2026/2027' } }))
+      .mockResolvedValueOnce(response([{ id: 30, name: 'Milano FC' }]))
+      .mockResolvedValueOnce(response([]))
+      .mockResolvedValueOnce(response([]))
+      .mockResolvedValueOnce(response([]))
+      .mockResolvedValueOnce(response({ id: 30, players: [
+        { player_id: 121, player: { id: 121, display_name: 'Nested Player', date_of_birth: '2000-01-01' }, position: { developer_name: 'FORWARD' } },
+      ] }))
+      .mockResolvedValueOnce(response({ id: 27895, fixtures: [] }))
+
+    const catalogue = await buildSportmonksSerieACatalogue('private-token')
+
+    expect(catalogue.players[0]).toMatchObject({ id: 121, display_name: 'Nested Player', club_name: 'Milano FC', position: 'FWD' })
+  })
+
   it('builds namespaced Ligue 1 players for the shared cross-league market', async () => {
     vi.spyOn(globalThis, 'fetch')
       .mockResolvedValueOnce(response({ id: 301, currentSeason: { id: 27962, name: '2026/2027' } }))

@@ -189,12 +189,21 @@ export async function runSportmonksCoverageTrial(apiToken = process.env.SPORTMON
     const extendedSquad = records(await client.get(
       `/squads/teams/${encodeURIComponent(String(teamId))}/extended?include=position`,
     ))
-    return extendedSquad.map((player) => ({
-      player_id: player.id,
-      player,
+    if (extendedSquad.length) {
+      return extendedSquad.map((player) => ({
+        player_id: player.id,
+        player,
+        team,
+        position: relation(player, 'position'),
+      }))
+    }
+    const teamWithPlayers = record(await client.get(
+      `/teams/${encodeURIComponent(String(teamId))}?include=players.player;players.position`,
+    ))
+    return relationRows(teamWithPlayers ?? {}, 'players').map((membership) => ({
+      ...membership,
       team,
-      position: relation(player, 'position'),
-    }))
+    } as JsonRecord))
   }))).flat()
   const uniquePlayers = new Map(squads.map((row) => [String(row.player_id ?? relation(row, 'player')?.id ?? ''), row]))
   uniquePlayers.delete('')
@@ -263,12 +272,21 @@ async function buildSportmonksLeagueCatalogue(
     const extendedSquad = records(await client.get(
       `/squads/teams/${encodeURIComponent(String(teamId))}/extended?include=position`,
     ))
-    return extendedSquad.map((player) => ({
-      player_id: player.id,
-      player,
+    if (extendedSquad.length) {
+      return extendedSquad.map((player) => ({
+        player_id: player.id,
+        player,
+        team,
+        position: relation(player, 'position'),
+      }))
+    }
+    const teamWithPlayers = record(await client.get(
+      `/teams/${encodeURIComponent(String(teamId))}?include=players.player;players.position`,
+    ))
+    return relationRows(teamWithPlayers ?? {}, 'players').map((membership) => ({
+      ...membership,
       team,
-      position: relation(player, 'position'),
-    }))
+    } as JsonRecord))
   }))).flat()
   const seasonSchedule = record(await client.get(`/seasons/${encodeURIComponent(seasonId)}?include=fixtures.state`))
   const completedFixtures = relationRows(seasonSchedule ?? {}, 'fixtures')
