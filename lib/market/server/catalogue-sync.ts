@@ -124,6 +124,22 @@ async function syncLeagueCatalogue(admin: ReturnType<typeof createAdminClient>, 
     synced += rows.length
   }
 
+  const { data: persistedPlayers, error: persistedPlayersError } = await admin.from('market_players')
+    .select('id,provider_player_id').eq('season_id', seasonId)
+  if (persistedPlayersError) throw new Error(`Player reconciliation failed: ${persistedPlayersError.message}`)
+  const currentProviderIds = new Set(catalogue.players.map((player) => String(player.id)))
+  const stalePlayerIds = (persistedPlayers ?? [])
+    .filter((player) => !currentProviderIds.has(String(player.provider_player_id)))
+    .map((player) => player.id)
+  for (let offset = 0; offset < stalePlayerIds.length; offset += BATCH_SIZE) {
+    const { error } = await admin.from('market_players').update({
+      is_available: false,
+      availability_status: 'inactive',
+      updated_at: now,
+    }).in('id', stalePlayerIds.slice(offset, offset + BATCH_SIZE))
+    if (error) throw new Error(`Stale player deactivation failed: ${error.message}`)
+  }
+
   const { error: activationError } = await admin.from('market_active_catalogues').upsert({
     catalogue_id: catalogueRow.id,
     season_id: seasonId,
@@ -132,7 +148,7 @@ async function syncLeagueCatalogue(admin: ReturnType<typeof createAdminClient>, 
   }, { onConflict: 'catalogue_id' })
   if (activationError) throw new Error(`Catalogue activation failed: ${activationError.message}`)
 
-  return { synced, competition: catalogue.competition, seasonId, seasonName, source: catalogue.provider, generatedAt: catalogue.generatedAt }
+  return { synced, deactivated: stalePlayerIds.length, competition: catalogue.competition, seasonId, seasonName, source: catalogue.provider, generatedAt: catalogue.generatedAt }
 }
 
 export async function syncSportmonksCatalogueToSupabase() {

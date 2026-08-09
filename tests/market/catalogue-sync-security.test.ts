@@ -27,5 +27,7 @@ describe('server-only Market catalogue synchronization', () => {
     expect(service).toMatch(/source_type: 'licensed_provider'/)
     expect(service).toMatch(/app_player_id: player\.id/)
     expect(service).toMatch(/synced \+= rows\.length/)
+    expect(service).toMatch(/stalePlayerIds/)
+    expect(service).toMatch(/availability_status: 'inactive'/)
   })
 })
