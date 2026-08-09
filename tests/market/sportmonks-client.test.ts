@@ -1,13 +1,32 @@
 // @vitest-environment node
 
 import { describe, expect, it, vi } from 'vitest'
-import { buildSportmonksBundesligaCatalogue, buildSportmonksLaLigaCatalogue, buildSportmonksLigue1Catalogue, buildSportmonksPremierLeagueCatalogue, buildSportmonksSerieACatalogue, createSportmonksClient, isCatalogueReady, runSportmonksCoverageTrial } from '@/lib/market/server/sportmonks-client'
+import { buildSportmonksBundesligaCatalogue, buildSportmonksLaLigaCatalogue, buildSportmonksLigue1Catalogue, buildSportmonksPremierLeagueCatalogue, buildSportmonksSerieACatalogue, createSportmonksClient, fetchSportmonksCompletedGameweeks, isCatalogueReady, runSportmonksCoverageTrial } from '@/lib/market/server/sportmonks-client'
 
 const response = (data: unknown) => new Response(JSON.stringify({ data }), { status: 200 })
 
 describe('Sportmonks coverage trial client', () => {
   it('requires a server-only token', () => {
     expect(() => createSportmonksClient('')).toThrow('SPORTMONKS_API_TOKEN is not configured')
+  })
+
+  it('groups cross-league results by calendar week instead of unrelated provider round ids', async () => {
+    const detail = (developer_name: string, value: number) => ({ data: { value }, type: { developer_name } })
+    const finished = (id: number, starting_at: string, round_id: number) => ({ id, starting_at, round_id, state: { short_name: 'FT' } })
+    vi.spyOn(globalThis, 'fetch')
+      .mockResolvedValueOnce(response({ id: 8, currentSeason: { id: 1 } }))
+      .mockResolvedValueOnce(response({ id: 1, fixtures: [finished(101, '2026-08-02 14:00:00', 9001)] }))
+      .mockResolvedValueOnce(response({ id: 564, currentSeason: { id: 2 } }))
+      .mockResolvedValueOnce(response({ id: 2, fixtures: [finished(102, '2026-08-08 14:00:00', 7002)] }))
+      .mockResolvedValueOnce(response({ id: 301, currentSeason: { id: 3 } }))
+      .mockResolvedValueOnce(response({ id: 3, fixtures: [] }))
+      .mockResolvedValueOnce(response({ id: 102, lineups: [{ player_id: 22, type_id: 11, details: [detail('MINUTES_PLAYED', 90), detail('RATING', 7.2)] }] }))
+      .mockResolvedValueOnce(response({ id: 101, lineups: [{ player_id: 11, type_id: 11, details: [detail('MINUTES_PLAYED', 90), detail('RATING', 7.1)] }] }))
+
+    const batches = await fetchSportmonksCompletedGameweeks('private-token')
+
+    expect(batches.map((batch) => batch.gameweekKey)).toEqual(['sportmonks-2026-31', 'sportmonks-2026-32'])
+    expect(batches.flatMap((batch) => batch.updates).map((update) => update.provider_fixture_id).sort()).toEqual(['101', '102'])
   })
 
   it('audits squads and match ratings without exposing or writing the token', async () => {

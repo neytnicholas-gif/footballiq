@@ -171,15 +171,30 @@ export function createSportmonksClient(apiToken = process.env.SPORTMONKS_API_TOK
   if (!apiToken?.trim()) throw new Error('SPORTMONKS_API_TOKEN is not configured.')
   const token: string = apiToken.trim()
 
-  async function get(path: string) {
-    const response = await fetch(`${BASE_URL}${path}`, {
-      headers: { Authorization: token },
-      next: { revalidate: 3600 },
-    })
-    if (!response.ok) throw new Error(`Sportmonks request failed with HTTP ${response.status}.`)
-    const payload = record(await response.json())
-    if (!payload || !('data' in payload)) throw new Error('Sportmonks returned an invalid response.')
-    return payload.data
+  async function get(path: string, options: { fresh?: boolean } = {}) {
+    let lastStatus = 0
+    for (let attempt = 0; attempt < 3; attempt += 1) {
+      try {
+        const response = await fetch(`${BASE_URL}${path}`, {
+          headers: { Authorization: token },
+          ...(options.fresh ? { cache: 'no-store' as const } : { next: { revalidate: 3600 } }),
+          signal: AbortSignal.timeout(20_000),
+        })
+        lastStatus = response.status
+        if (response.ok) {
+          const payload = record(await response.json())
+          if (!payload || !('data' in payload)) throw new Error('Sportmonks returned an invalid response.')
+          return payload.data
+        }
+        if (response.status !== 429 && response.status < 500) break
+        const retryAfter = Number(response.headers.get('retry-after'))
+        await new Promise((resolve) => setTimeout(resolve, Number.isFinite(retryAfter) ? Math.min(retryAfter * 1000, 5_000) : 500 * (attempt + 1)))
+      } catch (error) {
+        if (attempt === 2) throw error
+        await new Promise((resolve) => setTimeout(resolve, 500 * (attempt + 1)))
+      }
+    }
+    throw new Error(`Sportmonks request failed with HTTP ${lastStatus || 'unknown'}.`)
   }
 
   return { get }
@@ -465,7 +480,20 @@ export async function buildSportmonksCombinedCatalogue(apiToken = process.env.SP
   }
 }
 
-export async function fetchSportmonksCompletedGameweek(apiToken = process.env.SPORTMONKS_API_TOKEN): Promise<SportmonksCompletedGameweek> {
+function isoWeek(date: Date) {
+  const thursday = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()))
+  thursday.setUTCDate(thursday.getUTCDate() + 4 - (thursday.getUTCDay() || 7))
+  const yearStart = new Date(Date.UTC(thursday.getUTCFullYear(), 0, 1))
+  return { year: thursday.getUTCFullYear(), week: Math.ceil((((thursday.getTime() - yearStart.getTime()) / 86_400_000) + 1) / 7) }
+}
+
+function mondayFor(date: Date) {
+  const monday = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()))
+  monday.setUTCDate(monday.getUTCDate() - ((monday.getUTCDay() || 7) - 1))
+  return monday
+}
+
+export async function fetchSportmonksCompletedGameweeks(apiToken = process.env.SPORTMONKS_API_TOKEN): Promise<SportmonksCompletedGameweek[]> {
   const client = createSportmonksClient(apiToken)
   const leagueConfigs = [
     { id: PREMIER_LEAGUE_ID, name: 'Premier League' },
@@ -476,50 +504,67 @@ export async function fetchSportmonksCompletedGameweek(apiToken = process.env.SP
   const fixtures: JsonRecord[] = []
 
   for (const leagueConfig of leagueConfigs) {
-    const league = record(await client.get(`/leagues/${leagueConfig.id}?include=currentSeason`))
+    const league = record(await client.get(`/leagues/${leagueConfig.id}?include=currentSeason`, { fresh: true }))
     const season = league ? relation(league, 'currentseason', 'currentSeason') : null
     if (!season?.id) continue
-    const schedule = record(await client.get(`/seasons/${encodeURIComponent(String(season.id))}?include=fixtures.state`))
+    const schedule = record(await client.get(`/seasons/${encodeURIComponent(String(season.id))}?include=fixtures.state`, { fresh: true }))
     fixtures.push(...relationRows(schedule ?? {}, 'fixtures').filter(isFinishedFixture))
   }
 
-  const finished = fixtures.filter((fixture) => fixtureDate(fixture))
+  const cutoff = Date.now() - 28 * 86_400_000
+  const finished = fixtures.filter((fixture) => {
+    const date = fixtureDate(fixture)
+    return date !== null && Date.parse(date) >= cutoff
+  })
     .sort((a, b) => Date.parse(fixtureDate(b)!) - Date.parse(fixtureDate(a)!))
   if (finished.length === 0) throw new Error('No completed Sportmonks fixtures with verified dates are available yet.')
-  const latest = finished[0]!
-  const latestRound = Number(latest.round_id)
-  const selected = Number.isInteger(latestRound)
-    ? finished.filter((fixture) => Number(fixture.round_id) === latestRound)
-    : finished.filter((fixture) => fixtureDate(fixture)!.slice(0, 10) === fixtureDate(latest)!.slice(0, 10))
-  const updates: SportmonksGameweekUpdate[] = []
+  const selected = finished
+  const updatesByWeek = new Map<string, SportmonksGameweekUpdate[]>()
 
-  for (const fixture of selected) {
-    const providerFixtureId = String(fixture.id)
-    const payload = record(await client.get(`/fixtures/${encodeURIComponent(providerFixtureId)}?include=lineups.details.type;state`))
-    for (const lineup of payload ? relationRows(payload, 'lineups') : []) {
-      const playerId = Number(lineup.player_id)
-      const minutes = numericDetail(lineup, 'MINUTES_PLAYED')
-      const rating = numericDetail(lineup, 'RATING')
-      if (!Number.isSafeInteger(playerId) || !Number.isInteger(minutes) || minutes! <= 0 || minutes! > 130 || rating === null || rating < 0 || rating > 10) continue
-      updates.push({
-        provider_player_id: String(playerId), provider_fixture_id: providerFixtureId,
-        fixture_date: fixtureDate(fixture)!, started: Boolean(lineup.type_id === 11 || lineup.formation_position),
-        minutes_played: minutes!, rating, retrieved_at: retrievedAt,
-      })
+  for (let offset = 0; offset < selected.length; offset += 5) {
+    const chunk = selected.slice(offset, offset + 5)
+    const payloads = await Promise.all(chunk.map(async (fixture) => ({
+      fixture,
+      payload: record(await client.get(`/fixtures/${encodeURIComponent(String(fixture.id))}?include=lineups.details.type;state`, { fresh: true })),
+    })))
+    for (const { fixture, payload } of payloads) {
+      const providerFixtureId = String(fixture.id)
+      for (const lineup of payload ? relationRows(payload, 'lineups') : []) {
+        const playerId = Number(lineup.player_id)
+        const minutes = numericDetail(lineup, 'MINUTES_PLAYED')
+        const rating = numericDetail(lineup, 'RATING')
+        if (!Number.isSafeInteger(playerId) || !Number.isInteger(minutes) || minutes! <= 0 || minutes! > 130 || rating === null || rating < 0 || rating > 10) continue
+        const fixtureAt = new Date(fixtureDate(fixture)!)
+        const { year, week } = isoWeek(fixtureAt)
+        const key = `${year}-${String(week).padStart(2, '0')}`
+        const updates = updatesByWeek.get(key) ?? []
+        updates.push({
+          provider_player_id: String(playerId), provider_fixture_id: providerFixtureId,
+          fixture_date: fixtureDate(fixture)!, started: Boolean(lineup.type_id === 11 || lineup.formation_position),
+          minutes_played: minutes!, rating, retrieved_at: retrievedAt,
+        })
+        updatesByWeek.set(key, updates)
+      }
     }
   }
-  if (updates.length === 0) throw new Error('Completed fixtures did not contain eligible Sportmonks ratings and minutes.')
+  if (updatesByWeek.size === 0) throw new Error('Completed fixtures did not contain eligible Sportmonks ratings and minutes.')
 
-  const fixtureDay = fixtureDate(latest)!.slice(0, 10)
-  const weekNumber = Number.isInteger(latestRound) && latestRound > 0 ? latestRound : Number(fixtureDay.replaceAll('-', '').slice(-4))
-  const opensAt = new Date(`${fixtureDay}T00:00:00.000Z`)
-  opensAt.setUTCDate(opensAt.getUTCDate() - 6)
-  const closesAt = new Date(opensAt)
-  closesAt.setUTCDate(closesAt.getUTCDate() + 7)
-  return {
-    gameweekKey: `sportmonks-${weekNumber}-${fixtureDay}`,
-    weekNumber,
-    label: `Gameweek ${weekNumber}`,
-    opensAt: opensAt.toISOString(), closesAt: closesAt.toISOString(), updates,
-  }
+  return [...updatesByWeek.entries()].map(([key, updates]) => {
+    const firstDate = new Date(updates.reduce((earliest, update) => update.fixture_date < earliest ? update.fixture_date : earliest, updates[0]!.fixture_date))
+    const opensAt = mondayFor(firstDate)
+    const closesAt = new Date(opensAt)
+    closesAt.setUTCDate(closesAt.getUTCDate() + 7)
+    const weekNumber = Number(key.slice(-2))
+    return {
+      gameweekKey: `sportmonks-${key}`,
+      weekNumber,
+      label: `Results · ${key}`,
+      opensAt: opensAt.toISOString(), closesAt: closesAt.toISOString(), updates,
+    }
+  }).sort((a, b) => a.opensAt.localeCompare(b.opensAt))
+}
+
+export async function fetchSportmonksCompletedGameweek(apiToken = process.env.SPORTMONKS_API_TOKEN): Promise<SportmonksCompletedGameweek> {
+  const batches = await fetchSportmonksCompletedGameweeks(apiToken)
+  return batches.at(-1)!
 }
