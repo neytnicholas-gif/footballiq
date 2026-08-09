@@ -5,6 +5,7 @@ import { useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
 import { ArrowUpDown, Clock3, Search, Shield, Sparkles, Star, WalletCards } from 'lucide-react'
 import { MarketPlayerChip } from '@/components/market/market-player-chip'
+import { MarketTradeDialog } from '@/components/market/market-trade-dialog'
 import { buyMarketPlayer, sellMarketPlayer, toggleMarketWatchlist } from '@/lib/market/client'
 import { canBuyPosition, countFormation } from '@/lib/market/formation'
 import { formatFiqCompact, MARKET_MAX_PORTFOLIO_SIZE } from '@/lib/market/format'
@@ -45,8 +46,12 @@ export function PlayerMarketBrowser({
   const [visibleCount, setVisibleCount] = useState(PLAYER_PAGE_SIZE)
   const [busyId, setBusyId] = useState<number | null>(null)
   const [notice, setNotice] = useState<{ kind: 'success' | 'error' | 'info'; message: string } | null>(null)
+  const [tradeIntent, setTradeIntent] = useState<{ action: 'buy' | 'sell'; player: MarketPlayer } | null>(null)
+  const [renderedAt] = useState(() => Date.now())
 
-  const clubs = useMemo(() => ['ALL', ...new Set(players.map((player) => player.club_name))], [players])
+  const clubs = useMemo(() => ['ALL', ...new Set(players
+    .filter((player) => competition === 'ALL' || player.competition_name === competition)
+    .map((player) => player.club_name))], [players, competition])
   const competitions = useMemo(() => ['ALL', ...new Set(players.map((player) => player.competition_name).filter((name): name is string => Boolean(name)))], [players])
   const liveCompetitionLabel = competitions.filter((name) => name !== 'ALL').join(' + ')
   const holdingsSet = useMemo(() => new Set(holdings.map((item) => item.player_id)), [holdings])
@@ -198,22 +203,22 @@ export function PlayerMarketBrowser({
             <span className="mb-1 block text-xs text-muted-foreground">Search</span>
             <div className="flex items-center rounded-xl border border-border bg-background px-3">
               <Search className="size-4 text-muted-foreground" />
-              <input value={search} onChange={(event) => { setSearch(event.target.value); resetCatalogueWindow() }} placeholder="Player or club" className="w-full bg-transparent px-2 py-2 text-sm outline-none" />
+              <input value={search} onChange={(event) => { setSearch(event.target.value); resetCatalogueWindow() }} placeholder="Player or club" className="w-full bg-transparent px-2 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-offset-2" />
             </div>
           </label>
 
-          <FilterSelect label="Position" value={position} onChange={(value) => { setPosition(value); resetCatalogueWindow() }} options={['ALL', 'GK', 'DEF', 'MID', 'FWD']} />
+          <FilterSelect label="Position" value={position} onChange={(value) => { setPosition(value as typeof position); resetCatalogueWindow() }} options={['ALL', 'GK', 'DEF', 'MID', 'FWD']} />
           <FilterSelect label="League" value={competition} onChange={(value) => { setCompetition(value); setClub('ALL'); resetCatalogueWindow() }} options={competitions} />
           <FilterSelect label="Club" value={club} onChange={(value) => { setClub(value); resetCatalogueWindow() }} options={clubs} />
-          <FilterSelect label="Trend" value={trend} onChange={(value) => { setTrend(value); resetCatalogueWindow() }} options={['all', 'rising', 'falling']} />
-          <FilterSelect label="Price" value={priceRange} onChange={(value) => { setPriceRange(value); resetCatalogueWindow() }} options={['all', 'low', 'mid', 'high']} />
+          <FilterSelect label="Trend" value={trend} onChange={(value) => { setTrend(value as typeof trend); resetCatalogueWindow() }} options={['all', 'rising', 'falling']} />
+          <FilterSelect label="Price" value={priceRange} onChange={(value) => { setPriceRange(value as typeof priceRange); resetCatalogueWindow() }} options={['all', 'low', 'mid', 'high']} />
         </div>
 
         <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
           <p className="text-sm text-muted-foreground">Showing {Math.min(visibleCount, filtered.length)} of {filtered.length} players</p>
           <label className="inline-flex items-center gap-2 rounded-xl border border-border bg-background px-3 py-2 text-sm">
             <ArrowUpDown className="size-4 text-muted-foreground" />
-            <select value={sortKey} onChange={(event) => { setSortKey(event.target.value as SortKey); resetCatalogueWindow() }} className="bg-transparent outline-none">
+            <select value={sortKey} onChange={(event) => { setSortKey(event.target.value as SortKey); resetCatalogueWindow() }} className="bg-transparent outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-offset-2">
               <option value="value-desc">Highest value</option>
               <option value="value-asc">Lowest value</option>
               <option value="change-desc">Biggest risers</option>
@@ -254,7 +259,7 @@ export function PlayerMarketBrowser({
             const pct = player.previous_value > 0 ? ((delta / player.previous_value) * 100).toFixed(2) : '0.00'
             const owned = holdingsSet.has(player.id)
             const watchlisted = watchSet.has(player.id)
-            const lockActive = player.is_trade_locked && (!player.trade_lock_ends_at || new Date(player.trade_lock_ends_at).getTime() > Date.now())
+            const lockActive = player.is_trade_locked && (!player.trade_lock_ends_at || new Date(player.trade_lock_ends_at).getTime() > renderedAt)
             const canBuy = !owned
               && !lockActive
               && buysRemaining > 0
@@ -300,38 +305,27 @@ export function PlayerMarketBrowser({
 
                 <div className="mt-3 flex flex-wrap gap-2">
                   <button
-                    onClick={() => {
-                      const after = availableCash - player.current_value
-                      const confirmed = window.confirm(
-                        `Buy ${player.display_name}?\n\nCurrent value: ${formatFiqCompact(player.current_value)}\nAvailable cash before purchase: ${formatFiqCompact(availableCash)}\nExpected cash after purchase: ${formatFiqCompact(after)}\nPosition slot: ${player.position}`,
-                      )
-                      if (confirmed) void handleBuy(player)
-                    }}
+                    onClick={() => setTradeIntent({ action: 'buy', player })}
                     disabled={!canBuy || busyId !== null}
-                    className="rounded-xl bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground disabled:opacity-45"
+                    className="min-h-11 rounded-xl bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-700 disabled:opacity-45"
                   >
                     {busyId === player.id ? 'Processing…' : owned ? 'Held' : !canBuyPosition(player.position, formation) ? `${player.position} slot full` : availableCash < player.current_value ? 'Not enough cash' : buysRemaining <= 0 ? 'Buy limit reached' : 'Buy'}
                   </button>
                   <button
-                    onClick={() => {
-                      const confirmed = window.confirm(
-                        `Sell ${player.display_name}?\n\nPurchase price: ${owned ? formatFiqCompact(holdings.find((row) => row.player_id === player.id)?.acquisition_value ?? player.current_value) : 'N/A'}\nCurrent value: ${formatFiqCompact(player.current_value)}\nThis action will return cash immediately and reopen the ${player.position} slot.`,
-                      )
-                      if (confirmed) void handleSell(player)
-                    }}
+                    onClick={() => setTradeIntent({ action: 'sell', player })}
                     disabled={!owned || salesRemaining <= 0 || lockActive || busyId !== null}
-                    className="rounded-xl border border-border px-3 py-2 text-xs font-semibold disabled:opacity-45"
+                    className="min-h-11 rounded-xl border border-border px-3 py-2 text-xs font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-700 disabled:opacity-45"
                   >
                     {busyId === player.id ? 'Processing…' : 'Sell'}
                   </button>
                   <button
                     onClick={() => void handleWatchlist(player)}
                     disabled={busyId !== null}
-                    className="rounded-xl border border-border px-3 py-2 text-xs font-semibold disabled:opacity-45"
+                    className="min-h-11 rounded-xl border border-border px-3 py-2 text-xs font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-700 disabled:opacity-45"
                   >
                     {watchlisted ? 'Unwatch' : 'Watch'}
                   </button>
-                  <Link href={`/market/player/${encodeURIComponent(player.slug)}`} className="rounded-xl border border-border px-3 py-2 text-xs font-semibold">Open card</Link>
+                  <Link aria-label={`Open ${player.display_name}'s player card`} href={`/market/player/${encodeURIComponent(player.slug)}`} className="inline-flex min-h-11 items-center rounded-xl border border-border px-3 py-2 text-xs font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-700">Open card</Link>
                 </div>
 
                 {!canBuy && !owned ? (
@@ -366,6 +360,31 @@ export function PlayerMarketBrowser({
           </div>
         ) : null}
       </section>
+      {tradeIntent ? (
+        <MarketTradeDialog
+          action={tradeIntent.action}
+          playerName={tradeIntent.player.display_name}
+          details={tradeIntent.action === 'buy'
+            ? [
+                { label: 'Current value', value: formatFiqCompact(tradeIntent.player.current_value) },
+                { label: 'Available cash', value: formatFiqCompact(availableCash) },
+                { label: 'Cash after purchase', value: formatFiqCompact(availableCash - tradeIntent.player.current_value) },
+                { label: 'Position slot', value: tradeIntent.player.position },
+              ]
+            : [
+                { label: 'Purchase price', value: formatFiqCompact(holdings.find((row) => row.player_id === tradeIntent.player.id)?.acquisition_value ?? tradeIntent.player.current_value) },
+                { label: 'Current value', value: formatFiqCompact(tradeIntent.player.current_value) },
+                { label: 'Position reopened', value: tradeIntent.player.position },
+              ]}
+          onCancel={() => setTradeIntent(null)}
+          onConfirm={() => {
+            const intent = tradeIntent
+            setTradeIntent(null)
+            if (intent.action === 'buy') void handleBuy(intent.player)
+            else void handleSell(intent.player)
+          }}
+        />
+      ) : null}
     </div>
   )
 }
@@ -428,11 +447,11 @@ function Notice({ kind, message }: { kind: 'success' | 'error' | 'info'; message
   return <p className={`mt-3 inline-flex items-center gap-2 rounded-lg border px-2.5 py-1.5 text-xs ${className}`}>{icon}{message}</p>
 }
 
-function FilterSelect({ label, value, onChange, options }: { label: string; value: string; onChange: (value: any) => void; options: string[] }) {
+function FilterSelect({ label, value, onChange, options }: { label: string; value: string; onChange: (value: string) => void; options: string[] }) {
   return (
     <label>
       <span className="mb-1 block text-xs text-muted-foreground">{label}</span>
-      <select value={value} onChange={(event) => onChange(event.target.value)} className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm outline-none">
+      <select value={value} onChange={(event) => onChange(event.target.value)} className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-offset-2">
         {options.map((option) => <option key={option} value={option}>{option}</option>)}
       </select>
     </label>

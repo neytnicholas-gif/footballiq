@@ -113,7 +113,7 @@ export function PlayerMarketLeagues({
               value={createName}
               onChange={(event) => setCreateName(event.target.value)}
               placeholder="League name"
-              className="mt-2 w-full rounded-xl border border-border bg-card px-3 py-2 text-sm outline-none"
+              className="mt-2 w-full rounded-xl border border-border bg-card px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
             />
             <button
               disabled={busy !== null || createName.trim().length < 3}
@@ -130,7 +130,7 @@ export function PlayerMarketLeagues({
               value={joinCode}
               onChange={(event) => setJoinCode(event.target.value.toUpperCase())}
               placeholder="Example: A1B2C3D4"
-              className="mt-2 w-full rounded-xl border border-border bg-card px-3 py-2 text-sm uppercase outline-none"
+              className="mt-2 w-full rounded-xl border border-border bg-card px-3 py-2 text-sm uppercase outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
             />
             <button
               disabled={busy !== null || joinCode.trim().length < 6}

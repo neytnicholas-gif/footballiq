@@ -14,6 +14,8 @@ export function PlayerMarketPortfolio({
   players,
   holdings,
   transactions,
+  watchlist,
+  userSignedIn,
   runs,
   reveals,
   buysRemaining,
@@ -23,6 +25,8 @@ export function PlayerMarketPortfolio({
   players: MarketPlayer[]
   holdings: MarketHolding[]
   transactions: MarketTransaction[]
+  watchlist: number[]
+  userSignedIn: boolean
   runs: MarketMatchweekRun[]
   reveals: MarketRevealSummary[]
   buysRemaining: number
@@ -30,6 +34,7 @@ export function PlayerMarketPortfolio({
 }) {
   const playersById = useMemo(() => new Map(players.map((player) => [player.id, player])), [players])
   const formation = useMemo(() => countFormation(holdings, playersById), [holdings, playersById])
+  const watchedPlayers = useMemo(() => watchlist.map((playerId) => playersById.get(playerId)).filter((player): player is MarketPlayer => Boolean(player)), [watchlist, playersById])
   const bestHolding = useMemo(
     () => holdings.reduce<MarketHolding | null>((best, row) => (!best || row.unrealized_profit_loss > best.unrealized_profit_loss ? row : best), null),
     [holdings],
@@ -141,6 +146,30 @@ export function PlayerMarketPortfolio({
         )}
       </section>
 
+      <section className="rounded-[2rem] border border-border bg-card p-6">
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 className="text-xl font-bold">Watchlist ({watchedPlayers.length})</h2>
+            <p className="mt-1 text-xs text-muted-foreground">Players you are monitoring before deciding whether to buy.</p>
+          </div>
+          <Link href="/market/players" className="text-sm font-semibold text-primary">Find players</Link>
+        </div>
+        {watchedPlayers.length === 0 ? <p className="text-sm text-muted-foreground">No watched players yet. Use Watch on any market card to add one.</p> : (
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {watchedPlayers.map((player) => (
+              <Link key={player.id} href={`/market/player/${encodeURIComponent(player.slug)}`} className="flex min-w-0 items-center gap-3 rounded-2xl border border-border bg-background/70 p-3 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">
+                <MarketPlayerChip player={player} />
+                <div className="min-w-0">
+                  <p className="truncate font-semibold">{player.display_name}</p>
+                  <p className="truncate text-xs text-muted-foreground">{player.club_name} · {player.competition_name}</p>
+                  <p className="mt-1 text-sm font-bold text-primary">{formatFiqCompact(player.current_value)}</p>
+                </div>
+              </Link>
+            ))}
+          </div>
+        )}
+      </section>
+
       <section className="grid gap-5 lg:grid-cols-2">
         <div className="rounded-[2rem] border border-border bg-card p-6">
           <h2 className="text-xl font-bold">Recent transaction history</h2>
@@ -163,7 +192,7 @@ export function PlayerMarketPortfolio({
           <div className="mt-4 space-y-3 text-sm text-muted-foreground">
             <p className="rounded-xl border border-border bg-background/60 p-3">Holdings are valued at current FootballIQ market values, not real transfer fees.</p>
             <p className="rounded-xl border border-border bg-background/60 p-3">Daily limits reduce spam trades and protect fair progression.</p>
-            <p className="rounded-xl border border-border bg-background/60 p-3">Atomic server-side execution protects against duplicate clicks and multi-tab race conditions.</p>
+            <p className="rounded-xl border border-border bg-background/60 p-3">{userSignedIn ? 'Atomic server-side execution protects account trades against duplicate clicks and multi-tab race conditions.' : 'Guest progress is saved on this device. Create an account to protect trades with server-side execution and sync across devices.'}</p>
             <Link href="/market/leaderboard" className="inline-flex items-center gap-2 rounded-xl border border-primary/30 bg-primary/10 px-4 py-2 font-semibold text-primary">
               Compare performance on leaderboard
               <ArrowUpRight className="size-4" />

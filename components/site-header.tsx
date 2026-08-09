@@ -11,6 +11,7 @@ import { cn } from '@/lib/utils'
 const links = [
   ['Home', '/'],
   ['Games', '/quizzes'],
+  ['Market', '/market'],
   ['Daily', '/daily'],
   ['Predictions', '/predictions'],
   ['Leaderboard', '/leaderboard'],
@@ -31,7 +32,7 @@ export function SiteHeader() {
   const authBlock = !authResolved
     ? <span className="h-10 w-24 animate-pulse rounded-xl bg-secondary/60" aria-hidden="true" />
     : showSignedOutCta
-      ? <Link href="/login" className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground shadow-[0_14px_34px_-18px_rgba(16,185,129,.65)] transition hover:bg-primary/90">Sign in</Link>
+      ? <Link href="/login" className="whitespace-nowrap rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground shadow-[0_14px_34px_-18px_rgba(16,185,129,.65)] transition hover:bg-primary/90">Sign in</Link>
       : user && !profile?.username
         ? <Link href="/username" className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground shadow-[0_14px_34px_-18px_rgba(16,185,129,.65)] transition hover:bg-primary/90">Choose username</Link>
       : (
@@ -49,15 +50,15 @@ export function SiteHeader() {
       <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3 sm:px-6">
         <Logo className="text-slate-950" />
 
-        <nav className="hidden items-center gap-1 rounded-xl border border-border/80 bg-card/50 p-1 md:flex">
+        <nav className="hidden items-center gap-1 rounded-xl border border-border/80 bg-card/50 p-1 lg:flex">
           {links.map(([label, href]) => (
             <Link
               key={href}
               href={href}
               aria-current={pathname === href ? 'page' : undefined}
               className={cn(
-                'rounded-lg px-3 py-1.5 text-sm transition',
-                pathname === href ? 'bg-primary text-primary-foreground shadow-[0_12px_28px_-16px_rgba(16,185,129,.7)]' : 'text-muted-foreground hover:bg-secondary/70 hover:text-foreground',
+                'rounded-lg px-2.5 py-1.5 text-sm transition',
+                pathname === href || (href === '/market' && pathname.startsWith('/market')) ? 'bg-primary text-primary-foreground shadow-[0_12px_28px_-16px_rgba(16,185,129,.7)]' : 'text-muted-foreground hover:bg-secondary/70 hover:text-foreground',
               )}
             >
               {label}
@@ -68,14 +69,14 @@ export function SiteHeader() {
         <div className="flex items-center gap-2">
           {membership.plan === 'pro' ? <span className="hidden items-center gap-1 rounded-full border border-indigo-300/40 bg-indigo-300/14 px-2.5 py-1 text-xs font-semibold text-indigo-200 sm:inline-flex"><Crown className="size-3" /> Pro</span> : null}
           {authBlock}
-          <button onClick={() => setMobileOpen((value) => !value)} className="inline-flex size-10 items-center justify-center rounded-lg border border-border bg-secondary/30 text-foreground md:hidden" aria-label={mobileOpen ? 'Close menu' : 'Open menu'}>
+          <button onClick={() => setMobileOpen((value) => !value)} className="inline-flex size-10 items-center justify-center rounded-lg border border-border bg-secondary/30 text-foreground lg:hidden" aria-label={mobileOpen ? 'Close menu' : 'Open menu'}>
             {mobileOpen ? <X className="size-5" /> : <Menu className="size-5" />}
           </button>
         </div>
       </div>
 
       {mobileOpen ? (
-        <nav className="border-t border-border bg-background/98 p-3 md:hidden">
+        <nav className="border-t border-border bg-background/98 p-3 lg:hidden">
           <div className="grid gap-1">
             {links.map(([label, href]) => (
               <Link key={href} href={href} onClick={closeMobile} className={cn('rounded-lg px-3 py-2 text-sm transition', pathname === href ? 'bg-primary/15 font-semibold text-primary' : 'text-muted-foreground hover:bg-secondary/70 hover:text-foreground')}>

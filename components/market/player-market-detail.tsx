@@ -6,6 +6,7 @@ import type { ReactNode } from 'react'
 import { AlertCircle, CheckCircle2, Clock3, Star } from 'lucide-react'
 import { useAuth } from '@/components/auth-provider'
 import { MarketPlayerChip } from '@/components/market/market-player-chip'
+import { MarketTradeDialog } from '@/components/market/market-trade-dialog'
 import { buyMarketPlayer, sellMarketPlayer, toggleMarketWatchlist } from '@/lib/market/client'
 import { canBuyPosition, countFormation } from '@/lib/market/formation'
 import { formatFiqCompact, MARKET_MAX_PORTFOLIO_SIZE } from '@/lib/market/format'
@@ -37,12 +38,14 @@ export function PlayerMarketDetail({
   const { user, refreshProfile } = useAuth()
   const [busy, setBusy] = useState<'buy' | 'sell' | 'watch' | null>(null)
   const [notice, setNotice] = useState<{ kind: 'success' | 'error' | 'info'; message: string } | null>(null)
+  const [tradeIntent, setTradeIntent] = useState<'buy' | 'sell' | null>(null)
+  const [renderedAt] = useState(() => Date.now())
 
   const holding = useMemo(() => holdings.find((item) => item.player_id === player.id) ?? null, [holdings, player.id])
   const owned = Boolean(holding)
   const watchlisted = watchlist.includes(player.id)
   const trend = player.current_value - player.previous_value
-  const lockActive = player.is_trade_locked && (!player.trade_lock_ends_at || new Date(player.trade_lock_ends_at).getTime() > Date.now())
+  const lockActive = player.is_trade_locked && (!player.trade_lock_ends_at || new Date(player.trade_lock_ends_at).getTime() > renderedAt)
   const lockReason = player.trade_lock_reason ?? 'market review in progress'
   const playersById = useMemo(() => new Map(players.map((entry) => [entry.id, entry])), [players])
   const formation = useMemo(() => countFormation(holdings, playersById), [holdings, playersById])
@@ -134,36 +137,23 @@ export function PlayerMarketDetail({
             <p className="text-xs font-semibold uppercase tracking-[.2em] text-muted-foreground">Trade controls</p>
             <div className="mt-3 space-y-2">
               <button
-                onClick={() => {
-                  const after = availableCash - player.current_value
-                  const confirmed = window.confirm(
-                    `Buy ${player.display_name}?\n\nCurrent value: ${formatFiqCompact(player.current_value)}\nAvailable cash before purchase: ${formatFiqCompact(availableCash)}\nExpected cash after purchase: ${formatFiqCompact(after)}\nPosition slot: ${player.position}`,
-                  )
-                  if (confirmed) void handleBuy()
-                }}
+                onClick={() => setTradeIntent('buy')}
                 disabled={!canBuy}
-                className="w-full rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground disabled:opacity-50"
+                className="min-h-11 w-full rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-700 disabled:opacity-50"
               >
                 {busy === 'buy' ? 'Buying…' : lockActive ? 'Temporarily locked' : owned ? 'Already held' : !hasPositionSlot ? `${player.position} slot full` : availableCash < player.current_value ? 'Not enough cash' : holdings.length >= MARKET_MAX_PORTFOLIO_SIZE ? 'Portfolio full (11/11)' : 'Buy'}
               </button>
               <button
-                onClick={() => {
-                  if (!holding) return
-                  const realized = player.current_value - holding.acquisition_value
-                  const confirmed = window.confirm(
-                    `Sell ${player.display_name}?\n\nPurchase price: ${formatFiqCompact(holding.acquisition_value)}\nCurrent value: ${formatFiqCompact(player.current_value)}\nRealised P/L: ${realized >= 0 ? '+' : '-'}${formatFiqCompact(Math.abs(realized))}`,
-                  )
-                  if (confirmed) void handleSell()
-                }}
+                onClick={() => setTradeIntent('sell')}
                 disabled={!owned || salesRemaining <= 0 || busy !== null || lockActive}
-                className="w-full rounded-xl border border-border px-4 py-2.5 text-sm font-semibold disabled:opacity-50"
+                className="min-h-11 w-full rounded-xl border border-border px-4 py-2.5 text-sm font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-700 disabled:opacity-50"
               >
                 {busy === 'sell' ? 'Selling…' : lockActive ? 'Temporarily locked' : 'Sell'}
               </button>
               <button
                 onClick={() => void handleWatchlist()}
                 disabled={busy !== null}
-                className="w-full rounded-xl border border-border px-4 py-2.5 text-sm font-semibold disabled:opacity-50"
+                className="min-h-11 w-full rounded-xl border border-border px-4 py-2.5 text-sm font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-700 disabled:opacity-50"
               >
                 {busy === 'watch' ? 'Updating…' : watchlisted ? 'Remove from watchlist' : 'Add to watchlist'}
               </button>
@@ -234,6 +224,31 @@ export function PlayerMarketDetail({
           </div>
         </div>
       </section>
+      {tradeIntent ? (
+        <MarketTradeDialog
+          action={tradeIntent}
+          playerName={player.display_name}
+          details={tradeIntent === 'buy'
+            ? [
+                { label: 'Current value', value: formatFiqCompact(player.current_value) },
+                { label: 'Available cash', value: formatFiqCompact(availableCash) },
+                { label: 'Cash after purchase', value: formatFiqCompact(availableCash - player.current_value) },
+                { label: 'Position slot', value: player.position },
+              ]
+            : [
+                { label: 'Purchase price', value: formatFiqCompact(holding?.acquisition_value ?? player.current_value) },
+                { label: 'Current value', value: formatFiqCompact(player.current_value) },
+                { label: 'Realised P/L', value: `${player.current_value - (holding?.acquisition_value ?? player.current_value) >= 0 ? '+' : '-'}${formatFiqCompact(Math.abs(player.current_value - (holding?.acquisition_value ?? player.current_value)))}` },
+              ]}
+          onCancel={() => setTradeIntent(null)}
+          onConfirm={() => {
+            const intent = tradeIntent
+            setTradeIntent(null)
+            if (intent === 'buy') void handleBuy()
+            else void handleSell()
+          }}
+        />
+      ) : null}
     </div>
   )
 }

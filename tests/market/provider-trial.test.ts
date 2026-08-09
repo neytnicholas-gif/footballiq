@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { auditProviderTrial } from '@/lib/market/provider-trial'
 import { normaliseSportmonksAppearance, normaliseSportmonksFixture, normaliseSportmonksPlayer } from '@/lib/market/providers/sportmonks'
 import type { ProviderPlayer } from '@/lib/market/performance-ingestion'
+import { toMarketSlug } from '@/lib/market/provider'
 
 const context = { sourceReference: 'provider://trial/fixture-1', retrievedAt: '2026-08-16T08:00:00Z' }
 
@@ -44,5 +45,12 @@ describe('provider trial report', () => {
     expect(report.coverage.launchTargetMet).toBe(true)
     expect(report.ratingAvailabilityPercent).toBe(100)
     expect(report.trialPassesTechnicalGate).toBe(true)
+  })
+})
+
+describe('market player slugs', () => {
+  it('preserves base Latin letters when names contain accents', () => {
+    expect(toMarketSlug('Adrián Niño')).toBe('adrian-nino')
+    expect(toMarketSlug('Aitor Mañas')).toBe('aitor-manas')
   })
 })

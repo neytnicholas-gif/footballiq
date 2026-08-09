@@ -17,7 +17,6 @@ import {
   clearAnonymousState,
   readAnonymousState,
 } from '@/lib/market/anonymous-state'
-import { buildSampleMarketPlayers, buildSampleSeasonStats } from '@/lib/market/sample-data'
 import { loadLatestReveal, loadRevealHistory } from '@/lib/market/reveal'
 import type {
   MarketFriendLeague,
@@ -56,6 +55,27 @@ export type GuestMarketImportResult = {
   watchlist?: number
   available_balance?: number
   pricing?: 'current_market_value'
+}
+
+let verifiedCatalogueRequest: Promise<MarketPlayer[]> | null = null
+
+function fetchVerifiedMarketPlayers() {
+  if (!verifiedCatalogueRequest) {
+    verifiedCatalogueRequest = fetch('/api/market/catalogue')
+      .then(async (response) => {
+        if (!response.ok) throw new Error('The verified player catalogue request failed.')
+        const payload = await response.json() as { players?: MarketPlayer[] }
+        if (!Array.isArray(payload.players) || payload.players.length === 0) {
+          throw new Error('The verified player catalogue is empty.')
+        }
+        return payload.players
+      })
+      .catch((error) => {
+        verifiedCatalogueRequest = null
+        throw error
+      })
+  }
+  return verifiedCatalogueRequest
 }
 
 export async function importAnonymousMarketStateToAccount() {
@@ -110,23 +130,24 @@ export async function refreshMyMarketPortfolio() {
 }
 
 export async function loadMarketPlayers() {
-  const { data: authData } = await supabase.auth.getUser()
+  const [authResult, catalogueResult] = await Promise.allSettled([
+    supabase.auth.getUser(),
+    fetchVerifiedMarketPlayers(),
+  ])
+  const authData = authResult.status === 'fulfilled' ? authResult.value.data : { user: null }
   const user = authData.user
 
   // The verified provider catalogue is the canonical app-shaped read model.
   // Account-backed trades resolve its stable slug to the normalized UUID row
   // inside the database, so provider IDs never become trusted write inputs.
-  let rows: MarketPlayer[] = []
-  try {
-    const response = await fetch('/api/market/catalogue')
-    const payload = response.ok ? await response.json() as { players?: MarketPlayer[] } : null
-    rows = Array.isArray(payload?.players) ? payload.players : []
-  } catch {
-    // The local demo below keeps the page useful during a provider outage.
+  if (catalogueResult.status === 'rejected') {
+    return {
+      data: [] as MarketPlayer[],
+      error: new Error('Live verified player data is temporarily unavailable. No demo players are being shown.'),
+    }
   }
 
-  const usingFallback = rows.length === 0
-  if (usingFallback) rows = buildSampleMarketPlayers()
+  let rows = catalogueResult.value
 
   if (!user) {
     const anonState = readAnonymousState()
@@ -135,9 +156,6 @@ export async function loadMarketPlayers() {
 
   return {
     data: rows,
-    // Missing optional Market tables are an expected preview state. The UI
-    // already labels these rows as demonstration data, so do not expose raw
-    // database schema errors to public visitors.
     error: null as Error | null,
   }
 }
@@ -199,15 +217,9 @@ export async function loadMarketSeasonStats() {
     .select('player_id,season_id,appearances,starts,minutes_played,goals,assists,clean_sheets,yellow_cards,red_cards,average_rating_milli,source_through_at,updated_at')
     .order('season_id', { ascending: false })
 
-  let rows = mapNormalizedSeasonStats(data)
-  const usingFallback = rows.length === 0 || Boolean(error)
-  if (usingFallback) {
-    rows = buildSampleSeasonStats(buildSampleMarketPlayers())
-  }
-
   return {
-    data: rows,
-    error: usingFallback ? null : error as Error | null,
+    data: mapNormalizedSeasonStats(data),
+    error: isMarketBackendUnavailable(error) || isPermissionDenied(error) ? null : error as Error | null,
   }
 }
 
@@ -400,7 +412,7 @@ export async function loadMarketLeaderboard(metric: 'daily_gain' | 'weekly_gain'
 
   return {
     data: [],
-    error: error as Error | null,
+    error: new Error('Market rankings are temporarily unavailable. Please try again shortly.'),
   }
 }
 

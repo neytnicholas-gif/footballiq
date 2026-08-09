@@ -17,7 +17,7 @@ export default function PlayerMarketLeaderboardPage() {
     void (async () => {
       const { data, error: loadError } = await loadMarketLeaderboard('daily_gain')
       if (!active) return
-      if (loadError) setError(loadError.message)
+      if (loadError) setError('Market rankings are temporarily unavailable. Please try again shortly.')
       setRows(data)
       setLoading(false)
     })()

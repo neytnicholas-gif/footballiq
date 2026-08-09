@@ -21,6 +21,7 @@ export default function PlayerMarketPortfolioPage() {
   const [players, setPlayers] = useState<MarketPlayer[]>([])
   const [holdings, setHoldings] = useState<MarketHolding[]>([])
   const [transactions, setTransactions] = useState<MarketTransaction[]>([])
+  const [watchlist, setWatchlist] = useState<number[]>([])
   const [runs, setRuns] = useState<MarketMatchweekRun[]>([])
   const [reveals, setReveals] = useState<MarketRevealSummary[]>([])
   const [buysRemaining, setBuysRemaining] = useState(3)
@@ -78,6 +79,7 @@ export default function PlayerMarketPortfolioPage() {
       setPortfolio(portfolioData.portfolio)
       setHoldings(portfolioData.holdings)
       setTransactions(portfolioData.transactions)
+      setWatchlist(portfolioData.watchlist)
       setRuns(runsResult.data)
       setReveals(revealsResult.data)
 
@@ -113,6 +115,8 @@ export default function PlayerMarketPortfolioPage() {
             players={players}
             holdings={holdings}
             transactions={transactions}
+            watchlist={watchlist}
+            userSignedIn={Boolean(user)}
             runs={runs}
             reveals={reveals}
             buysRemaining={buysRemaining}

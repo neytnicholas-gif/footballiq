@@ -21,7 +21,14 @@ export async function GET(request: Request) {
       : competition === 'premier-league'
         ? await buildSportmonksPremierLeagueCatalogue()
         : await buildSportmonksCombinedCatalogue()
-    return NextResponse.json(catalogue, {
+    const responseCatalogue = 'competitions' in catalogue
+      ? {
+          ...catalogue,
+          competitions: catalogue.competitions.map((competitionSummary) => ({ ...competitionSummary, players: undefined })),
+        }
+      : catalogue
+
+    return NextResponse.json(responseCatalogue, {
       headers: { 'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=86400' },
     })
   } catch (error) {
