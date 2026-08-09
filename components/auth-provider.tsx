@@ -143,6 +143,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const { data: subscription } = supabase.auth.onAuthStateChange((_event, nextSession) => {
       const previousUserId = sessionRef.current?.user?.id
       if (nextSession?.user) {
+        // Publish the refreshed session before profile hydration. Protected routes
+        // must never observe `loading: false` with a temporarily missing user.
+        setSession(nextSession)
         setProfileLoading(true)
         const currentUserId = nextSession.user.id
         const canKeepCurrentProfile =
@@ -154,7 +157,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           await loadProfile(currentUserId)
           await importGuestMarketOnce(currentUserId)
           if (mounted) {
-            setSession(nextSession)
             setProfileLoading(false)
           }
         })()
