@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useId } from 'react'
+import { useEffect, useId, useRef } from 'react'
 
 export function MarketTradeDialog({
   action,
@@ -17,24 +17,46 @@ export function MarketTradeDialog({
 }) {
   const titleId = useId()
   const descriptionId = useId()
+  const dialogRef = useRef<HTMLElement>(null)
   const isBuy = action === 'buy'
 
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
       if (event.key === 'Escape') onCancel()
+      if (event.key !== 'Tab' || !dialogRef.current) return
+
+      const focusable = Array.from(dialogRef.current.querySelectorAll<HTMLElement>(
+        'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+      ))
+      if (focusable.length === 0) return
+      const first = focusable[0]
+      const last = focusable[focusable.length - 1]
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault()
+        last.focus()
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault()
+        first.focus()
+      }
     }
+    const previousOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
     window.addEventListener('keydown', onKeyDown)
-    return () => window.removeEventListener('keydown', onKeyDown)
+    return () => {
+      document.body.style.overflow = previousOverflow
+      window.removeEventListener('keydown', onKeyDown)
+    }
   }, [onCancel])
 
   return (
-    <div className="fixed inset-0 z-[70] flex items-center justify-center bg-slate-950/55 p-4 backdrop-blur-sm" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) onCancel() }}>
+    <div className="market-dialog-backdrop fixed inset-0 z-[70] flex items-center justify-center overflow-y-auto bg-slate-950/55 p-4 backdrop-blur-sm" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) onCancel() }}>
       <section
+        ref={dialogRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
         aria-describedby={descriptionId}
-        className="w-full max-w-md rounded-[1.75rem] border border-emerald-900/15 bg-white p-5 text-slate-950 shadow-2xl sm:p-6"
+        className="my-auto max-h-[calc(100dvh-2rem)] w-full max-w-md overflow-y-auto overscroll-contain rounded-[1.75rem] border border-emerald-900/15 bg-white p-5 text-slate-950 shadow-2xl sm:p-6"
       >
         <p className="text-xs font-black uppercase tracking-[.2em] text-emerald-700">Confirm {action}</p>
         <h2 id={titleId} className="mt-2 text-2xl font-black">{isBuy ? 'Buy' : 'Sell'} {playerName}?</h2>

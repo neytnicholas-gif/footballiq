@@ -113,12 +113,12 @@ export function PlayerMarketLeagues({
               value={createName}
               onChange={(event) => setCreateName(event.target.value)}
               placeholder="League name"
-              className="mt-2 w-full rounded-xl border border-border bg-card px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+              className="mt-2 min-h-11 w-full rounded-xl border border-border bg-card px-3 py-2 text-base outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 sm:text-sm"
             />
             <button
               disabled={busy !== null || createName.trim().length < 3}
               onClick={() => void handleCreate()}
-              className="mt-3 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground disabled:opacity-50"
+              className="mt-3 min-h-11 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground disabled:opacity-50"
             >
               {busy === 'create' ? 'Creating...' : 'Create league'}
             </button>
@@ -130,12 +130,12 @@ export function PlayerMarketLeagues({
               value={joinCode}
               onChange={(event) => setJoinCode(event.target.value.toUpperCase())}
               placeholder="Example: A1B2C3D4"
-              className="mt-2 w-full rounded-xl border border-border bg-card px-3 py-2 text-sm uppercase outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+              className="mt-2 min-h-11 w-full rounded-xl border border-border bg-card px-3 py-2 text-base uppercase outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 sm:text-sm"
             />
             <button
               disabled={busy !== null || joinCode.trim().length < 6}
               onClick={() => void handleJoin()}
-              className="mt-3 rounded-xl border border-border px-4 py-2 text-sm font-semibold disabled:opacity-50"
+              className="mt-3 min-h-11 rounded-xl border border-border px-4 py-2 text-sm font-semibold disabled:opacity-50"
             >
               {busy === 'join' ? 'Joining...' : 'Join league'}
             </button>
@@ -172,7 +172,7 @@ export function PlayerMarketLeagues({
                       <button
                         disabled={busy !== null}
                         onClick={() => void handleLeave(league.id)}
-                        className="rounded-xl border border-border px-3 py-1.5 text-xs font-semibold disabled:opacity-50"
+                        className="min-h-11 rounded-xl border border-border px-3 py-2 text-xs font-semibold disabled:opacity-50"
                       >
                         {busy === 'leave' ? 'Leaving...' : 'Leave'}
                       </button>

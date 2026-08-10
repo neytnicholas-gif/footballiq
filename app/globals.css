@@ -297,6 +297,13 @@ button, a {
   --ring: oklch(0.61 0.154 170);
 }
 
+.market-dialog-backdrop {
+  padding-top: max(1rem, env(safe-area-inset-top));
+  padding-right: max(1rem, env(safe-area-inset-right));
+  padding-bottom: max(1rem, env(safe-area-inset-bottom));
+  padding-left: max(1rem, env(safe-area-inset-left));
+}
+
 .mode-referee { --mode-accent: 245 184 33; --mode-accent-2: 231 76 60; --mode-panel: 20 15 10; background: radial-gradient(circle at 50% -8%,rgb(245 184 33/.18),transparent 20rem),radial-gradient(circle at 15% 15%,rgb(231 76 60/.12),transparent 28rem),linear-gradient(180deg,#0f1118,#0d1017); }
 .mode-referee .mode-game { background: linear-gradient(180deg,#11151d,#0b1017); border-color: rgb(245 184 33 / .16); box-shadow: 0 34px 90px -52px rgb(245 184 33 / .3); }
 .mode-referee .mode-hero:before,.mode-referee .mode-hero:after { content:""; position:absolute; top:-5rem; width:11rem; height:18rem; background:radial-gradient(ellipse,rgb(255 255 255/.35),transparent 65%); transform:rotate(19deg); filter:blur(3px); }

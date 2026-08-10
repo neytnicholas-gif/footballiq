@@ -202,7 +202,7 @@ export function PlayerMarketBrowser({
             <span className="mb-1 block text-xs text-muted-foreground">Search</span>
             <div className="flex items-center rounded-xl border border-border bg-background px-3">
               <Search className="size-4 text-muted-foreground" />
-              <input value={search} onChange={(event) => { setSearch(event.target.value); resetCatalogueWindow() }} placeholder="Player or club" className="w-full bg-transparent px-2 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-offset-2" />
+              <input value={search} onChange={(event) => { setSearch(event.target.value); resetCatalogueWindow() }} placeholder="Player or club" className="min-h-11 w-full bg-transparent px-2 py-2 text-base outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-offset-2 sm:text-sm" />
             </div>
           </label>
 
@@ -215,7 +215,7 @@ export function PlayerMarketBrowser({
 
         <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
           <p className="text-sm text-muted-foreground">Showing {Math.min(visibleCount, filtered.length)} of {filtered.length} players</p>
-          <label className="inline-flex items-center gap-2 rounded-xl border border-border bg-background px-3 py-2 text-sm">
+          <label className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-border bg-background px-3 py-2 text-sm">
             <ArrowUpDown className="size-4 text-muted-foreground" />
             <select value={sortKey} onChange={(event) => { setSortKey(event.target.value as SortKey); resetCatalogueWindow() }} className="bg-transparent outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-offset-2">
               <option value="value-desc">Highest value</option>
@@ -237,7 +237,7 @@ export function PlayerMarketBrowser({
               setSortKey('value-desc')
               resetCatalogueWindow()
             }}
-            className="rounded-xl border border-border px-3 py-2 text-sm font-semibold"
+            className="min-h-11 rounded-xl border border-border px-3 py-2 text-sm font-semibold"
           >
             Clear filters
           </button>
@@ -450,7 +450,7 @@ function FilterSelect({ label, value, onChange, options }: { label: string; valu
   return (
     <label>
       <span className="mb-1 block text-xs text-muted-foreground">{label}</span>
-      <select value={value} onChange={(event) => onChange(event.target.value)} className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-offset-2">
+      <select value={value} onChange={(event) => onChange(event.target.value)} className="min-h-11 w-full rounded-xl border border-border bg-background px-3 py-2 text-base outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-offset-2 sm:text-sm">
         {options.map((option) => <option key={option} value={option}>{option}</option>)}
       </select>
     </label>
