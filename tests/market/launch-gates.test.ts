@@ -140,4 +140,13 @@ describe('Player Market launch gates', () => {
     expect(detail).toContain('formatMarketDateTime(player.value_updated_at)')
     expect(`${portfolio}\n${detail}`).not.toContain('.toLocaleString()')
   })
+
+  it('hydrates the live daily countdown from a stable server-safe placeholder', () => {
+    const daily = read('components/daily-challenge.tsx')
+    expect(daily).toContain("const [dailyKey, setDailyKey] = useState('')")
+    expect(daily).toContain('useState<number | null>(null)')
+    expect(daily).toContain("displayDate || 'Loading today…'")
+    expect(daily).toContain("secondsLeft === null ? '--:--:--'")
+    expect(daily).toContain('updateClock()')
+  })
 })

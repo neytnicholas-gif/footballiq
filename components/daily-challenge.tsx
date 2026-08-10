@@ -51,9 +51,12 @@ function xpFor(score: number, total: number) {
 
 export function DailyChallenge() {
   const { user, refreshProfile } = useAuth()
-  const [dailyKey, setDailyKey] = useState(() => getBrusselsDateKey())
-  const [displayDate, setDisplayDate] = useState(() => getBrusselsDisplayDate())
-  const [secondsLeft, setSecondsLeft] = useState(() => getSecondsUntilBrusselsMidnight())
+  // Keep the server render and first browser render identical. The Brussels
+  // clock is populated immediately after mount, avoiding countdown hydration
+  // mismatches caused by the two renders occurring in different seconds.
+  const [dailyKey, setDailyKey] = useState('')
+  const [displayDate, setDisplayDate] = useState('')
+  const [secondsLeft, setSecondsLeft] = useState<number | null>(null)
   const [index, setIndex] = useState(0)
   const [selected, setSelected] = useState<number | null>(null)
   const [score, setScore] = useState(0)
@@ -89,6 +92,12 @@ export function DailyChallenge() {
 
   useEffect(() => {
     let active = true
+
+    if (!dailyKey) {
+      setResumeState(null)
+      setCheckingProgress(false)
+      return () => { active = false }
+    }
 
     if (!user) {
       const timeout = window.setTimeout(() => {
@@ -145,13 +154,15 @@ export function DailyChallenge() {
   }, [dailyKey, history])
 
   useEffect(() => {
-    const timer = window.setInterval(() => {
+    const updateClock = () => {
       const now = new Date()
       const nextKey = getBrusselsDateKey(now)
       setDisplayDate(getBrusselsDisplayDate(now))
       setSecondsLeft(getSecondsUntilBrusselsMidnight(now))
       setDailyKey((current) => (current === nextKey ? current : nextKey))
-    }, 1000)
+    }
+    updateClock()
+    const timer = window.setInterval(updateClock, 1000)
     return () => window.clearInterval(timer)
   }, [])
 
@@ -297,8 +308,8 @@ export function DailyChallenge() {
           <span className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-amber-300/25 bg-amber-300/10"><CalendarDays className="size-5 text-amber-200" /></span>
           <div>
           <p className="text-[11px] font-bold uppercase tracking-[.2em] text-amber-200">Today’s event</p>
-          <h2 className="mt-1 text-xl font-bold text-slate-100 sm:text-2xl">{displayDate}</h2>
-          <p className="mt-1 inline-flex items-center gap-1.5 text-sm text-slate-400"><Clock3 className="size-3.5" /> Resets in {formatCountdown(secondsLeft)} · Europe/Brussels</p>
+          <h2 className="mt-1 text-xl font-bold text-slate-100 sm:text-2xl">{displayDate || 'Loading today…'}</h2>
+          <p className="mt-1 inline-flex items-center gap-1.5 text-sm text-slate-400"><Clock3 className="size-3.5" /> Resets in {secondsLeft === null ? '--:--:--' : formatCountdown(secondsLeft)} · Europe/Brussels</p>
           </div>
         </div>
         <div className="grid grid-cols-2 gap-2 sm:flex">
