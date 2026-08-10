@@ -14,8 +14,21 @@ describe('legal and market trust guards', () => {
     expect(footer).toContain("href: '/terms'")
     expect(footer).toContain("href: '/privacy'")
     expect(footer).toContain("href: '/game-rules'")
+    expect(footer).toContain("label: 'Report content'")
     expect(signup).toContain('name="legalAcknowledgement"')
     expect(signup).toContain('type="checkbox" required')
+  })
+
+  it('publishes beta conduct, rights-holder and safety reporting routes', () => {
+    const terms = read('app/terms/page.tsx')
+    const privacy = read('app/privacy/page.tsx')
+    const legalPage = read('components/legal-page.tsx')
+
+    expect(terms).toContain('user-provided names')
+    expect(terms).toContain('FootballIQ rights-holder notice')
+    expect(terms).toContain('must not be relied on for financial, betting, employment, scouting or transfer decisions')
+    expect(privacy).toContain('is not currently marketed to children under 16')
+    expect(legalPage).toContain('FootballIQ legal or content report')
   })
 
   it('does not expose simulated player data or financial-promotion copy in routed market UI', () => {

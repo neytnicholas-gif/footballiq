@@ -17,6 +17,7 @@ const navLinks = [
   { label: 'Terms', href: '/terms' },
   { label: 'Privacy', href: '/privacy' },
   { label: 'Game rules', href: '/game-rules' },
+  { label: 'Report content', href: `mailto:${BRAND.supportEmail}?subject=${encodeURIComponent('FootballIQ content or safety report')}` },
 ]
 
 export function SiteFooter() {

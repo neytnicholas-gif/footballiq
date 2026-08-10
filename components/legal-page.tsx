@@ -10,7 +10,7 @@ export function LegalPage({ title, summary, children }: { title: string; summary
         <p className="mt-8 text-xs font-semibold uppercase tracking-[0.18em] text-primary">Legal &amp; trust</p>
         <h1 className="mt-3 text-3xl font-black tracking-tight sm:text-5xl">{title}</h1>
         <p className="mt-4 text-sm leading-7 text-muted-foreground">{summary}</p>
-        <p className="mt-3 text-xs text-muted-foreground">Last updated: 9 August 2026</p>
+        <p className="mt-3 text-xs text-muted-foreground">Last updated: 10 August 2026</p>
         <div className="mt-8 space-y-8 text-sm leading-7 text-muted-foreground [&_h2]:text-xl [&_h2]:font-black [&_h2]:text-foreground [&_li]:ml-5 [&_li]:list-disc [&_p+p]:mt-3 [&_ul]:mt-3 [&_a]:font-semibold [&_a]:text-primary [&_a:hover]:underline">
           {children}
         </div>
@@ -19,6 +19,7 @@ export function LegalPage({ title, summary, children }: { title: string; summary
           <Link href="/privacy" className="font-semibold text-primary hover:underline">Privacy</Link>
           <Link href="/game-rules" className="font-semibold text-primary hover:underline">Game rules</Link>
           <a href={`mailto:${BRAND.supportEmail}`} className="font-semibold text-primary hover:underline">Contact</a>
+          <a href={`mailto:${BRAND.supportEmail}?subject=${encodeURIComponent('FootballIQ legal or content report')}`} className="font-semibold text-primary hover:underline">Report content</a>
           <Link href="/" className="font-semibold text-primary hover:underline">Return home</Link>
         </div>
       </article>
