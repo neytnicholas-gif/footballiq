@@ -201,6 +201,7 @@ export function PlayerMarketBrowser({
           holdings={holdings}
           playersById={playersById}
           userSignedIn={userSignedIn}
+          availableCash={availableCash}
         />
 
         <div className="mt-5 grid gap-3 md:grid-cols-2 lg:grid-cols-7">
@@ -405,10 +406,12 @@ function MarketRosterBoard({
   holdings,
   playersById,
   userSignedIn,
+  availableCash,
 }: {
   holdings: MarketHolding[]
   playersById: Map<number, MarketPlayer>
   userSignedIn: boolean
+  availableCash: number
 }) {
   const holdingsByPosition = useMemo(() => {
     const grouped: Record<MarketPlayer['position'], MarketPlayer[]> = { GK: [], DEF: [], MID: [], FWD: [] }
@@ -426,15 +429,27 @@ function MarketRosterBoard({
       player: selected[index] ?? null,
     }))
   }), [holdingsByPosition])
+  const totalSpent = useMemo(() => holdings.reduce((total, holding) => total + holding.acquisition_value, 0), [holdings])
+  const currentRosterValue = useMemo(() => holdings.reduce((total, holding) => {
+    return total + (playersById.get(holding.player_id)?.current_value ?? holding.current_value_snapshot)
+  }, 0), [holdings, playersById])
 
   return (
     <section id="live-roster" aria-labelledby="live-roster-title" className="relative mt-5 scroll-mt-24 overflow-hidden rounded-2xl border border-emerald-900/15 bg-emerald-950 p-3 text-white shadow-[0_18px_45px_-35px_rgba(6,78,59,.9)]">
-      <div className="flex items-center justify-between gap-3 px-1 pb-2">
+      <div className="flex flex-wrap items-center justify-between gap-3 px-1 pb-3">
         <div className="flex items-center gap-2">
           <Users className="size-4 text-emerald-200" aria-hidden="true" />
-          <h2 id="live-roster-title" className="text-sm font-black">Your roster · 1-4-3-3</h2>
+          <div>
+            <h2 id="live-roster-title" className="text-sm font-black">Your roster · 1-4-3-3</h2>
+            <p className="mt-0.5 text-[10px] font-semibold text-emerald-100/65">{holdings.length}/11 selected</p>
+          </div>
         </div>
-        <p className="text-[10px] font-semibold text-emerald-100/65">{holdings.length}/11 selected</p>
+        <div className="flex flex-wrap items-center justify-end gap-x-4 gap-y-1 text-[10px]">
+          <RosterTotal label="Squad value" value={currentRosterValue} />
+          <RosterTotal label="Total spent" value={totalSpent} />
+          <RosterTotal label="Budget left" value={availableCash} />
+          <Link href="/market/portfolio" className="rounded-lg border border-white/20 bg-white/10 px-2.5 py-1.5 font-black text-white transition hover:bg-white/20 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white">View full roster</Link>
+        </div>
       </div>
 
       {!userSignedIn ? (
@@ -452,7 +467,7 @@ function MarketRosterBoard({
             >
               <span className="block text-[9px] font-black uppercase tracking-wide text-emerald-200">{position}</span>
               <span className="mt-1 block truncate text-[11px] font-bold text-white">{player.display_name}</span>
-              <RosterMovement player={player} />
+              <span className="mt-1 block truncate text-[9px] font-black text-emerald-100">{formatFiqCompact(player.current_value)}</span>
             </Link>
           ) : (
             <div key={`${position}-${index}`} className="min-w-0 rounded-xl border border-dashed border-white/15 bg-black/10 px-2 py-2 text-center">
@@ -468,16 +483,11 @@ function MarketRosterBoard({
   )
 }
 
-function RosterMovement({ player }: { player: MarketPlayer }) {
-  const movement = player.current_value - player.opening_season_value
-  if (movement === 0) {
-    return <span className="mt-1 block truncate text-[9px] font-semibold text-emerald-100/60">Opening value</span>
-  }
-
-  const rising = movement > 0
+function RosterTotal({ label, value }: { label: string; value: number }) {
   return (
-    <span className={`mt-1 block truncate text-[9px] font-black ${rising ? 'text-emerald-200' : 'text-rose-200'}`}>
-      {rising ? '+' : '-'}{formatFiqCompact(Math.abs(movement))} since start
+    <span className="text-right">
+      <span className="block font-semibold text-emerald-100/60">{label}</span>
+      <span className="block font-black text-white">{formatFiqCompact(value)}</span>
     </span>
   )
 }

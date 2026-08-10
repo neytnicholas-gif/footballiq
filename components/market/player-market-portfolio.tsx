@@ -42,6 +42,7 @@ export function PlayerMarketPortfolio({
     [holdings],
   )
   const todayMovement = useMemo(() => holdings.reduce((sum, row) => sum + (row.current_value_snapshot - row.acquisition_value), 0), [holdings])
+  const totalSpent = useMemo(() => holdings.reduce((sum, row) => sum + row.acquisition_value, 0), [holdings])
   const seasonMovement = useMemo(() => {
     let movement = 0
     for (const holding of holdings) {
@@ -71,13 +72,19 @@ export function PlayerMarketPortfolio({
   return (
     <div className="space-y-5">
       <section className="rounded-[2rem] border border-border bg-card p-6 sm:p-8">
-        <h1 className="text-3xl font-black">Portfolio</h1>
-        <p className="mt-2 text-sm text-muted-foreground">Exact 11-player portfolio required: 1 GK, 4 DEF, 3 MID, 3 FWD.</p>
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <h1 className="text-3xl font-black">Your full roster</h1>
+            <p className="mt-2 text-sm text-muted-foreground">Exact 11-player portfolio required: 1 GK, 4 DEF, 3 MID, 3 FWD.</p>
+          </div>
+          <Link href="/market/players#live-roster" className="rounded-xl border border-border px-4 py-2 text-sm font-semibold transition hover:bg-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">Back to market</Link>
+        </div>
 
-        <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
           <Metric label="Total account value" value={formatFiqCompact(portfolio.total_account_value)} />
-          <Metric label="Available balance" value={formatFiqCompact(portfolio.available_balance)} />
-          <Metric label="Portfolio value" value={formatFiqCompact(portfolio.portfolio_value)} />
+          <Metric label="Budget remaining" value={formatFiqCompact(portfolio.available_balance)} />
+          <Metric label="Total spent" value={formatFiqCompact(totalSpent)} />
+          <Metric label="Current squad value" value={formatFiqCompact(portfolio.portfolio_value)} />
           <Metric label="Realised game gain/loss" value={movementLabel(portfolio.realized_profit_loss)} tone={portfolio.realized_profit_loss > 0 ? 'positive' : portfolio.realized_profit_loss < 0 ? 'negative' : 'default'} />
         </div>
 
@@ -125,6 +132,7 @@ export function PlayerMarketPortfolio({
                     <div className="min-w-0">
                       <p className="truncate font-semibold">{player.display_name}</p>
                       <p className="truncate text-xs text-muted-foreground">{player.club_name} · {player.position}</p>
+                      <p className="mt-1 text-sm font-black text-primary">{formatFiqCompact(player.current_value)}</p>
                     </div>
                   </div>
                   <div className="flex items-center justify-between text-sm sm:block sm:text-right">
