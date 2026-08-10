@@ -1,9 +1,9 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
-import { Users } from 'lucide-react'
-import { createFriendLeague, joinFriendLeague, leaveFriendLeague } from '@/lib/market/client'
+import { Trash2, Users } from 'lucide-react'
+import { createFriendLeague, deleteFriendLeague, joinFriendLeague, leaveFriendLeague } from '@/lib/market/client'
 import { formatFiqCompact } from '@/lib/market/format'
 import type { MarketFriendLeague, MarketFriendLeagueLeaderboardRow, MarketFriendLeagueMember } from '@/lib/market/types'
 
@@ -22,9 +22,19 @@ export function PlayerMarketLeagues({
 }) {
   const [createName, setCreateName] = useState('')
   const [joinCode, setJoinCode] = useState('')
-  const [busy, setBusy] = useState<'create' | 'join' | 'leave' | null>(null)
+  const [busy, setBusy] = useState<'create' | 'join' | 'leave' | 'delete' | null>(null)
+  const [deleteIntent, setDeleteIntent] = useState<MarketFriendLeague | null>(null)
   const [notice, setNotice] = useState('')
   const [error, setError] = useState('')
+
+  useEffect(() => {
+    if (!deleteIntent) return
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && busy !== 'delete') setDeleteIntent(null)
+    }
+    window.addEventListener('keydown', closeOnEscape)
+    return () => window.removeEventListener('keydown', closeOnEscape)
+  }, [busy, deleteIntent])
 
   const membershipByLeague = useMemo(() => {
     const map = new Map<number, MarketFriendLeagueMember>()
@@ -89,6 +99,24 @@ export function PlayerMarketLeagues({
       return
     }
     setNotice('League membership removed.')
+    await onRefresh()
+    setBusy(null)
+  }
+
+  async function handleDelete() {
+    if (!deleteIntent) return
+    setBusy('delete')
+    setError('')
+    setNotice('')
+    const leagueName = deleteIntent.name
+    const { error: deleteError } = await deleteFriendLeague(deleteIntent.id)
+    if (deleteError) {
+      setError(deleteError.message)
+      setBusy(null)
+      return
+    }
+    setDeleteIntent(null)
+    setNotice(`${leagueName} was deleted. Player portfolios were not affected.`)
     await onRefresh()
     setBusy(null)
   }
@@ -177,7 +205,17 @@ export function PlayerMarketLeagues({
                         {busy === 'leave' ? 'Leaving...' : 'Leave'}
                       </button>
                     ) : (
-                      <span className="rounded-full border border-border px-3 py-1 text-xs font-semibold text-muted-foreground">Owner</span>
+                      <div className="flex items-center gap-2">
+                        <span className="rounded-full border border-border px-3 py-1 text-xs font-semibold text-muted-foreground">Owner</span>
+                        <button
+                          disabled={busy !== null}
+                          onClick={() => setDeleteIntent(league)}
+                          className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-destructive/40 px-3 py-2 text-xs font-semibold text-destructive transition-colors hover:bg-destructive/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-destructive focus-visible:ring-offset-2 disabled:opacity-50"
+                        >
+                          <Trash2 className="size-4" aria-hidden="true" />
+                          Delete
+                        </button>
+                      </div>
                     )}
                   </div>
 
@@ -198,6 +236,31 @@ export function PlayerMarketLeagues({
           </div>
         )}
       </section>
+
+      {deleteIntent ? (
+        <div className="fixed inset-0 z-50 grid place-items-center bg-black/60 p-4" role="presentation">
+          <section
+            role="alertdialog"
+            aria-modal="true"
+            aria-labelledby="delete-league-title"
+            aria-describedby="delete-league-description"
+            className="w-full max-w-md rounded-3xl border border-border bg-card p-6 shadow-2xl"
+          >
+            <h2 id="delete-league-title" className="text-xl font-black">Delete {deleteIntent.name}?</h2>
+            <p id="delete-league-description" className="mt-2 text-sm leading-6 text-muted-foreground">
+              This permanently removes the league and its memberships. Player portfolios, balances, and trades are not affected.
+            </p>
+            <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+              <button type="button" disabled={busy === 'delete'} onClick={() => setDeleteIntent(null)} className="min-h-11 rounded-xl border border-border px-4 py-2 text-sm font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:opacity-50">
+                Cancel
+              </button>
+              <button type="button" disabled={busy === 'delete'} onClick={() => void handleDelete()} className="min-h-11 rounded-xl bg-destructive px-4 py-2 text-sm font-semibold text-destructive-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-destructive focus-visible:ring-offset-2 disabled:opacity-50">
+                {busy === 'delete' ? 'Deleting...' : 'Delete league'}
+              </button>
+            </div>
+          </section>
+        </div>
+      ) : null}
     </div>
   )
 }

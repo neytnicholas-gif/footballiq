@@ -700,3 +700,14 @@ export async function loadMyLatestReveal(): Promise<{ data: MarketRevealSummary 
   const result = await loadMyRevealHistory(1)
   return { data: result.data[0] ?? null, error: result.error }
 }
+
+export async function deleteFriendLeague(leagueId: number) {
+  const { data, error } = await (supabase as any).rpc('market_delete_friend_league', {
+    p_league_id: leagueId,
+  })
+
+  return {
+    data: (data as Record<string, unknown> | null) ?? null,
+    error: error as Error | null,
+  }
+}
