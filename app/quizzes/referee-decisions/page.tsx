@@ -21,12 +21,12 @@ export default function Page() {
 
           <div className="space-y-4">
             <div className="rounded-2xl border border-primary/30 bg-primary/10 p-5">
-              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-primary">Free advanced module</p>
+              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-primary">Free extra lesson</p>
               <h3 className="mt-2 text-2xl font-black tracking-tight">Referee Debrief</h3>
-              <p className="mt-2 text-sm text-muted-foreground">Complete a staged penalty-area incident with foul, restart, sanction, VAR and match-control analysis.</p>
-              <Link href="/academy/referee/referee-debrief-penalty-area" className="mt-4 inline-flex min-h-11 items-center rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground">Open module</Link>
+              <p className="mt-2 text-sm text-muted-foreground">Make every call in one penalty-box moment: foul, card, restart and VAR.</p>
+              <Link href="/academy/referee/referee-debrief-penalty-area" className="mt-4 inline-flex min-h-11 items-center rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground">Start lesson</Link>
             </div>
-            <Link href="/academy/referee" className="inline-flex min-h-11 items-center text-sm font-semibold text-primary">Open Referee Academy pathway</Link>
+            <Link href="/academy/referee" className="inline-flex min-h-11 items-center text-sm font-semibold text-primary">See all referee lessons</Link>
           </div>
         </div>
       </section>

@@ -270,7 +270,7 @@ export function ScoutVisionGame() {
       <div className="rounded-3xl border border-border bg-card p-5 sm:p-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[.22em] text-primary">Scout dossier</p>
+            <p className="text-xs font-semibold uppercase tracking-[.22em] text-primary">Player report</p>
             <h2 className="mt-2 text-2xl font-bold tracking-tight">
               {scenario.playerCode} • {scenario.position} • {scenario.age}
             </h2>
@@ -278,7 +278,7 @@ export function ScoutVisionGame() {
             <p className="mt-2 text-xs font-semibold uppercase tracking-wider text-primary">{scenario.difficulty}</p>
           </div>
           <div className="rounded-2xl border border-border bg-background/70 px-4 py-3 text-right">
-            <p className="text-xs uppercase tracking-wider text-muted-foreground">Scenario</p>
+            <p className="text-xs uppercase tracking-wider text-muted-foreground">Player</p>
             <p className="text-lg font-semibold">
               {index + 1}/{scenarios.length}
             </p>
@@ -294,7 +294,7 @@ export function ScoutVisionGame() {
 
       <div className="grid gap-5 lg:grid-cols-[1.2fr_.8fr]">
         <article className="rounded-3xl border border-border bg-card p-5 sm:p-6">
-          <h3 className="text-sm font-semibold uppercase tracking-[.2em] text-primary">Observed evidence</h3>
+          <h3 className="text-sm font-semibold uppercase tracking-[.2em] text-primary">What the scout saw</h3>
           <ul className="mt-3 space-y-2 text-sm text-muted-foreground">
             {scenario.observation.map((point) => (
               <li key={point} className="rounded-xl border border-border bg-background/60 px-3 py-2">
@@ -305,7 +305,7 @@ export function ScoutVisionGame() {
 
           <div className="mt-5 grid gap-4 sm:grid-cols-2">
             <div>
-              <h4 className="text-sm font-semibold">Strengths</h4>
+              <h4 className="text-sm font-semibold">Good points</h4>
               <ul className="mt-2 space-y-2 text-sm text-muted-foreground">
                 {scenario.strengths.map((point) => (
                   <li key={point} className="rounded-xl border border-border bg-background/60 px-3 py-2">
@@ -315,7 +315,7 @@ export function ScoutVisionGame() {
               </ul>
             </div>
             <div>
-              <h4 className="text-sm font-semibold">Concerns</h4>
+              <h4 className="text-sm font-semibold">Things to check</h4>
               <ul className="mt-2 space-y-2 text-sm text-muted-foreground">
                 {scenario.concerns.map((point) => (
                   <li key={point} className="rounded-xl border border-border bg-background/60 px-3 py-2">
@@ -327,7 +327,7 @@ export function ScoutVisionGame() {
           </div>
 
           <div className="mt-5 rounded-2xl border border-border bg-background/60 p-4">
-            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Development context</p>
+            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">How the player is growing</p>
             <p className="mt-2 text-sm text-muted-foreground">{scenario.development}</p>
           </div>
 
@@ -358,13 +358,13 @@ export function ScoutVisionGame() {
           {selected && (
             <div className="mt-5 rounded-2xl border border-border bg-secondary/40 p-5">
               <p className="font-semibold">
-                Recommended decision: {decisionLabels[scenario.recommended]}
+                Best choice: {decisionLabels[scenario.recommended]}
               </p>
               <div className="mt-3 space-y-2 text-sm text-muted-foreground">
                 <p className="flex items-start gap-2">
                   <Eye className="mt-0.5 size-4 shrink-0 text-primary" />
                   <span>
-                    <strong className="text-foreground">Observation:</strong> {scenario.rationale.observation}
+                    <strong className="text-foreground">What we saw:</strong> {scenario.rationale.observation}
                   </span>
                 </p>
                 <p className="flex items-start gap-2">
@@ -392,7 +392,7 @@ export function ScoutVisionGame() {
                     onClick={next}
                     className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground"
                   >
-                    Next dossier <ArrowRight className="size-4" />
+                    Next player <ArrowRight className="size-4" />
                   </button>
                 ) : (
                   <>

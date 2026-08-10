@@ -197,7 +197,7 @@ export function PlayerMarketBrowser({
         ) : null}
 
         <div className="relative mt-3 grid gap-2 sm:grid-cols-3">
-          <MarketStatus label="Market phase" value={previewExperimentActive ? 'Preview experiment' : marketHasMoved ? 'Verified movement' : 'Opening prices'} note={previewExperimentActive ? '11 controlled player outcomes are active' : marketHasMoved ? 'Latest completed fixtures are priced in' : 'Trade before the first verified movement'} />
+          <MarketStatus label="Prices now" value={previewExperimentActive ? 'Test prices' : marketHasMoved ? 'Updated after matches' : 'Starting prices'} note={previewExperimentActive ? '11 test players are clearly marked' : marketHasMoved ? 'The latest finished matches now count' : 'No match has changed prices yet'} />
           <MarketStatus label="What changes prices" value="Rating + minutes" note={previewExperimentActive ? 'Test results are clearly marked' : 'Only finished matches count'} />
           <MarketStatus label="Missing match data" value="Price stays the same" note="We never guess a player’s result" />
         </div>
