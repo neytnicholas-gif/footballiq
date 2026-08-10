@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
-import { ArrowUpDown, Clock3, Search, Shield, Sparkles, Star, WalletCards } from 'lucide-react'
+import { ArrowUpDown, Clock3, Search, Shield, Sparkles, Star, UserPlus, Users, WalletCards } from 'lucide-react'
 import { MarketPlayerChip } from '@/components/market/market-player-chip'
 import { MarketTradeDialog } from '@/components/market/market-trade-dialog'
 import { buyMarketPlayer, sellMarketPlayer, toggleMarketWatchlist } from '@/lib/market/client'
@@ -197,6 +197,12 @@ export function PlayerMarketBrowser({
           <FormationPill label="Sales" value="No limit" subtle="free squad slots" />
         </div>
 
+        <MarketRosterBoard
+          holdings={holdings}
+          playersById={playersById}
+          userSignedIn={userSignedIn}
+        />
+
         <div className="mt-5 grid gap-3 md:grid-cols-2 lg:grid-cols-7">
           <label className="lg:col-span-2">
             <span className="mb-1 block text-xs text-muted-foreground">Search</span>
@@ -385,6 +391,79 @@ export function PlayerMarketBrowser({
         />
       ) : null}
     </div>
+  )
+}
+
+const ROSTER_ROWS = [
+  { position: 'GK', label: 'Goalkeeper', slots: 1 },
+  { position: 'DEF', label: 'Defenders', slots: 4 },
+  { position: 'MID', label: 'Midfielders', slots: 3 },
+  { position: 'FWD', label: 'Forwards', slots: 3 },
+] as const
+
+function MarketRosterBoard({
+  holdings,
+  playersById,
+  userSignedIn,
+}: {
+  holdings: MarketHolding[]
+  playersById: Map<number, MarketPlayer>
+  userSignedIn: boolean
+}) {
+  const holdingsByPosition = useMemo(() => {
+    const grouped: Record<MarketPlayer['position'], MarketPlayer[]> = { GK: [], DEF: [], MID: [], FWD: [] }
+    for (const holding of holdings) {
+      const player = playersById.get(holding.player_id)
+      if (player) grouped[player.position].push(player)
+    }
+    return grouped
+  }, [holdings, playersById])
+
+  const orderedSlots = useMemo(() => ROSTER_ROWS.flatMap((row) => {
+    const selected = holdingsByPosition[row.position]
+    return Array.from({ length: row.slots }, (_, index) => ({
+      position: row.position,
+      player: selected[index] ?? null,
+    }))
+  }), [holdingsByPosition])
+
+  return (
+    <section aria-labelledby="live-roster-title" className="relative mt-5 overflow-hidden rounded-2xl border border-emerald-900/15 bg-emerald-950 p-3 text-white shadow-[0_18px_45px_-35px_rgba(6,78,59,.9)]">
+      <div className="flex items-center justify-between gap-3 px-1 pb-2">
+        <div className="flex items-center gap-2">
+          <Users className="size-4 text-emerald-200" aria-hidden="true" />
+          <h2 id="live-roster-title" className="text-sm font-black">Your roster · 1-4-3-3</h2>
+        </div>
+        <p className="text-[10px] font-semibold text-emerald-100/65">{holdings.length}/11 selected</p>
+      </div>
+
+      {!userSignedIn ? (
+        <p className="px-1 pb-2 text-[10px] text-emerald-100/70">Sign in to save this roster.</p>
+      ) : null}
+
+      <div className="overflow-x-auto pb-1 [scrollbar-color:rgba(167,243,208,.35)_transparent]">
+        <div className="grid min-w-[880px] grid-cols-11 gap-1.5">
+          {orderedSlots.map(({ position, player }, index) => player ? (
+            <Link
+              key={player.id}
+              href={`/market/player/${encodeURIComponent(player.slug)}`}
+              aria-label={`Open ${player.display_name}'s player card`}
+              className="min-w-0 rounded-xl border border-white/15 bg-white/10 px-2 py-2 text-center transition hover:bg-white/15 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+            >
+              <span className="block text-[9px] font-black uppercase tracking-wide text-emerald-200">{position}</span>
+              <span className="mt-1 block truncate text-[11px] font-bold text-white">{player.display_name}</span>
+            </Link>
+          ) : (
+            <div key={`${position}-${index}`} className="min-w-0 rounded-xl border border-dashed border-white/15 bg-black/10 px-2 py-2 text-center">
+              <span className="block text-[9px] font-black uppercase tracking-wide text-emerald-200/70">{position}</span>
+              <span className="mt-1 flex items-center justify-center gap-1 truncate text-[10px] font-semibold text-emerald-100/50">
+                <UserPlus className="size-3" aria-hidden="true" /> Empty
+              </span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
   )
 }
 

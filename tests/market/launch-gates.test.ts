@@ -149,4 +149,15 @@ describe('Player Market launch gates', () => {
     expect(daily).toContain("secondsLeft === null ? '--:--:--'")
     expect(daily).toContain('updateClock()')
   })
+
+  it('shows the live 1-4-3-3 holdings roster immediately above market controls', () => {
+    const browser = read('components/market/player-market-browser.tsx')
+    expect(browser).toContain('Your roster · 1-4-3-3')
+    expect(browser).toContain("{ position: 'GK', label: 'Goalkeeper', slots: 1 }")
+    expect(browser).toContain("{ position: 'DEF', label: 'Defenders', slots: 4 }")
+    expect(browser).toContain("{ position: 'MID', label: 'Midfielders', slots: 3 }")
+    expect(browser).toContain("{ position: 'FWD', label: 'Forwards', slots: 3 }")
+    expect(browser).toContain('min-w-[880px] grid-cols-11')
+    expect(browser.indexOf('<MarketRosterBoard')).toBeLessThan(browser.indexOf('placeholder="Player or club"'))
+  })
 })
