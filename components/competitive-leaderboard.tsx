@@ -22,6 +22,8 @@ const periodBoards = [
   { id: 'season', label: 'Season', emoji: '👑' },
 ]
 
+const validBoards = new Set(['overall', 'daily', 'weekly', 'monthly', 'season', ...leaderboardModes.map((mode) => mode.id)])
+
 function formatUtcDateKey(date: Date) {
   const year = date.getUTCFullYear()
   const month = String(date.getUTCMonth() + 1).padStart(2, '0')
@@ -73,7 +75,6 @@ function formatDaysRemaining(days: number) {
 }
 
 export function CompetitiveLeaderboard({ initialBoard = 'overall' }: { initialBoard?: string }) {
-  const validBoards = new Set(['overall', 'daily', 'weekly', 'monthly', 'season', ...leaderboardModes.map((mode) => mode.id)])
   const [board, setBoard] = useState<Board>(validBoards.has(initialBoard) ? initialBoard : 'overall')
   const [players, setPlayers] = useState<RankedPlayer[]>([])
   const [loading, setLoading] = useState(true)
@@ -83,11 +84,6 @@ export function CompetitiveLeaderboard({ initialBoard = 'overall' }: { initialBo
   const pathname = usePathname()
 
   useEffect(() => { void loadBoard(board) }, [board])
-
-  useEffect(() => {
-    const safeBoard = validBoards.has(initialBoard) ? initialBoard : 'overall'
-    setBoard(safeBoard)
-  }, [initialBoard])
 
   useEffect(() => {
     const nextUrl = board === 'overall' ? pathname : `${pathname}?board=${encodeURIComponent(board)}`
@@ -259,7 +255,7 @@ export function CompetitiveLeaderboard({ initialBoard = 'overall' }: { initialBo
 
     <section className="mt-8 overflow-hidden rounded-[2rem] border border-border bg-card">
       <div className="flex items-center justify-between border-b border-border p-6"><div><p className="text-xs font-semibold uppercase tracking-wider text-primary">Live standings</p><h2 className="mt-1 text-2xl font-bold">{activeLabel}</h2></div><button onClick={() => void loadBoard(board)} className="rounded-xl border border-border p-3" aria-label="Refresh"><RefreshCw className="size-4"/></button></div>
-      {loading ? <p className="p-8 text-muted-foreground">Loading the table…</p> : error ? <div className="p-8"><p className="font-semibold">Leaderboard setup required</p><p className="mt-2 text-sm text-muted-foreground">{error}</p><p className="mt-3 text-sm text-primary">Run the included competitive-platform SQL in Supabase, then refresh.</p></div> : players.length === 0 ? <p className="p-8 text-muted-foreground">No results on this board yet. The first player can take the top spot.</p> : <div>{players.map((player, index) => <Link href={`/player/${encodeURIComponent(player.username)}`} key={`${player.id}-${index}`} className="grid grid-cols-[48px_1fr_auto] items-center gap-3 border-b border-border p-4 transition hover:bg-secondary/30 last:border-0 sm:grid-cols-[60px_1fr_auto_auto] sm:p-5"><Rank rank={index + 1}/><div className="min-w-0"><p className="truncate font-bold">{player.username}</p><p className="truncate text-xs text-muted-foreground">{player.secondary}</p></div><div className="hidden text-right sm:block"><p className="text-xs text-muted-foreground">Accuracy</p><p className="font-semibold">{player.accuracy ?? 0}%</p></div><div className="text-right"><p className="font-bold text-primary">{formatLeaderboardValue(player.value, board)}</p><p className="text-xs text-muted-foreground">View profile</p></div></Link>)}</div>}
+      {loading ? <p className="p-8 text-muted-foreground">Loading the table…</p> : error ? <div className="p-8" role="status"><p className="font-semibold">Standings are temporarily unavailable</p><p className="mt-2 text-sm text-muted-foreground">Your gameplay and saved progress are unaffected. Please try the refresh button again shortly.</p></div> : players.length === 0 ? <p className="p-8 text-muted-foreground">No results on this board yet. The first player can take the top spot.</p> : <div>{players.map((player, index) => <Link href={`/player/${encodeURIComponent(player.username)}`} key={`${player.id}-${index}`} className="grid grid-cols-[48px_1fr_auto] items-center gap-3 border-b border-border p-4 transition hover:bg-secondary/30 last:border-0 sm:grid-cols-[60px_1fr_auto_auto] sm:p-5"><Rank rank={index + 1}/><div className="min-w-0"><p className="truncate font-bold">{player.username}</p><p className="truncate text-xs text-muted-foreground">{player.secondary}</p></div><div className="hidden text-right sm:block"><p className="text-xs text-muted-foreground">Accuracy</p><p className="font-semibold">{player.accuracy ?? 0}%</p></div><div className="text-right"><p className="font-bold text-primary">{formatLeaderboardValue(player.value, board)}</p><p className="text-xs text-muted-foreground">View profile</p></div></Link>)}</div>}
     </section>
   </div>
 }

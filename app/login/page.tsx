@@ -106,7 +106,7 @@ export default function LoginPage() {
             )}
           </form>
           <p className="mt-5 text-center text-sm text-muted-foreground">No account yet? <Link href="/signup" className="font-semibold text-primary hover:underline">Create one</Link></p>
-          <p className="mt-2 text-center text-xs text-muted-foreground">Free play is available across the core modes. Pro is optional for future advanced modules.</p>
+          <p className="mt-2 text-center text-xs text-muted-foreground">All current quizzes and Academy learning experiences are free. Player Market is free during testing.</p>
         </SurfaceCard>
       </div>
     </main>

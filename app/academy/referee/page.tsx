@@ -1,7 +1,6 @@
 import Link from 'next/link'
 import { Flag } from 'lucide-react'
 import { SiteHeader } from '@/components/site-header'
-import { ProAccessGate } from '@/components/membership/pro-access-gate'
 
 export default function RefereeAcademyPage() {
   return (
@@ -22,28 +21,16 @@ export default function RefereeAcademyPage() {
             <Link href="/quizzes/referee-decisions" className="mt-4 inline-flex rounded-xl border border-emerald-300 bg-emerald-100 px-4 py-2 text-sm font-semibold text-emerald-900">Open free referee scenarios</Link>
           </article>
 
-          <ProAccessGate
-            title="Referee Debrief: Penalty-Area Decision"
-            copy="Unlock a full incident debrief with law principle, positioning and VAR analysis in FootballIQ Pro."
-            variant="card"
-            preview={
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">Premium module preview</p>
-                <p className="mt-2 text-sm text-muted-foreground">Stage the incident, commit your call, then compare with an expert decision structure.</p>
-              </div>
-            }
-          >
             <article className="rounded-2xl border border-primary/30 bg-primary/10 p-5">
-              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">Pro module available now</p>
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">Free advanced module</p>
               <h2 className="mt-2 text-2xl font-black tracking-tight">Referee Debrief: Penalty-Area Decision</h2>
-              <p className="mt-2 text-sm text-muted-foreground">Complete premium incident analysis from call selection to match-control learning points.</p>
-              <Link href="/academy/referee/referee-debrief-penalty-area" className="mt-4 inline-flex rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground">Launch premium referee debrief</Link>
+              <p className="mt-2 text-sm text-muted-foreground">Complete incident analysis from call selection to match-control learning points.</p>
+              <Link href="/academy/referee/referee-debrief-penalty-area" className="mt-4 inline-flex min-h-11 items-center rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground">Launch referee debrief</Link>
             </article>
-          </ProAccessGate>
         </div>
 
         <section className="mt-6 rounded-2xl border border-border bg-card p-5">
-          <h3 className="text-xl font-black tracking-tight">Locked future modules</h3>
+          <h3 className="text-xl font-black tracking-tight">Future free modules</h3>
           <ul className="mt-3 space-y-2 text-sm text-muted-foreground">
             <li>• VAR Intervention Lab: threshold and intervention consistency (coming next)</li>
             <li>• Match Temperature Management: communication and sanction strategy (planned later)</li>

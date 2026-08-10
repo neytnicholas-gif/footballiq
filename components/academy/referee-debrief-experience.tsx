@@ -46,7 +46,7 @@ export function RefereeDebriefExperience() {
   return (
     <div className="space-y-5 rounded-[1.6rem] border border-border bg-card p-5 sm:p-7">
       <header className="rounded-2xl border border-border bg-[linear-gradient(140deg,rgba(250,204,21,.2),rgba(12,16,24,.96))] p-5">
-        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-amber-300">Pro Referee Debrief</p>
+        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-amber-300">Advanced Referee Debrief</p>
         <h2 className="mt-2 text-3xl font-black tracking-tight">Referee Debrief: Penalty-Area Decision</h2>
         <p className="mt-2 text-sm text-muted-foreground">Evaluate a staged incident, commit your call, then compare with a structured law and match-control breakdown.</p>
       </header>
@@ -93,7 +93,7 @@ export function RefereeDebriefExperience() {
 
           <div className="mt-3 rounded-xl border border-amber-300/40 bg-background/70 p-3 text-sm text-amber-100">
             <p className="font-semibold">Completion</p>
-            <p className="mt-1">You earned 120 Academy XP equivalent and logged one premium referee completion.</p>
+            <p className="mt-1">You earned 120 Academy XP equivalent and logged one advanced referee completion.</p>
             <p className="mt-1">Key learning point: In penalty area incidents, identify first contact and ball-contact sequence before evaluating sanction.</p>
             <p className="mt-1">Confidence calibration: {confidenceCalibration}</p>
           </div>

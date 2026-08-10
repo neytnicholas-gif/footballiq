@@ -1,7 +1,6 @@
 import Link from 'next/link'
 import { Search } from 'lucide-react'
 import { SiteHeader } from '@/components/site-header'
-import { ProAccessGate } from '@/components/membership/pro-access-gate'
 
 export default function ScoutAcademyPage() {
   return (
@@ -22,28 +21,16 @@ export default function ScoutAcademyPage() {
             <Link href="/quizzes/would-you-scout-him" className="mt-4 inline-flex rounded-xl border border-emerald-300 bg-emerald-100 px-4 py-2 text-sm font-semibold text-emerald-900">Open free scout scenarios</Link>
           </article>
 
-          <ProAccessGate
-            title="Scout Room: Player Evaluation"
-            copy="Unlock the full premium report-builder and expert debrief workflow in FootballIQ Pro."
-            variant="card"
-            preview={
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">Premium module preview</p>
-                <p className="mt-2 text-sm text-muted-foreground">Review a fictional dossier, submit structured judgement, then compare with expert-style analysis.</p>
-              </div>
-            }
-          >
             <article className="rounded-2xl border border-primary/30 bg-primary/10 p-5">
-              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">Pro module available now</p>
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">Free advanced module</p>
               <h2 className="mt-2 text-2xl font-black tracking-tight">Scout Room: Player Evaluation</h2>
-              <p className="mt-2 text-sm text-muted-foreground">Complete premium scouting scenario with confidence-driven recommendation and learning debrief.</p>
-              <Link href="/academy/scout/scout-room-player-evaluation" className="mt-4 inline-flex rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground">Launch premium scout room</Link>
+              <p className="mt-2 text-sm text-muted-foreground">Complete a scouting scenario with confidence-driven recommendation and learning debrief.</p>
+              <Link href="/academy/scout/scout-room-player-evaluation" className="mt-4 inline-flex min-h-11 items-center rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground">Launch scout room</Link>
             </article>
-          </ProAccessGate>
         </div>
 
         <section className="mt-6 rounded-2xl border border-border bg-card p-5">
-          <h3 className="text-xl font-black tracking-tight">Locked future modules</h3>
+          <h3 className="text-xl font-black tracking-tight">Future free modules</h3>
           <ul className="mt-3 space-y-2 text-sm text-muted-foreground">
             <li>• Scout Video Lab: frame-by-frame interpretation prompts (coming next)</li>
             <li>• Recruitment Board Decisions: multi-player shortlist balancing (planned later)</li>

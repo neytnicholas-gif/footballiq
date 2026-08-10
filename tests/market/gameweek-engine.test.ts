@@ -8,9 +8,16 @@ const priceBook = readFileSync('supabase/migrations/20260809215500_publish_autho
 const catalogueRoute = readFileSync('app/api/market/catalogue/route.ts', 'utf8')
 const priceBookGrants = readFileSync('supabase/migrations/20260809220000_grant_price_book_sources.sql', 'utf8')
 const publicCatalogue = readFileSync('supabase/migrations/20260809234500_publish_database_backed_market_catalogue.sql', 'utf8')
+const transferRollover = readFileSync('supabase/migrations/20260810144500_close_expired_transfer_gameweeks.sql', 'utf8')
 const route = readFileSync('app/api/market/process-gameweek/route.ts', 'utf8')
 
 describe('verified gameweek engine', () => {
+  it('closes expired transfer windows before returning the current gameweek', () => {
+    expect(transferRollover).toContain("gameweek_type = 'transfer'")
+    expect(transferRollover).toContain("state = 'closed'")
+    expect(transferRollover).toContain('closes_at <= now()')
+    expect(transferRollover).toContain("where gameweek_type = 'transfer';")
+  })
   it('uses exact-once fixture and player identities', () => {
     expect(foundation).toContain('market_player_match_stats_fixture_player_uidx')
     expect(migration).toContain('on conflict(provider_fixture_id,player_id) do nothing')

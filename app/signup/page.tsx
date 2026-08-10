@@ -102,7 +102,7 @@ export default function SignupPage() {
           <ul className="mt-6 space-y-2 text-sm text-muted-foreground">
             <li>• Free includes the full current core gameplay</li>
             <li>• Save runs and pick up where you left off</li>
-            <li>• Pro modules are separate from the current sprint</li>
+            <li>• All current quizzes and Academy learning experiences are free</li>
           </ul>
         </SurfaceCard>
 

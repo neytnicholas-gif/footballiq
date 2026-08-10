@@ -1,120 +1,49 @@
-'use client'
-
 import Link from 'next/link'
-import { Sparkles } from 'lucide-react'
+import { CheckCircle2, Compass, ShieldCheck } from 'lucide-react'
 import { SiteHeader } from '@/components/site-header'
-import { useAuth } from '@/components/auth-provider'
-import { ProBadge, SurfaceCard } from '@/components/platform/primitives'
-import { isLocalDevHost, setDevLocalProOverride } from '@/lib/membership'
+import { SurfaceCard } from '@/components/platform/primitives'
 
-const freeFeatures = [
-  'Core FootballIQ gameplay',
-  'Football Duels',
-  'Standard Scout Vision scenarios',
-  'Standard Referee Arena scenarios',
-  'XP and progression',
-  'Ratings and leaderboards',
-  'Daily challenges',
-  'Basic explanations',
+const freeNow = [
+  'All current quizzes and 50-scenario judgement libraries',
+  'Scout and Referee Academy learning experiences',
+  'XP, ranks, streaks, profiles and leaderboards',
+  'Daily Challenge and predictions',
+  'Player Market testing with free, non-withdrawable credits',
 ]
 
-const proFeaturesAvailableNow = [
-  'In-depth scouting analysis experience',
-  'In-depth refereeing analysis experience',
-  'Advanced scenario breakdowns',
-  'Confidence analysis after decisions',
-]
-
-const proFeaturesComingNext = [
-  'Progress insights dashboard',
-  'Scout video lab modules',
-]
-
-const proFeaturesPlanned = [
-  'Future expert modules',
-  'Future video laboratories',
-  'Future AI coaching',
-]
-
-export default function ProPage() {
-  const { membership, user } = useAuth()
-
+export default function AccessRoadmapPage() {
   return (
     <main className="min-h-screen bg-background">
       <SiteHeader />
-      <section className="mx-auto max-w-7xl px-4 py-10 sm:px-6 sm:py-14">
+      <section className="mx-auto max-w-6xl px-4 py-10 sm:px-6 sm:py-14">
         <SurfaceCard className="overflow-hidden">
-          <div className="bg-[linear-gradient(135deg,rgba(34,197,94,.18),rgba(59,130,246,.12),rgba(8,14,26,.96))] p-7 sm:p-10">
-            <p className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/12 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-primary">
-              <Sparkles className="size-3.5" />
-              FootballIQ Pro
-            </p>
-            <h1 className="mt-4 text-4xl font-black tracking-tight sm:text-6xl">Train like a scout. Think like a referee. Develop football intelligence.</h1>
-            <p className="mt-4 max-w-3xl text-base leading-relaxed text-muted-foreground sm:text-lg">FootballIQ Pro is built for deeper judgement practice with structured learning, not just more quiz volume.</p>
-            <div className="mt-5 flex flex-wrap items-center gap-3">
-              {membership.plan === 'pro' ? <ProBadge /> : <span className="rounded-full border border-amber-300/40 bg-amber-300/14 px-3 py-1 text-xs font-semibold text-amber-200">Free plan</span>}
-              <span className="rounded-full border border-border bg-card/70 px-3 py-1 text-xs font-semibold">Early access phase · Pricing coming soon</span>
-            </div>
+          <div className="bg-[linear-gradient(135deg,rgba(34,197,94,.18),rgba(59,130,246,.12),rgba(8,14,26,.96))] p-7 text-white sm:p-10">
+            <p className="inline-flex items-center gap-2 rounded-full border border-emerald-300/30 bg-emerald-300/12 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-emerald-200"><Compass className="size-3.5" /> Access & roadmap</p>
+            <h1 className="mt-4 max-w-4xl text-4xl font-black tracking-tight sm:text-6xl">Quality first. No payment until the game proves it deserves one.</h1>
+            <p className="mt-4 max-w-3xl text-base leading-relaxed text-slate-300 sm:text-lg">All current learning experiences are free. Player Market access is also free during testing. FootballIQ is not collecting a subscription or one-off game payment today.</p>
           </div>
         </SurfaceCard>
 
-        <section className="mt-7 grid gap-5 lg:grid-cols-2">
+        <div className="mt-7 grid gap-5 lg:grid-cols-2">
           <SurfaceCard className="p-6">
-            <h2 className="text-2xl font-black tracking-tight">Free includes</h2>
-            <ul className="mt-3 space-y-2 text-sm">
-              {freeFeatures.map((item) => <li key={item}>• {item}</li>)}
+            <h2 className="flex items-center gap-2 text-2xl font-black tracking-tight"><CheckCircle2 className="size-6 text-primary" /> Free now</h2>
+            <ul className="mt-4 space-y-3 text-sm text-muted-foreground">
+              {freeNow.map((item) => <li key={item} className="flex gap-2"><span aria-hidden="true" className="text-primary">✓</span><span>{item}</span></li>)}
             </ul>
           </SurfaceCard>
 
           <SurfaceCard className="p-6">
-            <h2 className="text-2xl font-black tracking-tight">Pro includes</h2>
-            <Block title="Available now" items={proFeaturesAvailableNow} tone="good" />
-            <Block title="Coming next" items={proFeaturesComingNext} tone="next" />
-            <Block title="Planned later" items={proFeaturesPlanned} tone="planned" />
+            <h2 className="flex items-center gap-2 text-2xl font-black tracking-tight"><ShieldCheck className="size-6 text-primary" /> Before any paid launch</h2>
+            <p className="mt-3 text-sm leading-relaxed text-muted-foreground">A possible low annual price for Player Market is only a future idea. It will require successful public testing, reliable weekly valuation runs, capacity evidence, clear consumer terms, data-licence confirmation, support and an easy cancellation/refund process before implementation.</p>
+            <p className="mt-3 rounded-xl border border-amber-300/35 bg-amber-300/10 p-3 text-sm">No checkout, card collection or paid access gate is active.</p>
           </SurfaceCard>
-        </section>
+        </div>
 
-        <section className="mt-7 grid gap-4 md:grid-cols-2">
-          <Link href="/academy/scout/scout-room-player-evaluation" className="rounded-2xl border border-border bg-card p-5 transition hover:border-primary/45">
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">Available now</p>
-            <h3 className="mt-2 text-2xl font-black tracking-tight">Scout Room: Player Evaluation</h3>
-            <p className="mt-2 text-sm text-muted-foreground">Complete end-to-end pro scouting report with expert debrief structure.</p>
-          </Link>
-          <Link href="/academy/referee/referee-debrief-penalty-area" className="rounded-2xl border border-border bg-card p-5 transition hover:border-primary/45">
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">Available now</p>
-            <h3 className="mt-2 text-2xl font-black tracking-tight">Referee Debrief: Penalty-Area Decision</h3>
-            <p className="mt-2 text-sm text-muted-foreground">Work a staged incident with law, VAR and match-control analysis reveal.</p>
-          </Link>
-        </section>
-
-        {process.env.NODE_ENV !== 'production' && isLocalDevHost() && user ? (
-          <section className="mt-7 rounded-2xl border border-amber-300/45 bg-amber-300/12 p-5">
-            <p className="text-sm font-semibold text-amber-200">Local development Pro testing</p>
-            <p className="mt-1 text-sm text-amber-100/85">This override only works on localhost in non-production builds and does not expose a public production switch.</p>
-            <div className="mt-3 flex gap-3">
-              <button onClick={() => { setDevLocalProOverride(true); window.location.reload() }} className="rounded-lg border border-amber-300/45 bg-amber-300/15 px-3 py-2 text-sm font-semibold text-amber-100">Enable local Pro override</button>
-              <button onClick={() => { setDevLocalProOverride(false); window.location.reload() }} className="rounded-lg border border-amber-300/45 bg-amber-300/15 px-3 py-2 text-sm font-semibold text-amber-100">Disable local Pro override</button>
-            </div>
-          </section>
-        ) : null}
+        <div className="mt-7 flex flex-wrap gap-3">
+          <Link href="/quizzes" className="inline-flex min-h-11 items-center rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground">Play free games</Link>
+          <Link href="/market" className="inline-flex min-h-11 items-center rounded-xl border border-border bg-card px-5 py-2.5 text-sm font-semibold">Test Player Market</Link>
+        </div>
       </section>
     </main>
-  )
-}
-
-function Block({ title, items, tone }: { title: string; items: string[]; tone: 'good' | 'next' | 'planned' }) {
-  const toneClass = tone === 'good'
-    ? 'border-emerald-300/40 bg-emerald-300/12'
-    : tone === 'next'
-      ? 'border-sky-300/40 bg-sky-300/12'
-      : 'border-border bg-muted/50'
-
-  return (
-    <div className={`mt-3 rounded-xl border p-3 ${toneClass}`}>
-      <p className="text-xs font-semibold uppercase tracking-[0.16em]">{title}</p>
-      <ul className="mt-2 space-y-1 text-sm">
-        {items.map((item) => <li key={item}>• {item}</li>)}
-      </ul>
-    </div>
   )
 }

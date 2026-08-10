@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { Crown, Menu, X } from 'lucide-react'
+import { Menu, X } from 'lucide-react'
 import { useState } from 'react'
 import { usePathname } from 'next/navigation'
 import { Logo } from '@/components/logo'
@@ -19,7 +19,7 @@ const links = [
 ]
 
 export function SiteHeader() {
-  const { user, profile, membership, loading, profileLoading, signOut } = useAuth()
+  const { user, profile, loading, profileLoading, signOut } = useAuth()
   const pathname = usePathname()
   const [mobileOpen, setMobileOpen] = useState(false)
   const authResolved = !loading && !profileLoading
@@ -48,7 +48,7 @@ export function SiteHeader() {
   return (
     <header className="sticky top-0 z-40 border-b border-border/60 bg-background/92 backdrop-blur-xl">
       <div className="mx-auto flex max-w-7xl items-center justify-between gap-2 px-3 py-3 sm:gap-4 sm:px-6">
-        <Logo className="shrink-0 text-slate-950 max-[389px]:[&>span:last-child]:hidden" />
+        <Logo className="shrink-0 max-[389px]:[&>span:last-child]:hidden" />
 
         <nav className="hidden items-center gap-1 rounded-xl border border-border/80 bg-card/50 p-1 lg:flex">
           {links.map(([label, href]) => (
@@ -67,7 +67,6 @@ export function SiteHeader() {
         </nav>
 
         <div className="flex items-center gap-2">
-          {membership.plan === 'pro' ? <span className="hidden items-center gap-1 rounded-full border border-indigo-300/40 bg-indigo-300/14 px-2.5 py-1 text-xs font-semibold text-indigo-200 sm:inline-flex"><Crown className="size-3" /> Pro</span> : null}
           {authBlock}
           <button onClick={() => setMobileOpen((value) => !value)} className="inline-flex size-10 items-center justify-center rounded-lg border border-border bg-secondary/30 text-foreground outline-none focus-visible:ring-2 focus-visible:ring-primary lg:hidden" aria-label={mobileOpen ? 'Close menu' : 'Open menu'} aria-expanded={mobileOpen} aria-controls="mobile-primary-navigation">
             {mobileOpen ? <X className="size-5" /> : <Menu className="size-5" />}

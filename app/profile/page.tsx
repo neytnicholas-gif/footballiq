@@ -3,12 +3,12 @@
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { BookOpen, Flame, Gauge, Medal, Sparkles, Target, Trophy } from 'lucide-react'
+import { BookOpen } from 'lucide-react'
 import { SiteHeader } from '@/components/site-header'
 import { useAuth } from '@/components/auth-provider'
 import { getRankProgress } from '@/lib/progression'
 import { academyExperiences, computeAcademyProgress, loadAcademyCompletions, type AcademyCompletion } from '@/lib/academy'
-import { LoadingState, ProgressCard, SectionHeader, StatCard, SurfaceCard, StatusBadge } from '@/components/platform/primitives'
+import { LoadingState, ProgressCard, StatCard, SurfaceCard, StatusBadge } from '@/components/platform/primitives'
 import { supabase } from '@/lib/supabase'
 
 function formatDays(value: number) {
@@ -29,11 +29,7 @@ export default function ProfilePage() {
   useEffect(() => {
     let active = true
 
-    if (!user) {
-      setCompletions([])
-      setAcademyLoading(false)
-      return
-    }
+    if (!user) return
 
     void (async () => {
       setAcademyLoading(true)
@@ -51,15 +47,9 @@ export default function ProfilePage() {
   useEffect(() => {
     let active = true
 
-    if (!user) {
-      setDerivedAccuracy(null)
-      return
-    }
+    if (!user) return
 
-    if (profile?.total_answers && profile.total_answers > 0) {
-      setDerivedAccuracy(Math.round((profile.correct_answers / profile.total_answers) * 100))
-      return
-    }
+    if (profile?.total_answers && profile.total_answers > 0) return
 
     void (async () => {
       const { data, error } = await supabase
@@ -84,7 +74,7 @@ export default function ProfilePage() {
   const rank = getRankProgress(profile?.xp ?? 0)
   const accuracy = derivedAccuracy ?? (profile?.total_answers ? Math.round((profile.correct_answers / profile.total_answers) * 100) : null)
   const academy = computeAcademyProgress(completions)
-  const premiumCompleted = completions.filter((item) => item.experience_key.includes('scout-room') || item.experience_key.includes('referee-debrief')).length
+  const advancedCompleted = completions.filter((item) => item.experience_key.includes('scout-room') || item.experience_key.includes('referee-debrief')).length
 
   return (
     <main className="min-h-screen bg-background">
@@ -103,7 +93,7 @@ export default function ProfilePage() {
               <div className="bg-[radial-gradient(circle_at_top_left,rgba(54,206,163,.16),transparent_48%),radial-gradient(circle_at_85%_20%,rgba(56,123,255,.12),transparent_42%)] p-8 sm:p-10">
                 <div className="flex flex-wrap items-start justify-between gap-6">
                   <div>
-                    <StatusBadge label={membership.plan === 'pro' ? 'Pro profile' : 'Free profile'} tone={membership.plan === 'pro' ? 'pro' : 'neutral'} />
+                    <StatusBadge label="Player profile" tone="neutral" />
                     <h1 className="mt-4 text-4xl font-black tracking-tight text-foreground sm:text-6xl">{profile.username}</h1>
                     <p className="mt-2 text-muted-foreground">{user?.email}</p>
                   </div>
@@ -113,7 +103,7 @@ export default function ProfilePage() {
                   </div>
                 </div>
                 <div className="mt-5 flex flex-wrap items-center gap-3">
-                  {membership.plan === 'pro' ? <StatusBadge label="Pro access active" tone="pro" /> : <StatusBadge label="Free plan" tone="neutral" />}
+                  <StatusBadge label="Quizzes and Academy free" tone="neutral" />
                   {membership.source === 'dev-local-override' ? <StatusBadge label="Local dev override" tone="warn" /> : null}
                 </div>
                 <div className="mt-6">
@@ -140,8 +130,8 @@ export default function ProfilePage() {
                     <ProgressCard label="Scout Academy" value={`${academy.scout.completed}/${academy.scout.total}`} percent={academy.scout.percent} />
                     <ProgressCard label="Referee Academy" value={`${academy.referee.completed}/${academy.referee.total}`} percent={academy.referee.percent} />
                     <SurfaceCard className="bg-background/70 p-4">
-                      <p className="text-sm font-semibold text-foreground">Completed premium experiences</p>
-                      <p className="mt-1 text-2xl font-black text-foreground">{premiumCompleted}</p>
+                      <p className="text-sm font-semibold text-foreground">Completed advanced experiences</p>
+                      <p className="mt-1 text-2xl font-black text-foreground">{advancedCompleted}</p>
                       <p className="mt-1 text-xs text-muted-foreground">Scout Room and Referee Debrief completions saved on your profile.</p>
                     </SurfaceCard>
                     <Link href="/academy" className="inline-flex rounded-xl border border-border bg-background px-4 py-2.5 text-sm font-semibold text-foreground transition hover:border-primary/35 hover:bg-secondary/40">Open Academy</Link>
@@ -155,7 +145,7 @@ export default function ProfilePage() {
                 <ul className="mt-4 space-y-2 text-sm text-muted-foreground">
                   <li>• XP, rating and streaks are live and persist across sessions</li>
                   <li>• Accuracy now falls back to completed result data if counters are empty</li>
-                  <li>• Academy completions and premium progress remain visible</li>
+                  <li>• Academy completions and advanced progress remain visible</li>
                   {academyExperiences.filter((item) => item.status !== 'available').slice(0, 2).map((item) => <li key={item.key}>• {item.title} · {item.status === 'coming-next' ? 'Coming next' : 'Planned later'}</li>)}
                 </ul>
                 <div className="mt-4 flex flex-wrap gap-3">

@@ -3,14 +3,12 @@
 import Link from 'next/link'
 import { BookOpen, Flag, Search } from 'lucide-react'
 import { SiteHeader } from '@/components/site-header'
-import { useAuth } from '@/components/auth-provider'
 import { academyExperiences, computeAcademyProgress, loadAcademyCompletions } from '@/lib/academy'
 import { useEffect, useState } from 'react'
 import type { AcademyCompletion } from '@/lib/academy'
-import { LoadingState, ProBadge, SurfaceCard } from '@/components/platform/primitives'
+import { LoadingState, SurfaceCard } from '@/components/platform/primitives'
 
 export default function AcademyPage() {
-  const { membership } = useAuth()
   const [completions, setCompletions] = useState<AcademyCompletion[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -40,8 +38,8 @@ export default function AcademyPage() {
             <h1 className="mt-3 text-4xl font-black tracking-tight sm:text-6xl">Structured learning pathways for football judgement</h1>
             <p className="mt-3 max-w-3xl text-muted-foreground">Build your scout and referee thinking with staged modules, practical decisions and professional debriefs.</p>
             <div className="mt-4 flex flex-wrap items-center gap-3">
-              {membership.plan === 'pro' ? <ProBadge /> : <span className="rounded-full border border-border bg-card/80 px-3 py-1 text-xs font-semibold">Free plan active</span>}
-              <Link href="/pro" className="rounded-full border border-indigo-300/40 bg-indigo-300/14 px-3 py-1 text-xs font-semibold text-indigo-200">Compare Free vs Pro</Link>
+              <span className="rounded-full border border-emerald-300/40 bg-emerald-300/14 px-3 py-1 text-xs font-semibold text-emerald-200">All current modules are free</span>
+              <Link href="/pro" className="rounded-full border border-border bg-card/80 px-3 py-1 text-xs font-semibold text-foreground transition hover:border-primary/40">Access &amp; roadmap</Link>
             </div>
           </div>
         </SurfaceCard>
@@ -74,9 +72,7 @@ export default function AcademyPage() {
               <div key={item.key} className="rounded-xl border border-border bg-background/70 p-3">
                 <div className="flex items-center justify-between gap-2">
                   <p className="font-semibold">{item.title}</p>
-                  <span className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${item.type === 'pro' ? 'border border-indigo-300/40 bg-indigo-300/14 text-indigo-200' : 'border border-emerald-300/40 bg-emerald-300/14 text-emerald-200'}`}>
-                    {item.type.toUpperCase()}
-                  </span>
+                  <span className="rounded-full border border-emerald-300/40 bg-emerald-300/14 px-2.5 py-1 text-[11px] font-semibold text-emerald-200">FREE</span>
                 </div>
                 <p className="mt-1 text-xs text-muted-foreground">
                   {item.status === 'available' ? 'Available now' : item.status === 'coming-next' ? 'Coming next' : 'Planned later'}

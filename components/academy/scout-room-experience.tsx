@@ -1,7 +1,7 @@
 'use client'
 
 import { useMemo, useState } from 'react'
-import { CheckCircle2, ClipboardList, Target } from 'lucide-react'
+import { CheckCircle2, Target } from 'lucide-react'
 import { saveAcademyCompletion } from '@/lib/academy'
 
 const dossier = {
@@ -83,7 +83,7 @@ export function ScoutRoomExperience() {
   return (
     <div className="space-y-6 rounded-[1.6rem] border border-border bg-card p-5 sm:p-7">
       <header className="rounded-2xl border border-border bg-[linear-gradient(140deg,rgba(34,197,94,.18),rgba(10,17,24,.95))] p-5">
-        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">Pro Scout Room</p>
+        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">Advanced Scout Room</p>
         <h2 className="mt-2 text-3xl font-black tracking-tight">Scout Room: Player Evaluation</h2>
         <p className="mt-2 text-sm text-muted-foreground">Review dossier evidence, write your judgement, then compare with an expert-style report structure.</p>
       </header>
@@ -181,7 +181,7 @@ export function ScoutRoomExperience() {
 
               <div className="mt-3 rounded-xl border border-emerald-300/40 bg-background/70 p-3 text-sm text-emerald-100">
                 <p className="font-semibold">Completion</p>
-                <p className="mt-1">You earned 120 Academy XP equivalent and logged one premium scouting completion.</p>
+                <p className="mt-1">You earned 120 Academy XP equivalent and logged one advanced scouting completion.</p>
                 <p className="mt-1">Key learning: Separate production from context before final recommendation.</p>
                 <p className="mt-1">You covered {learning.judgedCoverage}/4 core judgement areas.</p>
                 {learning.missed.length > 0 ? <p className="mt-1">You may have missed: {learning.missed.join(', ')}.</p> : null}
