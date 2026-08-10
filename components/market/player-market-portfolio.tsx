@@ -134,8 +134,8 @@ export function PlayerMarketPortfolio({
                   <div className="flex items-center justify-between text-sm sm:block sm:text-right">
                     <p className="text-muted-foreground">Now</p>
                     <p>{formatFiqCompact(holding.current_value_snapshot)}</p>
-                    <p className={holding.unrealized_profit_loss >= 0 ? 'text-primary' : 'text-destructive'}>
-                      {holding.unrealized_profit_loss >= 0 ? '+' : ''}{formatFiqCompact(Math.abs(holding.unrealized_profit_loss))}
+                    <p className={holding.unrealized_profit_loss > 0 ? 'text-primary' : holding.unrealized_profit_loss < 0 ? 'text-destructive' : 'text-muted-foreground'}>
+                      {movementLabel(holding.unrealized_profit_loss)}
                     </p>
                   </div>
                 </Link>
