@@ -129,4 +129,15 @@ describe('Player Market launch gates', () => {
     expect(leagues).toContain('Player portfolios, balances, and trades are not affected.')
     expect(leagues).not.toContain('window.confirm')
   })
+
+  it('uses deterministic Brussels timestamps across server render and browser hydration', () => {
+    const format = read('lib/market/format.ts')
+    const portfolio = read('components/market/player-market-portfolio.tsx')
+    const detail = read('components/market/player-market-detail.tsx')
+    expect(format).toContain("new Intl.DateTimeFormat('en-GB'")
+    expect(format).toContain("timeZone: 'Europe/Brussels'")
+    expect(portfolio).toContain('formatMarketDateTime(tx.created_at)')
+    expect(detail).toContain('formatMarketDateTime(player.value_updated_at)')
+    expect(`${portfolio}\n${detail}`).not.toContain('.toLocaleString()')
+  })
 })

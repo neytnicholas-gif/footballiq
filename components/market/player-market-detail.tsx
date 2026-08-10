@@ -9,7 +9,7 @@ import { MarketPlayerChip } from '@/components/market/market-player-chip'
 import { MarketTradeDialog } from '@/components/market/market-trade-dialog'
 import { buyMarketPlayer, sellMarketPlayer, toggleMarketWatchlist } from '@/lib/market/client'
 import { canBuyPosition, countFormation } from '@/lib/market/formation'
-import { createMarketRequestKey, formatFiqCompact, MARKET_MAX_PORTFOLIO_SIZE } from '@/lib/market/format'
+import { createMarketRequestKey, formatFiqCompact, formatMarketDateTime, MARKET_MAX_PORTFOLIO_SIZE } from '@/lib/market/format'
 import type { MarketHolding, MarketPlayer, MarketSeasonStats, MarketValueHistoryPoint } from '@/lib/market/types'
 
 export function PlayerMarketDetail({
@@ -165,7 +165,7 @@ export function PlayerMarketDetail({
             {!owned && holdings.length >= MARKET_MAX_PORTFOLIO_SIZE ? <p className="mt-2 text-xs text-amber-200">Portfolio is full. Sell one player before buying another.</p> : null}
             {lockActive ? (
               <p className="mt-2 rounded-lg border border-amber-300/30 bg-amber-200/10 px-2.5 py-2 text-xs text-amber-200">
-                Trading lock active: {lockReason}{player.trade_lock_ends_at ? ` (until ${new Date(player.trade_lock_ends_at).toLocaleString()})` : ''}.
+                Trading lock active: {lockReason}{player.trade_lock_ends_at ? ` (until ${formatMarketDateTime(player.trade_lock_ends_at)})` : ''}.
               </p>
             ) : null}
           </div>
@@ -216,7 +216,7 @@ export function PlayerMarketDetail({
               Input validation: {player.provenance_status === 'verified' && player.owner_verified ? 'passed' : 'pending'}. A missing or ineligible rating freezes the price instead of guessing.
             </p>
             <p className="rounded-xl border border-border bg-background/60 p-3">
-              Last value update: {new Date(player.value_updated_at).toLocaleString()}
+              Last value update: {formatMarketDateTime(player.value_updated_at)}
             </p>
           </div>
         </div>

@@ -23,6 +23,16 @@ export function toUtcDateKey(date = new Date()) {
   return date.toISOString().slice(0, 10)
 }
 
+export function formatMarketDateTime(value: string | number | Date) {
+  const date = value instanceof Date ? value : new Date(value)
+  if (Number.isNaN(date.getTime())) return 'Unavailable'
+  return new Intl.DateTimeFormat('en-GB', {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+    timeZone: 'Europe/Brussels',
+  }).format(date)
+}
+
 export function toUtcIsoWeekKey(date = new Date()) {
   const value = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()))
   const day = value.getUTCDay() || 7

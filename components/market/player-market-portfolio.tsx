@@ -6,7 +6,7 @@ import type { ReactNode } from 'react'
 import { ArrowUpRight, Wallet } from 'lucide-react'
 import { MarketPlayerChip } from '@/components/market/market-player-chip'
 import { countFormation } from '@/lib/market/formation'
-import { formatFiqCompact, MARKET_MAX_PORTFOLIO_SIZE } from '@/lib/market/format'
+import { formatFiqCompact, formatMarketDateTime, MARKET_MAX_PORTFOLIO_SIZE } from '@/lib/market/format'
 import type { MarketHolding, MarketMatchweekRun, MarketPlayer, MarketPortfolio, MarketRevealSummary, MarketTransaction } from '@/lib/market/types'
 
 export function PlayerMarketPortfolio({
@@ -178,7 +178,7 @@ export function PlayerMarketPortfolio({
               return (
                 <div key={tx.id} className="rounded-xl border border-border bg-background/60 p-3 text-sm">
                   <p className="font-semibold">{tx.transaction_type.toUpperCase()} · {player?.display_name ?? 'Player'}</p>
-                  <p className="mt-1 text-xs text-muted-foreground">{new Date(tx.created_at).toLocaleString()} · {formatFiqCompact(tx.execution_value)}</p>
+                  <p className="mt-1 text-xs text-muted-foreground">{formatMarketDateTime(tx.created_at)} · {formatFiqCompact(tx.execution_value)}</p>
                   <p className="mt-1 text-xs text-muted-foreground">Balance {formatFiqCompact(tx.balance_before)} → {formatFiqCompact(tx.balance_after)}</p>
                 </div>
               )
