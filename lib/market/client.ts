@@ -80,7 +80,6 @@ type PublicCataloguePlayer = Pick<MarketPlayer,
   | 'competition_name' | 'position' | 'age' | 'nationality'
   | 'opening_season_value' | 'current_value' | 'previous_value'
   | 'value_updated_at' | 'availability_status' | 'recent_form_indicator'
-  | 'decision_support_note'
 >
 
 function hydratePublicCataloguePlayer(player: PublicCataloguePlayer): MarketPlayer {
@@ -101,6 +100,9 @@ function hydratePublicCataloguePlayer(player: PublicCataloguePlayer): MarketPlay
       ? 'rising'
       : player.current_value < player.previous_value ? 'falling' : 'flat',
     role_security_indicator: 'rotation',
+    decision_support_note: player.current_value === player.opening_season_value
+      ? 'Opening game price. This value stays frozen until eligible ratings and minutes are processed.'
+      : 'Eligible match evidence has been processed using FootballIQ’s published game-price rules.',
     matchweek_performance_history: [],
     created_at: player.value_updated_at,
     updated_at: player.value_updated_at,

@@ -30,7 +30,6 @@ type PublicCataloguePlayer = Pick<MarketPlayer,
   | 'competition_name' | 'position' | 'age' | 'nationality'
   | 'opening_season_value' | 'current_value' | 'previous_value'
   | 'value_updated_at' | 'availability_status' | 'recent_form_indicator'
-  | 'decision_support_note'
 >
 
 const SUPPORTED_COMPETITIONS = ['premier-league', 'la-liga', 'ligue-1'] as const
@@ -72,9 +71,6 @@ async function loadAuthoritativeCatalogue(competition: string | null) {
       value_updated_at: row.data_updated_at,
       availability_status: row.availability_status ?? 'available',
       recent_form_indicator: latestRating === null ? 'steady' : latestRating >= 7.5 ? 'hot' : latestRating < 6.5 ? 'cool' : 'steady',
-      decision_support_note: latestRating === null
-        ? 'Opening game price. This value stays frozen until eligible ratings and minutes are processed.'
-        : `Latest eligible match rating: ${latestRating.toFixed(2)}. FootballIQ applies the published game-price rules.`,
     }
   })
   if (players.length === 0) throw new Error('The authoritative player catalogue is empty.')
