@@ -16,7 +16,9 @@ describe('Player Market launch gates', () => {
     expect(route).toContain("tags: ['market-public-catalogue']")
     expect(route).not.toContain('buildSportmonksCombinedCatalogue')
     expect(route).toContain('s-maxage=300')
-    expect(route).toContain('stale-while-revalidate=3600')
+    expect(route).toContain('stale-while-revalidate=86400')
+    expect(route).toContain("event: 'market.catalogue.failed'")
+    expect(route).toContain("'Retry-After': '30'")
   })
 
   it('publishes only verified database catalogue rows and removes broad public writes', () => {
@@ -41,6 +43,24 @@ describe('Player Market launch gates', () => {
     expect(sell.match(/anonymousSellPlayer/g)).toHaveLength(1)
     expect(buy).not.toContain('isMarketBackendUnavailable(error)')
     expect(sell).not.toContain('isMarketBackendUnavailable(error)')
+    const watchlist = client.slice(client.indexOf('export async function toggleMarketWatchlist'), client.indexOf('export async function loadMyFriendLeagues'))
+    expect(watchlist.match(/anonymousToggleWatchlist/g)).toHaveLength(1)
+    expect(watchlist).not.toContain('isMarketBackendUnavailable(error)')
+  })
+
+  it('fails closed and quickly during unattended market incidents', () => {
+    const sql = read('supabase/migrations/20260810123000_harden_unattended_market_operations.sql')
+    const statusSql = read('supabase/migrations/20260810123500_add_market_operational_status.sql')
+    const client = read('lib/market/client.ts')
+    expect(sql).toContain('market_holdings_require_open_market')
+    expect(sql).toContain("status is distinct from 'open'")
+    expect(sql).toContain("MARKET_TEMPORARILY_UNAVAILABLE")
+    expect(sql).toContain("market_buy_player(text, text) set statement_timeout = '5s'")
+    expect(sql).toContain("market_sell_player(text, text) set lock_timeout = '2s'")
+    expect(statusSql).toContain("check (market_status in ('open','updating','paused'))")
+    expect(client).toContain(".select('market_status,updated_at,maximum_holdings,active_season_id')")
+    expect(client).toContain('No change was made')
+    expect(client).toContain("['57014', '55P03', 'PGRST003']")
   })
 
   it('does not substitute browser-local Reveals for a signed-in account', () => {

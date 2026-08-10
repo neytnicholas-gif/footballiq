@@ -47,6 +47,20 @@ function isPermissionDenied(error: unknown) {
   return row.code === '42501' || /permission denied/i.test(row.message ?? '')
 }
 
+function normalizeMarketMutationError(error: unknown): Error | null {
+  if (!error) return null
+  if (typeof error !== 'object') return new Error('The market request could not be completed.')
+  const row = error as { code?: string; message?: string }
+  if (['57014', '55P03', 'PGRST003'].includes(row.code ?? '')
+    || /statement timeout|lock timeout|timed out acquiring connection/i.test(row.message ?? '')) {
+    return new Error('The market is temporarily busy. No change was made. Please try again shortly.')
+  }
+  if (/MARKET_(PAUSED|UPDATING|TEMPORARILY_UNAVAILABLE)/i.test(row.message ?? '')) {
+    return new Error('Trading is temporarily paused to protect player accounts. No change was made.')
+  }
+  return error instanceof Error ? error : Object.assign(new Error(row.message ?? 'The market request could not be completed.'), row)
+}
+
 export type GuestMarketImportResult = {
   ok: boolean
   imported: boolean
@@ -161,24 +175,33 @@ export async function loadMarketPlayers() {
 }
 
 export async function loadMarketSettings() {
-  const { data, error } = await supabase
+  // Staging has the normalized settings contract; generated client types still
+  // describe the retired compatibility shape and are updated separately.
+  const { data, error } = await (supabase as any)
     .from('market_settings')
-    .select('market_status,methodology_version,last_market_update_at,max_portfolio_size,sell_spread_bps,season_id,season_label,season_state,onboarding_enabled')
-    .eq('singleton', true)
+    .select('market_status,updated_at,maximum_holdings,active_season_id')
+    .eq('id', 1)
     .maybeSingle()
 
+  const row = data as {
+    market_status: 'open' | 'updating' | 'paused'
+    updated_at: string | null
+    maximum_holdings: number
+    active_season_id: string
+  } | null
+
   return {
-    data: (data as {
-      market_status: 'open' | 'updating' | 'paused'
-      methodology_version: string
-      last_market_update_at: string | null
-      max_portfolio_size: number
-      sell_spread_bps: number
-      season_id: string
-      season_label: string
-      season_state: 'setup' | 'open' | 'paused' | 'archived'
-      onboarding_enabled: boolean
-    } | null) ?? null,
+    data: row ? {
+      market_status: row.market_status,
+      methodology_version: 'fiq-real-performance-v2.0.0',
+      last_market_update_at: row.updated_at,
+      max_portfolio_size: row.maximum_holdings,
+      sell_spread_bps: 0,
+      season_id: row.active_season_id,
+      season_label: row.active_season_id.replace(/^sportmonks-/, ''),
+      season_state: row.market_status === 'open' ? 'open' as const : 'paused' as const,
+      onboarding_enabled: true,
+    } : null,
     error: error as Error | null,
   }
 }
@@ -429,7 +452,7 @@ export async function buyMarketPlayer(slug: string, playerId?: number, requestKe
 
   return {
     data: (data as Record<string, unknown> | null) ?? null,
-    error: error as Error | null,
+    error: normalizeMarketMutationError(error),
   }
 }
 
@@ -449,7 +472,7 @@ export async function sellMarketPlayer(slug: string, playerId?: number, requestK
 
   return {
     data: (data as Record<string, unknown> | null) ?? null,
-    error: error as Error | null,
+    error: normalizeMarketMutationError(error),
   }
 }
 
@@ -464,14 +487,9 @@ export async function toggleMarketWatchlist(slug: string, playerId?: number) {
     p_player_slug: playerId ? String(playerId) : slug,
   })
 
-  if (isMarketBackendUnavailable(error)) {
-    const { data: players } = await loadMarketPlayers()
-    return anonymousToggleWatchlist(slug, players)
-  }
-
   return {
     data: (data as { watchlisted?: boolean } | null) ?? null,
-    error: error as Error | null,
+    error: normalizeMarketMutationError(error),
   }
 }
 

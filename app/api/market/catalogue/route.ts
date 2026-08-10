@@ -97,6 +97,8 @@ const loadCachedAuthoritativeCatalogue = unstable_cache(
 )
 
 export async function GET(request: Request) {
+  const startedAt = Date.now()
+  const requestId = request.headers.get('x-vercel-id') ?? crypto.randomUUID()
   try {
     const competition = new URL(request.url).searchParams.get('competition')
     const players = await loadCachedAuthoritativeCatalogue(competition)
@@ -118,13 +120,30 @@ export async function GET(request: Request) {
       competitions: Array.from(grouped.values()),
     }, {
       headers: {
-        'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=3600',
-        'CDN-Cache-Control': 'public, s-maxage=300, stale-while-revalidate=3600',
-        'Vercel-CDN-Cache-Control': 'public, s-maxage=300, stale-while-revalidate=3600',
+        'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=86400',
+        'CDN-Cache-Control': 'public, s-maxage=300, stale-while-revalidate=86400',
+        'Vercel-CDN-Cache-Control': 'public, s-maxage=300, stale-while-revalidate=86400',
+        'X-FootballIQ-Request-Id': requestId,
       },
     })
   } catch (error) {
     const message = error instanceof Error ? error.message : 'The verified player catalogue could not be loaded.'
-    return NextResponse.json({ error: message }, { status: 502 })
+    console.error(JSON.stringify({
+      event: 'market.catalogue.failed',
+      requestId,
+      durationMs: Date.now() - startedAt,
+      error: message,
+    }))
+    return NextResponse.json({
+      error: 'The verified player catalogue is temporarily unavailable. Trading data was not substituted.',
+      requestId,
+    }, {
+      status: 503,
+      headers: {
+        'Cache-Control': 'private, no-store',
+        'Retry-After': '30',
+        'X-FootballIQ-Request-Id': requestId,
+      },
+    })
   }
 }
