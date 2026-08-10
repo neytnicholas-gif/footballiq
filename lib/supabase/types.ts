@@ -729,6 +729,16 @@ export type Database = {
       }
     }
     Functions: {
+      beta_join: {
+        Args: {
+          p_source?: string
+        }
+        Returns: Record<string, unknown>
+      }
+      beta_my_status: {
+        Args: Record<string, never>
+        Returns: Record<string, unknown>
+      }
       complete_quiz: {
         Args: {
           p_quiz_id: string

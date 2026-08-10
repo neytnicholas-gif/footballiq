@@ -64,4 +64,19 @@ describe('legal and market trust guards', () => {
     expect(footer).not.toMatch(/Instagram|YouTube|LinkedIn/)
     expect(header).not.toContain('text-slate-950')
   })
+
+  it('records founder beta eligibility without collecting payment details', () => {
+    const betaPage = read('app/beta/page.tsx')
+    const betaSql = read('supabase/migrations/20260810104311_add_beta_participant_enrolment.sql')
+    const terms = read('app/terms/page.tsx')
+
+    expect(betaPage).toContain("rpc('beta_join'")
+    expect(betaPage).toContain('There is no payment, card request or automatic renewal today.')
+    expect(betaPage).toContain('Send beta feedback')
+    expect(terms).toContain('Founder beta benefit')
+    expect(betaSql).toContain('alter table public.beta_participants enable row level security')
+    expect(betaSql).toContain("raise exception 'AUTH_REQUIRED'")
+    expect(betaSql).toContain('revoke all on function public.beta_join(text) from public, anon')
+    expect(betaSql).toContain('grant execute on function public.beta_join(text) to authenticated, service_role')
+  })
 })

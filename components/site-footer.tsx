@@ -8,6 +8,7 @@ const navLinks = [
   { label: 'Player Market', href: '/market' },
   { label: 'Quizzes', href: '/quizzes' },
   { label: 'Academy', href: '/academy' },
+  { label: 'Founder beta', href: '/beta' },
   { label: 'Access & roadmap', href: '/pro' },
   { label: 'Daily Challenge', href: '/daily' },
   { label: 'Predictions', href: '/predictions' },

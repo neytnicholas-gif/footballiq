@@ -55,6 +55,12 @@ export default function HomePage() {
       <div aria-hidden="true" className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_18%_4%,rgba(45,212,191,.12),transparent_32%),radial-gradient(circle_at_84%_10%,rgba(59,130,246,.14),transparent_28%),linear-gradient(180deg,rgba(4,8,16,0),rgba(4,8,16,.75)_58%,rgba(4,8,16,1))]" />
       <SiteHeader />
       <div className="relative">
+        <section className="mx-auto max-w-7xl px-4 pt-6 sm:px-6">
+          <Link href="/beta" className="flex min-h-11 flex-wrap items-center justify-between gap-2 rounded-2xl border border-emerald-300/30 bg-emerald-400/10 px-4 py-3 text-sm transition hover:border-emerald-300/55 hover:bg-emerald-400/15">
+            <span><strong className="text-emerald-200">Founder beta is open.</strong> <span className="text-slate-300">Play free, shape the game and secure 12 months of future Player Market access on us.</span></span>
+            <span className="font-semibold text-emerald-300">Join beta →</span>
+          </Link>
+        </section>
         <section className="mx-auto grid max-w-7xl gap-6 px-4 pb-8 pt-8 sm:px-6 sm:pt-10 lg:grid-cols-[1.18fr_.82fr] lg:items-stretch">
           <div className="relative overflow-hidden rounded-3xl border border-white/12 bg-[linear-gradient(155deg,rgba(10,17,30,.96),rgba(7,13,23,.88))] p-6 shadow-[0_30px_90px_-52px_rgba(16,185,129,.4)] sm:p-8">
             <div aria-hidden="true" className="absolute inset-0 bg-[radial-gradient(circle_at_16%_18%,rgba(16,185,129,.18),transparent_32%),radial-gradient(circle_at_90%_8%,rgba(56,189,248,.12),transparent_28%)]" />
