@@ -204,17 +204,16 @@ export function PlayerMarketDetail({
         </div>
 
         <div className="rounded-[2rem] border border-border bg-card p-6">
-          <h2 className="text-xl font-bold">Valuation and provenance</h2>
+          <h2 className="text-xl font-bold">How this game value works</h2>
           <div className="mt-4 space-y-3 text-sm">
             <p className="rounded-xl border border-border bg-background/60 p-3">
               FootballIQ value is an internal strategy metric (not a real-world transfer value) generated using FootballIQ methodology versioning.
             </p>
             <p className="rounded-xl border border-border bg-background/60 p-3">
-              Data source: {player.data_source_label}
-              {player.source_reference ? ` · ${player.source_reference}` : ''}
+              Player identity and eligible match inputs come from a licensed football-data provider. FootballIQ creates the game price independently.
             </p>
             <p className="rounded-xl border border-border bg-background/60 p-3">
-              Provenance status: {player.provenance_status} · Owner verified: {player.owner_verified ? 'yes' : 'no'}
+              Input validation: {player.provenance_status === 'verified' && player.owner_verified ? 'passed' : 'pending'}. A missing or ineligible rating freezes the price instead of guessing.
             </p>
             <p className="rounded-xl border border-border bg-background/60 p-3">
               Last value update: {new Date(player.value_updated_at).toLocaleString()}

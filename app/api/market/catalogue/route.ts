@@ -23,8 +23,15 @@ type PublicCatalogueRow = {
   latest_rating_milli: number | null
   availability_status: MarketPlayer['availability_status']
   data_updated_at: string
-  source_reference: string | null
 }
+
+type PublicCataloguePlayer = Pick<MarketPlayer,
+  | 'id' | 'slug' | 'display_name' | 'club_name' | 'competition_key'
+  | 'competition_name' | 'position' | 'age' | 'nationality'
+  | 'opening_season_value' | 'current_value' | 'previous_value'
+  | 'value_updated_at' | 'availability_status' | 'recent_form_indicator'
+  | 'decision_support_note'
+>
 
 const SUPPORTED_COMPETITIONS = ['premier-league', 'la-liga', 'ligue-1'] as const
 
@@ -45,7 +52,7 @@ async function loadAuthoritativeCatalogue(competition: string | null) {
   const failed = results.find((result) => result.error)
   if (failed?.error) throw new Error(`The authoritative player catalogue is unavailable: ${failed.error.message}`)
   const rows = results.flatMap((result) => (result.data ?? []) as PublicCatalogueRow[])
-  const players = rows.map((row): MarketPlayer => {
+  const players = rows.map((row): PublicCataloguePlayer => {
     const currentValue = Number(row.current_price_minor)
     const previousValue = Number(row.previous_price_minor)
     const latestRating = row.latest_rating_milli === null ? null : Number(row.latest_rating_milli) / 1000
@@ -53,37 +60,21 @@ async function loadAuthoritativeCatalogue(competition: string | null) {
       id: Number(row.app_player_id),
       slug: row.slug,
       display_name: row.display_name,
-      short_name: null,
       club_name: row.club_name,
       competition_key: row.competition_key,
       competition_name: row.competition_name,
       position: row.position_group,
       age: row.age,
       nationality: row.nationality,
-      active: true,
       opening_season_value: Number(row.opening_price_minor),
       current_value: currentValue,
       previous_value: previousValue,
       value_updated_at: row.data_updated_at,
-      data_updated_at: row.data_updated_at,
-      data_source_label: 'Sportmonks identity · FootballIQ authoritative price book',
-      source_reference: row.source_reference,
-      provenance_status: 'verified',
-      owner_verified: true,
-      is_trade_locked: false,
-      trade_lock_reason: null,
-      trade_lock_started_at: null,
-      trade_lock_ends_at: null,
       availability_status: row.availability_status ?? 'available',
-      value_trend: currentValue > previousValue ? 'rising' : currentValue < previousValue ? 'falling' : 'flat',
       recent_form_indicator: latestRating === null ? 'steady' : latestRating >= 7.5 ? 'hot' : latestRating < 6.5 ? 'cool' : 'steady',
-      role_security_indicator: 'rotation',
       decision_support_note: latestRating === null
-        ? 'Opening game price. This value remains frozen until verified ratings and minutes are processed.'
-        : `Latest processed Sportmonks rating: ${latestRating.toFixed(2)}. The database price book is authoritative.`,
-      matchweek_performance_history: [],
-      created_at: row.data_updated_at,
-      updated_at: row.data_updated_at,
+        ? 'Opening game price. This value stays frozen until eligible ratings and minutes are processed.'
+        : `Latest eligible match rating: ${latestRating.toFixed(2)}. FootballIQ applies the published game-price rules.`,
     }
   })
   if (players.length === 0) throw new Error('The authoritative player catalogue is empty.')
@@ -113,7 +104,7 @@ export async function GET(request: Request) {
       })
     }
     return NextResponse.json({
-      source: 'database-verified-sportmonks',
+      source: 'footballiq-game-price-book',
       generatedAt: new Date().toISOString(),
       players,
       playerCount: players.length,

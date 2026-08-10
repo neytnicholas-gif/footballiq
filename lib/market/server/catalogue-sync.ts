@@ -62,7 +62,7 @@ async function syncLeagueCatalogue(admin: ReturnType<typeof createAdminClient>, 
     rejected_count: 0,
     validated_at: now,
     approved_at: now,
-    approved_by: 'footballiq-provider-sync',
+    approved_by: 'footballiq-automated-validation',
     activated_at: now,
     updated_at: now,
   }, { onConflict: 'fingerprint' }).select('id').single()

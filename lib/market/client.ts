@@ -75,6 +75,38 @@ let verifiedCatalogueRequest: Promise<MarketPlayer[]> | null = null
 let verifiedCatalogueFetchedAt = 0
 const VERIFIED_CATALOGUE_TTL_MS = 300_000
 
+type PublicCataloguePlayer = Pick<MarketPlayer,
+  | 'id' | 'slug' | 'display_name' | 'club_name' | 'competition_key'
+  | 'competition_name' | 'position' | 'age' | 'nationality'
+  | 'opening_season_value' | 'current_value' | 'previous_value'
+  | 'value_updated_at' | 'availability_status' | 'recent_form_indicator'
+  | 'decision_support_note'
+>
+
+function hydratePublicCataloguePlayer(player: PublicCataloguePlayer): MarketPlayer {
+  return {
+    ...player,
+    short_name: null,
+    active: true,
+    data_updated_at: player.value_updated_at,
+    data_source_label: 'Provider-sourced identity · FootballIQ game price book',
+    source_reference: null,
+    provenance_status: 'verified',
+    owner_verified: true,
+    is_trade_locked: false,
+    trade_lock_reason: null,
+    trade_lock_started_at: null,
+    trade_lock_ends_at: null,
+    value_trend: player.current_value > player.previous_value
+      ? 'rising'
+      : player.current_value < player.previous_value ? 'falling' : 'flat',
+    role_security_indicator: 'rotation',
+    matchweek_performance_history: [],
+    created_at: player.value_updated_at,
+    updated_at: player.value_updated_at,
+  }
+}
+
 function fetchVerifiedMarketPlayers() {
   const now = Date.now()
   if (!verifiedCatalogueRequest || now - verifiedCatalogueFetchedAt >= VERIFIED_CATALOGUE_TTL_MS) {
@@ -82,11 +114,11 @@ function fetchVerifiedMarketPlayers() {
     verifiedCatalogueRequest = fetch('/api/market/catalogue')
       .then(async (response) => {
         if (!response.ok) throw new Error('The verified player catalogue request failed.')
-        const payload = await response.json() as { players?: MarketPlayer[] }
+        const payload = await response.json() as { players?: PublicCataloguePlayer[] }
         if (!Array.isArray(payload.players) || payload.players.length === 0) {
           throw new Error('The verified player catalogue is empty.')
         }
-        return payload.players
+        return payload.players.map(hydratePublicCataloguePlayer)
       })
       .catch((error) => {
         verifiedCatalogueRequest = null
