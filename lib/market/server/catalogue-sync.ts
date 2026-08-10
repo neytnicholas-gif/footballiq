@@ -4,8 +4,19 @@ import { createHash } from 'node:crypto'
 import { createClient } from '@supabase/supabase-js'
 import { buildSportmonksCombinedCatalogue } from '@/lib/market/server/sportmonks-client'
 import type { SportmonksMarketCatalogue } from '@/lib/market/server/sportmonks-client'
+import type { MarketPosition } from '@/lib/market/types'
 
 const BATCH_SIZE = 100
+const VALUE_FLOOR = 4_000_000
+const VALUE_CEILING = 15_000_000
+
+function legacyOpeningValue(position: MarketPosition, age: number | null) {
+  const positionBase: Record<MarketPosition, number> = { GK: 5_500_000, DEF: 6_200_000, MID: 6_800_000, FWD: 7_200_000 }
+  const ageAdjustment = age === null ? 0
+    : age <= 21 ? 700_000 : age <= 24 ? 1_000_000 : age <= 28 ? 800_000
+      : age <= 31 ? 300_000 : age <= 34 ? -300_000 : -700_000
+  return Math.max(VALUE_FLOOR, Math.min(VALUE_CEILING, positionBase[position] + ageAdjustment))
+}
 
 function createAdminClient() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -92,9 +103,23 @@ async function syncLeagueCatalogue(admin: ReturnType<typeof createAdminClient>, 
   if (clubReadError) throw new Error(`Club lookup failed: ${clubReadError.message}`)
   const clubIds = new Map((persistedClubs ?? []).map((club) => [club.name, club.id]))
 
+  const { data: existingPlayers, error: existingPlayersError } = await admin.from('market_players')
+    .select('provider_player_id,initial_price_minor,current_price_minor')
+    .eq('season_id', seasonId)
+  if (existingPlayersError) throw new Error(`Existing player price lookup failed: ${existingPlayersError.message}`)
+  const existingPrices = new Map((existingPlayers ?? []).map((player) => [String(player.provider_player_id), {
+    initial: Number(player.initial_price_minor), current: Number(player.current_price_minor),
+  }]))
+
   let synced = 0
   for (let offset = 0; offset < catalogue.players.length; offset += BATCH_SIZE) {
-    const rows = catalogue.players.slice(offset, offset + BATCH_SIZE).map((player) => ({
+    const rows = catalogue.players.slice(offset, offset + BATCH_SIZE).map((player) => {
+      const existing = existingPrices.get(String(player.id))
+      const stillOnLegacyBaseline = existing?.initial === legacyOpeningValue(player.position, player.age ?? null)
+      const openingPrice = !existing || stillOnLegacyBaseline ? player.opening_season_value : existing.initial
+      const preservedMovement = existing ? existing.current - existing.initial : player.current_value - player.opening_season_value
+      const currentPrice = Math.max(VALUE_FLOOR, Math.min(VALUE_CEILING, openingPrice + preservedMovement))
+      return ({
       season_id: seasonId,
       club_id: clubIds.get(player.club_name),
       provider_player_id: String(player.id),
@@ -103,8 +128,8 @@ async function syncLeagueCatalogue(admin: ReturnType<typeof createAdminClient>, 
       slug: player.slug,
       position_group: player.position,
       nationality: player.nationality,
-      initial_price_minor: player.opening_season_value,
-      current_price_minor: player.current_value,
+      initial_price_minor: openingPrice,
+      current_price_minor: currentPrice,
       is_available: player.active,
       availability_status: player.availability_status ?? 'available',
       data_updated_at: player.data_updated_at,
@@ -116,7 +141,7 @@ async function syncLeagueCatalogue(admin: ReturnType<typeof createAdminClient>, 
       app_player_id: player.id,
       age: player.age,
       updated_at: now,
-    }))
+    })})
     if (rows.some((row) => !row.club_id)) throw new Error('Catalogue contains a player whose club was not synchronized.')
 
     const { error } = await admin.from('market_players').upsert(rows, { onConflict: 'season_id,provider_player_id' })

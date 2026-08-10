@@ -30,6 +30,9 @@ describe('server-only Market catalogue synchronization', () => {
     expect(service).toMatch(/synced \+= rows\.length/)
     expect(service).toMatch(/stalePlayerIds/)
     expect(service).toMatch(/availability_status: 'inactive'/)
+    expect(service).toMatch(/stillOnLegacyBaseline/)
+    expect(service).toMatch(/existing\.current - existing\.initial/)
+    expect(service).toMatch(/openingPrice \+ preservedMovement/)
   })
 
   it('keeps league-specific catalogue requests dynamic while provider calls remain cached', () => {

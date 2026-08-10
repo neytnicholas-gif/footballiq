@@ -1,6 +1,6 @@
 import { toMarketSlug } from '@/lib/market/provider'
 import type { ValidatedPerformance } from '@/lib/market/performance-ingestion'
-import { calculatePerformanceValueUpdate } from '@/lib/market/real-valuation'
+import { calculateOpeningGameplayValue, calculatePerformanceValueUpdate } from '@/lib/market/real-valuation'
 import type { MarketPlayer, MarketPosition } from '@/lib/market/types'
 
 const BASE_URL = 'https://api.sportmonks.com/v3/football'
@@ -110,16 +110,81 @@ function playerAge(player: JsonRecord) {
   return age >= 15 && age <= 50 ? age : null
 }
 
-function openingGameValue(position: MarketPosition, age: number | null) {
-  const positionBase: Record<MarketPosition, number> = { GK: 5_500_000, DEF: 6_200_000, MID: 6_800_000, FWD: 7_200_000 }
-  const ageAdjustment = age === null ? 0
-    : age <= 21 ? 700_000
-      : age <= 24 ? 1_000_000
-        : age <= 28 ? 800_000
-          : age <= 31 ? 300_000
-            : age <= 34 ? -300_000
-              : -700_000
-  return Math.max(4_000_000, Math.min(15_000_000, positionBase[position] + ageAdjustment))
+type PlayerSeasonQuality = {
+  appearances: number
+  starts: number
+  minutes: number
+  averageRating: number | null
+  goals: number
+  assists: number
+  cleanSheets: number
+}
+
+const clampScore = (value: number) => Math.max(0, Math.min(100, value))
+
+function statisticValue(detail: JsonRecord) {
+  const value = record(detail.value) ?? record(relation(detail, 'data')?.value)
+  for (const key of ['average', 'total', 'value', 'count']) {
+    const parsed = Number(value?.[key])
+    if (Number.isFinite(parsed)) return parsed
+  }
+  const direct = Number(detail.value)
+  return Number.isFinite(direct) ? direct : null
+}
+
+function qualityOpeningGameValue(position: MarketPosition, age: number | null, quality?: PlayerSeasonQuality) {
+  if (!quality || (quality.appearances === 0 && quality.minutes === 0 && quality.averageRating === null)) {
+    return calculateOpeningGameplayValue({
+      position, establishedPerformanceScore: 35, recentMinutesScore: 20,
+      squadRoleScore: 25, availabilityScore: 100,
+      agePotentialScore: age !== null && age <= 23 ? 75 : 45,
+    })
+  }
+  const ratingScore = quality.averageRating === null ? 45 : clampScore(((quality.averageRating - 5.8) / 2.2) * 100)
+  const per90 = quality.minutes > 0 ? 90 / quality.minutes : 0
+  const outputRate = position === 'FWD'
+    ? (quality.goals * 1.2 + quality.assists * 0.75) * per90
+    : position === 'MID'
+      ? (quality.goals * 0.65 + quality.assists) * per90
+      : position === 'DEF'
+        ? (quality.cleanSheets * 0.8 + quality.goals * 0.35 + quality.assists * 0.4) * per90
+        : quality.cleanSheets * per90
+  const outputTarget: Record<MarketPosition, number> = { GK: 0.38, DEF: 0.42, MID: 0.52, FWD: 0.8 }
+  const outputScore = clampScore((outputRate / outputTarget[position]) * 100)
+  const establishedPerformanceScore = ratingScore * 0.82 + outputScore * 0.18
+  const recentMinutesScore = clampScore((quality.minutes / 2_700) * 100)
+  const squadRoleScore = quality.appearances > 0
+    ? clampScore((quality.starts / quality.appearances) * 75 + Math.min(25, quality.appearances))
+    : 10
+  const agePotentialScore = age === null ? 45 : age <= 21 ? 90 : age <= 24 ? 80 : age <= 28 ? 65 : age <= 31 ? 45 : age <= 34 ? 25 : 10
+  return calculateOpeningGameplayValue({
+    position, establishedPerformanceScore, recentMinutesScore,
+    squadRoleScore, availabilityScore: 100, agePotentialScore,
+  })
+}
+
+function seasonQualityByPlayer(rows: JsonRecord[]) {
+  const result = new Map<number, PlayerSeasonQuality>()
+  for (const row of rows) {
+    const playerId = Number(row.player_id)
+    if (!Number.isSafeInteger(playerId)) continue
+    const values = new Map<string, number>()
+    for (const detail of relationRows(row, 'details')) {
+      const name = String(relation(detail, 'type')?.developer_name ?? detail.developer_name ?? '').toUpperCase()
+      const value = statisticValue(detail)
+      if (name && value !== null) values.set(name, value)
+    }
+    result.set(playerId, {
+      appearances: values.get('APPEARANCES') ?? 0,
+      starts: values.get('STARTED') ?? values.get('LINEUPS') ?? values.get('STARTS') ?? 0,
+      minutes: values.get('MINUTES_PLAYED') ?? values.get('MINUTES') ?? 0,
+      averageRating: values.get('RATING') ?? values.get('AVERAGE_RATING') ?? null,
+      goals: values.get('GOALS') ?? 0,
+      assists: values.get('ASSISTS') ?? 0,
+      cleanSheets: values.get('CLEAN_SHEETS') ?? 0,
+    })
+  }
+  return result
 }
 
 export type SportmonksMarketCatalogue = {
@@ -201,7 +266,20 @@ export function createSportmonksClient(apiToken = process.env.SPORTMONKS_API_TOK
     throw new Error(`Sportmonks request failed with HTTP ${lastStatus || 'unknown'}.`)
   }
 
-  return { get }
+  async function getAllPages(path: string, options: { fresh?: boolean; maxPages?: number } = {}) {
+    const output: JsonRecord[] = []
+    const maxPages = Math.max(1, Math.min(options.maxPages ?? 30, 100))
+    for (let page = 1; page <= maxPages; page += 1) {
+      const separator = path.includes('?') ? '&' : '?'
+      const pageRows = records(await get(`${path}${separator}per_page=50&page=${page}`, options))
+      if (pageRows.length === 0) break
+      output.push(...pageRows)
+      if (pageRows.length < 50) break
+    }
+    return output
+  }
+
+  return { get, getAllPages }
 }
 
 export async function runSportmonksCoverageTrial(apiToken = process.env.SPORTMONKS_API_TOKEN): Promise<SportmonksCoverageReport> {
@@ -290,10 +368,19 @@ async function buildSportmonksLeagueCatalogue(
   apiToken = process.env.SPORTMONKS_API_TOKEN,
 ): Promise<SportmonksMarketCatalogue> {
   const client = createSportmonksClient(apiToken)
-  const league = record(await client.get(`/leagues/${leagueConfig.leagueId}?include=currentSeason`))
+  const league = record(await client.get(`/leagues/${leagueConfig.leagueId}?include=currentSeason;seasons`))
   const season = league ? relation(league, 'currentseason', 'currentSeason') : null
   const seasonId = String(season?.id ?? '')
   if (!seasonId) throw new Error(`${leagueConfig.competition} current-season access is unavailable.`)
+  const previousSeason = relationRows(league ?? {}, 'seasons')
+    .filter((candidate) => String(candidate.id ?? '') !== seasonId)
+    .sort((a, b) => {
+      const aDate = Date.parse(String(a.ending_at ?? a.starting_at ?? ''))
+      const bDate = Date.parse(String(b.ending_at ?? b.starting_at ?? ''))
+      if (Number.isFinite(aDate) || Number.isFinite(bDate)) return (Number.isFinite(bDate) ? bDate : 0) - (Number.isFinite(aDate) ? aDate : 0)
+      return Number(b.id ?? 0) - Number(a.id ?? 0)
+    })[0]
+  const previousSeasonId = previousSeason?.id ? String(previousSeason.id) : null
 
   const teams = records(await client.get(`/teams/seasons/${encodeURIComponent(seasonId)}`))
   const teamIds = teams.map((team) => team.id).filter((id): id is string | number => typeof id === 'string' || typeof id === 'number')
@@ -327,6 +414,14 @@ async function buildSportmonksLeagueCatalogue(
     } as JsonRecord))
   }))).flat()
   const seasonSchedule = record(await client.get(`/seasons/${encodeURIComponent(seasonId)}?include=fixtures.state`))
+  const [currentQualityRows, previousQualityRows] = await Promise.all([
+    client.getAllPages(`/statistics/seasons/players/${encodeURIComponent(seasonId)}?include=details.type`).catch(() => []),
+    previousSeasonId
+      ? client.getAllPages(`/statistics/seasons/players/${encodeURIComponent(previousSeasonId)}?include=details.type`).catch(() => [])
+      : Promise.resolve([]),
+  ])
+  const currentQualityByPlayer = seasonQualityByPlayer(currentQualityRows)
+  const previousQualityByPlayer = seasonQualityByPlayer(previousQualityRows)
   const completedFixtures = relationRows(seasonSchedule ?? {}, 'fixtures')
     .filter((fixture) => isFinishedFixture(fixture) && fixtureDate(fixture))
     .sort((a, b) => Date.parse(fixtureDate(b)!) - Date.parse(fixtureDate(a)!))
@@ -374,7 +469,11 @@ async function buildSportmonksLeagueCatalogue(
     if (!Number.isSafeInteger(id) || id <= 0 || seen.has(id) || !position || !name || !clubName) continue
     seen.add(id)
     const age = playerAge(player ?? {})
-    const openingValue = openingGameValue(position, age)
+    const currentQuality = currentQualityByPlayer.get(id)
+    const establishedQuality = currentQuality && (currentQuality.minutes >= 450 || currentQuality.appearances >= 5)
+      ? currentQuality
+      : previousQualityByPlayer.get(id) ?? currentQuality
+    const openingValue = qualityOpeningGameValue(position, age, establishedQuality)
     const performances = (performancesByPlayer.get(id) ?? []).sort((a, b) => Date.parse(b.matchDate) - Date.parse(a.matchDate))
     const currentUpdate = calculatePerformanceValueUpdate({ position, currentValue: openingValue, rollingWeekMovement: 0, performances })
     const previousUpdate = calculatePerformanceValueUpdate({ position, currentValue: openingValue, rollingWeekMovement: 0, performances: performances.slice(1) })
