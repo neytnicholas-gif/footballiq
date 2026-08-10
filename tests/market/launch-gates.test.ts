@@ -181,4 +181,16 @@ describe('Player Market launch gates', () => {
     expect(portfolio).toContain('Current squad value')
     expect(portfolio).toContain('formatFiqCompact(player.current_value)')
   })
+
+  it('keeps market decisions and trade feedback visible during squad building', () => {
+    const browser = read('components/market/player-market-browser.tsx')
+    expect(browser).toContain("type CatalogueScope = 'all' | 'squad' | 'watchlist' | 'affordable'")
+    expect(browser).toContain('My squad · {holdings.length}')
+    expect(browser).toContain('Watchlist · {watchlist.length}')
+    expect(browser).toContain('Affordable fits')
+    expect(browser).toContain('Next move: add a ${nextPosition}')
+    expect(browser).toContain('average budget per open place')
+    expect(browser).toContain('fixed inset-x-4 bottom-4')
+    expect(browser).toContain('aria-label="Dismiss message"')
+  })
 })

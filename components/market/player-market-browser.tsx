@@ -1,9 +1,9 @@
 'use client'
 
 import Link from 'next/link'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
-import { ArrowUpDown, Clock3, Search, Shield, Sparkles, Star, UserPlus, Users, WalletCards } from 'lucide-react'
+import { ArrowUpDown, CheckCircle2, Clock3, Search, Shield, Sparkles, Star, UserPlus, Users, WalletCards, X } from 'lucide-react'
 import { MarketPlayerChip } from '@/components/market/market-player-chip'
 import { MarketTradeDialog } from '@/components/market/market-trade-dialog'
 import { buyMarketPlayer, sellMarketPlayer, toggleMarketWatchlist } from '@/lib/market/client'
@@ -12,6 +12,7 @@ import { createMarketRequestKey, formatFiqCompact, MARKET_MAX_PORTFOLIO_SIZE } f
 import type { MarketHolding, MarketPlayer, MarketSeasonStats } from '@/lib/market/types'
 
 type SortKey = 'value-desc' | 'value-asc' | 'change-desc' | 'change-asc' | 'form-desc' | 'name-asc'
+type CatalogueScope = 'all' | 'squad' | 'watchlist' | 'affordable'
 
 const PLAYER_PAGE_SIZE = 36
 
@@ -41,6 +42,7 @@ export function PlayerMarketBrowser({
   const [trend, setTrend] = useState<'all' | 'rising' | 'falling'>('all')
   const [priceRange, setPriceRange] = useState<'all' | 'low' | 'mid' | 'high'>('all')
   const [sortKey, setSortKey] = useState<SortKey>('value-desc')
+  const [scope, setScope] = useState<CatalogueScope>('all')
   const [visibleCount, setVisibleCount] = useState(PLAYER_PAGE_SIZE)
   const [busyId, setBusyId] = useState<number | null>(null)
   const [notice, setNotice] = useState<{ kind: 'success' | 'error' | 'info'; message: string } | null>(null)
@@ -56,6 +58,8 @@ export function PlayerMarketBrowser({
   const watchSet = useMemo(() => new Set(watchlist), [watchlist])
   const playersById = useMemo(() => new Map(players.map((player) => [player.id, player])), [players])
   const formation = useMemo(() => countFormation(holdings, playersById), [holdings, playersById])
+  const openSlots = MARKET_MAX_PORTFOLIO_SIZE - holdings.length
+  const nextPosition = formation.GK < 1 ? 'GK' : formation.DEF < 4 ? 'DEF' : formation.MID < 3 ? 'MID' : formation.FWD < 3 ? 'FWD' : null
   const marketHasMoved = useMemo(() => players.some((player) => player.current_value !== player.opening_season_value), [players])
   const previewExperimentActive = useMemo(() => players.some((player) => player.data_source_label.includes('preview valuation experiment')), [players])
   const filtered = useMemo(() => {
@@ -89,6 +93,10 @@ export function PlayerMarketBrowser({
     if (priceRange === 'mid') rows = rows.filter((player) => player.current_value >= 7_000_000 && player.current_value < 10_000_000)
     if (priceRange === 'high') rows = rows.filter((player) => player.current_value >= 10_000_000)
 
+    if (scope === 'squad') rows = rows.filter((player) => holdingsSet.has(player.id))
+    if (scope === 'watchlist') rows = rows.filter((player) => watchSet.has(player.id))
+    if (scope === 'affordable') rows = rows.filter((player) => !holdingsSet.has(player.id) && player.current_value <= availableCash && canBuyPosition(player.position, formation))
+
     rows.sort((a, b) => {
       switch (sortKey) {
         case 'value-asc':
@@ -111,12 +119,18 @@ export function PlayerMarketBrowser({
     })
 
     return rows
-  }, [players, search, position, competition, club, trend, priceRange, sortKey])
+  }, [players, search, position, competition, club, trend, priceRange, scope, sortKey, holdingsSet, watchSet, availableCash, formation])
   const visiblePlayers = useMemo(() => filtered.slice(0, visibleCount), [filtered, visibleCount])
 
   function resetCatalogueWindow() {
     setVisibleCount(PLAYER_PAGE_SIZE)
   }
+
+  useEffect(() => {
+    if (!notice) return
+    const timeout = window.setTimeout(() => setNotice(null), 5000)
+    return () => window.clearTimeout(timeout)
+  }, [notice])
 
   async function handleBuy(player: MarketPlayer, requestKey: string) {
     setBusyId(player.id)
@@ -204,7 +218,25 @@ export function PlayerMarketBrowser({
           availableCash={availableCash}
         />
 
-        <div className="mt-5 grid gap-3 md:grid-cols-2 lg:grid-cols-7">
+        <div className="relative mt-3 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-emerald-900/10 bg-white/75 px-4 py-3 shadow-sm">
+          <div className="flex items-start gap-2">
+            {openSlots === 0 ? <CheckCircle2 className="mt-0.5 size-4 text-emerald-700" aria-hidden="true" /> : <Sparkles className="mt-0.5 size-4 text-amber-600" aria-hidden="true" />}
+            <div>
+              <p className="text-xs font-black text-slate-900">{openSlots === 0 ? 'Squad complete' : `Next move: add a ${nextPosition}`}</p>
+              <p className="mt-0.5 text-[11px] text-slate-600">{openSlots === 0 ? 'Review value movement or replace a holding.' : `${openSlots} places open · ${formatFiqCompact(Math.floor(availableCash / openSlots))} average budget per open place.`}</p>
+            </div>
+          </div>
+          <Link href="/market/portfolio" className="text-xs font-black text-emerald-800 underline decoration-emerald-300 underline-offset-4">Review squad plan</Link>
+        </div>
+
+        <div className="mt-5 flex flex-wrap gap-2" aria-label="Catalogue views">
+          <ScopeButton active={scope === 'all'} onClick={() => { setScope('all'); resetCatalogueWindow() }}>All players</ScopeButton>
+          <ScopeButton active={scope === 'squad'} onClick={() => { setScope('squad'); resetCatalogueWindow() }}>My squad · {holdings.length}</ScopeButton>
+          <ScopeButton active={scope === 'watchlist'} onClick={() => { setScope('watchlist'); resetCatalogueWindow() }}>Watchlist · {watchlist.length}</ScopeButton>
+          <ScopeButton active={scope === 'affordable'} onClick={() => { setScope('affordable'); resetCatalogueWindow() }}>Affordable fits</ScopeButton>
+        </div>
+
+        <div className="mt-3 grid gap-3 md:grid-cols-2 lg:grid-cols-7">
           <label className="lg:col-span-2">
             <span className="mb-1 block text-xs text-muted-foreground">Search</span>
             <div className="flex items-center rounded-xl border border-border bg-background px-3">
@@ -242,6 +274,7 @@ export function PlayerMarketBrowser({
               setTrend('all')
               setPriceRange('all')
               setSortKey('value-desc')
+              setScope('all')
               resetCatalogueWindow()
             }}
             className="min-h-11 rounded-xl border border-border px-3 py-2 text-sm font-semibold"
@@ -250,7 +283,6 @@ export function PlayerMarketBrowser({
           </button>
         </div>
         <p className="mt-2 text-xs text-muted-foreground">Portfolio occupancy: {holdings.length}/{MARKET_MAX_PORTFOLIO_SIZE} holdings.</p>
-        {notice ? <Notice kind={notice.kind} message={notice.message} /> : null}
       </section>
 
       <section className="rounded-[2rem] border border-emerald-900/10 bg-emerald-950/[.035] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,.85)] sm:p-6">
@@ -391,6 +423,7 @@ export function PlayerMarketBrowser({
           }}
         />
       ) : null}
+      {notice ? <Notice kind={notice.kind} message={notice.message} onDismiss={() => setNotice(null)} /> : null}
     </div>
   )
 }
@@ -536,7 +569,7 @@ function MarketStatus({ label, value, note }: { label: string; value: string; no
   )
 }
 
-function Notice({ kind, message }: { kind: 'success' | 'error' | 'info'; message: string }) {
+function Notice({ kind, message, onDismiss }: { kind: 'success' | 'error' | 'info'; message: string; onDismiss: () => void }) {
   const className = kind === 'success'
     ? 'border-primary/35 bg-primary/10 text-primary'
     : kind === 'error'
@@ -547,7 +580,16 @@ function Notice({ kind, message }: { kind: 'success' | 'error' | 'info'; message
     : kind === 'error'
       ? <Shield className="size-3.5" />
       : <Clock3 className="size-3.5" />
-  return <p role={kind === 'error' ? 'alert' : 'status'} aria-live={kind === 'error' ? 'assertive' : 'polite'} className={`mt-3 inline-flex items-center gap-2 rounded-lg border px-2.5 py-1.5 text-xs ${className}`}>{icon}{message}</p>
+  return (
+    <div role={kind === 'error' ? 'alert' : 'status'} aria-live={kind === 'error' ? 'assertive' : 'polite'} className={`fixed inset-x-4 bottom-4 z-[80] mx-auto flex max-w-md items-center gap-3 rounded-2xl border px-4 py-3 text-sm font-semibold shadow-2xl backdrop-blur sm:inset-x-auto sm:right-5 ${className}`}>
+      {icon}<span className="flex-1">{message}</span>
+      <button type="button" onClick={onDismiss} aria-label="Dismiss message" className="rounded-lg p-1 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-current"><X className="size-4" /></button>
+    </div>
+  )
+}
+
+function ScopeButton({ active, onClick, children }: { active: boolean; onClick: () => void; children: ReactNode }) {
+  return <button type="button" aria-pressed={active} onClick={onClick} className={`min-h-10 rounded-full border px-3 py-2 text-xs font-black transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-700 ${active ? 'border-emerald-800 bg-emerald-900 text-white shadow-sm' : 'border-emerald-900/15 bg-white/70 text-emerald-950 hover:bg-emerald-50'}`}>{children}</button>
 }
 
 function FilterSelect({ label, value, onChange, options }: { label: string; value: string; onChange: (value: string) => void; options: string[] }) {
