@@ -28,10 +28,25 @@ type SavedDuelProgress = {
   timeLeft: number
 }
 
-function shuffledQuestions(questions: DuelQuestion[]) {
-  return [...questions]
-    .sort(() => Math.random() - 0.5)
-    .map((question) => Math.random() > 0.5 ? question : { left: question.right, right: question.left })
+function stableSeed(value: string) {
+  let seed = 2166136261
+  for (const character of value) seed = Math.imul(seed ^ character.charCodeAt(0), 16777619)
+  return seed >>> 0
+}
+
+function shuffledQuestions(questions: DuelQuestion[], seed = Math.floor(Math.random() * 0xffffffff)) {
+  const copy = [...questions]
+  let value = seed || 1
+  const random = () => {
+    value = Math.imul(value ^ (value >>> 15), 1 | value)
+    value ^= value + Math.imul(value ^ (value >>> 7), 61 | value)
+    return ((value ^ (value >>> 14)) >>> 0) / 4294967296
+  }
+  for (let index = copy.length - 1; index > 0; index -= 1) {
+    const randomIndex = Math.floor(random() * (index + 1))
+    ;[copy[index], copy[randomIndex]] = [copy[randomIndex], copy[index]]
+  }
+  return copy.map((question) => random() > 0.5 ? question : { left: question.right, right: question.left })
 }
 
 function correctChoice(question: DuelQuestion): Choice {
@@ -51,7 +66,9 @@ function gradeFor(score: number, total: number) {
 export function DuelQuiz({ pack, onComplete }: { pack: DuelPack; onComplete?: (packId: string, score: number) => void }) {
   const { user, profile, refreshProfile } = useAuth()
   const progressQuizId = `duel-progress-${pack.id}`
-  const [questions, setQuestions] = useState(() => shuffledQuestions(pack.questions))
+  // A deterministic first deck prevents a server/client hydration mismatch.
+  // Restart actions below still produce a fresh randomized deck.
+  const [questions, setQuestions] = useState(() => shuffledQuestions(pack.questions, stableSeed(pack.id)))
   const [index, setIndex] = useState(0)
   const [selected, setSelected] = useState<Choice | 'timeout' | null>(null)
   const [score, setScore] = useState(0)

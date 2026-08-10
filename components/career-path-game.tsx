@@ -26,7 +26,9 @@ export function CareerPathGame() {
   const [saved, setSaved] = useState(false)
   const [saving, setSaving] = useState(false)
   const [runKey, setRunKey] = useState(() => createCompletionRunId())
-  const [shuffleSeed, setShuffleSeed] = useState(() => Date.now() % 233280)
+  // Keep SSR and the first browser render identical; replay still creates a
+  // fresh seed after hydration.
+  const [shuffleSeed, setShuffleSeed] = useState(92731)
   const initialShuffleSeed = useRef(shuffleSeed)
   const [resumeState, setResumeState] = useState<{ index: number; selected: string | null; score: number; shuffleSeed: number } | null>(null)
   const [checkingProgress, setCheckingProgress] = useState(Boolean(user))

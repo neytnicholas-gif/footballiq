@@ -20,7 +20,9 @@ function seededShuffle<T>(items: T[], seed: number) {
 
 export function HigherLowerGame() {
   const { user, refreshProfile } = useAuth()
-  const [deckSeed, setDeckSeed] = useState(() => Date.now() % 233280)
+  // The first server and browser render must use the same deck. New runs are
+  // randomized by resetGame after hydration.
+  const [deckSeed, setDeckSeed] = useState(48157)
   const initialDeckSeed = useRef(deckSeed)
   const deck = useMemo(() => seededShuffle(higherLowerItems, deckSeed), [deckSeed])
   const [index, setIndex] = useState(1)
