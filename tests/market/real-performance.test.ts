@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { auditMarketCoverage, type CoveragePlayer } from '@/lib/market/dataset-coverage'
 import { validatePerformanceImport, type PerformanceImport, type ValidatedPerformance } from '@/lib/market/performance-ingestion'
-import { calculateOpeningGameplayValue, calculatePerformanceValueUpdate, calculateRollingRating, VALUE_CEILING, VALUE_FLOOR } from '@/lib/market/real-valuation'
+import { calculateBankedPerformanceMovement, calculateOpeningGameplayValue, calculatePerformanceValueUpdate, calculateRollingRating, VALUE_CEILING, VALUE_FLOOR } from '@/lib/market/real-valuation'
 
 function importFixture(overrides: Partial<PerformanceImport['fixture']> = {}, appearanceOverrides: Partial<PerformanceImport['appearances'][number]> = {}): PerformanceImport {
   return {
@@ -72,6 +72,25 @@ describe('rolling performance and value controls', () => {
     expect(calculatePerformanceValueUpdate({ position: 'FWD', currentValue: 10_000_000, rollingWeekMovement: 500_000, performances: [strong] })!.movement).toBe(100_000)
     expect(calculatePerformanceValueUpdate({ position: 'GK', currentValue: VALUE_FLOOR, rollingWeekMovement: 0, performances: [weak] })!.newValue).toBe(VALUE_FLOOR)
     expect(calculatePerformanceValueUpdate({ position: 'FWD', currentValue: VALUE_CEILING, rollingWeekMovement: 0, performances: [strong] })!.newValue).toBe(VALUE_CEILING)
+  })
+
+  it('banks sub-threshold signals until they produce a full price step', () => {
+    const first = calculateBankedPerformanceMovement({ ratingDeltaMilli: 100, previousBankMilli: 0, rollingWeekMovement: 0, currentValue: 8_000_000 })
+    expect(first).toMatchObject({ movement: 0, newValue: 8_000_000, bankAfterEventMilli: 100 })
+
+    const second = calculateBankedPerformanceMovement({ ratingDeltaMilli: 100, previousBankMilli: first.bankAfterEventMilli, rollingWeekMovement: 0, currentValue: first.newValue })
+    expect(second).toMatchObject({ movement: 0, newValue: 8_000_000, bankAfterEventMilli: 200 })
+
+    const third = calculateBankedPerformanceMovement({ ratingDeltaMilli: 100, previousBankMilli: second.bankAfterEventMilli, rollingWeekMovement: 0, currentValue: second.newValue })
+    expect(third).toMatchObject({ movement: 100_000, newValue: 8_100_000, bankAfterEventMilli: 80 })
+  })
+
+  it('carries negative residuals and movement blocked by a weekly cap', () => {
+    const falling = calculateBankedPerformanceMovement({ ratingDeltaMilli: -140, previousBankMilli: -100, rollingWeekMovement: 0, currentValue: 8_000_000 })
+    expect(falling).toMatchObject({ movement: -100_000, newValue: 7_900_000, bankAfterEventMilli: -20 })
+
+    const capped = calculateBankedPerformanceMovement({ ratingDeltaMilli: 440, previousBankMilli: 0, rollingWeekMovement: 600_000, currentValue: 8_000_000 })
+    expect(capped).toMatchObject({ movement: 0, newValue: 8_000_000, bankAfterEventMilli: 440 })
   })
 
   it('assigns opening values from FootballIQ inputs in 0.1m increments', () => {

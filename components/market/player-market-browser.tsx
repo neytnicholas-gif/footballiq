@@ -428,7 +428,7 @@ function MarketRosterBoard({
   }), [holdingsByPosition])
 
   return (
-    <section aria-labelledby="live-roster-title" className="relative mt-5 overflow-hidden rounded-2xl border border-emerald-900/15 bg-emerald-950 p-3 text-white shadow-[0_18px_45px_-35px_rgba(6,78,59,.9)]">
+    <section id="live-roster" aria-labelledby="live-roster-title" className="relative mt-5 scroll-mt-24 overflow-hidden rounded-2xl border border-emerald-900/15 bg-emerald-950 p-3 text-white shadow-[0_18px_45px_-35px_rgba(6,78,59,.9)]">
       <div className="flex items-center justify-between gap-3 px-1 pb-2">
         <div className="flex items-center gap-2">
           <Users className="size-4 text-emerald-200" aria-hidden="true" />
@@ -452,6 +452,7 @@ function MarketRosterBoard({
             >
               <span className="block text-[9px] font-black uppercase tracking-wide text-emerald-200">{position}</span>
               <span className="mt-1 block truncate text-[11px] font-bold text-white">{player.display_name}</span>
+              <RosterMovement player={player} />
             </Link>
           ) : (
             <div key={`${position}-${index}`} className="min-w-0 rounded-xl border border-dashed border-white/15 bg-black/10 px-2 py-2 text-center">
@@ -464,6 +465,20 @@ function MarketRosterBoard({
         </div>
       </div>
     </section>
+  )
+}
+
+function RosterMovement({ player }: { player: MarketPlayer }) {
+  const movement = player.current_value - player.opening_season_value
+  if (movement === 0) {
+    return <span className="mt-1 block truncate text-[9px] font-semibold text-emerald-100/60">Opening value</span>
+  }
+
+  const rising = movement > 0
+  return (
+    <span className={`mt-1 block truncate text-[9px] font-black ${rising ? 'text-emerald-200' : 'text-rose-200'}`}>
+      {rising ? '+' : '-'}{formatFiqCompact(Math.abs(movement))} since start
+    </span>
   )
 }
 

@@ -113,7 +113,7 @@ export function PlayerMarketDetail({
               <p className="mt-1 text-sm text-muted-foreground">{player.club_name} · {player.position}{player.nationality ? ` · ${player.nationality}` : ''}</p>
             </div>
           </div>
-          <Link href="/market/players" className="rounded-xl border border-border px-4 py-2 text-sm font-semibold">Return to market</Link>
+          <Link href="/market/players#live-roster" className="rounded-xl border border-border px-4 py-2 text-sm font-semibold transition hover:bg-emerald-950 hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-700">Back to roster</Link>
         </div>
 
         <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">

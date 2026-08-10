@@ -158,6 +158,15 @@ describe('Player Market launch gates', () => {
     expect(browser).toContain("{ position: 'MID', label: 'Midfielders', slots: 3 }")
     expect(browser).toContain("{ position: 'FWD', label: 'Forwards', slots: 3 }")
     expect(browser).toContain('min-w-[880px] grid-cols-11')
+    expect(browser).toContain('id="live-roster"')
+    expect(browser).toContain('player.current_value - player.opening_season_value')
+    expect(browser).toContain('Opening value')
     expect(browser.indexOf('<MarketRosterBoard')).toBeLessThan(browser.indexOf('placeholder="Player or club"'))
+  })
+
+  it('returns from a player card directly to the live roster', () => {
+    const detail = read('components/market/player-market-detail.tsx')
+    expect(detail).toContain('href="/market/players#live-roster"')
+    expect(detail).toContain('Back to roster')
   })
 })

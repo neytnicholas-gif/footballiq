@@ -9,6 +9,7 @@ const catalogueRoute = readFileSync('app/api/market/catalogue/route.ts', 'utf8')
 const priceBookGrants = readFileSync('supabase/migrations/20260809220000_grant_price_book_sources.sql', 'utf8')
 const publicCatalogue = readFileSync('supabase/migrations/20260809234500_publish_database_backed_market_catalogue.sql', 'utf8')
 const transferRollover = readFileSync('supabase/migrations/20260810144500_close_expired_transfer_gameweeks.sql', 'utf8')
+const residualBank = readFileSync('supabase/migrations/20260810170000_bank_subthreshold_market_performance.sql', 'utf8')
 const route = readFileSync('app/api/market/process-gameweek/route.ts', 'utf8')
 
 describe('verified gameweek engine', () => {
@@ -42,6 +43,14 @@ describe('verified gameweek engine', () => {
     expect(migration).toContain('600000')
     expect(migration).toContain('with totals as')
     expect(migration).not.toContain('for pf in select id from public.market_portfolios')
+  })
+
+  it('banks sub-threshold verified rating signals without losing them', () => {
+    expect(residualBank).toContain('bank_before:=mp.performance_bank_milli+bounded_signal')
+    expect(residualBank).toContain('available_steps:=trunc(bank_before/220.0)::integer')
+    expect(residualBank).toContain('performance_bank_milli=bank_after')
+    expect(residualBank).toContain("'fiq-real-performance-v2.1.0'")
+    expect(residualBank).toContain('on conflict(provider_fixture_id,player_id) do nothing')
   })
 
   it('uses the player price as the authoritative value in every portfolio read', () => {
