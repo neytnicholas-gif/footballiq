@@ -61,7 +61,7 @@ export function PlayerMarketBrowser({
   const openSlots = MARKET_MAX_PORTFOLIO_SIZE - holdings.length
   const nextPosition = formation.GK < 1 ? 'GK' : formation.DEF < 4 ? 'DEF' : formation.MID < 3 ? 'MID' : formation.FWD < 3 ? 'FWD' : null
   const marketHasMoved = useMemo(() => players.some((player) => player.current_value !== player.opening_season_value), [players])
-  const previewExperimentActive = useMemo(() => players.some((player) => player.data_source_label.includes('preview valuation experiment')), [players])
+  const previewExperimentActive = useMemo(() => players.some((player) => player.data_source_label?.includes('preview valuation experiment')), [players])
   const filtered = useMemo(() => {
     let rows = [...players]
 
@@ -189,7 +189,7 @@ export function PlayerMarketBrowser({
             <p className="text-[10px] text-slate-500">{userSignedIn ? 'Account portfolio' : 'Saved on this device'}</p>
           </div>
         </div>
-        {players[0]?.data_source_label.includes('Sportmonks') || previewExperimentActive ? (
+        {players[0]?.data_source_label?.includes('Sportmonks') || previewExperimentActive ? (
           <div className="relative mt-4 rounded-2xl border border-emerald-700/20 bg-emerald-950/[.055] px-4 py-3 text-sm">
             <p className="font-bold text-emerald-900">{previewExperimentActive ? 'Controlled preview valuation experiment' : `Verified ${liveCompetitionLabel} market · ${players.length} players live`}</p>
             <p className="mt-1 text-xs text-slate-600">Player identities and current squads come from Sportmonks. These are FootballIQ game prices—not real transfer values. {previewExperimentActive ? 'Eleven selected players use clearly labelled test ratings and minutes to prove the value engine before completed 2026/27 fixtures arrive.' : marketHasMoved ? 'Price movement is calculated from verified completed-fixture ratings and minutes.' : 'Opening prices stay fixed until verified ratings and minutes trigger transparent movement.'}</p>

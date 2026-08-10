@@ -35,8 +35,8 @@ export function PlayerMarketHome() {
   const [tradesMessage, setTradesMessage] = useState('')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
-  const previewExperimentActive = useMemo(() => players.some((player) => player.data_source_label.includes('preview valuation experiment')), [players])
-  const previewPlayers = useMemo(() => players.filter((player) => player.data_source_label.includes('preview valuation experiment')), [players])
+  const previewExperimentActive = useMemo(() => players.some((player) => player.data_source_label?.includes('preview valuation experiment')), [players])
+  const previewPlayers = useMemo(() => players.filter((player) => player.data_source_label?.includes('preview valuation experiment')), [players])
   const previewBefore = useMemo(() => previewPlayers.reduce((total, player) => total + player.previous_value, 0), [previewPlayers])
   const previewAfter = useMemo(() => previewPlayers.reduce((total, player) => total + player.current_value, 0), [previewPlayers])
 

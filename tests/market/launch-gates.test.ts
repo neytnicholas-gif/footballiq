@@ -193,4 +193,10 @@ describe('Player Market launch gates', () => {
     expect(browser).toContain('fixed inset-x-4 bottom-4')
     expect(browser).toContain('aria-label="Dismiss message"')
   })
+
+  it('tolerates catalogue rows without an optional provider label', () => {
+    const market = `${read('components/market/player-market-browser.tsx')}\n${read('components/market/player-market-home.tsx')}`
+    expect(market).not.toContain('data_source_label.includes(')
+    expect(market).toContain("data_source_label?.includes('preview valuation experiment')")
+  })
 })
