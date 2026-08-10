@@ -117,8 +117,9 @@ export function PlayerMarketDetail({
           <Link href="/market/portfolio" className="rounded-xl border border-emerald-800 bg-emerald-950 px-4 py-2 text-sm font-bold text-white shadow-sm transition hover:bg-emerald-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-700">Back to full roster</Link>
         </div>
 
-        <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
           <Metric label="Current value" value={formatFiqCompact(player.current_value)} />
+          <Metric label="Picked by" value={`${(player.ownership_percentage ?? 0).toFixed(1)}% of teams`} />
           <Metric label="Previous value" value={formatFiqCompact(player.previous_value)} />
           <Metric label="Opening value" value={formatFiqCompact(player.opening_season_value)} />
           <Metric label="Movement" value={`${trend >= 0 ? '+' : ''}${formatFiqCompact(Math.abs(trend))}`} tone={trend >= 0 ? 'positive' : 'negative'} />

@@ -19,6 +19,7 @@ type PublicCatalogueRow = {
   nationality: string | null
   opening_price_minor: number
   current_price_minor: number
+  ownership_percentage: number | string | null
   previous_price_minor: number
   latest_rating_milli: number | null
   availability_status: MarketPlayer['availability_status']
@@ -29,7 +30,7 @@ type PublicCataloguePlayer = Pick<MarketPlayer,
   | 'id' | 'slug' | 'display_name' | 'club_name' | 'competition_key'
   | 'competition_name' | 'position' | 'age' | 'nationality'
   | 'opening_season_value' | 'current_value' | 'previous_value'
-  | 'value_updated_at' | 'availability_status' | 'recent_form_indicator'
+  | 'ownership_percentage' | 'value_updated_at' | 'availability_status' | 'recent_form_indicator'
 >
 
 const SUPPORTED_COMPETITIONS = ['premier-league', 'la-liga', 'ligue-1'] as const
@@ -67,6 +68,7 @@ async function loadAuthoritativeCatalogue(competition: string | null) {
       nationality: row.nationality,
       opening_season_value: Number(row.opening_price_minor),
       current_value: currentValue,
+      ownership_percentage: Math.max(0, Math.min(100, Number(row.ownership_percentage ?? 0))),
       previous_value: previousValue,
       value_updated_at: row.data_updated_at,
       availability_status: row.availability_status ?? 'available',

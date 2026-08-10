@@ -325,6 +325,7 @@ export function PlayerMarketBrowser({
 
                 <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
                   <InfoCell label="Current value" value={formatFiqCompact(player.current_value)} strong />
+                  <InfoCell label="Picked by" value={`${(player.ownership_percentage ?? 0).toFixed(1)}% of teams`} />
                   <InfoCell label="Value move" value={`${trendDelta >= 0 ? '+' : ''}${formatFiqCompact(Math.abs(trendDelta))} (${trendPct >= 0 ? '+' : ''}${trendPct.toFixed(2)}%)`} tone={trendDelta >= 0 ? 'up' : 'down'} />
                   <InfoCell label="Age" value={player.age ? String(player.age) : 'N/A'} />
                   <InfoCell label="Latest minutes" value={String(latestPerformance?.minutes ?? stat?.minutes ?? 'N/A')} />

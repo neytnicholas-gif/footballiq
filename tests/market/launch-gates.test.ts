@@ -21,6 +21,25 @@ describe('Player Market launch gates', () => {
     expect(route).toContain("'Retry-After': '30'")
   })
 
+  it('publishes a cached, privacy-safe player ownership percentage', () => {
+    const sql = read('supabase/migrations/20260810200000_publish_market_ownership_percentage.sql')
+    const route = read('app/api/market/catalogue/route.ts')
+    const browser = read('components/market/player-market-browser.tsx')
+    const detail = read('components/market/player-market-detail.tsx')
+    expect(sql).toContain('count(distinct portfolio.user_id)')
+    expect(sql).toContain('security definer')
+    expect(sql).toContain('no identities or raw totals')
+    expect(route).toContain('ownership_percentage')
+    expect(browser).toContain('% of teams')
+    expect(detail).toContain('% of teams')
+  })
+
+  it('runs server work close to the database with Fluid Compute enabled', () => {
+    const config = read('vercel.json')
+    expect(config).toContain('"fluid": true')
+    expect(config).toContain('"dub1"')
+  })
+
   it('publishes only verified database catalogue rows and removes broad public writes', () => {
     const sql = read('supabase/migrations/20260809234500_publish_database_backed_market_catalogue.sql')
     expect(sql).toContain('market_public_catalogue_v1')

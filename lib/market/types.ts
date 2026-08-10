@@ -19,6 +19,7 @@ export type MarketPlayer = {
   nationality: string | null
   active: boolean
   current_value: number
+  ownership_percentage?: number
   previous_value: number
   opening_season_value: number
   value_updated_at: string

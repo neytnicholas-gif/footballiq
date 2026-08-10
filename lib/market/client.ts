@@ -79,7 +79,7 @@ type PublicCataloguePlayer = Pick<MarketPlayer,
   | 'id' | 'slug' | 'display_name' | 'club_name' | 'competition_key'
   | 'competition_name' | 'position' | 'age' | 'nationality'
   | 'opening_season_value' | 'current_value' | 'previous_value'
-  | 'value_updated_at' | 'availability_status' | 'recent_form_indicator'
+  | 'ownership_percentage' | 'value_updated_at' | 'availability_status' | 'recent_form_indicator'
 >
 
 function hydratePublicCataloguePlayer(player: PublicCataloguePlayer): MarketPlayer {
