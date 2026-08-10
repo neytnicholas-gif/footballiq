@@ -107,7 +107,7 @@ export default function BetaPage() {
             <SurfaceCard className="p-6">
               <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-primary"><MessageSquareText className="size-4" /> Your role</p>
               <h2 className="mt-2 text-2xl font-black tracking-tight">Play honestly. Tell us everything.</h2>
-              <p className="mt-3 text-sm leading-relaxed text-muted-foreground">Try building an 11-player squad, complete the judgement games, return after value updates and tell us where anything is confusing, slow or unfair.</p>
+              <p className="mt-3 text-sm leading-relaxed text-muted-foreground">Build an 11-player team, play the free games and come back after prices change. Tell us if anything is confusing, slow or unfair.</p>
               <a href={feedbackHref} className="mt-5 inline-flex min-h-11 items-center rounded-xl border border-border bg-background px-4 py-2.5 text-sm font-semibold transition hover:border-primary/40">Send beta feedback</a>
             </SurfaceCard>
 

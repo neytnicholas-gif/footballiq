@@ -374,13 +374,13 @@ export function ScoutVisionGame() {
                     <X className="mt-0.5 size-4 shrink-0 text-destructive" />
                   )}
                   <span>
-                    <strong className="text-foreground">Interpretation:</strong> {scenario.rationale.interpretation}
+                    <strong className="text-foreground">What it means:</strong> {scenario.rationale.interpretation}
                   </span>
                 </p>
                 <p className="flex items-start gap-2">
                   <TriangleAlert className="mt-0.5 size-4 shrink-0 text-amber-300" />
                   <span>
-                    <strong className="text-foreground">Missing information:</strong> {scenario.rationale.missing}
+                    <strong className="text-foreground">What we still need to know:</strong> {scenario.rationale.missing}
                   </span>
                 </p>
               </div>

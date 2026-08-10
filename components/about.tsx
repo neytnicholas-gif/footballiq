@@ -21,7 +21,7 @@ export function About() {
             <p className="mt-5 text-pretty leading-relaxed text-muted-foreground">
               FootballIQ is an educational football platform built for people who want to
               understand the game better. Through short decision quizzes, football analysis and
-              community voting, users can test their judgement and improve how they read match
+              community voting, players can test what they know and get better at reading match
               situations.
             </p>
           </Reveal>

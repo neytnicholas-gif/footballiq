@@ -9,38 +9,38 @@ import { getRankProgress } from '@/lib/progression'
 const featuredModes = [
   {
     title: 'Tactical Lab',
-    description: 'Solve build-up, pressing, transition and game-state problems, then learn the principle behind each choice.',
+    description: 'Look at what is happening in the match. Pick what your team should do next.',
     href: '/quizzes/tactical-lab',
     icon: Workflow,
     tag: 'Tactical decisions',
   },
   {
     title: 'Referee Arena',
-    description: 'Read each incident, commit to a call, and get immediate law-based feedback.',
+    description: 'Read what happened. Make the referee’s call. Then see the right answer.',
     href: '/quizzes/referee-decisions',
     icon: ShieldCheck,
-    tag: 'Flagship judgement',
+    tag: 'Referee choices',
   },
   {
     title: 'Scout Vision',
-    description: 'Judge dossiers and decide if the evidence is strong enough to act on.',
+    description: 'Read about a player. Decide if your club should keep watching or walk away.',
     href: '/quizzes/would-you-scout-him',
     icon: Radar,
-    tag: 'Talent ID',
+    tag: 'Find talent',
   },
   {
     title: 'Football Duels',
-    description: 'Fast decision rounds across football stats, memory and match context.',
+    description: 'Pick the winner in quick football stat battles.',
     href: '/quizzes/football-duels',
     icon: Trophy,
     tag: 'Quick rounds',
   },
   {
     title: 'Predictions',
-    description: 'Lock pre-match calls and build a long-term record of football intuition.',
+    description: 'Pick the home team, a draw or the away team before the match starts.',
     href: '/predictions',
     icon: Flag,
-    tag: 'Pre-kickoff calls',
+    tag: 'Pick match results',
   },
 ]
 
@@ -76,7 +76,7 @@ export default function HomePage() {
                 Train your football IQ.
               </h1>
               <p className="mt-4 max-w-lg text-base leading-relaxed text-slate-300 sm:text-lg">
-                Practise the referee, scouting and tactical decisions that separate watching the game from understanding it.
+                Make football choices, learn why they are right and get better at reading the game.
               </p>
 
               <div className="mt-7 flex flex-wrap items-center gap-3">
@@ -92,9 +92,9 @@ export default function HomePage() {
           </div>
 
           <div className="grid gap-3 rounded-3xl border border-white/10 bg-[#0a1422]/90 p-4 sm:grid-cols-2 sm:p-5 lg:grid-cols-1">
-            <HeroMetric label="Primary skill" value="Decision making" hint="Referee and scouting judgement" />
+            <HeroMetric label="What you learn" value="Better choices" hint="Referee, scout and coach games" />
             <HeroMetric label="Daily format" value="5 questions" hint="One challenge per day" />
-            <HeroMetric label="Progress loop" value="XP + rank" hint="Real profile progression" />
+            <HeroMetric label="Your progress" value="XP + rank" hint="See yourself improve" />
           </div>
         </section>
 
@@ -102,7 +102,7 @@ export default function HomePage() {
           <div className="flex flex-wrap items-end justify-between gap-3">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.2em] text-emerald-300">Featured experiences</p>
-              <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-100 sm:text-3xl">Knowledge is the start. Judgement is the test.</h2>
+              <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-100 sm:text-3xl">Pick a game and have a go.</h2>
             </div>
             <Link href="/quizzes" className="text-sm font-semibold text-emerald-300 transition hover:text-emerald-200">See all games</Link>
           </div>
@@ -132,10 +132,10 @@ export default function HomePage() {
               <div>
                 <p className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-emerald-300">
                   <CalendarDays className="size-4" />
-                  Daily + progression
+                  Play every day
                 </p>
-                <h2 className="mt-3 text-2xl font-black tracking-tight text-slate-100">Return each day. Keep your level moving.</h2>
-                <p className="mt-2 max-w-xl text-sm leading-relaxed text-slate-300">Daily Challenge gives one shared run each day, while XP, rank and streak track real profile progress.</p>
+                <h2 className="mt-3 text-2xl font-black tracking-tight text-slate-100">Come back tomorrow and keep your streak.</h2>
+                <p className="mt-2 max-w-xl text-sm leading-relaxed text-slate-300">Answer five questions each day. You earn XP and your streak grows when you return.</p>
                 <Link href="/daily" className="mt-4 inline-flex h-10 items-center rounded-xl bg-emerald-400 px-4 text-sm font-semibold text-slate-950 transition hover:bg-emerald-300">Play Daily Challenge</Link>
               </div>
               <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-1">

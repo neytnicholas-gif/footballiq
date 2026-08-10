@@ -85,10 +85,10 @@ export function RefereeDecisionQuiz() {
           Referee mode
         </span>
         <h2 className="mt-3 text-balance text-3xl font-semibold tracking-tight sm:text-4xl">
-          Text scenarios that already feel like a game
+          Read it. Make the call. Learn the rule.
         </h2>
         <p className="mt-4 text-pretty text-muted-foreground">
-          No clips needed yet. Read the situation, make the decision, learn the law and build your FootballIQ rating.
+          Read what happened and choose an answer. We show the right call and explain the rule.
         </p>
       </Reveal>
 
@@ -154,10 +154,10 @@ export function RefereeDecisionQuiz() {
                   </span>
                   <div>
                     <p className="font-semibold tracking-tight">
-                      {isCorrect ? 'Correct decision.' : 'Not the best decision.'} Answer: {scenario.answer}
+                      {isCorrect ? 'Correct!' : 'Not quite.'} The answer is: {scenario.answer}
                     </p>
                     <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{scenario.explanation}</p>
-                    <p className="mt-2 text-sm leading-relaxed text-muted-foreground"><strong className="text-foreground">Law principle:</strong> {scenario.principle}</p>
+                    <p className="mt-2 text-sm leading-relaxed text-muted-foreground"><strong className="text-foreground">The rule:</strong> {scenario.principle}</p>
                   </div>
                 </div>
                 <div className="mt-5 flex justify-end">
@@ -217,7 +217,7 @@ export function RefereeDecisionQuiz() {
             <Trophy className="size-6 text-primary" />
             <h3 className="mt-3 font-semibold tracking-tight">Daily Challenge idea</h3>
             <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-              One scenario per day. Everyone gets the same question. Keep your streak alive and compare the community vote.
+              One question each day. Everyone gets the same one. Come back tomorrow to keep your streak.
             </p>
           </div>
         </aside>

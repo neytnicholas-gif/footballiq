@@ -33,11 +33,11 @@ export function ScoutGame() {
 
   const verdict = useMemo(() => {
     if (!selected) return null
-    if (selected === dossier.strongestDecision) return { label: 'Best-supported recommendation', tone: 'good', points: 2 }
+    if (selected === dossier.strongestDecision) return { label: 'Best choice for these player notes', tone: 'good', points: 2 }
     if (dossier.defensibleAlternative && selected === dossier.defensibleAlternative) {
       return { label: 'Defensible alternative', tone: 'ok', points: 1 }
     }
-    return { label: 'Weaker recommendation for this evidence set', tone: 'risk', points: 0 }
+    return { label: 'The player notes point to a better choice', tone: 'risk', points: 0 }
   }, [selected, dossier])
 
   useEffect(() => {
@@ -169,7 +169,7 @@ export function ScoutGame() {
           </div>
 
           <div className="rounded-2xl border border-border bg-background/60 p-5">
-            <p className="text-xs font-semibold uppercase tracking-[.2em] text-primary">Your recommendation</p>
+            <p className="text-xs font-semibold uppercase tracking-[.2em] text-primary">What should the club do?</p>
             <div className="mt-3 grid gap-2 sm:grid-cols-2">
               {decisionOptions.map((option) => {
                 const active = selected === option
@@ -193,7 +193,7 @@ export function ScoutGame() {
           {checkingProgress ? <div className="rounded-xl border border-border bg-background/70 p-4 text-sm text-muted-foreground">Checking saved progress…</div> : resumeState && !saved ? <div className="mb-4"><QuizProgressBanner title="Resume your quiz?" copy={`You left off at dossier ${resumeState.index + 1} of ${scoutQuestions.length}.`} onContinue={continueProgress} onStartAgain={restart} /></div> : null}
           {!selected ? (
             <div className="h-full rounded-xl border border-dashed border-border p-4 text-sm text-muted-foreground">
-              Select a scouting recommendation to reveal the structured report: observation, interpretation, strengths, concerns, missing information, and next step.
+              Choose what the club should do. Then we show what was good, what was risky and what the scout still needs to learn.
             </div>
           ) : (
             <div className="space-y-4 text-sm">
@@ -233,7 +233,7 @@ export function ScoutGame() {
 
               <div className="space-y-3">
                 <ReportItem label="Observation" text={dossier.observation} />
-                <ReportItem label="Interpretation" text={dossier.interpretation} />
+                <ReportItem label="What it means" text={dossier.interpretation} />
                 <ReportItem label="Strengths" text={dossier.strengths} />
                 <ReportItem label="Concerns" text={dossier.concerns} />
                 <ReportItem label="Missing information" text={dossier.missingInformation} />

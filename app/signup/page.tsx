@@ -96,8 +96,8 @@ export default function SignupPage() {
           <Logo />
           <div className="mt-6">
             <StatusBadge label="Join FootballIQ" tone="good" />
-            <h1 className="mt-3 text-3xl font-black tracking-tight text-foreground sm:text-4xl">Build your football intelligence profile.</h1>
-            <p className="mt-3 text-sm leading-relaxed text-muted-foreground">Create a free account to keep progression, ratings, streaks and completion history in one place.</p>
+            <h1 className="mt-3 text-3xl font-black tracking-tight text-foreground sm:text-4xl">Make your free FootballIQ account.</h1>
+            <p className="mt-3 text-sm leading-relaxed text-muted-foreground">Save your team, XP, scores and streak in one place.</p>
           </div>
           <ul className="mt-6 space-y-2 text-sm text-muted-foreground">
             <li>• Free includes the full current core gameplay</li>

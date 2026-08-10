@@ -48,7 +48,7 @@ export function RefereeDebriefExperience() {
       <header className="rounded-2xl border border-border bg-[linear-gradient(140deg,rgba(250,204,21,.2),rgba(12,16,24,.96))] p-5">
         <p className="text-xs font-semibold uppercase tracking-[0.2em] text-amber-300">Advanced Referee Debrief</p>
         <h2 className="mt-2 text-3xl font-black tracking-tight">Referee Debrief: Penalty-Area Decision</h2>
-        <p className="mt-2 text-sm text-muted-foreground">Evaluate a staged incident, commit your call, then compare with a structured law and match-control breakdown.</p>
+        <p className="mt-2 text-sm text-muted-foreground">Read the penalty-box moment, make every call, then check each answer and rule.</p>
       </header>
 
       <section className="grid gap-5 lg:grid-cols-[1.1fr_0.9fr]">
@@ -83,7 +83,7 @@ export function RefereeDebriefExperience() {
         <section className="rounded-2xl border border-amber-300/45 bg-amber-300/12 p-4">
           <p className="inline-flex items-center gap-1 text-xs font-semibold uppercase tracking-[0.18em] text-amber-200"><CheckCircle2 className="size-3.5" /> Decision reveal</p>
           <RevealRow label="Correct decision" text="Foul. Penalty kick." />
-          <RevealRow label="Law principle" text="A direct-free-kick foul inside own penalty area becomes a penalty if committed by defender against opponent." />
+          <RevealRow label="The rule" text="A direct-free-kick foul by a defender inside their own penalty area is a penalty." />
           <RevealRow label="Tempting alternative" text="No foul is incorrect because defender contact occurs on attacker path before any clean ball contact." />
           <RevealRow label="Referee positioning" text="Inside-trail angle gave referee enough depth perception to identify sweep-leg movement." />
           <RevealRow label="VAR involvement" text="Reviewable as potential penalty incident; VAR can recommend on-field review if missed." />
@@ -95,7 +95,7 @@ export function RefereeDebriefExperience() {
             <p className="font-semibold">Completion</p>
             <p className="mt-1">You earned 120 Academy XP equivalent and logged one advanced referee completion.</p>
             <p className="mt-1">Key learning point: In penalty area incidents, identify first contact and ball-contact sequence before evaluating sanction.</p>
-            <p className="mt-1">Confidence calibration: {confidenceCalibration}</p>
+            <p className="mt-1">Was your confidence right? {confidenceCalibration}</p>
           </div>
         </section>
       ) : null}

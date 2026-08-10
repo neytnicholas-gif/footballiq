@@ -28,7 +28,7 @@ export function SiteFooter() {
           <div className="max-w-xs">
             <Logo />
             <p className="mt-4 text-sm leading-relaxed text-muted-foreground">
-              Football quizzes and judgement challenges built for people who care about the details of the game.
+              Football games that help you learn, choose and test what you know.
             </p>
             <Button
               variant="outline"

@@ -122,7 +122,7 @@ export function PlayerMarketHome() {
             <p className="text-xs font-semibold uppercase tracking-[.25em] text-primary">FootballIQ flagship</p>
             <h1 className="mt-3 text-4xl font-black tracking-tight sm:text-5xl">FootballIQ Player Market</h1>
             <p className="mt-3 text-muted-foreground">
-              Build a complete 11-player 1-4-3-3 portfolio. Read movement. Time entries and exits. Prove your football judgement.
+              Build an 11-player team. Buy players before you think their game price will rise. Sell them when you want to change your team.
             </p>
           </div>
           <Link href="/market/players" className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground">
@@ -133,7 +133,7 @@ export function PlayerMarketHome() {
 
         {!onboardingDismissed ? (
           <div className="mt-5 rounded-2xl border border-primary/25 bg-primary/10 px-4 py-3 text-sm">
-            <p className="font-semibold">Build a game squad and predict which verified performances will improve FootballIQ prices.</p>
+            <p className="font-semibold">Pick players you think will play well and rise in game price.</p>
             <button
               className="mt-2 rounded-lg border border-border bg-background/60 px-3 py-1.5 text-xs font-semibold"
               onClick={() => {
@@ -183,7 +183,7 @@ export function PlayerMarketHome() {
               </Link>
             </div>
           </div>
-          {!isValidSquad ? <p className="mt-3 text-xs text-emerald-800">Build a complete 1-4-3-3 portfolio to prepare for verified matchweek updates.</p> : null}
+          {!isValidSquad ? <p className="mt-3 text-xs text-emerald-800">Finish your 1-4-3-3 team before the next price update.</p> : null}
           {latestRevealWeek ? <p className="mt-2 text-xs text-muted-foreground">Latest Reveal available: {latestRevealWeek}</p> : null}
 
           {lastRun ? (
@@ -191,7 +191,7 @@ export function PlayerMarketHome() {
               Preview history: {lastRun.week_label} · Weekly {lastRun.weekly_portfolio_gain >= 0 ? '+' : ''}{formatFiqCompact(Math.abs(lastRun.weekly_portfolio_gain))} · game return {lastRun.current_roi_pct.toFixed(2)}%. This is not a verified real-performance update.
             </div>
           ) : (
-            <div className="mt-4 rounded-xl border border-border bg-background/60 px-4 py-3 text-sm text-muted-foreground">The 2026/27 market is in its opening phase. Prices will move after the first completed fixture supplies eligible ratings and minutes.</div>
+            <div className="mt-4 rounded-xl border border-border bg-background/60 px-4 py-3 text-sm text-muted-foreground">The season has not produced a price update yet. Prices will start moving after finished matches give us player ratings and minutes.</div>
           )}
       </section>
 
@@ -208,7 +208,7 @@ export function PlayerMarketHome() {
           <div className="mt-5 grid gap-3 sm:grid-cols-3">
             <SummaryCard icon={<Coins className="size-5" />} label="Squad before" value={formatFiqCompact(previewBefore)} sub="Opening game prices" />
             <SummaryCard icon={<TrendingUp className="size-5" />} label="Squad after" value={formatFiqCompact(previewAfter)} sub="Rating + minutes applied" />
-            <SummaryCard icon={<BarChart3 className="size-5" />} label="Net movement" value={formatChange(previewAfter - previewBefore)} sub="Across rising, falling and flat outcomes" />
+            <SummaryCard icon={<BarChart3 className="size-5" />} label="Total price change" value={formatChange(previewAfter - previewBefore)} sub="Players can rise, fall or stay the same" />
           </div>
           <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
             {previewPlayers.map((player) => {
@@ -255,7 +255,7 @@ export function PlayerMarketHome() {
             <h2 className="text-xl font-bold">Current holdings</h2>
             <Link href="/market/portfolio" className="text-sm font-semibold text-primary">Open portfolio</Link>
           </div>
-          {loading ? <p className="text-sm text-muted-foreground">Loading holdings…</p> : holdings.length === 0 ? <p className="text-sm text-muted-foreground">No holdings yet. Build your first 11-player portfolio.</p> : (
+          {loading ? <p className="text-sm text-muted-foreground">Loading your players…</p> : holdings.length === 0 ? <p className="text-sm text-muted-foreground">You have no players yet. Start building your 11-player team.</p> : (
             <div className="space-y-3">
               {holdings.map((holding) => {
                 const player = players.find((candidate) => candidate.id === holding.player_id)
@@ -345,7 +345,7 @@ export function PlayerMarketHome() {
                 <p className="mt-3 font-semibold">{player.display_name}</p>
                 <p className="text-xs text-muted-foreground">{player.club_name}</p>
                 <p className="mt-2 text-sm text-primary">{formatFiqCompact(player.current_value)}</p>
-                <p className="text-xs text-muted-foreground">{owned ? 'Owned in your portfolio' : 'Open player card'}</p>
+                <p className="text-xs text-muted-foreground">{owned ? 'In your team' : 'See player details'}</p>
               </Link>
             )
           })}
@@ -354,7 +354,7 @@ export function PlayerMarketHome() {
 
       <section className="rounded-[2rem] border border-border bg-card p-6">
         <h2 className="text-xl font-bold">Supporting football modes</h2>
-        <p className="mt-2 text-sm text-muted-foreground">Player Market is now the flagship experience. Scout Vision, Referee Arena, Football Duels and Daily Challenge continue to sharpen your judgement.</p>
+        <p className="mt-2 text-sm text-muted-foreground">Build your team in Player Market, or try one of the free football games below.</p>
         <div className="mt-4 flex flex-wrap gap-3 text-sm">
           <Link href="/quizzes/would-you-scout-him" className="rounded-xl border border-border px-4 py-2">Scout Vision</Link>
           <Link href="/quizzes/referee-decisions" className="rounded-xl border border-border px-4 py-2">Referee Arena</Link>

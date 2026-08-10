@@ -11,14 +11,14 @@ const refereeQuestions = refereeScenarios
 const scoutQuestions = { length: scoutScenarioCount }
 
 const modes = [
-  { title: 'Tactical Lab', description: 'Read the game state, choose the strongest action and learn the principle behind it.', href: '/quizzes/tactical-lab', icon: Workflow, accent: 'cyan', count: `${tacticalScenarios.length} scenarios`, duration: '8–12 min', skill: 'Tactics' },
-  { title: 'Scout Vision', description: 'Evaluate player dossiers, weigh the evidence and make a recruitment call.', href: '/quizzes/would-you-scout-him', icon: Brain, accent: 'emerald', count: `${scoutQuestions.length} dossiers`, duration: '10–15 min', skill: 'Scouting' },
-  { title: 'Referee Arena', description: 'Decide fouls, sanctions and restarts, then review the law-led debrief.', href: '/quizzes/referee-decisions', icon: Flag, accent: 'amber', count: `${refereeQuestions.length} scenarios`, duration: '8–12 min', skill: 'Laws' },
+  { title: 'Tactical Lab', description: 'Look at the match and pick what your team should do next.', href: '/quizzes/tactical-lab', icon: Workflow, accent: 'cyan', count: `${tacticalScenarios.length} scenarios`, duration: '8–12 min', skill: 'Tactics' },
+  { title: 'Scout Vision', description: 'Read about a player and decide if your club should follow them.', href: '/quizzes/would-you-scout-him', icon: Brain, accent: 'emerald', count: `${scoutQuestions.length} dossiers`, duration: '10–15 min', skill: 'Scouting' },
+  { title: 'Referee Arena', description: 'Choose the foul, card or restart. Then learn the rule.', href: '/quizzes/referee-decisions', icon: Flag, accent: 'amber', count: `${refereeQuestions.length} scenarios`, duration: '8–12 min', skill: 'Laws' },
   { title: 'Football Duels', description: 'Pick winners in fast stat battles across leagues, trophies and records.', href: '/quizzes/football-duels', icon: Trophy, accent: 'blue', count: `${duelPacks.length} packs`, duration: '5–10 min', skill: 'Knowledge' },
-  { title: 'Daily Challenge', description: 'Play today’s five-question event with one account reward per Brussels day.', href: '/daily', icon: Sparkles, accent: 'amber', count: '5 questions', duration: 'Daily', skill: 'Mixed' },
+  { title: 'Daily Challenge', description: 'Answer today’s five questions and keep your streak going.', href: '/daily', icon: Sparkles, accent: 'amber', count: '5 questions', duration: 'Daily', skill: 'Mixed' },
   { title: 'Higher or Lower', description: 'Keep a streak alive by comparing one player record with the next.', href: '/quizzes/higher-or-lower', icon: TrendingUp, accent: 'rose', count: `${higherLowerItems.length} players`, duration: 'Quick run', skill: 'Stats' },
-  { title: 'Who Am I?', description: 'Reveal clues carefully and identify the hidden player before points run out.', href: '/quizzes/who-am-i', icon: Search, accent: 'violet', count: `${whoAmIQuestions.length} players`, duration: '5–10 min', skill: 'Deduction' },
-  { title: 'Career Path', description: 'Recognise a player from the sequence of clubs that shaped their career.', href: '/quizzes/career-path', icon: GitBranch, accent: 'sky', count: `${careerQuestions.length} careers`, duration: '5–10 min', skill: 'Recall' },
+  { title: 'Who Am I?', description: 'Open clues and guess the hidden player before your points run out.', href: '/quizzes/who-am-i', icon: Search, accent: 'violet', count: `${whoAmIQuestions.length} players`, duration: '5–10 min', skill: 'Deduction' },
+  { title: 'Career Path', description: 'Look at the clubs and guess which player had that career.', href: '/quizzes/career-path', icon: GitBranch, accent: 'sky', count: `${careerQuestions.length} careers`, duration: '5–10 min', skill: 'Recall' },
 ] as const
 
 const accentStyles = {
@@ -41,8 +41,8 @@ export default function QuizzesPage() {
           <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
             <div className="max-w-3xl">
               <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-[.22em] text-emerald-300"><Gamepad2 className="size-4" /> Games catalogue</p>
-              <h1 className="mt-3 text-3xl font-black tracking-tight sm:text-5xl">Choose your football challenge.</h1>
-              <p className="mt-3 max-w-2xl text-sm leading-relaxed text-slate-300 sm:text-base">Train referee, scouting and tactical judgement alongside football knowledge. Every game shown below is available now.</p>
+              <h1 className="mt-3 text-3xl font-black tracking-tight sm:text-5xl">What do you want to play?</h1>
+              <p className="mt-3 max-w-2xl text-sm leading-relaxed text-slate-300 sm:text-base">Pick any game below. They are all ready to play.</p>
             </div>
             <div className="flex gap-6 border-l border-slate-700 pl-5">
               <div><p className="text-2xl font-black text-white">{modes.length}</p><p className="text-xs text-slate-400">Playable games</p></div>
@@ -54,7 +54,7 @@ export default function QuizzesPage() {
 
       <section className="mx-auto max-w-7xl px-4 py-7 sm:px-6 sm:py-9">
         <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
-          <div><h2 className="text-xl font-bold">Available now</h2><p className="mt-1 text-sm text-slate-400">Select a card to open the full game.</p></div>
+          <div><h2 className="text-xl font-bold">Games</h2><p className="mt-1 text-sm text-slate-400">Tap a game to start.</p></div>
           <span className="rounded-lg border border-emerald-300/20 bg-emerald-300/10 px-3 py-1.5 text-xs font-semibold text-emerald-200">All systems ready</span>
         </div>
 
@@ -79,7 +79,7 @@ export default function QuizzesPage() {
         </div>
 
         <div className="mt-5 rounded-2xl border border-slate-700/70 bg-slate-900/45 p-4 text-sm leading-relaxed text-slate-400">
-          You can play anonymously. Sign in only when you want eligible progress, XP and ratings saved to your profile.
+          You can play without an account. Sign in if you want us to save your XP, scores and progress.
         </div>
       </section>
     </main>

@@ -181,12 +181,12 @@ export function PlayerMarketBrowser({
           <div>
             <p className="mb-2 inline-flex items-center gap-2 rounded-full border border-emerald-700/15 bg-emerald-900/[.06] px-3 py-1 text-[10px] font-black uppercase tracking-[.2em] text-emerald-900"><Sparkles className="size-3" /> FootballIQ Exchange</p>
             <h1 className="text-3xl font-black tracking-tight text-slate-950 sm:text-4xl">Player market</h1>
-            <p className="mt-2 max-w-2xl text-sm text-slate-600">Build your 11-player game squad. Sign players before verified performances move their FootballIQ game price.</p>
+            <p className="mt-2 max-w-2xl text-sm text-slate-600">Pick 11 players: 1 goalkeeper, 4 defenders, 3 midfielders and 3 forwards. Their game prices can change after they play.</p>
           </div>
           <div className="rounded-2xl border border-emerald-900/10 bg-white/80 px-4 py-3 shadow-sm backdrop-blur">
             <p className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[.16em] text-slate-500"><WalletCards className="size-3.5 text-emerald-700" /> Available cash</p>
             <p className="mt-1 text-xl font-black text-slate-950">{formatFiqCompact(availableCash)}</p>
-            <p className="text-[10px] text-slate-500">{userSignedIn ? 'Account portfolio' : 'Saved on this device'}</p>
+            <p className="text-[10px] text-slate-500">{userSignedIn ? 'Saved to your account' : 'Saved on this device'}</p>
           </div>
         </div>
         {players[0]?.data_source_label?.includes('Sportmonks') || previewExperimentActive ? (
@@ -198,8 +198,8 @@ export function PlayerMarketBrowser({
 
         <div className="relative mt-3 grid gap-2 sm:grid-cols-3">
           <MarketStatus label="Market phase" value={previewExperimentActive ? 'Preview experiment' : marketHasMoved ? 'Verified movement' : 'Opening prices'} note={previewExperimentActive ? '11 controlled player outcomes are active' : marketHasMoved ? 'Latest completed fixtures are priced in' : 'Trade before the first verified movement'} />
-          <MarketStatus label="Movement signal" value="Rating + minutes" note={previewExperimentActive ? 'Controlled preview evidence is labelled' : 'Real completed-fixture evidence only'} />
-          <MarketStatus label="Price protection" value="Freeze if missing" note="Never estimate or invent performance" />
+          <MarketStatus label="What changes prices" value="Rating + minutes" note={previewExperimentActive ? 'Test results are clearly marked' : 'Only finished matches count'} />
+          <MarketStatus label="Missing match data" value="Price stays the same" note="We never guess a player’s result" />
         </div>
 
         <div className="relative mt-4 grid gap-3 rounded-2xl border border-emerald-900/10 bg-white/65 p-3 text-sm backdrop-blur sm:grid-cols-2 lg:grid-cols-6">
@@ -226,7 +226,7 @@ export function PlayerMarketBrowser({
               <p className="mt-0.5 text-[11px] text-slate-600">{openSlots === 0 ? 'Review value movement or replace a holding.' : `${openSlots} places open · ${formatFiqCompact(Math.floor(availableCash / openSlots))} average budget per open place.`}</p>
             </div>
           </div>
-          <Link href="/market/portfolio" className="text-xs font-black text-emerald-800 underline decoration-emerald-300 underline-offset-4">Review squad plan</Link>
+          <Link href="/market/portfolio" className="text-xs font-black text-emerald-800 underline decoration-emerald-300 underline-offset-4">See your full team</Link>
         </div>
 
         <div className="mt-5 flex flex-wrap gap-2" aria-label="Catalogue views">
@@ -282,7 +282,7 @@ export function PlayerMarketBrowser({
             Clear filters
           </button>
         </div>
-        <p className="mt-2 text-xs text-muted-foreground">Portfolio occupancy: {holdings.length}/{MARKET_MAX_PORTFOLIO_SIZE} holdings.</p>
+        <p className="mt-2 text-xs text-muted-foreground">Your team has {holdings.length} of {MARKET_MAX_PORTFOLIO_SIZE} players.</p>
       </section>
 
       <section className="rounded-[2rem] border border-emerald-900/10 bg-emerald-950/[.035] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,.85)] sm:p-6">
@@ -333,11 +333,11 @@ export function PlayerMarketBrowser({
                 </div>
 
                 <p className="mt-2 text-xs text-muted-foreground">
-                  {player.decision_support_note ?? 'Use verified recent movement and minutes to assess this game selection.'}
+                  {player.decision_support_note ?? 'Check the player’s recent price and minutes before you buy.'}
                 </p>
 
                 <div className="mt-3 rounded-xl border border-emerald-900/10 bg-emerald-950/[.04] px-3 py-2">
-                  <p className="mb-2 text-[10px] uppercase tracking-[.18em] text-muted-foreground">Recorded value movement</p>
+                  <p className="mb-2 text-[10px] uppercase tracking-[.18em] text-muted-foreground">Price change</p>
                   <Sparkline points={[player.previous_value, player.current_value]} positive={trendDelta >= 0} label={`${player.display_name} value trend: ${trendDelta > 0 ? 'rising' : trendDelta < 0 ? 'falling' : 'unchanged'} from ${formatFiqCompact(player.previous_value)} to ${formatFiqCompact(player.current_value)}`} />
                 </div>
 
@@ -371,7 +371,7 @@ export function PlayerMarketBrowser({
                     {lockActive
                       ? 'Trading is temporarily locked for this player.'
                       : holdings.length >= MARKET_MAX_PORTFOLIO_SIZE
-                        ? 'Your 11-player portfolio is full. Sell before buying.'
+                        ? 'Your team is full. Sell a player before you buy another.'
                         : !canBuyPosition(player.position, formation)
                           ? `Formation slot limit reached for ${player.position}.`
                           : availableCash < player.current_value

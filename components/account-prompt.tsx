@@ -18,12 +18,15 @@ export function AccountPrompt() {
   const [readyToShow, setReadyToShow] = useState(false)
 
   useEffect(() => {
-    setMounted(true)
-    try {
-      setDismissed(sessionStorage.getItem(DISMISS_KEY) === '1')
-    } catch {
-      setDismissed(false)
-    }
+    const frame = window.requestAnimationFrame(() => {
+      setMounted(true)
+      try {
+        setDismissed(sessionStorage.getItem(DISMISS_KEY) === '1')
+      } catch {
+        setDismissed(false)
+      }
+    })
+    return () => window.cancelAnimationFrame(frame)
   }, [])
 
   useEffect(() => {
@@ -67,7 +70,7 @@ export function AccountPrompt() {
         <div className="min-w-0 flex-1">
           <p className="text-sm font-semibold text-foreground">Save your FootballIQ progress</p>
           <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground sm:mt-1 sm:text-sm">
-            Create a free account to keep your portfolio, XP and game progress across devices.
+            Make a free account to save your team, XP and scores on every device.
           </p>
           <div className="mt-2 flex flex-wrap gap-2 sm:mt-3 sm:gap-2.5">
             <Link href="/signup" className="rounded-xl bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary sm:px-4 sm:text-sm">

@@ -35,8 +35,8 @@ export default function AcademyPage() {
         <SurfaceCard className="overflow-hidden">
           <div className="bg-[linear-gradient(130deg,rgba(40,197,130,.18),rgba(35,134,255,.12),rgba(7,14,26,.96))] p-7 sm:p-10">
             <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">FootballIQ Academy</p>
-            <h1 className="mt-3 text-4xl font-black tracking-tight sm:text-6xl">Structured learning pathways for football judgement</h1>
-            <p className="mt-3 max-w-3xl text-muted-foreground">Build your scout and referee thinking with staged modules, practical decisions and professional debriefs.</p>
+            <h1 className="mt-3 text-4xl font-black tracking-tight sm:text-6xl">Learn to think like a scout or referee</h1>
+            <p className="mt-3 max-w-3xl text-muted-foreground">Choose a lesson. Make football decisions. We explain the answer after each one.</p>
             <div className="mt-4 flex flex-wrap items-center gap-3">
               <span className="rounded-full border border-emerald-300/40 bg-emerald-300/14 px-3 py-1 text-xs font-semibold text-emerald-200">All current modules are free</span>
               <Link href="/pro" className="rounded-full border border-border bg-card/80 px-3 py-1 text-xs font-semibold text-foreground transition hover:border-primary/40">Access &amp; roadmap</Link>
@@ -50,7 +50,7 @@ export default function AcademyPage() {
           <TrackCard
             icon={<Search className="size-5" />}
             title="Scout Academy"
-            copy="Build player evaluation judgement from evidence to recommendation."
+            copy="Look at a player’s good and bad points. Then decide what your club should do."
             href="/academy/scout"
             completed={progress.scout.completed}
             total={progress.scout.total}
@@ -58,7 +58,7 @@ export default function AcademyPage() {
           <TrackCard
             icon={<Flag className="size-5" />}
             title="Referee Academy"
-            copy="Sharpen law application, positioning judgement and match control choices."
+            copy="Learn the rules, make the call and see how a referee controls the match."
             href="/academy/referee"
             completed={progress.referee.completed}
             total={progress.referee.total}
@@ -66,7 +66,7 @@ export default function AcademyPage() {
         </section>
 
         <section className="mt-7 rounded-2xl border border-border bg-card p-5">
-          <h2 className="inline-flex items-center gap-2 text-xl font-black tracking-tight"><BookOpen className="size-5 text-primary" /> Learning roadmap</h2>
+          <h2 className="inline-flex items-center gap-2 text-xl font-black tracking-tight"><BookOpen className="size-5 text-primary" /> Your lessons</h2>
           <div className="mt-4 grid gap-3 md:grid-cols-2">
             {academyExperiences.map((item) => (
               <div key={item.key} className="rounded-xl border border-border bg-background/70 p-3">
@@ -105,13 +105,13 @@ function TrackCard({
 
   return (
     <Link href={href} className="rounded-2xl border border-border bg-card p-5 transition hover:border-primary/45 hover:-translate-y-0.5">
-      <p className="inline-flex items-center gap-2 text-primary">{icon}<span className="text-xs font-semibold uppercase tracking-[0.16em]">Academy track</span></p>
+      <p className="inline-flex items-center gap-2 text-primary">{icon}<span className="text-xs font-semibold uppercase tracking-[0.16em]">Learning path</span></p>
       <h3 className="mt-2 text-2xl font-black tracking-tight">{title}</h3>
       <p className="mt-2 text-sm text-muted-foreground">{copy}</p>
       <div className="mt-4 h-2 rounded-full bg-secondary">
         <div className="h-full rounded-full bg-primary" style={{ width: `${pct}%` }} />
       </div>
-      <p className="mt-2 text-xs text-muted-foreground">{completed}/{total} modules completed</p>
+      <p className="mt-2 text-xs text-muted-foreground">{completed} of {total} lessons finished</p>
     </Link>
   )
 }

@@ -85,7 +85,7 @@ export function ScoutRoomExperience() {
       <header className="rounded-2xl border border-border bg-[linear-gradient(140deg,rgba(34,197,94,.18),rgba(10,17,24,.95))] p-5">
         <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">Advanced Scout Room</p>
         <h2 className="mt-2 text-3xl font-black tracking-tight">Scout Room: Player Evaluation</h2>
-        <p className="mt-2 text-sm text-muted-foreground">Review dossier evidence, write your judgement, then compare with an expert-style report structure.</p>
+        <p className="mt-2 text-sm text-muted-foreground">Read the player notes, write what you think, then compare it with our example report.</p>
       </header>
 
       <section className="grid gap-5 lg:grid-cols-[1.15fr_0.85fr]">
@@ -116,7 +116,7 @@ export function ScoutRoomExperience() {
 
         <div className="space-y-4">
           <article className="rounded-2xl border border-border bg-background/70 p-4">
-            <p className="inline-flex items-center gap-1 text-xs font-semibold uppercase tracking-[0.18em] text-primary"><Target className="size-3.5" /> Your judgement</p>
+            <p className="inline-flex items-center gap-1 text-xs font-semibold uppercase tracking-[0.18em] text-primary"><Target className="size-3.5" /> Your choice</p>
             <FieldLegend title="Key strengths">
               <TogglePill label="Progressive passing" active={strengths.includes('progressive-passing')} onClick={() => setStrengths(toggleValue(strengths, 'progressive-passing'))} />
               <TogglePill label="Composure under press" active={strengths.includes('composure-under-press')} onClick={() => setStrengths(toggleValue(strengths, 'composure-under-press'))} />
@@ -132,7 +132,7 @@ export function ScoutRoomExperience() {
             <label className="mt-3 block text-sm font-semibold">
               Potential level
               <select value={potential} onChange={(event) => setPotential(event.target.value)} className="mt-1.5 h-11 w-full rounded-xl border border-input bg-card px-3">
-                <option value="">Select projection</option>
+                <option value="">Choose how good they could become</option>
                 <option value="rotation-top-flight">Top-flight rotation potential</option>
                 <option value="starter-top-flight">Top-flight starter potential</option>
                 <option value="elite-league">Elite league starter potential</option>
@@ -142,7 +142,7 @@ export function ScoutRoomExperience() {
             <label className="mt-3 block text-sm font-semibold">
               Recommendation
               <select value={recommendation} onChange={(event) => setRecommendation(event.target.value)} className="mt-1.5 h-11 w-full rounded-xl border border-input bg-card px-3">
-                <option value="">Select recommendation</option>
+                <option value="">Choose what the club should do</option>
                 <option value="recommend-now">Recommend now</option>
                 <option value="recommend-follow-up">Recommend with follow-up live check</option>
                 <option value="monitor-only">Monitor only</option>
@@ -161,7 +161,7 @@ export function ScoutRoomExperience() {
 
             <label className="mt-3 block text-sm font-semibold">
               Structured report (concise)
-              <textarea value={report} onChange={(event) => setReport(event.target.value)} rows={5} placeholder="Summarize observation, interpretation, risk and recommendation." className="mt-1.5 w-full rounded-xl border border-input bg-card px-3 py-2" />
+              <textarea value={report} onChange={(event) => setReport(event.target.value)} rows={5} placeholder="What did you notice? What is good? What is risky? What should the club do?" className="mt-1.5 w-full rounded-xl border border-input bg-card px-3 py-2" />
             </label>
 
             <button onClick={() => void submit()} disabled={!completionReady || submitted || saving} className="mt-4 inline-flex h-11 items-center rounded-xl bg-primary px-5 text-sm font-semibold text-primary-foreground disabled:opacity-50">
@@ -171,7 +171,7 @@ export function ScoutRoomExperience() {
 
           {submitted ? (
             <article className="rounded-2xl border border-emerald-300/45 bg-emerald-300/12 p-4">
-              <p className="inline-flex items-center gap-1 text-xs font-semibold uppercase tracking-[0.18em] text-emerald-200"><CheckCircle2 className="size-3.5" /> Expert debrief</p>
+              <p className="inline-flex items-center gap-1 text-xs font-semibold uppercase tracking-[0.18em] text-emerald-200"><CheckCircle2 className="size-3.5" /> Example answer</p>
               <DebriefRow label="Observation" text="Kovares shows repeatable left-foot progression and communication habits in a high-line structure." />
               <DebriefRow label="Interpretation" text="Technical and perceptual profile suggests starter upside if transition defending stabilizes." />
               <DebriefRow label="Alternative explanation" text="Current clean possession actions may be partly protected by stable pivot support." />
@@ -182,8 +182,8 @@ export function ScoutRoomExperience() {
               <div className="mt-3 rounded-xl border border-emerald-300/40 bg-background/70 p-3 text-sm text-emerald-100">
                 <p className="font-semibold">Completion</p>
                 <p className="mt-1">You earned 120 Academy XP equivalent and logged one advanced scouting completion.</p>
-                <p className="mt-1">Key learning: Separate production from context before final recommendation.</p>
-                <p className="mt-1">You covered {learning.judgedCoverage}/4 core judgement areas.</p>
+                <p className="mt-1">Remember: one good match does not tell you everything about a player.</p>
+                <p className="mt-1">You covered {learning.judgedCoverage} of 4 important report areas.</p>
                 {learning.missed.length > 0 ? <p className="mt-1">You may have missed: {learning.missed.join(', ')}.</p> : null}
               </div>
             </article>

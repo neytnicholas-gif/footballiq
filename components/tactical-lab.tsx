@@ -42,11 +42,11 @@ export function TacticalLab() {
           })}
         </div>
         {selected !== null && <div className="mt-6 rounded-2xl border border-white/10 bg-slate-950/55 p-5" aria-live="polite">
-          <p className="flex items-center gap-2 font-bold text-white">{selected === scenario.answer ? <Check className="size-5 text-emerald-300" /> : <X className="size-5 text-rose-300" />}{selected === scenario.answer ? 'Strong decision' : 'A stronger option was available'}</p>
-          <p className="mt-3 text-sm leading-relaxed text-slate-300"><strong className="text-cyan-200">Principle:</strong> {scenario.principle}</p>
+          <p className="flex items-center gap-2 font-bold text-white">{selected === scenario.answer ? <Check className="size-5 text-emerald-300" /> : <X className="size-5 text-rose-300" />}{selected === scenario.answer ? 'Good choice!' : 'There is a better choice.'}</p>
+          <p className="mt-3 text-sm leading-relaxed text-slate-300"><strong className="text-cyan-200">Why it works:</strong> {scenario.principle}</p>
           <p className="mt-2 text-sm leading-relaxed text-slate-300">{scenario.explanation}</p>
-          <p className="mt-2 text-sm leading-relaxed text-slate-400"><strong>Why not the alternatives?</strong> {scenario.alternatives}</p>
-          <div className="mt-5 flex flex-wrap gap-3">{!complete ? <button type="button" onClick={next} className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-cyan-300 px-4 py-2 text-sm font-bold text-slate-950">Next decision <ArrowRight className="size-4" /></button> : <><p className="mr-auto self-center font-bold text-white">Final score: {score}/{scenarios.length}</p><button type="button" onClick={restart} className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-white/15 px-4 py-2 text-sm font-bold"><RotateCcw className="size-4" /> New 10-scenario session</button></>}</div>
+          <p className="mt-2 text-sm leading-relaxed text-slate-400"><strong>Why the other answers are weaker:</strong> {scenario.alternatives}</p>
+          <div className="mt-5 flex flex-wrap gap-3">{!complete ? <button type="button" onClick={next} className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-cyan-300 px-4 py-2 text-sm font-bold text-slate-950">Next question <ArrowRight className="size-4" /></button> : <><p className="mr-auto self-center font-bold text-white">Final score: {score}/{scenarios.length}</p><button type="button" onClick={restart} className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-white/15 px-4 py-2 text-sm font-bold"><RotateCcw className="size-4" /> Play 10 more</button></>}</div>
         </div>}
       </article>
     </div>

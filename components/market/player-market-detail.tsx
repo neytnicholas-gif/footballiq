@@ -158,9 +158,9 @@ export function PlayerMarketDetail({
               </button>
             </div>
             <p className="mt-3 text-xs text-muted-foreground">
-              Gameweek allowance: {buysRemaining} of 11 signings left. Selling frees a squad slot without using another signing. Portfolio limit: {MARKET_MAX_PORTFOLIO_SIZE} holdings.
+              You can buy {buysRemaining} more players this gameweek. Selling opens a place in your team and does not use a signing. Your team can have {MARKET_MAX_PORTFOLIO_SIZE} players.
             </p>
-            <p className="mt-2 text-xs text-muted-foreground">Formation occupancy: GK {formation.GK}/1 · DEF {formation.DEF}/4 · MID {formation.MID}/3 · FWD {formation.FWD}/3</p>
+            <p className="mt-2 text-xs text-muted-foreground">Your team: GK {formation.GK}/1 · DEF {formation.DEF}/4 · MID {formation.MID}/3 · FWD {formation.FWD}/3</p>
             {!owned && !hasPositionSlot ? <p className="mt-2 text-xs text-amber-200">No {player.position} slots left. Sell an existing {player.position} first to replace.</p> : null}
             {!owned && availableCash < player.current_value ? <p className="mt-2 text-xs text-amber-200">Insufficient cash for this purchase.</p> : null}
             {!owned && holdings.length >= MARKET_MAX_PORTFOLIO_SIZE ? <p className="mt-2 text-xs text-amber-200">Portfolio is full. Sell one player before buying another.</p> : null}

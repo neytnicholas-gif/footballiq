@@ -8,7 +8,7 @@ export default function PredictionsPage() {
       compact
       eyebrow="Five fixtures • one match card"
       title="Matchday Predictions"
-      description="Read the matchup, choose 1, X or 2, and lock the complete card. This is a gameplay simulation—not a live fixture feed."
+      description="Pick 1 for a home win, X for a draw or 2 for an away win. Make all five picks, then lock them in. These are practice matches, not live games."
     >
       <PredictionsGame />
     </ModePage>

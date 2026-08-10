@@ -84,7 +84,7 @@ export default function ProfilePage() {
           <SurfaceCard className="p-8">
             <StatusBadge label="Profile setup" tone="warn" />
             <h1 className="mt-3 text-3xl font-black tracking-tight text-foreground">Finish your profile</h1>
-            <p className="mt-2 text-sm text-muted-foreground">Choose a username so your XP, ratings and streaks have a visible identity on the platform.</p>
+            <p className="mt-2 text-sm text-muted-foreground">Pick a name other players will see beside your scores.</p>
             <Link href="/username" className="mt-6 inline-flex rounded-xl bg-primary px-5 py-3 font-semibold text-primary-foreground">Choose username</Link>
           </SurfaceCard>
         ) : (

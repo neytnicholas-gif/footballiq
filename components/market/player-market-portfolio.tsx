@@ -212,7 +212,7 @@ export function PlayerMarketPortfolio({
         <div className="rounded-[2rem] border border-border bg-card p-6">
           <h2 className="text-xl font-bold">Legacy update history</h2>
           <div className="mt-4 space-y-2">
-            {runs.length === 0 ? <p className="text-sm text-muted-foreground">No verified performance updates have been processed.</p> : runs.map((run) => (
+            {runs.length === 0 ? <p className="text-sm text-muted-foreground">No match has changed player prices yet.</p> : runs.map((run) => (
               <div key={run.id} className="rounded-xl border border-border bg-background/60 px-3 py-2 text-sm">
                 <p className="font-semibold">{run.week_label}</p>
                 <p className="text-xs text-muted-foreground">Weekly change {run.weekly_portfolio_gain >= 0 ? '+' : '-'}{formatFiqCompact(Math.abs(run.weekly_portfolio_gain))} · ROI {run.current_roi_pct.toFixed(2)}%</p>
