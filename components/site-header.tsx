@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { Menu, X } from 'lucide-react'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { usePathname } from 'next/navigation'
 import { Logo } from '@/components/logo'
 import { useAuth } from '@/components/auth-provider'
@@ -28,6 +28,13 @@ export function SiteHeader() {
   function closeMobile() {
     setMobileOpen(false)
   }
+
+  useEffect(() => {
+    if (!mobileOpen) return
+    const closeOnEscape = (event: KeyboardEvent) => { if (event.key === 'Escape') setMobileOpen(false) }
+    window.addEventListener('keydown', closeOnEscape)
+    return () => window.removeEventListener('keydown', closeOnEscape)
+  }, [mobileOpen])
 
   const authBlock = !authResolved
     ? <span className="h-10 w-24 animate-pulse rounded-xl bg-secondary/60" aria-hidden="true" />
@@ -68,7 +75,7 @@ export function SiteHeader() {
 
         <div className="flex items-center gap-2">
           {authBlock}
-          <button onClick={() => setMobileOpen((value) => !value)} className="inline-flex size-10 items-center justify-center rounded-lg border border-border bg-secondary/30 text-foreground outline-none focus-visible:ring-2 focus-visible:ring-primary lg:hidden" aria-label={mobileOpen ? 'Close menu' : 'Open menu'} aria-expanded={mobileOpen} aria-controls="mobile-primary-navigation">
+          <button onClick={() => setMobileOpen((value) => !value)} className="inline-flex size-11 items-center justify-center rounded-lg border border-border bg-secondary/30 text-foreground outline-none focus-visible:ring-2 focus-visible:ring-primary lg:hidden" aria-label={mobileOpen ? 'Close menu' : 'Open menu'} aria-expanded={mobileOpen} aria-controls="mobile-primary-navigation">
             {mobileOpen ? <X className="size-5" /> : <Menu className="size-5" />}
           </button>
         </div>

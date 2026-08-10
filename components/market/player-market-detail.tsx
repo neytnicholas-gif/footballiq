@@ -111,6 +111,7 @@ export function PlayerMarketDetail({
               <p className="text-xs font-semibold uppercase tracking-[.2em] text-primary">Player card</p>
               <h1 className="mt-2 text-3xl font-black sm:text-4xl">{player.display_name}</h1>
               <p className="mt-1 text-sm text-muted-foreground">{player.club_name} · {player.position}{player.nationality ? ` · ${player.nationality}` : ''}</p>
+              {player.availability_status ? <p className={`mt-2 inline-flex rounded-full border px-2.5 py-1 text-xs font-bold ${player.availability_status === 'available' ? 'border-emerald-700/20 bg-emerald-50 text-emerald-800' : player.availability_status === 'limited' ? 'border-amber-700/20 bg-amber-50 text-amber-800' : 'border-red-700/20 bg-red-50 text-red-800'}`}>{player.availability_status === 'available' ? 'Available' : player.availability_status === 'limited' ? 'Limited availability' : 'Unavailable'}</p> : null}
             </div>
           </div>
           <Link href="/market/portfolio" className="rounded-xl border border-emerald-800 bg-emerald-950 px-4 py-2 text-sm font-bold text-white shadow-sm transition hover:bg-emerald-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-700">Back to full roster</Link>
@@ -293,14 +294,16 @@ function ValueHistoryChart({ points, currentValue }: { points: MarketValueHistor
   const min = Math.min(...values)
   const max = Math.max(...values)
   const range = Math.max(1, max - min)
+  const start = points[0]?.value ?? currentValue
+  const direction = currentValue > start ? 'rising' : currentValue < start ? 'falling' : 'unchanged'
 
   return (
-    <div className="flex h-full items-end gap-1">
+    <div role="img" aria-label={`Value history: ${direction} from ${formatFiqCompact(start)} to ${formatFiqCompact(currentValue)} across ${points.length} recorded updates.`} className="flex h-full items-end gap-1">
       {points.slice(-24).map((point) => {
         const pct = ((point.value - min) / range) * 100
         return (
-          <div key={point.id} className="group relative flex-1 rounded-t bg-primary/35" style={{ height: `${Math.max(8, pct)}%` }}>
-            <span className="pointer-events-none absolute -top-7 left-1/2 hidden -translate-x-1/2 whitespace-nowrap rounded bg-background px-2 py-1 text-[10px] group-hover:block">
+          <div key={point.id} tabIndex={0} aria-label={formatFiqCompact(point.value)} className="group relative flex-1 rounded-t bg-primary/35 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary" style={{ height: `${Math.max(8, pct)}%` }}>
+            <span className="pointer-events-none absolute -top-7 left-1/2 hidden -translate-x-1/2 whitespace-nowrap rounded bg-background px-2 py-1 text-[10px] group-hover:block group-focus:block">
               {formatFiqCompact(point.value)}
             </span>
           </div>

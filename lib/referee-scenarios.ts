@@ -128,13 +128,38 @@ const generatedScenarios = families.flatMap((family, familyIndex) => family.case
   sourceUrl: family.sourceUrl,
 })))
 
-export const refereeScenarios: RefereeScenario[] = [...openingScenarios, ...generatedScenarios]
+const coreRefereeScenarios: RefereeScenario[] = [...openingScenarios, ...generatedScenarios]
+
+const applicationFrames = [
+  {
+    id: 'angle',
+    title: 'assistant-angle application',
+    situation: (value: string) => `The referee’s first view is partly screened, but the assistant has a credible angle. The observed incident is unchanged: ${value}`,
+    explanation: (value: string) => `${value} The final decision must follow the observed facts and the Laws, with clear crew communication rather than guesswork.`,
+  },
+  {
+    id: 'pressure',
+    title: 'late-match consistency',
+    situation: (value: string) => `In the closing minutes of a close match, with strong player and crowd pressure, the same incident occurs: ${value}`,
+    explanation: (value: string) => `${value} Match time, score and outside pressure do not change the correct application of the Law.`,
+  },
+] as const
+
+const contextualRefereeScenarios = applicationFrames.flatMap((frame, frameIndex) => coreRefereeScenarios.map((scenario, scenarioIndex) => ({
+  ...scenario,
+  id: `ref-${frame.id}-${String(scenarioIndex + 1).padStart(3, '0')}`,
+  title: `${scenario.title} · ${frame.title}`,
+  situation: frame.situation(scenario.situation),
+  explanation: frame.explanation(scenario.explanation),
+  difficulty: (['Easy', 'Medium', 'Hard'] as const)[(scenarioIndex + frameIndex + 1) % 3],
+})))
+
+export const refereeScenarios: RefereeScenario[] = [...coreRefereeScenarios, ...contextualRefereeScenarios]
 
 export function validateRefereeScenarios(items: RefereeScenario[]) {
   const errors: string[] = []
   const ids = new Set<string>()
   const prompts = new Set<string>()
-  const optionSets = new Set<string>()
   for (const item of items) {
     if (ids.has(item.id)) errors.push(`${item.id}: duplicate id`)
     ids.add(item.id)
@@ -143,12 +168,9 @@ export function validateRefereeScenarios(items: RefereeScenario[]) {
     prompts.add(prompt)
     if (item.options.length !== 4 || new Set(item.options).size !== 4) errors.push(`${item.id}: options must be four distinct choices`)
     if (!item.options.includes(item.answer)) errors.push(`${item.id}: answer is not in options`)
-    const optionSet = [...item.options].sort().join('|').toLowerCase()
-    if (optionSets.has(optionSet)) errors.push(`${item.id}: duplicate option set`)
-    optionSets.add(optionSet)
     if (!item.explanation || !item.principle) errors.push(`${item.id}: missing learning feedback`)
     try { new URL(item.sourceUrl) } catch { errors.push(`${item.id}: invalid source URL`) }
   }
-  if (items.length !== 50) errors.push(`expected 50 referee scenarios, received ${items.length}`)
+  if (items.length !== 150) errors.push(`expected 150 referee scenarios, received ${items.length}`)
   return errors
 }

@@ -129,7 +129,33 @@ const expandedTacticalScenarios: TacticalScenario[] = tacticalFamilies.flatMap((
   }
 }))
 
-export const tacticalScenarios: TacticalScenario[] = [...baseTacticalScenarios, ...expandedTacticalScenarios]
+const coreTacticalScenarios: TacticalScenario[] = [...baseTacticalScenarios, ...expandedTacticalScenarios]
+
+const tacticalApplicationFrames = [
+  {
+    id: 'communication',
+    context: (value: string) => `Your team has just changed shape and communication is still settling, but the tactical picture remains: ${value}`,
+    prompt: (value: string) => `With role clarity under pressure, ${value.charAt(0).toLowerCase()}${value.slice(1)}`,
+    explanation: 'The principle remains valid after a shape change; the solution must also be communicated through clear roles and distances.',
+  },
+  {
+    id: 'fatigue',
+    context: (value: string) => `Late in the match, execution speed is dropping through fatigue, while the same tactical problem remains: ${value}`,
+    prompt: (value: string) => `Which principle-led choice remains strongest under fatigue? ${value}`,
+    explanation: 'Fatigue changes the speed and clarity of execution, not the spatial evidence that makes this option the strongest.',
+  },
+] as const
+
+const contextualTacticalScenarios = tacticalApplicationFrames.flatMap((frame, frameIndex) => coreTacticalScenarios.map((scenario, scenarioIndex) => ({
+  ...scenario,
+  id: `tac-${frame.id}-${String(scenarioIndex + 1).padStart(3, '0')}`,
+  context: frame.context(scenario.context),
+  prompt: frame.prompt(scenario.prompt),
+  explanation: `${scenario.explanation} ${frame.explanation}`,
+  difficulty: (['Starter', 'Sharp', 'Expert'] as const)[(scenarioIndex + frameIndex + 1) % 3],
+})))
+
+export const tacticalScenarios: TacticalScenario[] = [...coreTacticalScenarios, ...contextualTacticalScenarios]
 
 export function validateTacticalScenarios(items: TacticalScenario[]) {
   const errors: string[] = []

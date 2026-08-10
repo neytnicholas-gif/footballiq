@@ -10,12 +10,12 @@ export default function Page() {
         <div className="rounded-2xl border border-border bg-card p-6 sm:p-8">
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">Scout Vision</p>
           <h1 className="mt-2 text-4xl font-black tracking-tight sm:text-5xl">Read evidence. Judge projection. Justify recommendation.</h1>
-          <p className="mt-3 max-w-3xl text-muted-foreground">Work through 50 evidence-led scouting decisions, then use the complete Scout Room report-builder—everything on this learning pathway is free.</p>
+          <p className="mt-3 max-w-3xl text-muted-foreground">Work through 150 evidence-led scouting decisions, then use the complete Scout Room report-builder—everything on this learning pathway is free.</p>
         </div>
 
         <div className="mt-6 grid gap-5 lg:grid-cols-[1.18fr_0.82fr]">
           <div>
-            <h2 className="mb-3 text-xl font-black tracking-tight">Scout Vision · 50 scenarios</h2>
+            <h2 className="mb-3 text-xl font-black tracking-tight">Scout Vision · 150 scenarios</h2>
             <ScoutGame />
           </div>
 

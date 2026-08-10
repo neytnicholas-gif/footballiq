@@ -3,12 +3,12 @@ import { refereeScenarios, validateRefereeScenarios } from '../lib/referee-scena
 import { expandedScoutScenarios, scoutScenarioCount, validateScoutScenarios } from '../lib/scout-scenario-expansion'
 import { tacticalScenarios, validateTacticalScenarios } from '../lib/tactical-scenarios'
 
-describe('50-each judgement content contract', () => {
-  it('contains exactly 50 scenarios in every judgement mode', () => {
-    expect(refereeScenarios).toHaveLength(50)
-    expect(scoutScenarioCount).toBe(50)
-    expect(expandedScoutScenarios).toHaveLength(40)
-    expect(tacticalScenarios).toHaveLength(50)
+describe('150-each judgement content contract', () => {
+  it('contains exactly 150 scenarios in every judgement mode', () => {
+    expect(refereeScenarios).toHaveLength(150)
+    expect(scoutScenarioCount).toBe(150)
+    expect(expandedScoutScenarios).toHaveLength(140)
+    expect(tacticalScenarios).toHaveLength(150)
   })
 
   it('passes referee content validation', () => {

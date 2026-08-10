@@ -18,9 +18,11 @@ export function MarketTradeDialog({
   const titleId = useId()
   const descriptionId = useId()
   const dialogRef = useRef<HTMLElement>(null)
+  const returnFocusRef = useRef<HTMLElement | null>(null)
   const isBuy = action === 'buy'
 
   useEffect(() => {
+    returnFocusRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null
     function onKeyDown(event: KeyboardEvent) {
       if (event.key === 'Escape') onCancel()
       if (event.key !== 'Tab' || !dialogRef.current) return
@@ -45,6 +47,7 @@ export function MarketTradeDialog({
     return () => {
       document.body.style.overflow = previousOverflow
       window.removeEventListener('keydown', onKeyDown)
+      returnFocusRef.current?.focus()
     }
   }, [onCancel])
 

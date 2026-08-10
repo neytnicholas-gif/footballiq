@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { SiteHeader } from '@/components/site-header'
 import { PlayerMarketBrowser } from '@/components/market/player-market-browser'
 import { MarketDisclaimer } from '@/components/market/market-disclaimer'
@@ -16,10 +16,13 @@ export default function PlayerMarketPlayersPage() {
   const [buysRemaining, setBuysRemaining] = useState(11)
   const [availableCash, setAvailableCash] = useState(100_000_000)
   const [loading, setLoading] = useState(true)
+  const [refreshing, setRefreshing] = useState(false)
+  const hasLoaded = useRef(false)
   const [error, setError] = useState('')
 
   async function load() {
-    setLoading(true)
+    if (hasLoaded.current) setRefreshing(true)
+    else setLoading(true)
     setError('')
 
     const { data: playerRows, error: playerError } = await loadMarketPlayers()
@@ -35,7 +38,9 @@ export default function PlayerMarketPlayersPage() {
     const remaining = calculateTradesRemaining(portfolioData.transactions)
     setBuysRemaining(gameweekStatus.data?.signings_remaining ?? remaining.buysRemaining)
 
+    hasLoaded.current = true
     setLoading(false)
+    setRefreshing(false)
   }
 
   useEffect(() => {
@@ -56,8 +61,8 @@ export default function PlayerMarketPlayersPage() {
       <SiteHeader />
       <section className="mx-auto max-w-7xl px-4 py-10 sm:px-6 sm:py-14">
         <div className="mb-5"><MarketDisclaimer /></div>
-        {error ? <p className="mb-4 rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">{error}</p> : null}
-        {loading ? <p className="text-sm text-muted-foreground">Loading market players…</p> : <PlayerMarketBrowser players={players} holdings={holdings} watchlist={watchlist} statsByPlayerId={{}} userSignedIn={Boolean(user)} buysRemaining={buysRemaining} availableCash={availableCash} onTradeAction={load} />}
+        {error ? <p role="alert" className="mb-4 rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">{error}</p> : null}
+        {loading ? <p role="status" aria-live="polite" className="text-sm text-muted-foreground">Loading market players…</p> : <><PlayerMarketBrowser players={players} holdings={holdings} watchlist={watchlist} statsByPlayerId={{}} userSignedIn={Boolean(user)} buysRemaining={buysRemaining} availableCash={availableCash} onTradeAction={load} />{refreshing ? <p role="status" aria-live="polite" className="fixed bottom-4 left-1/2 z-[70] -translate-x-1/2 rounded-full border border-emerald-900/15 bg-white/95 px-4 py-2 text-xs font-semibold text-emerald-900 shadow-lg">Updating squad…</p> : null}</>}
       </section>
     </main>
   )

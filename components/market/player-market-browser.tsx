@@ -320,7 +320,7 @@ export function PlayerMarketBrowser({
                       <p className="truncate text-xs font-medium text-slate-500">{player.club_name} · {player.competition_name ?? 'FootballIQ'} · {player.position}</p>
                     </div>
                   </div>
-                  <span className="rounded-full border border-emerald-900/10 bg-emerald-950/[.055] px-2 py-1 text-[10px] font-black uppercase tracking-wide text-emerald-900">{player.position}</span>
+                  <div className="flex flex-col items-end gap-1"><span className="rounded-full border border-emerald-900/10 bg-emerald-950/[.055] px-2 py-1 text-[10px] font-black uppercase tracking-wide text-emerald-900">{player.position}</span>{player.availability_status ? <span className={`text-[10px] font-bold ${player.availability_status === 'available' ? 'text-emerald-700' : player.availability_status === 'limited' ? 'text-amber-700' : 'text-red-700'}`}>{player.availability_status === 'available' ? 'Available' : player.availability_status === 'limited' ? 'Limited availability' : 'Unavailable'}</span> : null}</div>
                 </div>
 
                 <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
@@ -338,7 +338,7 @@ export function PlayerMarketBrowser({
 
                 <div className="mt-3 rounded-xl border border-emerald-900/10 bg-emerald-950/[.04] px-3 py-2">
                   <p className="mb-2 text-[10px] uppercase tracking-[.18em] text-muted-foreground">Recorded value movement</p>
-                  <Sparkline points={[player.previous_value, player.current_value]} positive={trendDelta >= 0} />
+                  <Sparkline points={[player.previous_value, player.current_value]} positive={trendDelta >= 0} label={`${player.display_name} value trend: ${trendDelta > 0 ? 'rising' : trendDelta < 0 ? 'falling' : 'unchanged'} from ${formatFiqCompact(player.previous_value)} to ${formatFiqCompact(player.current_value)}`} />
                 </div>
 
                 <div className="mt-3 flex flex-wrap gap-2">
@@ -525,13 +525,13 @@ function RosterTotal({ label, value }: { label: string; value: number }) {
   )
 }
 
-function Sparkline({ points, positive }: { points: number[]; positive: boolean }) {
+function Sparkline({ points, positive, label }: { points: number[]; positive: boolean; label: string }) {
   const min = Math.min(...points)
   const max = Math.max(...points)
   const spread = Math.max(1, max - min)
 
   return (
-    <div className="flex h-10 items-end gap-1">
+    <div role="img" aria-label={label} className="flex h-10 items-end gap-1">
       {points.slice(-12).map((point, index) => {
         const height = Math.max(5, ((point - min) / spread) * 100)
         return <span key={`${point}-${index}`} className={`block w-full rounded-t ${positive ? 'bg-primary/75' : 'bg-destructive/65'}`} style={{ height: `${height}%` }} />

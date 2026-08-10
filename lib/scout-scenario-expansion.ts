@@ -19,14 +19,14 @@ export type ExpandedScoutScenario = {
 type RoleProfile = {
   code: string
   position: string
-  ages: [number, number, number, number]
+  ages: readonly number[]
   trait: string
   evidence: [string, string, string]
   strengths: [string, string, string]
   concerns: [string, string]
   development: string
   missing: string
-  calls: [ScoutRecommendation, ScoutRecommendation, ScoutRecommendation, ScoutRecommendation]
+  calls: readonly ScoutRecommendation[]
 }
 
 const contexts = [
@@ -34,6 +34,16 @@ const contexts = [
   { label:'youth international against physically matched opponents', evidence:'traits held up against strong age-group competition', caveat:'the sample covers one tournament rather than a full season' },
   { label:'reserve-team fixture with mixed senior and youth players', evidence:'the player faced greater physical and tactical variation', caveat:'reserve football does not fully reproduce first-team consequences' },
   { label:'first senior start in a lower-division match', evidence:'behaviour appeared in a meaningful senior environment', caveat:'one senior appearance is not enough to establish consistency' },
+  { label:'first-team training match played at an aggressive counter-pressing tempo', evidence:'decisions were tested by faster pressure and shorter recovery windows', caveat:'training intensity does not reproduce the emotional cost of a competitive mistake' },
+  { label:'senior cup tie while protecting a narrow lead', evidence:'the player had to manage territory, risk and repeated defensive pressure', caveat:'the conservative score state may hide the player’s contribution in a more proactive role' },
+  { label:'away fixture on a poor surface against direct play', evidence:'technique and concentration were tested by unpredictable ball movement and second balls', caveat:'one unusual surface should not outweigh the player’s broader technical sample' },
+  { label:'possession-dominant match against a compact low block', evidence:'patience, scanning and solutions in reduced space were visible repeatedly', caveat:'the opponent offered little transition threat, so defensive recovery evidence is limited' },
+  { label:'second leg of a knockout tie while trailing on aggregate', evidence:'the player operated under urgency without abandoning the team structure', caveat:'the required risk level was different from a normal league fixture' },
+  { label:'final thirty minutes as a substitute in an open match', evidence:'the player adapted quickly and influenced a game with stretched distances', caveat:'a substitute sample must not be compared directly with ninety-minute physical output' },
+  { label:'first competitive match after returning from injury', evidence:'movement quality and decision speed held up despite an interrupted preparation period', caveat:'physical output may still be deliberately managed during the return-to-play phase' },
+  { label:'high-emotion local derby with persistent opponent pressure', evidence:'composure and communication were tested by crowd noise and repeated duels', caveat:'derby intensity can produce behaviour that is not representative of a normal week' },
+  { label:'third tournament match in seven days', evidence:'repeat decisions and technical execution were observed under accumulated fatigue', caveat:'fatigue explains some decline but cannot automatically excuse recurring tactical errors' },
+  { label:'loan spell appearance in an unfamiliar role and team structure', evidence:'adaptability and transfer of core traits were tested outside the player’s usual system', caveat:'role unfamiliarity makes a definitive ceiling judgement premature' },
 ] as const
 
 const profiles: RoleProfile[] = [
@@ -54,12 +64,12 @@ function heatmap(seed: number) {
 }
 
 export const expandedScoutScenarios: ExpandedScoutScenario[] = profiles.flatMap((profile, profileIndex) => contexts.map((context, contextIndex) => {
-  const recommended = profile.calls[contextIndex]
-  const idNumber = 11 + profileIndex * 4 + contextIndex
+  const recommended = profile.calls[contextIndex % profile.calls.length]
+  const idNumber = 11 + profileIndex * contexts.length + contextIndex
   return {
     id: `scout-${idNumber}`,
     playerCode: `${profile.code}-${String(idNumber).padStart(2, '0')}`,
-    age: profile.ages[contextIndex],
+    age: profile.ages[contextIndex % profile.ages.length],
     position: profile.position,
     difficulty: (['Starter', 'Sharp', 'Expert'] as const)[(profileIndex + contextIndex) % 3],
     context: `${context.label}; evaluation focus: ${profile.trait}`,

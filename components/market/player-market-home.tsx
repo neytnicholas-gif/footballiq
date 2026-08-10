@@ -111,6 +111,8 @@ export function PlayerMarketHome() {
   const playersById = useMemo(() => new Map(players.map((entry) => [entry.id, entry])), [players])
   const formation = useMemo(() => countFormation(holdings, playersById), [holdings, playersById])
   const isValidSquad = formation.GK === 1 && formation.DEF === 4 && formation.MID === 3 && formation.FWD === 3
+  const suggestedPosition = formation.GK < 1 ? 'GK' : formation.DEF < 4 ? 'DEF' : formation.MID < 3 ? 'MID' : formation.FWD < 3 ? 'FWD' : null
+  const suggestedPlayers = useMemo(() => players.filter((player) => !holdingsMap.has(player.id) && (!suggestedPosition || player.position === suggestedPosition)).slice(0, 8), [players, holdingsMap, suggestedPosition])
 
   return (
     <div className="space-y-6">
@@ -186,7 +188,7 @@ export function PlayerMarketHome() {
 
           {lastRun ? (
             <div className="mt-4 rounded-xl border border-border bg-background/60 px-4 py-3 text-sm text-muted-foreground">
-              Legacy development record: {lastRun.week_label} · Weekly {lastRun.weekly_portfolio_gain >= 0 ? '+' : ''}{formatFiqCompact(Math.abs(lastRun.weekly_portfolio_gain))} · ROI {lastRun.current_roi_pct.toFixed(2)}%. This is not a verified real-performance update.
+              Preview history: {lastRun.week_label} · Weekly {lastRun.weekly_portfolio_gain >= 0 ? '+' : ''}{formatFiqCompact(Math.abs(lastRun.weekly_portfolio_gain))} · game return {lastRun.current_roi_pct.toFixed(2)}%. This is not a verified real-performance update.
             </div>
           ) : (
             <div className="mt-4 rounded-xl border border-border bg-background/60 px-4 py-3 text-sm text-muted-foreground">The 2026/27 market is in its opening phase. Prices will move after the first completed fixture supplies eligible ratings and minutes.</div>
@@ -325,14 +327,14 @@ export function PlayerMarketHome() {
 
       <section className="rounded-[2rem] border border-border bg-card p-6">
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-xl font-bold">Popular and watchlisted</h2>
+          <div><h2 className="text-xl font-bold">{suggestedPosition ? `Suggested ${suggestedPosition} options` : 'Explore the player pool'}</h2><p className="mt-1 text-xs text-muted-foreground">{suggestedPosition ? 'Matches the next open position in your 1-4-3-3 roster.' : 'Your roster is complete; compare alternatives before making a change.'}</p></div>
           <div className="flex items-center gap-4">
             <Link href="/market/leagues" className="text-sm font-semibold text-primary">Friends leagues beta</Link>
             <Link href="/market/leaderboard" className="text-sm font-semibold text-primary">Market leaderboard</Link>
           </div>
         </div>
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          {players.slice(0, 8).map((player) => {
+          {suggestedPlayers.map((player) => {
             const owned = holdingsMap.has(player.id)
             return (
               <Link key={player.id} href={`/market/player/${encodeURIComponent(player.slug)}`} className="rounded-2xl border border-border bg-background/60 p-3 transition hover:border-primary/45">

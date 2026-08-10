@@ -1,8 +1,8 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
-import { Trash2, Users } from 'lucide-react'
+import { Check, Copy, Trash2, Users } from 'lucide-react'
 import { createFriendLeague, deleteFriendLeague, joinFriendLeague, leaveFriendLeague } from '@/lib/market/client'
 import { formatFiqCompact } from '@/lib/market/format'
 import type { MarketFriendLeague, MarketFriendLeagueLeaderboardRow, MarketFriendLeagueMember } from '@/lib/market/types'
@@ -26,15 +26,44 @@ export function PlayerMarketLeagues({
   const [deleteIntent, setDeleteIntent] = useState<MarketFriendLeague | null>(null)
   const [notice, setNotice] = useState('')
   const [error, setError] = useState('')
+  const [copiedCode, setCopiedCode] = useState('')
+  const deleteDialogRef = useRef<HTMLElement>(null)
+  const cancelDeleteRef = useRef<HTMLButtonElement>(null)
+  const deleteTriggerRef = useRef<HTMLButtonElement | null>(null)
 
   useEffect(() => {
     if (!deleteIntent) return
+    const previousOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    cancelDeleteRef.current?.focus()
+    const closeDialog = () => {
+      setDeleteIntent(null)
+      window.setTimeout(() => deleteTriggerRef.current?.focus(), 0)
+    }
     const closeOnEscape = (event: KeyboardEvent) => {
-      if (event.key === 'Escape' && busy !== 'delete') setDeleteIntent(null)
+      if (event.key === 'Escape' && busy !== 'delete') closeDialog()
+      if (event.key !== 'Tab' || !deleteDialogRef.current) return
+      const focusable = Array.from(deleteDialogRef.current.querySelectorAll<HTMLElement>('button:not([disabled]), [href], [tabindex]:not([tabindex="-1"])'))
+      if (focusable.length === 0) return
+      const first = focusable[0]
+      const last = focusable[focusable.length - 1]
+      if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus() }
+      else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus() }
     }
     window.addEventListener('keydown', closeOnEscape)
-    return () => window.removeEventListener('keydown', closeOnEscape)
+    return () => { document.body.style.overflow = previousOverflow; window.removeEventListener('keydown', closeOnEscape) }
   }, [busy, deleteIntent])
+
+  async function copyLeagueCode(code: string) {
+    try {
+      await navigator.clipboard.writeText(code)
+      setCopiedCode(code)
+      setNotice(`League code ${code} copied.`)
+      window.setTimeout(() => setCopiedCode((current) => current === code ? '' : current), 2000)
+    } catch {
+      setError(`Could not copy automatically. Select this code: ${code}`)
+    }
+  }
 
   const membershipByLeague = useMemo(() => {
     const map = new Map<number, MarketFriendLeagueMember>()
@@ -194,7 +223,7 @@ export function PlayerMarketLeagues({
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <div>
                       <p className="font-semibold">{league.name}</p>
-                      <p className="text-xs text-muted-foreground">Code: {league.league_code} · Role: {membership?.role ?? 'member'}</p>
+                      <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-muted-foreground"><span>Code: <strong className="text-foreground">{league.league_code}</strong> · Role: {membership?.role ?? 'member'}</span><button type="button" onClick={() => void copyLeagueCode(league.league_code)} className="inline-flex min-h-9 items-center gap-1 rounded-lg border border-border px-2 py-1 font-semibold text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"><span className="sr-only">Copy league code </span>{copiedCode === league.league_code ? <Check className="size-3.5" /> : <Copy className="size-3.5" />}{copiedCode === league.league_code ? 'Copied' : 'Copy'}</button></div>
                     </div>
                     {!isOwner ? (
                       <button
@@ -209,7 +238,8 @@ export function PlayerMarketLeagues({
                         <span className="rounded-full border border-border px-3 py-1 text-xs font-semibold text-muted-foreground">Owner</span>
                         <button
                           disabled={busy !== null}
-                          onClick={() => setDeleteIntent(league)}
+                          ref={(node) => { if (deleteIntent?.id === league.id) deleteTriggerRef.current = node }}
+                          onClick={(event) => { deleteTriggerRef.current = event.currentTarget; setDeleteIntent(league) }}
                           className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-destructive/40 px-3 py-2 text-xs font-semibold text-destructive transition-colors hover:bg-destructive/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-destructive focus-visible:ring-offset-2 disabled:opacity-50"
                         >
                           <Trash2 className="size-4" aria-hidden="true" />
@@ -240,6 +270,7 @@ export function PlayerMarketLeagues({
       {deleteIntent ? (
         <div className="fixed inset-0 z-50 grid place-items-center bg-black/60 p-4" role="presentation">
           <section
+            ref={deleteDialogRef}
             role="alertdialog"
             aria-modal="true"
             aria-labelledby="delete-league-title"
@@ -251,7 +282,7 @@ export function PlayerMarketLeagues({
               This permanently removes the league and its memberships. Player portfolios, balances, and trades are not affected.
             </p>
             <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
-              <button type="button" disabled={busy === 'delete'} onClick={() => setDeleteIntent(null)} className="min-h-11 rounded-xl border border-border px-4 py-2 text-sm font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:opacity-50">
+              <button ref={cancelDeleteRef} type="button" disabled={busy === 'delete'} onClick={() => { setDeleteIntent(null); window.setTimeout(() => deleteTriggerRef.current?.focus(), 0) }} className="min-h-11 rounded-xl border border-border px-4 py-2 text-sm font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:opacity-50">
                 Cancel
               </button>
               <button type="button" disabled={busy === 'delete'} onClick={() => void handleDelete()} className="min-h-11 rounded-xl bg-destructive px-4 py-2 text-sm font-semibold text-destructive-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-destructive focus-visible:ring-offset-2 disabled:opacity-50">

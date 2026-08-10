@@ -48,7 +48,7 @@ export function PlayerMarketLeaderboard({ rows, board, onBoardChange }: { rows: 
               return (
                 <Link key={`${row.user_id}-${index}`} href={`/player/${encodeURIComponent(row.username)}`} className="grid grid-cols-[46px_1fr_auto] items-center gap-3 rounded-xl border border-border bg-background/60 p-3">
                   <div className="text-center text-sm font-semibold text-muted-foreground">
-                    {index === 0 ? <Crown className="mx-auto size-5 text-primary" /> : `#${index + 1}`}
+                    {index === 0 ? <span aria-label="Rank 1"><Crown aria-hidden="true" className="mx-auto size-5 text-primary" /></span> : `#${index + 1}`}
                   </div>
                   <div>
                     <p className="font-semibold">{row.username}</p>
