@@ -59,13 +59,13 @@ export type GuestMarketImportResult = {
 
 let verifiedCatalogueRequest: Promise<MarketPlayer[]> | null = null
 let verifiedCatalogueFetchedAt = 0
-const VERIFIED_CATALOGUE_TTL_MS = 60_000
+const VERIFIED_CATALOGUE_TTL_MS = 300_000
 
 function fetchVerifiedMarketPlayers() {
   const now = Date.now()
   if (!verifiedCatalogueRequest || now - verifiedCatalogueFetchedAt >= VERIFIED_CATALOGUE_TTL_MS) {
     verifiedCatalogueFetchedAt = now
-    verifiedCatalogueRequest = fetch('/api/market/catalogue', { cache: 'no-store' })
+    verifiedCatalogueRequest = fetch('/api/market/catalogue')
       .then(async (response) => {
         if (!response.ok) throw new Error('The verified player catalogue request failed.')
         const payload = await response.json() as { players?: MarketPlayer[] }
@@ -127,11 +127,6 @@ export async function importAnonymousMarketStateToAccount() {
   }
 
   return { data: result, error: null }
-}
-
-export async function refreshMyMarketPortfolio() {
-  const { error } = await supabase.rpc('market_refresh_my_portfolio', {})
-  return { error: error as Error | null }
 }
 
 export async function loadMarketPlayers() {
@@ -213,18 +208,6 @@ export async function loadPlayerSeasonStats(playerId: number) {
   return {
     data: mapNormalizedSeasonStats(data, playerId),
     error: isMarketBackendUnavailable(error) ? null : error as Error | null,
-  }
-}
-
-export async function loadMarketSeasonStats() {
-  const { data, error } = await supabase
-    .from('player_season_stats')
-    .select('player_id,season_id,appearances,starts,minutes_played,goals,assists,clean_sheets,yellow_cards,red_cards,average_rating_milli,source_through_at,updated_at')
-    .order('season_id', { ascending: false })
-
-  return {
-    data: mapNormalizedSeasonStats(data),
-    error: isMarketBackendUnavailable(error) || isPermissionDenied(error) ? null : error as Error | null,
   }
 }
 

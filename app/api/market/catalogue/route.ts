@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { unstable_cache } from 'next/cache'
 import { createClient } from '@supabase/supabase-js'
 import type { MarketPlayer } from '@/lib/market/types'
 
@@ -89,10 +90,16 @@ async function loadAuthoritativeCatalogue(competition: string | null) {
   return players.sort((a, b) => b.current_value - a.current_value || a.display_name.localeCompare(b.display_name))
 }
 
+const loadCachedAuthoritativeCatalogue = unstable_cache(
+  loadAuthoritativeCatalogue,
+  ['market-public-catalogue-v1'],
+  { revalidate: 300, tags: ['market-public-catalogue'] },
+)
+
 export async function GET(request: Request) {
   try {
     const competition = new URL(request.url).searchParams.get('competition')
-    const players = await loadAuthoritativeCatalogue(competition)
+    const players = await loadCachedAuthoritativeCatalogue(competition)
     const grouped = new Map<string, { key: string; name: string; playerCount: number }>()
     for (const player of players) {
       const key = player.competition_key ?? 'unknown'
@@ -110,7 +117,11 @@ export async function GET(request: Request) {
       playerCount: players.length,
       competitions: Array.from(grouped.values()),
     }, {
-      headers: { 'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300' },
+      headers: {
+        'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=3600',
+        'CDN-Cache-Control': 'public, s-maxage=300, stale-while-revalidate=3600',
+        'Vercel-CDN-Cache-Control': 'public, s-maxage=300, stale-while-revalidate=3600',
+      },
     })
   } catch (error) {
     const message = error instanceof Error ? error.message : 'The verified player catalogue could not be loaded.'

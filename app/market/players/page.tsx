@@ -5,15 +5,14 @@ import { SiteHeader } from '@/components/site-header'
 import { PlayerMarketBrowser } from '@/components/market/player-market-browser'
 import { MarketDisclaimer } from '@/components/market/market-disclaimer'
 import { useAuth } from '@/components/auth-provider'
-import { calculateTradesRemaining, loadMarketPlayers, loadMarketSeasonStats, loadMyGameweekStatus, loadMyPortfolioData, refreshMyMarketPortfolio } from '@/lib/market/client'
-import type { MarketHolding, MarketPlayer, MarketSeasonStats } from '@/lib/market/types'
+import { calculateTradesRemaining, loadMarketPlayers, loadMyGameweekStatus, loadMyPortfolioData } from '@/lib/market/client'
+import type { MarketHolding, MarketPlayer } from '@/lib/market/types'
 
 export default function PlayerMarketPlayersPage() {
   const { user } = useAuth()
   const [players, setPlayers] = useState<MarketPlayer[]>([])
   const [holdings, setHoldings] = useState<MarketHolding[]>([])
   const [watchlist, setWatchlist] = useState<number[]>([])
-  const [statsByPlayerId, setStatsByPlayerId] = useState<Record<number, MarketSeasonStats | undefined>>({})
   const [buysRemaining, setBuysRemaining] = useState(11)
   const [availableCash, setAvailableCash] = useState(100_000_000)
   const [loading, setLoading] = useState(true)
@@ -23,24 +22,10 @@ export default function PlayerMarketPlayersPage() {
     setLoading(true)
     setError('')
 
-    const [{ data: playerRows, error: playerError }, { data: allStats, error: allStatsError }] = await Promise.all([
-      loadMarketPlayers(),
-      loadMarketSeasonStats(),
-    ])
+    const { data: playerRows, error: playerError } = await loadMarketPlayers()
     if (playerError) setError(playerError.message)
-    if (allStatsError) setError(allStatsError.message)
-
-    const latestStatsMap: Record<number, MarketSeasonStats | undefined> = {}
-    for (const row of allStats) {
-      if (!latestStatsMap[row.player_id]) latestStatsMap[row.player_id] = row
-    }
 
     setPlayers(playerRows)
-    setStatsByPlayerId(latestStatsMap)
-
-    if (user) {
-      await refreshMyMarketPortfolio()
-    }
 
     const [portfolioData, gameweekStatus] = await Promise.all([loadMyPortfolioData(), loadMyGameweekStatus()])
     if (portfolioData.error) setError(portfolioData.error.message)
@@ -72,7 +57,7 @@ export default function PlayerMarketPlayersPage() {
       <section className="mx-auto max-w-7xl px-4 py-10 sm:px-6 sm:py-14">
         <div className="mb-5"><MarketDisclaimer /></div>
         {error ? <p className="mb-4 rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">{error}</p> : null}
-        {loading ? <p className="text-sm text-muted-foreground">Loading market players…</p> : <PlayerMarketBrowser players={players} holdings={holdings} watchlist={watchlist} statsByPlayerId={statsByPlayerId} userSignedIn={Boolean(user)} buysRemaining={buysRemaining} availableCash={availableCash} onTradeAction={load} />}
+        {loading ? <p className="text-sm text-muted-foreground">Loading market players…</p> : <PlayerMarketBrowser players={players} holdings={holdings} watchlist={watchlist} statsByPlayerId={{}} userSignedIn={Boolean(user)} buysRemaining={buysRemaining} availableCash={availableCash} onTradeAction={load} />}
       </section>
     </main>
   )

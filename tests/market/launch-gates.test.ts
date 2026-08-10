@@ -12,8 +12,11 @@ describe('Player Market launch gates', () => {
     expect(route).toContain("client.rpc('market_public_catalogue_v1', {")
     expect(route).toContain('Promise.all(keys.map')
     expect(route).toContain('p_competition_key: key')
+    expect(route).toContain('unstable_cache')
+    expect(route).toContain("tags: ['market-public-catalogue']")
     expect(route).not.toContain('buildSportmonksCombinedCatalogue')
-    expect(route).toContain('s-maxage=60')
+    expect(route).toContain('s-maxage=300')
+    expect(route).toContain('stale-while-revalidate=3600')
   })
 
   it('publishes only verified database catalogue rows and removes broad public writes', () => {
@@ -52,11 +55,28 @@ describe('Player Market launch gates', () => {
     const client = read('lib/market/client.ts')
     const sportmonks = read('lib/market/server/sportmonks-client.ts')
     const engine = read('lib/market/server/gameweek-engine.ts')
-    expect(client).toContain('VERIFIED_CATALOGUE_TTL_MS = 60_000')
-    expect(client).toContain("cache: 'no-store'")
+    expect(client).toContain('VERIFIED_CATALOGUE_TTL_MS = 300_000')
+    expect(client).not.toContain("fetch('/api/market/catalogue', { cache: 'no-store' })")
     expect(sportmonks).toContain('processedFixtureIds.has(String(fixture.id))')
     expect(engine).toContain("select('provider_fixture_id')")
     expect(engine).toContain('verified-gameweek-heartbeat:')
+  })
+
+  it('keeps high-traffic market reads bounded and free of page-view writes', () => {
+    const client = read('lib/market/client.ts')
+    const pages = [
+      read('app/market/players/page.tsx'),
+      read('app/market/portfolio/page.tsx'),
+      read('app/market/player/[slug]/page.tsx'),
+      read('components/market/player-market-home.tsx'),
+    ].join('\n')
+    const scaleSql = read('supabase/migrations/20260810082824_scale_market_public_reads.sql')
+    expect(client).not.toContain('export async function refreshMyMarketPortfolio')
+    expect(client).not.toContain('export async function loadMarketSeasonStats')
+    expect(pages).not.toContain('refreshMyMarketPortfolio')
+    expect(pages).not.toContain('loadMarketSeasonStats')
+    expect(scaleSql).toContain('limit 30')
+    expect(scaleSql).toContain('market_transactions_portfolio_date_idx')
   })
 
   it('removes obsolete RPCs and indexes rolling appearances', () => {

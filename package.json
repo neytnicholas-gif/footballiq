@@ -9,7 +9,8 @@
     "lint": "eslint app/signup/page.tsx app/username/page.tsx app/quizzes/tactical-lab/page.tsx app/api/market/provider-trial/route.ts app/api/market/sportmonks-trial/route.ts components/career-path-game.tsx components/choice-quiz.tsx components/daily-challenge.tsx components/duel-quiz.tsx components/higher-lower-game.tsx components/referee-decision-quiz.tsx components/scout-game.tsx components/scout-vision-game.tsx components/tactical-lab.tsx components/who-am-i-game.tsx lib/keyboard-shortcuts.ts lib/market/server/sportmonks-client.ts lib/market/server/thesportsdb-client.ts lib/quiz-save.ts lib/referee-scenarios.ts lib/scout-scenario-expansion.ts lib/signup-form.ts lib/supabase/types.ts lib/tactical-scenarios.ts tests/core-gameplay.test.ts tests/judgement-content.test.ts tests/market/sportmonks-client.test.ts tests/market/thesportsdb-client.test.ts tests/progression-integrity.test.ts tests/signup-security.test.ts tests/tactical-content.test.ts vitest.config.ts eslint.config.mjs",
     "typecheck": "tsc --noEmit --incremental false",
     "test": "vitest run",
-    "test:market": "vitest run"
+    "test:market": "vitest run",
+    "load-test:market": "node scripts/load-test-market.mjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.5.0",

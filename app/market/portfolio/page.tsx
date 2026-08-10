@@ -11,7 +11,6 @@ import {
   loadMyGameweekStatus,
   loadMarketPlayers,
   loadMyPortfolioData,
-  refreshMyMarketPortfolio,
 } from '@/lib/market/client'
 import type { MarketHolding, MarketMatchweekRun, MarketPlayer, MarketPortfolio, MarketRevealSummary, MarketTransaction } from '@/lib/market/types'
 import type { GuestMarketImportResult } from '@/lib/market/client'
@@ -60,10 +59,7 @@ export default function PlayerMarketPortfolioPage() {
 
       const [{ data: marketPlayers, error: playerError }, portfolioData, runsResult, revealsResult, gameweekStatus] = await Promise.all([
         loadMarketPlayers(),
-        (async () => {
-          if (user) await refreshMyMarketPortfolio()
-          return loadMyPortfolioData()
-        })(),
+        loadMyPortfolioData(),
         loadMatchweekRuns(12),
         loadMyRevealHistory(12),
         loadMyGameweekStatus(),

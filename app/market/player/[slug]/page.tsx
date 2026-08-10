@@ -5,7 +5,6 @@ import { useParams } from 'next/navigation'
 import { SiteHeader } from '@/components/site-header'
 import { PlayerMarketDetail } from '@/components/market/player-market-detail'
 import { MarketDisclaimer } from '@/components/market/market-disclaimer'
-import { useAuth } from '@/components/auth-provider'
 import {
   calculateTradesRemaining,
   loadMarketPlayers,
@@ -13,12 +12,10 @@ import {
   loadMyPortfolioData,
   loadPlayerSeasonStats,
   loadPlayerValueHistory,
-  refreshMyMarketPortfolio,
 } from '@/lib/market/client'
 import type { MarketHolding, MarketPlayer, MarketSeasonStats, MarketValueHistoryPoint } from '@/lib/market/types'
 
 export default function PlayerMarketDetailPage() {
-  const { user } = useAuth()
   const params = useParams<{ slug: string }>()
   const slug = decodeURIComponent(params.slug)
 
@@ -55,12 +52,7 @@ export default function PlayerMarketDetailPage() {
     const [statsResult, historyResult, portfolioResult, gameweekStatus] = await Promise.all([
       loadPlayerSeasonStats(currentPlayer.id),
       loadPlayerValueHistory(currentPlayer.id),
-      user
-        ? (async () => {
-            await refreshMyMarketPortfolio()
-            return loadMyPortfolioData()
-          })()
-        : loadMyPortfolioData(),
+      loadMyPortfolioData(),
       loadMyGameweekStatus(),
     ])
 
@@ -78,7 +70,7 @@ export default function PlayerMarketDetailPage() {
     setBuysRemaining(gameweekStatus.data?.signings_remaining ?? remaining.buysRemaining)
 
     setLoading(false)
-  }, [slug, user])
+  }, [slug])
 
   useEffect(() => {
     const timer = window.setTimeout(() => void load(), 0)

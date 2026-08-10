@@ -15,7 +15,6 @@ import {
   loadLatestMatchweekRun,
   loadMarketPlayers,
   loadMyPortfolioData,
-  refreshMyMarketPortfolio,
 } from '@/lib/market/client'
 import {
   formatChange,
@@ -47,10 +46,7 @@ export function PlayerMarketHome() {
 
     const [{ data: playerRows, error: playerError }, portfolioData, latestRunData, gameweekStatus] = await Promise.all([
       loadMarketPlayers(),
-      (async () => {
-        if (user) await refreshMyMarketPortfolio()
-        return loadMyPortfolioData()
-      })(),
+      loadMyPortfolioData(),
       loadLatestMatchweekRun(),
       loadMyGameweekStatus(),
     ])
@@ -81,7 +77,7 @@ export function PlayerMarketHome() {
     setLatestRevealWeek(revealResult.data?.week_label ?? null)
 
     setLoading(false)
-  }, [user])
+  }, [])
 
   useEffect(() => {
     const timer = window.setTimeout(() => void load(), 0)
