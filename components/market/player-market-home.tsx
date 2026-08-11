@@ -3,11 +3,12 @@
 import Link from 'next/link'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
-import { ArrowRight, BarChart3, Coins, DatabaseZap, Lock, Trophy, TrendingDown, TrendingUp, Users, Wallet } from 'lucide-react'
+import { ArrowRight, Award, BarChart3, Coins, DatabaseZap, Lock, Trophy, TrendingDown, TrendingUp, Users, Wallet } from 'lucide-react'
 import { countFormation } from '@/lib/market/formation'
 import { useAuth } from '@/components/auth-provider'
 import { MarketDisclaimer } from '@/components/market/market-disclaimer'
 import { MarketPlayerChip } from '@/components/market/market-player-chip'
+import { useMarketFormation } from '@/components/market/use-market-formation'
 import {
   calculateTradesRemaining,
   loadMyLatestReveal,
@@ -25,6 +26,8 @@ import {
 import type { MarketHolding, MarketMatchweekRun, MarketPlayer, MarketPortfolio } from '@/lib/market/types'
 
 export function PlayerMarketHome() {
+  const activeFormation = useMarketFormation()
+  const formationLimits = activeFormation === '3-4-3' ? { GK: 1, DEF: 3, MID: 4, FWD: 3 } : { GK: 1, DEF: 4, MID: 3, FWD: 3 }
   const { user } = useAuth()
   const [players, setPlayers] = useState<MarketPlayer[]>([])
   const [portfolio, setPortfolio] = useState<MarketPortfolio | null>(null)
@@ -110,8 +113,8 @@ export function PlayerMarketHome() {
 
   const playersById = useMemo(() => new Map(players.map((entry) => [entry.id, entry])), [players])
   const formation = useMemo(() => countFormation(holdings, playersById), [holdings, playersById])
-  const isValidSquad = formation.GK === 1 && formation.DEF === 4 && formation.MID === 3 && formation.FWD === 3
-  const suggestedPosition = formation.GK < 1 ? 'GK' : formation.DEF < 4 ? 'DEF' : formation.MID < 3 ? 'MID' : formation.FWD < 3 ? 'FWD' : null
+  const isValidSquad = formation.GK === formationLimits.GK && formation.DEF === formationLimits.DEF && formation.MID === formationLimits.MID && formation.FWD === formationLimits.FWD
+  const suggestedPosition = formation.GK < formationLimits.GK ? 'GK' : formation.DEF < formationLimits.DEF ? 'DEF' : formation.MID < formationLimits.MID ? 'MID' : formation.FWD < formationLimits.FWD ? 'FWD' : null
   const suggestedPlayers = useMemo(() => players.filter((player) => !holdingsMap.has(player.id) && (!suggestedPosition || player.position === suggestedPosition)).slice(0, 8), [players, holdingsMap, suggestedPosition])
 
   return (
@@ -128,6 +131,9 @@ export function PlayerMarketHome() {
           <Link href="/market/players" className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground">
             Browse market
             <ArrowRight className="size-4" />
+          </Link>
+          <Link href="/market/rewards" className="inline-flex items-center gap-2 rounded-xl border border-primary/30 bg-primary/10 px-5 py-3 text-sm font-semibold text-primary">
+            <Award className="size-4" /> Challenges & rewards
           </Link>
         </div>
 
@@ -155,7 +161,7 @@ export function PlayerMarketHome() {
         </div>
 
         <div className="mt-3 rounded-xl border border-border bg-background/60 px-4 py-3 text-xs text-muted-foreground">
-          Formation status: GK {formation.GK}/1 · DEF {formation.DEF}/4 · MID {formation.MID}/3 · FWD {formation.FWD}/3
+          {activeFormation} status: GK {formation.GK}/{formationLimits.GK} · DEF {formation.DEF}/{formationLimits.DEF} · MID {formation.MID}/{formationLimits.MID} · FWD {formation.FWD}/{formationLimits.FWD}
         </div>
 
         <div className="mt-5">
@@ -183,7 +189,7 @@ export function PlayerMarketHome() {
               </Link>
             </div>
           </div>
-          {!isValidSquad ? <p className="mt-3 text-xs text-emerald-800">Finish your 1-4-3-3 team before the next price update.</p> : null}
+          {!isValidSquad ? <p className="mt-3 text-xs text-emerald-800">Finish your {activeFormation} team before the next price update.</p> : null}
           {latestRevealWeek ? <p className="mt-2 text-xs text-muted-foreground">Latest Reveal available: {latestRevealWeek}</p> : null}
 
           {lastRun ? (
@@ -327,7 +333,7 @@ export function PlayerMarketHome() {
 
       <section className="rounded-[2rem] border border-border bg-card p-6">
         <div className="mb-4 flex items-center justify-between">
-          <div><h2 className="text-xl font-bold">{suggestedPosition ? `Suggested ${suggestedPosition} options` : 'Explore the player pool'}</h2><p className="mt-1 text-xs text-muted-foreground">{suggestedPosition ? 'Matches the next open position in your 1-4-3-3 roster.' : 'Your roster is complete; compare alternatives before making a change.'}</p></div>
+          <div><h2 className="text-xl font-bold">{suggestedPosition ? `Suggested ${suggestedPosition} options` : 'Explore the player pool'}</h2><p className="mt-1 text-xs text-muted-foreground">{suggestedPosition ? `Matches the next open position in your ${activeFormation} roster.` : 'Your roster is complete; compare alternatives before making a change.'}</p></div>
           <div className="flex items-center gap-4">
             <Link href="/market/leagues" className="text-sm font-semibold text-primary">Friends leagues beta</Link>
             <Link href="/market/leaderboard" className="text-sm font-semibold text-primary">Market leaderboard</Link>

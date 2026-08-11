@@ -7,6 +7,7 @@ import { AlertCircle, CheckCircle2, Clock3, Star } from 'lucide-react'
 import { useAuth } from '@/components/auth-provider'
 import { MarketPlayerChip } from '@/components/market/market-player-chip'
 import { MarketTradeDialog } from '@/components/market/market-trade-dialog'
+import { useMarketFormation } from '@/components/market/use-market-formation'
 import { buyMarketPlayer, sellMarketPlayer, toggleMarketWatchlist } from '@/lib/market/client'
 import { canBuyPosition, countFormation } from '@/lib/market/formation'
 import { createMarketRequestKey, formatFiqCompact, formatMarketDateTime, MARKET_MAX_PORTFOLIO_SIZE } from '@/lib/market/format'
@@ -38,6 +39,7 @@ export function PlayerMarketDetail({
   const [notice, setNotice] = useState<{ kind: 'success' | 'error' | 'info'; message: string } | null>(null)
   const [tradeIntent, setTradeIntent] = useState<{ action: 'buy' | 'sell'; requestKey: string } | null>(null)
   const [renderedAt] = useState(() => Date.now())
+  const activeFormation = useMarketFormation()
 
   const holding = useMemo(() => holdings.find((item) => item.player_id === player.id) ?? null, [holdings, player.id])
   const owned = Boolean(holding)
@@ -47,7 +49,7 @@ export function PlayerMarketDetail({
   const lockReason = player.trade_lock_reason ?? 'market review in progress'
   const playersById = useMemo(() => new Map(players.map((entry) => [entry.id, entry])), [players])
   const formation = useMemo(() => countFormation(holdings, playersById), [holdings, playersById])
-  const hasPositionSlot = canBuyPosition(player.position, formation)
+  const hasPositionSlot = canBuyPosition(player.position, formation, activeFormation)
   const canBuy = player.active
     && !owned
     && buysRemaining > 0

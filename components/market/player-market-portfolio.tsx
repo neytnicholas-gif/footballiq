@@ -3,8 +3,9 @@
 import Link from 'next/link'
 import { useMemo } from 'react'
 import type { ReactNode } from 'react'
-import { ArrowUpRight, Wallet } from 'lucide-react'
+import { ArrowUpRight, Award, Wallet } from 'lucide-react'
 import { MarketPlayerChip } from '@/components/market/market-player-chip'
+import { useMarketFormation } from '@/components/market/use-market-formation'
 import { countFormation } from '@/lib/market/formation'
 import { formatFiqCompact, formatMarketDateTime, MARKET_MAX_PORTFOLIO_SIZE } from '@/lib/market/format'
 import type { MarketHolding, MarketMatchweekRun, MarketPlayer, MarketPortfolio, MarketRevealSummary, MarketTransaction } from '@/lib/market/types'
@@ -30,6 +31,8 @@ export function PlayerMarketPortfolio({
   reveals: MarketRevealSummary[]
   buysRemaining: number
 }) {
+  const activeFormation = useMarketFormation()
+  const limits = activeFormation === '3-4-3' ? { GK: 1, DEF: 3, MID: 4, FWD: 3 } : { GK: 1, DEF: 4, MID: 3, FWD: 3 }
   const playersById = useMemo(() => new Map(players.map((player) => [player.id, player])), [players])
   const formation = useMemo(() => countFormation(holdings, playersById), [holdings, playersById])
   const watchedPlayers = useMemo(() => watchlist.map((playerId) => playersById.get(playerId)).filter((player): player is MarketPlayer => Boolean(player)), [watchlist, playersById])
@@ -75,9 +78,10 @@ export function PlayerMarketPortfolio({
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <h1 className="text-3xl font-black">Your full roster</h1>
-            <p className="mt-2 text-sm text-muted-foreground">Exact 11-player portfolio required: 1 GK, 4 DEF, 3 MID, 3 FWD.</p>
+            <p className="mt-2 text-sm text-muted-foreground">Your {activeFormation} plan: {limits.GK} GK, {limits.DEF} DEF, {limits.MID} MID, {limits.FWD} FWD.</p>
           </div>
           <Link href="/market/players#live-roster" className="rounded-xl border border-border px-4 py-2 text-sm font-semibold transition hover:bg-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">Back to market</Link>
+          <Link href="/market/rewards" className="inline-flex items-center gap-2 rounded-xl border border-primary/30 bg-primary/10 px-4 py-2 text-sm font-semibold text-primary"><Award className="size-4"/>Challenges & rewards</Link>
         </div>
 
         <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
@@ -111,7 +115,7 @@ export function PlayerMarketPortfolio({
 
         <div className="mt-4 rounded-xl border border-border bg-background/60 px-4 py-3 text-sm text-muted-foreground">
           Gameweek allowance: {buysRemaining} of 11 signings remaining · sales free squad slots
-          <span className="ml-2">· Formation occupancy: GK {formation.GK}/1, DEF {formation.DEF}/4, MID {formation.MID}/3, FWD {formation.FWD}/3</span>
+          <span className="ml-2">· {activeFormation}: GK {formation.GK}/{limits.GK}, DEF {formation.DEF}/{limits.DEF}, MID {formation.MID}/{limits.MID}, FWD {formation.FWD}/{limits.FWD}</span>
         </div>
       </section>
 

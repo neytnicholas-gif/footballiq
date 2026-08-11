@@ -33,6 +33,7 @@ import type {
   MarketTransaction,
   MarketValueHistoryPoint,
 } from '@/lib/market/types'
+import { EMPTY_MARKET_PROGRESSION, type MarketProgression } from '@/lib/market/progression'
 
 function isMarketBackendUnavailable(error: unknown) {
   if (!error || typeof error !== 'object') return false
@@ -710,4 +711,49 @@ export async function deleteFriendLeague(leagueId: number) {
     data: (data as Record<string, unknown> | null) ?? null,
     error: error as Error | null,
   }
+}
+
+export async function loadMyMarketProgression(refresh = true) {
+  const { data: authData } = await supabase.auth.getUser()
+  if (!authData.user) return { data: EMPTY_MARKET_PROGRESSION, error: null }
+  const { data, error } = await (supabase as any).rpc(refresh ? 'market_refresh_my_progression' : 'market_my_progression', {})
+  const row = data as Partial<MarketProgression> | null
+  const normalized: MarketProgression = {
+    ...EMPTY_MARKET_PROGRESSION,
+    ...row,
+    wallet: { ...EMPTY_MARKET_PROGRESSION.wallet, ...(row?.wallet ?? {}) },
+    preferences: { ...EMPTY_MARKET_PROGRESSION.preferences, ...(row?.preferences ?? {}) },
+    challenges: row?.challenges ?? [],
+    store: row?.store ?? [],
+  }
+  return { data: normalized, error: normalizeMarketMutationError(error) }
+}
+
+export async function purchaseMarketReward(itemKey: string) {
+  const { data, error } = await (supabase as any).rpc('market_purchase_reward', { p_item_key: itemKey })
+  return { data: data as Record<string, unknown> | null, error: normalizeMarketMutationError(error) }
+}
+
+export async function equipMarketReward(itemKey: string) {
+  const { data, error } = await (supabase as any).rpc('market_equip_reward', { p_item_key: itemKey })
+  return { data: data as Record<string, unknown> | null, error: normalizeMarketMutationError(error) }
+}
+
+export async function setMarketFormation(formation: '4-3-3' | '3-4-3') {
+  const { data, error } = await (supabase as any).rpc('market_set_formation', { p_formation: formation })
+  return { data: data as Record<string, unknown> | null, error: normalizeMarketMutationError(error) }
+}
+
+export async function updateMarketProfilePreferences(preferences: Pick<MarketProgression['preferences'], 'show_badges' | 'show_market_stats' | 'show_activity'>) {
+  const { data, error } = await (supabase as any).rpc('market_update_profile_preferences', {
+    p_show_badges: preferences.show_badges,
+    p_show_market_stats: preferences.show_market_stats,
+    p_show_activity: preferences.show_activity,
+  })
+  return { data: data as Record<string, unknown> | null, error: normalizeMarketMutationError(error) }
+}
+
+export async function setMarketShowcaseBadges(challengeKeys: string[]) {
+  const { data, error } = await (supabase as any).rpc('market_set_showcase_badges', { p_challenge_keys: challengeKeys })
+  return { data: data as Record<string, unknown> | null, error: normalizeMarketMutationError(error) }
 }

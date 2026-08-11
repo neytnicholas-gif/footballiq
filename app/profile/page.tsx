@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { BookOpen } from 'lucide-react'
+import { Award, BookOpen, ExternalLink } from 'lucide-react'
 import { SiteHeader } from '@/components/site-header'
 import { useAuth } from '@/components/auth-provider'
 import { getRankProgress } from '@/lib/progression'
@@ -149,6 +149,8 @@ export default function ProfilePage() {
                   {academyExperiences.filter((item) => item.status !== 'available').slice(0, 2).map((item) => <li key={item.key}>• {item.title} · {item.status === 'coming-next' ? 'Coming next' : 'Planned later'}</li>)}
                 </ul>
                 <div className="mt-4 flex flex-wrap gap-3">
+                  <Link href="/market/rewards" className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground"><Award className="size-4"/>Market challenges</Link>
+                  <Link href={`/player/${encodeURIComponent(profile.username)}`} className="inline-flex items-center gap-2 rounded-xl border border-border bg-background px-4 py-2.5 text-sm font-semibold text-foreground"><ExternalLink className="size-4"/>Public profile</Link>
                   <Link href="/username" className="rounded-xl border border-border bg-background px-4 py-2.5 text-sm font-semibold text-foreground transition hover:border-primary/35 hover:bg-secondary/40">Edit username</Link>
                   <button onClick={() => void signOut()} className="rounded-xl border border-border bg-background px-4 py-2.5 text-sm font-semibold text-foreground transition hover:border-primary/35 hover:bg-secondary/40">Log out</button>
                 </div>

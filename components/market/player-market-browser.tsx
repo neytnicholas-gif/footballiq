@@ -6,6 +6,7 @@ import type { ReactNode } from 'react'
 import { ArrowUpDown, CheckCircle2, Clock3, Search, Shield, Sparkles, Star, UserPlus, Users, WalletCards, X } from 'lucide-react'
 import { MarketPlayerChip } from '@/components/market/market-player-chip'
 import { MarketTradeDialog } from '@/components/market/market-trade-dialog'
+import { useMarketFormation } from '@/components/market/use-market-formation'
 import { buyMarketPlayer, sellMarketPlayer, toggleMarketWatchlist } from '@/lib/market/client'
 import { canBuyPosition, countFormation } from '@/lib/market/formation'
 import { createMarketRequestKey, formatFiqCompact, MARKET_MAX_PORTFOLIO_SIZE } from '@/lib/market/format'
@@ -48,6 +49,7 @@ export function PlayerMarketBrowser({
   const [notice, setNotice] = useState<{ kind: 'success' | 'error' | 'info'; message: string } | null>(null)
   const [tradeIntent, setTradeIntent] = useState<{ action: 'buy' | 'sell'; player: MarketPlayer; requestKey: string } | null>(null)
   const [renderedAt] = useState(() => Date.now())
+  const activeFormation = useMarketFormation()
 
   const clubs = useMemo(() => ['ALL', ...new Set(players
     .filter((player) => competition === 'ALL' || player.competition_name === competition)
@@ -59,7 +61,8 @@ export function PlayerMarketBrowser({
   const playersById = useMemo(() => new Map(players.map((player) => [player.id, player])), [players])
   const formation = useMemo(() => countFormation(holdings, playersById), [holdings, playersById])
   const openSlots = MARKET_MAX_PORTFOLIO_SIZE - holdings.length
-  const nextPosition = formation.GK < 1 ? 'GK' : formation.DEF < 4 ? 'DEF' : formation.MID < 3 ? 'MID' : formation.FWD < 3 ? 'FWD' : null
+  const limits = activeFormation === '3-4-3' ? { GK: 1, DEF: 3, MID: 4, FWD: 3 } : { GK: 1, DEF: 4, MID: 3, FWD: 3 }
+  const nextPosition = formation.GK < limits.GK ? 'GK' : formation.DEF < limits.DEF ? 'DEF' : formation.MID < limits.MID ? 'MID' : formation.FWD < limits.FWD ? 'FWD' : null
   const marketHasMoved = useMemo(() => players.some((player) => player.current_value !== player.opening_season_value), [players])
   const previewExperimentActive = useMemo(() => players.some((player) => player.data_source_label?.includes('preview valuation experiment')), [players])
   const filtered = useMemo(() => {
@@ -95,7 +98,7 @@ export function PlayerMarketBrowser({
 
     if (scope === 'squad') rows = rows.filter((player) => holdingsSet.has(player.id))
     if (scope === 'watchlist') rows = rows.filter((player) => watchSet.has(player.id))
-    if (scope === 'affordable') rows = rows.filter((player) => !holdingsSet.has(player.id) && player.current_value <= availableCash && canBuyPosition(player.position, formation))
+    if (scope === 'affordable') rows = rows.filter((player) => !holdingsSet.has(player.id) && player.current_value <= availableCash && canBuyPosition(player.position, formation, activeFormation))
 
     rows.sort((a, b) => {
       switch (sortKey) {
@@ -119,7 +122,7 @@ export function PlayerMarketBrowser({
     })
 
     return rows
-  }, [players, search, position, competition, club, trend, priceRange, scope, sortKey, holdingsSet, watchSet, availableCash, formation])
+  }, [players, search, position, competition, club, trend, priceRange, scope, sortKey, holdingsSet, watchSet, availableCash, formation, activeFormation])
   const visiblePlayers = useMemo(() => filtered.slice(0, visibleCount), [filtered, visibleCount])
 
   function resetCatalogueWindow() {
@@ -303,7 +306,7 @@ export function PlayerMarketBrowser({
               && buysRemaining > 0
               && holdings.length < MARKET_MAX_PORTFOLIO_SIZE
               && availableCash >= player.current_value
-              && canBuyPosition(player.position, formation)
+              && canBuyPosition(player.position, formation, activeFormation)
             const stat = statsByPlayerId[player.id]
             const latestPerformance = player.matchweek_performance_history?.at(-1)
             const trendDelta = delta
@@ -348,7 +351,7 @@ export function PlayerMarketBrowser({
                     disabled={!canBuy || busyId !== null}
                     className="min-h-11 rounded-xl bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-700 disabled:opacity-45"
                   >
-                    {busyId === player.id ? 'Processing…' : owned ? 'Held' : !canBuyPosition(player.position, formation) ? `${player.position} slot full` : availableCash < player.current_value ? 'Not enough cash' : buysRemaining <= 0 ? 'Buy limit reached' : 'Buy'}
+                    {busyId === player.id ? 'Processing…' : owned ? 'Held' : !canBuyPosition(player.position, formation, activeFormation) ? `${player.position} slot full` : availableCash < player.current_value ? 'Not enough cash' : buysRemaining <= 0 ? 'Buy limit reached' : 'Buy'}
                   </button>
                   <button
                     onClick={() => setTradeIntent({ action: 'sell', player, requestKey: createMarketRequestKey(`sell-${player.slug}`) })}
@@ -373,7 +376,7 @@ export function PlayerMarketBrowser({
                       ? 'Trading is temporarily locked for this player.'
                       : holdings.length >= MARKET_MAX_PORTFOLIO_SIZE
                         ? 'Your team is full. Sell a player before you buy another.'
-                        : !canBuyPosition(player.position, formation)
+                        : !canBuyPosition(player.position, formation, activeFormation)
                           ? `Formation slot limit reached for ${player.position}.`
                           : availableCash < player.current_value
                             ? 'Insufficient cash for this purchase.'
