@@ -315,7 +315,7 @@ export function GoalscorerQuiz() {
                   Final score: {score}/{questions.length}
                 </h3>
                 <p className="mx-auto mt-2 max-w-lg text-sm text-muted-foreground">
-                  This is the first FootballIQ format that can launch without images or videos:
+                  This is the first Verdict XI format that can launch without images or videos:
                   fast, shareable and easy to expand with hundreds of football duels.
                 </p>
               </div>

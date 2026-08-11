@@ -18,7 +18,7 @@ const navLinks = [
   { label: 'Terms', href: '/terms' },
   { label: 'Privacy', href: '/privacy' },
   { label: 'Game rules', href: '/game-rules' },
-  { label: 'Report content', href: `mailto:${BRAND.supportEmail}?subject=${encodeURIComponent('FootballIQ content or safety report')}` },
+  { label: 'Report content', href: `mailto:${BRAND.supportEmail}?subject=${encodeURIComponent('Verdict XI content or safety report')}` },
 ]
 
 export function SiteFooter() {
@@ -67,7 +67,7 @@ export function SiteFooter() {
         </div>
 
         <div className="mt-10 flex flex-col items-center justify-between gap-3 border-t border-border pt-5 text-sm text-muted-foreground sm:flex-row">
-          <p>© FootballIQ</p>
+          <p>© Verdict XI</p>
           <p>Free game credits only. No cash value, withdrawals or official league affiliation.</p>
         </div>
       </div>

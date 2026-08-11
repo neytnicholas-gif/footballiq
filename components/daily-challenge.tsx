@@ -227,7 +227,7 @@ export function DailyChallenge() {
 
   async function shareResult() {
     const blocks = Array.from({ length: items.length }, (_, i) => (i < score ? '🟩' : '⬛')).join('')
-    const text = `FootballIQ Daily Challenge ${dailyKey}\nScore: ${score}/${items.length}\n${blocks}\nTimezone: Europe/Brussels`
+    const text = `Verdict XI Daily Challenge ${dailyKey}\nScore: ${score}/${items.length}\n${blocks}\nTimezone: Europe/Brussels`
     try {
       await navigator.clipboard.writeText(text)
       setCopied(true)

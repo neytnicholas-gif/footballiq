@@ -5,12 +5,12 @@ export const MARKET_WEEKLY_SIGNING_LIMIT = 11
 export function formatFiqCompact(value: number) {
   const safe = Number.isFinite(value) ? value : 0
   const millions = safe / 1_000_000
-  return `${millions.toFixed(1)}m FIQ`
+  return `${millions.toFixed(1)}m VX`
 }
 
 export function formatFiqLong(value: number) {
   const safe = Number.isFinite(value) ? value : 0
-  return `${safe.toLocaleString()} FootballIQ Credits`
+  return `${safe.toLocaleString()} VX Credits`
 }
 
 export function formatChange(value: number) {

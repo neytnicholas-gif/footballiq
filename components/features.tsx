@@ -37,7 +37,7 @@ export function Features() {
           Simple quizzes first. Bigger platform later.
         </h2>
         <p className="mt-4 text-pretty leading-relaxed text-muted-foreground">
-          FootballIQ starts with addictive football questions that do not need media. Then it can grow into referee clips, scouting puzzles and prediction games.
+          Verdict XI starts with addictive football questions that do not need media. Then it can grow into referee clips, scouting puzzles and prediction games.
         </p>
       </Reveal>
 

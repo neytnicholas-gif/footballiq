@@ -1,8 +1,8 @@
 export const BRAND = {
-  name: 'FootballIQ',
-  shortName: 'FootballIQ',
+  name: 'Verdict XI',
+  shortName: 'Verdict XI',
   description:
-    'Think like a scout, judge like a referee, and train your football knowledge with structured quiz modes.',
+    'Build your XI, make the big calls and prove how well you read the game.',
   supportEmail: 'hello@footballiq.app',
   themeColor: '#07111f',
   socialImage: '/images/hero-pitch.png',

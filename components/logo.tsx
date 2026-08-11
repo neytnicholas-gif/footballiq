@@ -13,11 +13,11 @@ export function BallIcon({ className }: { className?: string }) {
 
 export function Logo({ className }: { className?: string }) {
   return (
-    <Link href="/" className={cn('group flex items-center gap-2 text-foreground', className)} aria-label="FootballIQ home">
-      <span className="flex size-9 items-center justify-center rounded-xl bg-primary text-primary-foreground transition-transform group-hover:rotate-12">
-        <BallIcon className="size-5" />
+    <Link href="/" className={cn('group flex items-center gap-2 text-foreground', className)} aria-label="Verdict XI home">
+      <span className="flex size-9 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-400 to-sky-400 text-[11px] font-black tracking-[-0.08em] text-slate-950 shadow-sm shadow-emerald-400/20 transition-transform group-hover:-rotate-3 group-hover:scale-105">
+        XI
       </span>
-      <span className="text-lg font-semibold tracking-tight">Football<span className="text-primary">IQ</span></span>
+      <span className="text-lg font-black tracking-[-0.035em]">Verdict <span className="text-primary">XI</span></span>
     </Link>
   )
 }

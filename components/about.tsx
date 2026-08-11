@@ -13,13 +13,13 @@ export function About() {
         <div className="relative grid gap-10 lg:grid-cols-2 lg:items-center">
           <Reveal>
             <span className="text-sm font-medium uppercase tracking-widest text-primary">
-              About FootballIQ
+              About Verdict XI
             </span>
             <h2 className="mt-3 text-balance text-3xl font-semibold tracking-tight sm:text-4xl">
               Built for everyone who loves the details of the game
             </h2>
             <p className="mt-5 text-pretty leading-relaxed text-muted-foreground">
-              FootballIQ is an educational football platform built for people who want to
+              Verdict XI is an educational football platform built for people who want to
               understand the game better. Through short decision quizzes, football analysis and
               community voting, players can test what they know and get better at reading match
               situations.

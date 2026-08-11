@@ -23,13 +23,13 @@ const plexMono = IBM_Plex_Mono({
 export const metadata: Metadata = {
   metadataBase: new URL(BRAND.siteUrl),
   title: {
-    default: 'FootballIQ - Train football knowledge and judgement',
-    template: '%s | FootballIQ',
+    default: 'Verdict XI - Read the game. Make the call.',
+    template: '%s | Verdict XI',
   },
   description: BRAND.description,
   manifest: '/manifest.webmanifest',
   openGraph: {
-    title: 'FootballIQ - Train football knowledge and judgement',
+    title: 'Verdict XI - Read the game. Make the call.',
     description: BRAND.description,
     url: BRAND.siteUrl,
     siteName: BRAND.name,
@@ -38,7 +38,7 @@ export const metadata: Metadata = {
         url: BRAND.socialImage,
         width: 1200,
         height: 630,
-        alt: 'FootballIQ platform preview',
+        alt: 'Verdict XI platform preview',
       },
     ],
     locale: 'en_GB',
@@ -46,7 +46,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'FootballIQ - Train football knowledge and judgement',
+    title: 'Verdict XI - Read the game. Make the call.',
     description: BRAND.description,
     images: [BRAND.socialImage],
   },

@@ -218,7 +218,7 @@ export function ScoutGame() {
                         <p className="mt-1 text-muted-foreground">{rank.next ? `${rank.remaining} XP to ${rank.next.title}` : 'Maximum rank reached'}</p>
                       </div>
                     ) : (
-                      <p className="mt-4 text-sm text-muted-foreground">Create an account to save this progress, earn XP and build your FootballIQ profile.</p>
+                      <p className="mt-4 text-sm text-muted-foreground">Create an account to save this progress, earn XP and build your Verdict XI profile.</p>
                     )}
                   </div>
                   <div className="flex flex-wrap gap-3">

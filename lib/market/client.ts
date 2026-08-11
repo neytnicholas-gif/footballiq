@@ -66,7 +66,7 @@ function normalizeMarketMutationError(error: unknown): Error | null {
     [/ALREADY_OWNED/i, 'That player is already in your roster.'],
     [/MAX_HOLDINGS|PORTFOLIO_LIMIT/i, 'Your 11-player roster is full. Sell a player before adding another.'],
     [/FORMATION_LIMIT/i, 'That position is full in your current formation.'],
-    [/INSUFFICIENT_(BALANCE|FUNDS)/i, 'You do not have enough FIQ budget for that player.'],
+    [/INSUFFICIENT_(BALANCE|FUNDS)/i, 'You do not have enough VX budget for that player.'],
     [/GAMEWEEK_TRANSFER_LIMIT/i, 'You have used all 11 signings for this gameweek.'],
     [/GAMEWEEK_LOCKED/i, 'Trading is closed while this gameweek is being processed. Nothing changed.'],
     [/NOT_OWNED/i, 'That player is not currently in your roster.'],
@@ -103,7 +103,7 @@ function hydratePublicCataloguePlayer(player: PublicCataloguePlayer): MarketPlay
     short_name: null,
     active: true,
     data_updated_at: player.value_updated_at,
-    data_source_label: 'Provider-sourced identity · FootballIQ game price book',
+    data_source_label: 'Provider-sourced identity · Verdict XI game price book',
     source_reference: null,
     provenance_status: 'verified',
     owner_verified: true,
@@ -117,7 +117,7 @@ function hydratePublicCataloguePlayer(player: PublicCataloguePlayer): MarketPlay
     role_security_indicator: 'rotation',
     decision_support_note: player.current_value === player.opening_season_value
       ? 'Opening game price. This value stays frozen until eligible ratings and minutes are processed.'
-      : 'Eligible match evidence has been processed using FootballIQ’s published game-price rules.',
+      : 'Eligible match evidence has been processed using Verdict XI’s published game-price rules.',
     matchweek_performance_history: [],
     created_at: player.value_updated_at,
     updated_at: player.value_updated_at,

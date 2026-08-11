@@ -122,8 +122,8 @@ export function PlayerMarketHome() {
       <section className="rounded-[2rem] border border-border bg-card p-6 sm:p-8">
         <div className="flex flex-wrap items-start justify-between gap-5">
           <div className="max-w-3xl">
-            <p className="text-xs font-semibold uppercase tracking-[.25em] text-primary">FootballIQ flagship</p>
-            <h1 className="mt-3 text-4xl font-black tracking-tight sm:text-5xl">FootballIQ Player Market</h1>
+            <p className="text-xs font-semibold uppercase tracking-[.25em] text-primary">Verdict XI flagship</p>
+            <h1 className="mt-3 text-4xl font-black tracking-tight sm:text-5xl">Verdict XI Player Market</h1>
             <p className="mt-3 text-muted-foreground">
               Build an 11-player team. Buy players before you think their game price will rise. Sell them when you want to change your team.
             </p>
@@ -154,9 +154,9 @@ export function PlayerMarketHome() {
         ) : null}
 
         <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          <SummaryCard icon={<Wallet className="size-5" />} label="Total account value" value={portfolio ? formatFiqCompact(portfolio.total_account_value) : '100.0m FIQ'} sub={portfolio ? formatFiqLong(portfolio.total_account_value) : 'Create an account to track your market account'} />
-          <SummaryCard icon={<Coins className="size-5" />} label="Available balance" value={portfolio ? formatFiqCompact(portfolio.available_balance) : '100.0m FIQ'} sub={portfolio ? `Starting balance ${formatFiqCompact(portfolio.starting_balance)}` : 'No cash purchases. No withdrawals.'} />
-          <SummaryCard icon={<BarChart3 className="size-5" />} label="Portfolio value" value={portfolio ? formatFiqCompact(portfolio.portfolio_value) : '0.0m FIQ'} sub={portfolio ? `${holdings.length}/${MARKET_MAX_PORTFOLIO_SIZE} slots used` : '11-player portfolio target'} />
+          <SummaryCard icon={<Wallet className="size-5" />} label="Total account value" value={portfolio ? formatFiqCompact(portfolio.total_account_value) : '100.0m VX'} sub={portfolio ? formatFiqLong(portfolio.total_account_value) : 'Create an account to track your market account'} />
+          <SummaryCard icon={<Coins className="size-5" />} label="Available balance" value={portfolio ? formatFiqCompact(portfolio.available_balance) : '100.0m VX'} sub={portfolio ? `Starting balance ${formatFiqCompact(portfolio.starting_balance)}` : 'No cash purchases. No withdrawals.'} />
+          <SummaryCard icon={<BarChart3 className="size-5" />} label="Portfolio value" value={portfolio ? formatFiqCompact(portfolio.portfolio_value) : '0.0m VX'} sub={portfolio ? `${holdings.length}/${MARKET_MAX_PORTFOLIO_SIZE} slots used` : '11-player portfolio target'} />
           <SummaryCard icon={<TrendingUp className="size-5" />} label="Realised game gain/loss" value={portfolio ? formatChange(portfolio.realized_profit_loss) : '0'} sub={tradesMessage || '11 new signings available each gameweek'} />
         </div>
 
@@ -180,7 +180,7 @@ export function PlayerMarketHome() {
             <div>
               <p className="text-xs font-semibold uppercase tracking-[.2em] text-emerald-800">Verified-performance engine</p>
               <h2 className="mt-1 text-2xl font-black">{previewExperimentActive ? '11-player preview experiment is live' : players.some((player) => player.current_value !== player.opening_season_value) ? 'Verified price movement is live' : 'Opening market is live'}</h2>
-              <p className="mt-2 max-w-3xl text-sm text-muted-foreground">{previewExperimentActive ? 'A controlled set of ratings and minutes is running through the real FootballIQ valuation rules. It proves the portfolio loop without presenting test evidence as a completed fixture.' : 'Licensed provider data supplies current squads plus completed-fixture ratings and minutes. FootballIQ processes eligible prices after validated gameweeks and freezes any player whose evidence is missing.'}</p>
+              <p className="mt-2 max-w-3xl text-sm text-muted-foreground">{previewExperimentActive ? 'A controlled set of ratings and minutes is running through the real Verdict XI valuation rules. It proves the portfolio loop without presenting test evidence as a completed fixture.' : 'Licensed provider data supplies current squads plus completed-fixture ratings and minutes. Verdict XI processes eligible prices after validated gameweeks and freezes any player whose evidence is missing.'}</p>
             </div>
             <div className="flex flex-wrap gap-2">
               <span className="inline-flex items-center gap-2 rounded-xl border border-emerald-700/20 bg-emerald-700/10 px-4 py-2.5 text-sm font-semibold text-emerald-900"><DatabaseZap className="size-4" /> {previewExperimentActive ? 'Controlled preview data' : 'Provider-sourced catalogue'}</span>
@@ -325,7 +325,7 @@ export function PlayerMarketHome() {
           <SocialStub icon={<Trophy className="size-4" />} title="Top Traders" value="Coming live in Phase 2" hint="Highest average return over last 14 days" />
           <SocialStub icon={<Wallet className="size-4" />} title="Highest Portfolio" value="Coming live in Phase 2" hint="Largest total account value this week" />
           <SocialStub icon={<TrendingUp className="size-4" />} title="Biggest Weekly Gain" value="Coming live in Phase 2" hint="Strongest week-on-week performance" />
-          <SocialStub icon={<Coins className="size-4" />} title="Biggest Game Gain" value="Coming live in Phase 2" hint="Largest realised FIQ Credit gain" />
+          <SocialStub icon={<Coins className="size-4" />} title="Biggest Game Gain" value="Coming live in Phase 2" hint="Largest realised VX Credit gain" />
           <SocialStub icon={<Users className="size-4" />} title="Friends" value="Coming live in Phase 2" hint="Invite friends and build private leagues" />
           <SocialStub icon={<BarChart3 className="size-4" />} title="Market Leaderboard" value="Live now" hint="Track daily, weekly and season performance" />
         </div>

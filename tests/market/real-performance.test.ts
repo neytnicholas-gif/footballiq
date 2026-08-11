@@ -93,7 +93,7 @@ describe('rolling performance and value controls', () => {
     expect(capped).toMatchObject({ movement: 0, newValue: 8_000_000, bankAfterEventMilli: 440 })
   })
 
-  it('assigns opening values from FootballIQ inputs in 0.1m increments', () => {
+  it('assigns opening values from Verdict XI inputs in 0.1m increments', () => {
     const value = calculateOpeningGameplayValue({ position: 'MID', establishedPerformanceScore: 75, recentMinutesScore: 80, squadRoleScore: 70, availabilityScore: 90, agePotentialScore: 60 })
     expect(value % 100_000).toBe(0)
     expect(value).toBeGreaterThanOrEqual(VALUE_FLOOR)

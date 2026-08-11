@@ -112,7 +112,7 @@ export async function GET(request: Request) {
         'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=86400',
         'CDN-Cache-Control': 'public, s-maxage=300, stale-while-revalidate=86400',
         'Vercel-CDN-Cache-Control': 'public, s-maxage=300, stale-while-revalidate=86400',
-        'X-FootballIQ-Request-Id': requestId,
+        'X-Verdict-XI-Request-Id': requestId,
       },
     })
   } catch (error) {
@@ -131,7 +131,7 @@ export async function GET(request: Request) {
       headers: {
         'Cache-Control': 'private, no-store',
         'Retry-After': '30',
-        'X-FootballIQ-Request-Id': requestId,
+        'X-Verdict-XI-Request-Id': requestId,
       },
     })
   }
