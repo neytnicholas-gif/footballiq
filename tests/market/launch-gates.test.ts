@@ -271,4 +271,10 @@ describe('Player Market launch gates', () => {
     expect(client).toContain('You have used all 11 signings for this gameweek.')
     expect(readErrors).toContain('Your roster and budget were not changed.')
   })
+
+  it('does not let a first quiz answer race the saved-progress check', () => {
+    const quiz = read('components/choice-quiz.tsx')
+    expect(quiz).toContain('if (checkingProgress || resumeState || selected !== null) return')
+    expect(quiz).toContain('disabled={checkingProgress || Boolean(resumeState) || selected !== null}')
+  })
 })
