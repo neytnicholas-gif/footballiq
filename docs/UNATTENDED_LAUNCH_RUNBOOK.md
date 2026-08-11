@@ -9,11 +9,12 @@
 
 ## Before leaving a live period unattended
 
-1. Confirm the latest production deployment is healthy and the catalogue endpoint returns HTTP 200.
-2. Confirm `market_settings.market_status = 'open'` and the current gameweek is `open` or `revealed`.
-3. Confirm Vercel runtime errors are zero and Supabase database connections are below 70% of the plan limit.
-4. Keep the previous known-good Vercel deployment available for instant rollback.
-5. Give a trusted backup operator access to this runbook, Vercel logs, and the Supabase dashboard. Do not share API tokens in chat or screenshots.
+1. Run `SMOKE_TEST_BASE_URL=https://your-domain SMOKE_TEST_REMOTE_APPROVED=true npm run smoke-test:public` and retain the JSON result. Every route must pass and the catalogue must contain all three launch leagues and at least 500 players.
+2. Run a staged read-only capacity check with `LOAD_TEST_BASE_URL=https://your-domain LOAD_TEST_REMOTE_APPROVED=true npm run load-test:market`. The default gate requires an error rate at or below 0.5%, valid catalogue data in every successful response, and p95 latency at or below 2 seconds. Increase concurrency gradually; do not treat a small test as proof of 10,000 simultaneous users.
+3. Confirm `market_settings.market_status = 'open'` and the current gameweek is `open` or `revealed`.
+4. Confirm Vercel runtime errors are zero and Supabase database connections are below 70% of the plan limit.
+5. Keep the previous known-good Vercel deployment available for instant rollback.
+6. Give a trusted backup operator access to this runbook, Vercel logs, and the Supabase dashboard. Do not share API tokens in chat or screenshots.
 
 ## When to pause trading
 
