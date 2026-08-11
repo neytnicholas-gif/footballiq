@@ -2,23 +2,45 @@
 
 import Link from 'next/link'
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Award, Check, Coins, Eye, Gift, LockKeyhole, Palette, Repeat2, Shield, Sparkles, Star, Target, Trophy, Users } from 'lucide-react'
+import type { ReactNode } from 'react'
+import {
+  Award, CalendarDays, ChartNoAxesColumnIncreasing, Check, Coins,
+  Crown, Eye, Gift, Globe2, Handshake, LockKeyhole, Medal, Palette, Repeat2,
+  Shield, ShoppingBag, Sparkles, Target, Trophy, Users,
+} from 'lucide-react'
 import { useAuth } from '@/components/auth-provider'
 import {
-  equipMarketReward,
-  loadMyMarketProgression,
-  purchaseMarketReward,
-  setMarketFormation,
-  setMarketShowcaseBadges,
-  updateMarketProfilePreferences,
+  equipMarketReward, loadMyMarketProgression, purchaseMarketReward, setMarketFormation,
+  setMarketShowcaseBadges, updateMarketProfilePreferences,
 } from '@/lib/market/client'
-import { challengePercent, EMPTY_MARKET_PROGRESSION, rewardItemUnlocked, type MarketProgression } from '@/lib/market/progression'
+import {
+  challengePercent, EMPTY_MARKET_PROGRESSION, rewardItemUnlocked,
+  type MarketChallenge, type MarketProgression, type MarketRewardItem,
+} from '@/lib/market/progression'
 
-const icons = { Award, Eye, Gift, Repeat2, Shield, Sparkles, Star, Target, Trophy, Users }
+type ChallengeFilter = 'next' | 'all' | 'earned'
+
+const iconByKey = {
+  'shopping-bag': ShoppingBag,
+  handshake: Handshake,
+  users: Users,
+  shield: Shield,
+  'trending-up': ChartNoAxesColumnIncreasing,
+  chart: ChartNoAxesColumnIncreasing,
+  repeat: Repeat2,
+  medal: Medal,
+  eye: Eye,
+  globe: Globe2,
+  sparkles: Sparkles,
+  calendar: CalendarDays,
+  trophy: Trophy,
+  crown: Crown,
+} as const
 
 export function MarketProgressionHub() {
   const { user, profile } = useAuth()
   const [progression, setProgression] = useState<MarketProgression>(EMPTY_MARKET_PROGRESSION)
+  const [filter, setFilter] = useState<ChallengeFilter>('next')
   const [loading, setLoading] = useState(true)
   const [busy, setBusy] = useState('')
   const [message, setMessage] = useState('')
@@ -28,7 +50,7 @@ export function MarketProgressionHub() {
     setLoading(true)
     const result = await loadMyMarketProgression(true)
     setProgression(result.data)
-    setError(result.error?.message ?? '')
+    setError(result.error ? friendlyProgressionError(result.error.message) : '')
     setLoading(false)
   }, [])
 
@@ -37,19 +59,25 @@ export function MarketProgressionHub() {
     return () => window.clearTimeout(timer)
   }, [reload, user])
 
-  const completed = progression.challenges.filter((challenge) => challenge.completed_at)
-  const showcased = useMemo(() => completed.filter((challenge) => challenge.showcased).sort((a, b) => (a.showcased_order ?? 9) - (b.showcased_order ?? 9)), [completed])
-  const equipped = new Set([
+  const completed = useMemo(() => progression.challenges.filter((challenge) => challenge.completed_at), [progression.challenges])
+  const showcased = useMemo(() => completed.filter((challenge) => challenge.showcased).toSorted((a, b) => (a.showcased_order ?? 9) - (b.showcased_order ?? 9)), [completed])
+  const closest = useMemo(() => progression.challenges.filter((challenge) => !challenge.completed_at).toSorted((a, b) => challengePercent(b) - challengePercent(a))[0] ?? null, [progression.challenges])
+  const visibleChallenges = useMemo(() => {
+    if (filter === 'earned') return completed
+    if (filter === 'next') return progression.challenges.filter((challenge) => !challenge.completed_at)
+    return progression.challenges
+  }, [completed, filter, progression.challenges])
+  const equipped = useMemo(() => new Set([
     progression.preferences.active_background,
     progression.preferences.active_avatar,
     progression.preferences.active_frame,
     progression.preferences.active_formation === '3-4-3' ? 'formation_343' : null,
-  ].filter(Boolean))
+  ].filter(Boolean)), [progression.preferences])
 
   async function act(key: string, action: () => Promise<{ error: Error | null }>, success: string) {
     setBusy(key); setMessage(''); setError('')
     const result = await action()
-    if (result.error) setError(result.error.message)
+    if (result.error) setError(friendlyProgressionError(result.error.message))
     else { setMessage(success); await reload() }
     setBusy('')
   }
@@ -57,96 +85,127 @@ export function MarketProgressionHub() {
   async function toggleShowcase(key: string) {
     const selected = showcased.map((badge) => badge.challenge_key)
     const next = selected.includes(key) ? selected.filter((entry) => entry !== key) : [...selected, key].slice(-3)
-    await act(`badge:${key}`, () => setMarketShowcaseBadges(next), 'Your badge cabinet is updated.')
+    await act(`badge:${key}`, () => setMarketShowcaseBadges(next), 'Your public badge cabinet has been updated.')
   }
 
-  if (!user) return (
-    <section className="rounded-[2rem] border border-border bg-card p-7 sm:p-10">
-      <Gift className="size-9 text-primary" />
-      <h1 className="mt-4 text-4xl font-black tracking-tight">Challenges and rewards</h1>
-      <p className="mt-3 max-w-2xl text-muted-foreground">Sign in to earn badges, collect reward credits and make your public player profile your own.</p>
-      <Link href="/signup" className="mt-6 inline-flex rounded-xl bg-primary px-5 py-3 font-bold text-primary-foreground">Create your player profile</Link>
-    </section>
-  )
+  if (!user) return <SignedOutRewards />
 
   return <div className="space-y-6">
-    <section className="overflow-hidden rounded-[2rem] border border-border bg-[radial-gradient(circle_at_15%_0%,rgba(16,185,129,.25),transparent_40%),linear-gradient(135deg,#10251f,#17372e)] p-7 text-white shadow-xl sm:p-10">
+    <section className="overflow-hidden rounded-[2rem] border border-border bg-[radial-gradient(circle_at_15%_0%,rgba(16,185,129,.28),transparent_42%),linear-gradient(135deg,#10251f,#17372e)] p-7 text-white shadow-xl sm:p-10">
       <div className="flex flex-wrap items-start justify-between gap-6">
         <div className="max-w-2xl">
-          <p className="text-xs font-bold uppercase tracking-[.24em] text-emerald-300">Your market journey</p>
-          <h1 className="mt-3 text-4xl font-black tracking-tight sm:text-5xl">Play. Achieve. Make it yours.</h1>
-          <p className="mt-3 text-sm text-emerald-50/80">Real trades unlock challenges. Challenges earn Style Credits. Style Credits buy permanent profile rewards. They never use your team budget.</p>
+          <p className="text-xs font-bold uppercase tracking-[.24em] text-emerald-300">Challenges and badges</p>
+          <h1 className="mt-3 text-4xl font-black tracking-tight sm:text-5xl">Play the Market. Earn your story.</h1>
+          <p className="mt-3 max-w-xl text-sm leading-6 text-emerald-50/85">Complete simple Market goals. Each completed goal gives you a badge and Style Credits. Use those credits on profile rewards that stay yours.</p>
+          <div className="mt-5 flex flex-wrap gap-3">
+            <Link href="/market/players" className="rounded-xl bg-white px-4 py-2.5 text-sm font-black text-emerald-950">Go to player market</Link>
+            <Link href="/market/portfolio" className="rounded-xl border border-white/20 bg-white/10 px-4 py-2.5 text-sm font-bold text-white">See my team</Link>
+          </div>
         </div>
-        <div className="rounded-2xl border border-white/15 bg-white/10 px-6 py-5 backdrop-blur">
+        <div className="min-w-56 rounded-2xl border border-white/15 bg-white/10 px-6 py-5 backdrop-blur">
           <div className="flex items-center gap-2 text-emerald-200"><Coins className="size-5"/><span className="text-xs font-bold uppercase tracking-wider">Style Credits</span></div>
           <p className="mt-2 text-4xl font-black">{progression.wallet.balance.toLocaleString()}</p>
-          <p className="mt-1 text-xs text-emerald-50/65">Earned {progression.wallet.lifetime_earned} · Spent {progression.wallet.lifetime_spent}</p>
+          <p className="mt-1 text-xs leading-5 text-emerald-50/70">For rewards only. Your player-buying budget never changes.</p>
         </div>
       </div>
       <div className="mt-7 grid gap-3 sm:grid-cols-3">
-        <DarkMetric label="Badges earned" value={`${completed.length}/${progression.challenges.length}`} />
-        <DarkMetric label="Market trades" value={String(progression.trade_count)} />
-        <DarkMetric label="Gameweek Reveals" value={String(progression.reveal_count)} />
+        <DarkMetric label="Badges earned" value={`${completed.length} of ${progression.challenges.length}`} />
+        <DarkMetric label="Trades completed" value={String(progression.trade_count)} />
+        <DarkMetric label="Reveals opened" value={String(progression.reveal_count)} />
       </div>
+    </section>
+
+    <section aria-labelledby="how-rewards-work" className="rounded-[2rem] border border-border bg-card p-6 sm:p-8">
+      <h2 id="how-rewards-work" className="text-2xl font-black">How it works</h2>
+      <div className="mt-5 grid gap-3 md:grid-cols-3">
+        <Step number="1" icon={<Target className="size-5"/>} title="Do a challenge" copy="Buy, sell, build your team or come back for a Reveal." />
+        <Step number="2" icon={<Award className="size-5"/>} title="Earn a badge" copy="The game checks your real activity and awards it automatically." />
+        <Step number="3" icon={<Gift className="size-5"/>} title="Unlock rewards" copy="Spend Style Credits on permanent profile items and formations." />
+      </div>
+      <p className="mt-4 rounded-xl border border-sky-700/15 bg-sky-50 px-4 py-3 text-sm text-sky-950"><strong>Good to know:</strong> Style Credits are free game points. They cannot be bought, sold, withdrawn or exchanged for money.</p>
     </section>
 
     {message ? <p role="status" className="rounded-xl border border-emerald-600/25 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-950">{message}</p> : null}
-    {error ? <p role="alert" className="rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">{error}</p> : null}
-    {loading ? <p className="rounded-2xl border border-border bg-card p-6 text-sm text-muted-foreground">Checking your latest progress…</p> : null}
+    {error ? <p role="alert" className="rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm font-semibold text-destructive">{error}</p> : null}
+    {loading ? <p role="status" className="rounded-2xl border border-border bg-card p-6 text-sm text-muted-foreground">Checking your latest achievements…</p> : null}
+
+    {closest ? <section className="rounded-[2rem] border border-primary/25 bg-[linear-gradient(135deg,rgba(16,185,129,.13),rgba(255,255,255,.85))] p-6 sm:p-8">
+      <div className="flex flex-wrap items-center justify-between gap-5">
+        <div><p className="text-xs font-bold uppercase tracking-[.22em] text-primary">Closest goal</p><h2 className="mt-2 text-2xl font-black">{closest.title}</h2><p className="mt-1 text-sm text-muted-foreground">{closest.description}</p></div>
+        <div className="rounded-2xl border border-primary/20 bg-card px-5 py-4 text-right"><p className="text-xs text-muted-foreground">Reward</p><p className="text-lg font-black text-primary">{closest.badge_name} + {closest.reward_credits} credits</p></div>
+      </div>
+      <ChallengeProgress challenge={closest} large />
+    </section> : null}
 
     <section className="rounded-[2rem] border border-border bg-card p-6 sm:p-8">
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <div><p className="text-xs font-bold uppercase tracking-[.22em] text-primary">Challenge board</p><h2 className="mt-2 text-3xl font-black">Things to do next</h2></div>
-        <p className="text-sm text-muted-foreground">Rewards are checked from real account activity.</p>
-      </div>
-      <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-        {progression.challenges.map((challenge) => {
-          const Icon = icons[challenge.icon_key as keyof typeof icons] ?? Award
-          const done = Boolean(challenge.completed_at)
-          return <article key={challenge.challenge_key} className={`rounded-2xl border p-5 ${done ? 'border-emerald-500/30 bg-emerald-50/70' : 'border-border bg-background/70'}`}>
-            <div className="flex items-start justify-between gap-3"><span className={`rounded-xl p-2.5 ${done ? 'bg-emerald-600 text-white' : 'bg-secondary text-foreground'}`}><Icon className="size-5"/></span><span className="rounded-full border border-border bg-card px-2.5 py-1 text-xs font-bold">+{challenge.reward_credits}</span></div>
-            <h3 className="mt-4 text-lg font-black">{challenge.title}</h3><p className="mt-1 text-sm text-muted-foreground">{challenge.description}</p>
-            <div className="mt-4 h-2 overflow-hidden rounded-full bg-secondary"><div className="h-full rounded-full bg-primary" style={{width:`${challengePercent(challenge)}%`}} /></div>
-            <div className="mt-2 flex justify-between text-xs"><span>{Math.min(challenge.progress,challenge.target).toLocaleString()} / {challenge.target.toLocaleString()}</span><span className="font-bold">{done ? `Badge: ${challenge.badge_name}` : 'In progress'}</span></div>
-            {done ? <button disabled={Boolean(busy)} onClick={() => void toggleShowcase(challenge.challenge_key)} className="mt-4 min-h-11 w-full rounded-xl border border-emerald-700/25 bg-white px-3 py-2 text-sm font-bold text-emerald-950 disabled:opacity-50">{challenge.showcased ? 'Remove from profile' : showcased.length >= 3 ? 'Show this instead' : 'Show on my profile'}</button> : null}
-          </article>
-        })}
-      </div>
-    </section>
-
-    <section className="rounded-[2rem] border border-border bg-card p-6 sm:p-8">
-      <div><p className="text-xs font-bold uppercase tracking-[.22em] text-primary">Reward shop</p><h2 className="mt-2 text-3xl font-black">Permanent ways to stand out</h2><p className="mt-2 text-sm text-muted-foreground">The shop opens item by item as you trade and return for Reveals. Nothing here can be bought with real money.</p></div>
-      <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-        {progression.store.map((item) => {
-          const unlocked = rewardItemUnlocked(item, progression)
-          const isEquipped = equipped.has(item.item_key)
-          return <article key={item.item_key} className="relative overflow-hidden rounded-2xl border border-border bg-background/70 p-5">
-            <div className="flex items-start justify-between"><span className="rounded-xl bg-secondary p-2.5"><Palette className="size-5"/></span><span className="rounded-full border border-border bg-card px-2.5 py-1 text-xs font-bold">{item.price_credits} credits</span></div>
-            <p className="mt-4 text-xs font-bold uppercase tracking-wider text-primary">{item.item_type}</p><h3 className="mt-1 text-lg font-black">{item.name}</h3><p className="mt-1 min-h-10 text-sm text-muted-foreground">{item.description}</p>
-            <p className="mt-4 text-xs text-muted-foreground">Needs {item.required_trades} trades · {item.required_reveals} Reveal{item.required_reveals===1?'':'s'}</p>
-            {item.owned ? <button disabled={isEquipped || Boolean(busy)} onClick={() => void act(`equip:${item.item_key}`, () => item.item_type === 'formation' ? setMarketFormation('3-4-3') : equipMarketReward(item.item_key), `${item.name} is now active.`)} className="mt-4 min-h-11 w-full rounded-xl bg-primary px-3 py-2 text-sm font-bold text-primary-foreground disabled:opacity-55">{isEquipped ? <><Check className="mr-1 inline size-4"/>Active</> : 'Use this reward'}</button>
-            : <button disabled={!unlocked || progression.wallet.balance<item.price_credits || Boolean(busy)} onClick={() => void act(`buy:${item.item_key}`, () => purchaseMarketReward(item.item_key), `${item.name} is yours forever.`)} className="mt-4 min-h-11 w-full rounded-xl bg-foreground px-3 py-2 text-sm font-bold text-background disabled:opacity-45">{!unlocked ? <><LockKeyhole className="mr-1 inline size-4"/>Locked</> : progression.wallet.balance<item.price_credits ? 'Earn more credits' : 'Unlock forever'}</button>}
-          </article>
-        })}
-      </div>
-    </section>
-
-    <section className="grid gap-5 lg:grid-cols-2">
-      <div className="rounded-[2rem] border border-border bg-card p-6 sm:p-8"><p className="text-xs font-bold uppercase tracking-[.22em] text-primary">Public profile</p><h2 className="mt-2 text-2xl font-black">You choose what people see</h2><p className="mt-2 text-sm text-muted-foreground">Your username and current roster stay public so the game is fair. Everything below is your choice.</p>
-        <div className="mt-5 space-y-3">
-          <PrivacyToggle label="Show my badges" checked={progression.preferences.show_badges} onChange={(value)=>setProgression((old)=>({...old,preferences:{...old.preferences,show_badges:value}}))}/>
-          <PrivacyToggle label="Show my market stats" checked={progression.preferences.show_market_stats} onChange={(value)=>setProgression((old)=>({...old,preferences:{...old.preferences,show_market_stats:value}}))}/>
-          <PrivacyToggle label="Show recent activity" checked={progression.preferences.show_activity} onChange={(value)=>setProgression((old)=>({...old,preferences:{...old.preferences,show_activity:value}}))}/>
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <div><p className="text-xs font-bold uppercase tracking-[.22em] text-primary">Challenge board</p><h2 className="mt-2 text-3xl font-black">Choose your next goal</h2><p className="mt-2 text-sm text-muted-foreground">Progress is saved to your account and checked after Market actions.</p></div>
+        <div role="group" aria-label="Filter challenges" className="flex rounded-xl border border-border bg-background p-1">
+          <FilterButton active={filter==='next'} onClick={()=>setFilter('next')}>To do ({progression.challenges.length-completed.length})</FilterButton>
+          <FilterButton active={filter==='earned'} onClick={()=>setFilter('earned')}>Earned ({completed.length})</FilterButton>
+          <FilterButton active={filter==='all'} onClick={()=>setFilter('all')}>All</FilterButton>
         </div>
-        <button disabled={Boolean(busy)} onClick={() => void act('privacy',()=>updateMarketProfilePreferences(progression.preferences),'Your profile privacy choices are saved.')} className="mt-5 min-h-11 rounded-xl bg-primary px-5 py-2.5 text-sm font-bold text-primary-foreground disabled:opacity-50">Save choices</button>
       </div>
-      <div className="rounded-[2rem] border border-border bg-card p-6 sm:p-8"><p className="text-xs font-bold uppercase tracking-[.22em] text-primary">Badge cabinet</p><h2 className="mt-2 text-2xl font-black">Your chosen three</h2><p className="mt-2 text-sm text-muted-foreground">Pick up to three earned badges for the top of your public profile.</p>
-        <div className="mt-5 flex flex-wrap gap-3">{showcased.length ? showcased.map((badge)=><span key={badge.challenge_key} className="rounded-xl border border-amber-500/25 bg-amber-50 px-4 py-3 text-sm font-black text-amber-950">🏅 {badge.badge_name}</span>) : <p className="text-sm text-muted-foreground">Complete a challenge, then choose “Show on my profile”.</p>}</div>
-        {profile?.username ? <Link href={`/player/${encodeURIComponent(profile.username)}`} className="mt-5 inline-flex min-h-11 items-center rounded-xl border border-border px-4 py-2 text-sm font-bold">View my public profile</Link> : null}
+      <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+        {visibleChallenges.map((challenge) => <ChallengeCard key={challenge.challenge_key} challenge={challenge} busy={Boolean(busy)} showcasedCount={showcased.length} onToggleShowcase={toggleShowcase} />)}
       </div>
+      {!visibleChallenges.length ? <p className="mt-6 rounded-xl bg-secondary/50 p-5 text-sm font-semibold">You have finished every challenge in this view. Brilliant work.</p> : null}
+    </section>
+
+    <section className="rounded-[2rem] border border-amber-500/20 bg-[linear-gradient(135deg,#fffbeb,#fff)] p-6 sm:p-8">
+      <div className="flex flex-wrap items-start justify-between gap-4"><div><p className="text-xs font-bold uppercase tracking-[.22em] text-amber-800">Badge cabinet</p><h2 className="mt-2 text-3xl font-black text-amber-950">Pick up to three to show</h2><p className="mt-2 text-sm text-amber-950/70">Your chosen badges appear at the top of your public profile.</p></div>{profile?.username ? <Link href={`/player/${encodeURIComponent(profile.username)}`} className="rounded-xl border border-amber-700/20 bg-white px-4 py-2.5 text-sm font-bold text-amber-950">Preview my profile</Link> : null}</div>
+      <div className="mt-5 flex min-h-20 flex-wrap items-center gap-3">{showcased.length ? showcased.map((badge)=><span key={badge.challenge_key} className="inline-flex items-center gap-2 rounded-xl border border-amber-500/25 bg-white px-4 py-3 text-sm font-black text-amber-950"><Medal className="size-5 text-amber-600"/>{badge.badge_name}</span>) : <p className="text-sm text-amber-950/70">No badges selected yet. Open the “Earned” tab above and choose “Show on profile”.</p>}</div>
+      <p className="mt-3 text-xs font-semibold text-amber-900/65">{showcased.length}/3 profile spaces used</p>
+    </section>
+
+    <section className="rounded-[2rem] border border-border bg-card p-6 sm:p-8">
+      <div><p className="text-xs font-bold uppercase tracking-[.22em] text-primary">Reward shop</p><h2 className="mt-2 text-3xl font-black">Make your profile yours</h2><p className="mt-2 max-w-3xl text-sm leading-6 text-muted-foreground">Rewards last forever. First prove you are an active Market player, then unlock them with Style Credits. There are no real-money purchases here.</p></div>
+      <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-3">{progression.store.map((item) => <RewardCard key={item.item_key} item={item} progression={progression} isEquipped={equipped.has(item.item_key)} busy={Boolean(busy)} onAct={act} />)}</div>
+    </section>
+
+    <section className="rounded-[2rem] border border-border bg-card p-6 sm:p-8">
+      <p className="text-xs font-bold uppercase tracking-[.22em] text-primary">Profile privacy</p><h2 className="mt-2 text-2xl font-black">You choose what people see</h2><p className="mt-2 text-sm text-muted-foreground">Your username and current roster remain public for fair play. Badges, Market stats and activity are your choice.</p>
+      <div className="mt-5 grid gap-3 md:grid-cols-3">
+        <PrivacyToggle label="Show my badges" checked={progression.preferences.show_badges} onChange={(value)=>setProgression((old)=>({...old,preferences:{...old.preferences,show_badges:value}}))}/>
+        <PrivacyToggle label="Show my Market stats" checked={progression.preferences.show_market_stats} onChange={(value)=>setProgression((old)=>({...old,preferences:{...old.preferences,show_market_stats:value}}))}/>
+        <PrivacyToggle label="Show recent activity" checked={progression.preferences.show_activity} onChange={(value)=>setProgression((old)=>({...old,preferences:{...old.preferences,show_activity:value}}))}/>
+      </div>
+      <button disabled={Boolean(busy)} onClick={() => void act('privacy',()=>updateMarketProfilePreferences(progression.preferences),'Your profile choices are saved.')} className="mt-5 min-h-11 rounded-xl bg-primary px-5 py-2.5 text-sm font-bold text-primary-foreground disabled:opacity-50">Save privacy choices</button>
     </section>
   </div>
 }
 
-function DarkMetric({label,value}:{label:string;value:string}) { return <div className="rounded-xl border border-white/10 bg-white/10 px-4 py-3"><p className="text-xs text-emerald-50/65">{label}</p><p className="mt-1 text-2xl font-black">{value}</p></div> }
-function PrivacyToggle({label,checked,onChange}:{label:string;checked:boolean;onChange:(value:boolean)=>void}) { return <label className="flex min-h-12 cursor-pointer items-center justify-between gap-4 rounded-xl border border-border bg-background/70 px-4 py-3 text-sm font-bold"><span>{label}</span><input type="checkbox" checked={checked} onChange={(event)=>onChange(event.target.checked)} className="size-5 accent-emerald-600"/></label> }
+function ChallengeCard({challenge,busy,showcasedCount,onToggleShowcase}:{challenge:MarketChallenge;busy:boolean;showcasedCount:number;onToggleShowcase:(key:string)=>Promise<void>}) {
+  const Icon = iconByKey[challenge.icon_key as keyof typeof iconByKey] ?? Award
+  const done = Boolean(challenge.completed_at)
+  return <article className={`flex flex-col rounded-2xl border p-5 ${done?'border-emerald-500/30 bg-emerald-50/70':'border-border bg-background/70'}`}>
+    <div className="flex items-start justify-between gap-3"><span className={`rounded-xl p-2.5 ${done?'bg-emerald-600 text-white':'bg-secondary text-foreground'}`}><Icon className="size-5"/></span><span className="rounded-full border border-border bg-card px-2.5 py-1 text-xs font-bold">+{challenge.reward_credits} credits</span></div>
+    <h3 className="mt-4 text-lg font-black">{challenge.title}</h3><p className="mt-1 flex-1 text-sm leading-5 text-muted-foreground">{challenge.description}</p>
+    <ChallengeProgress challenge={challenge}/>
+    <p className="mt-3 text-sm font-bold">{done?<span className="text-emerald-800"><Check className="mr-1 inline size-4"/>Earned: {challenge.badge_name}</span>:`Badge waiting: ${challenge.badge_name}`}</p>
+    {done ? <button disabled={busy} onClick={()=>void onToggleShowcase(challenge.challenge_key)} className="mt-4 min-h-11 w-full rounded-xl border border-emerald-700/25 bg-white px-3 py-2 text-sm font-bold text-emerald-950 disabled:opacity-50">{challenge.showcased?'Remove from profile':showcasedCount>=3?'Swap into profile':'Show on profile'}</button> : null}
+  </article>
+}
+
+function RewardCard({item,progression,isEquipped,busy,onAct}:{item:MarketRewardItem;progression:MarketProgression;isEquipped:boolean;busy:boolean;onAct:(key:string,action:()=>Promise<{error:Error|null}>,success:string)=>Promise<void>}) {
+  const unlocked=rewardItemUnlocked(item,progression)
+  const hasCredits=progression.wallet.balance>=item.price_credits
+  const tradesLeft=Math.max(0,item.required_trades-progression.trade_count)
+  const revealsLeft=Math.max(0,item.required_reveals-progression.reveal_count)
+  return <article className="flex flex-col rounded-2xl border border-border bg-background/70 p-5">
+    <div className="flex items-start justify-between"><span className="rounded-xl bg-secondary p-2.5"><Palette className="size-5"/></span><span className="rounded-full border border-border bg-card px-2.5 py-1 text-xs font-bold">{item.price_credits} credits</span></div>
+    <p className="mt-4 text-xs font-bold uppercase tracking-wider text-primary">{rewardTypeName(item.item_type)}</p><h3 className="mt-1 text-lg font-black">{item.name}</h3><p className="mt-1 flex-1 text-sm leading-5 text-muted-foreground">{item.description}</p>
+    {!item.owned && !unlocked ? <div className="mt-4 rounded-xl border border-border bg-card p-3 text-xs"><p className="font-bold"><LockKeyhole className="mr-1 inline size-4"/>Still needed</p><p className="mt-1 text-muted-foreground">{tradesLeft?`${tradesLeft} more trade${tradesLeft===1?'':'s'}`:''}{tradesLeft&&revealsLeft?' and ':''}{revealsLeft?`${revealsLeft} more Reveal${revealsLeft===1?'':'s'}`:''}</p></div> : null}
+    {item.owned ? <button disabled={isEquipped||busy} onClick={()=>void onAct(`equip:${item.item_key}`,()=>item.item_type==='formation'?setMarketFormation('3-4-3'):equipMarketReward(item.item_key),`${item.name} is now active.`)} className="mt-4 min-h-11 w-full rounded-xl bg-primary px-3 py-2 text-sm font-bold text-primary-foreground disabled:opacity-55">{isEquipped?<><Check className="mr-1 inline size-4"/>Active now</>:'Use this reward'}</button>
+      : <button disabled={!unlocked||!hasCredits||busy} onClick={()=>void onAct(`buy:${item.item_key}`,()=>purchaseMarketReward(item.item_key),`${item.name} is yours forever.`)} className="mt-4 min-h-11 w-full rounded-xl bg-foreground px-3 py-2 text-sm font-bold text-background disabled:opacity-45">{!unlocked?'Locked':!hasCredits?`Need ${item.price_credits-progression.wallet.balance} more credits`:'Unlock forever'}</button>}
+  </article>
+}
+
+function SignedOutRewards(){return <section className="rounded-[2rem] border border-border bg-card p-7 sm:p-10"><Gift className="size-9 text-primary"/><h1 className="mt-4 text-4xl font-black tracking-tight">Challenges, badges and rewards</h1><p className="mt-3 max-w-2xl leading-6 text-muted-foreground">Create a free FootballIQ profile. Your Market actions will earn badges and Style Credits automatically.</p><div className="mt-6 flex flex-wrap gap-3"><Link href="/signup" className="rounded-xl bg-primary px-5 py-3 font-bold text-primary-foreground">Create my profile</Link><Link href="/market/players" className="rounded-xl border border-border px-5 py-3 font-bold">See the Market first</Link></div></section>}
+function ChallengeProgress({challenge,large=false}:{challenge:MarketChallenge;large?:boolean}){return <div className="mt-4"><div className={`${large?'h-3':'h-2'} overflow-hidden rounded-full bg-secondary`} role="progressbar" aria-label={`${challenge.title} progress`} aria-valuemin={0} aria-valuemax={challenge.target} aria-valuenow={Math.min(challenge.progress,challenge.target)}><div className="h-full rounded-full bg-primary" style={{width:`${challengePercent(challenge)}%`}}/></div><div className="mt-2 flex justify-between text-xs"><span>{Math.min(challenge.progress,challenge.target).toLocaleString()} done</span><span>{challenge.target.toLocaleString()} needed</span></div></div>}
+function Step({number,icon,title,copy}:{number:string;icon:ReactNode;title:string;copy:string}){return <div className="rounded-2xl border border-border bg-background/70 p-5"><div className="flex items-center gap-3"><span className="grid size-9 place-items-center rounded-xl bg-primary font-black text-primary-foreground">{number}</span><span className="text-primary">{icon}</span></div><h3 className="mt-4 font-black">{title}</h3><p className="mt-1 text-sm leading-5 text-muted-foreground">{copy}</p></div>}
+function FilterButton({active,onClick,children}:{active:boolean;onClick:()=>void;children:ReactNode}){return <button type="button" aria-pressed={active} onClick={onClick} className={`min-h-10 rounded-lg px-3 text-xs font-bold transition ${active?'bg-primary text-primary-foreground':'text-muted-foreground hover:bg-secondary'}`}>{children}</button>}
+function DarkMetric({label,value}:{label:string;value:string}){return <div className="rounded-xl border border-white/10 bg-white/10 px-4 py-3"><p className="text-xs text-emerald-50/65">{label}</p><p className="mt-1 text-2xl font-black">{value}</p></div>}
+function PrivacyToggle({label,checked,onChange}:{label:string;checked:boolean;onChange:(value:boolean)=>void}){return <label className="flex min-h-12 cursor-pointer items-center justify-between gap-4 rounded-xl border border-border bg-background/70 px-4 py-3 text-sm font-bold"><span>{label}</span><input type="checkbox" checked={checked} onChange={(event)=>onChange(event.target.checked)} className="size-5 accent-emerald-600"/></label>}
+function rewardTypeName(type:MarketRewardItem['item_type']){return type==='background'?'Profile background':type==='avatar'?'Profile icon':type==='frame'?'Profile frame':'Team formation'}
+function friendlyProgressionError(message:string){if(/ITEM_LOCKED/i.test(message))return 'Keep playing: this reward needs more trades or Reveals first.';if(/NOT_ENOUGH_REWARD_CREDITS/i.test(message))return 'You need more Style Credits for that reward.';if(/FORMATION_NOT_UNLOCKED/i.test(message))return 'Unlock the 3-4-3 reward before using that formation.';if(/SELL_ONE_DEFENDER_FIRST/i.test(message))return 'Sell one defender first, then switch to 3-4-3.';if(/SELL_ONE_MIDFIELDER_FIRST/i.test(message))return 'Sell one midfielder first, then switch to 4-3-3.';if(/timeout|temporarily busy/i.test(message))return 'The Market is busy. Nothing changed—please try again.';return 'That did not work. Nothing was changed. Please try again.'}
