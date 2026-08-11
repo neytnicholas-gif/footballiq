@@ -63,7 +63,7 @@ export function WhoAmIGame() {
   }, [user])
 
   function submit() {
-    if (revealed || !guess.trim()) return
+    if (checkingProgress || resumeState || revealed || !guess.trim()) return
     const ok = guess.trim().toLowerCase() === q.answer.toLowerCase()
     const nextScore = ok ? score + (5 - clues) : score
     if (ok) setScore(nextScore)
@@ -91,6 +91,7 @@ export function WhoAmIGame() {
     })
   }
   function revealAnotherClue() {
+    if (checkingProgress || resumeState) return
     setClues((current) => {
       const nextClues = current + 1
       void saveQuizProgress({
@@ -137,5 +138,5 @@ export function WhoAmIGame() {
 
   return <div className="rounded-3xl border border-border bg-card p-6 sm:p-8">
     {checkingProgress ? <div className="mb-5 rounded-2xl border border-border bg-secondary/30 p-4 text-sm text-muted-foreground">Checking saved progress…</div> : resumeState && !saved ? <div className="mb-5"><QuizProgressBanner title="Resume your quiz?" copy={`You left off at player ${resumeState.index + 1} of ${whoAmIQuestions.length}.`} onContinue={continueProgress} onStartAgain={restart} /></div> : null}
-    <div className="flex justify-between"><p className="text-sm text-muted-foreground">Player {index + 1} of {whoAmIQuestions.length}</p><p className="font-semibold text-primary">{score} points</p></div><div className="mt-6 space-y-3">{q.clues.slice(0, clues).map((c, i) => <div key={c} className="rounded-2xl border border-border bg-background p-4"><span className="mr-3 text-primary">Clue {i + 1}</span>{c}</div>)}</div>{!revealed && <><div className="mt-5 flex gap-3"><input value={guess} onChange={(e) => setGuess(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && submit()} placeholder="Type the player name" className="min-w-0 flex-1 rounded-xl border border-border bg-background px-4 py-3 outline-none focus:border-primary"/><button onClick={submit} className="rounded-xl bg-primary px-5 py-3 text-primary-foreground">Guess</button></div>{clues < 4 && <button onClick={revealAnotherClue} className="mt-3 text-sm text-primary">Reveal another clue (-1 point)</button>}</>}{revealed && <div className="mt-6 rounded-2xl bg-secondary/40 p-5"><p className="text-sm text-muted-foreground">Answer</p><h2 className="mt-1 text-3xl font-semibold">{q.answer}</h2><div className="mt-4">{!last ? <button onClick={next} className="rounded-xl bg-primary px-5 py-3 text-primary-foreground">Next player</button> : <button onClick={() => void save()} disabled={!user || saved || saving} className="rounded-xl bg-primary px-5 py-3 text-primary-foreground disabled:opacity-50">{!user ? 'Sign in to save' : saving ? 'Saving...' : saved ? 'Saved' : 'Finish and save XP'}</button>}</div></div>}</div>
+    <div className="flex justify-between"><p className="text-sm text-muted-foreground">Player {index + 1} of {whoAmIQuestions.length}</p><p className="font-semibold text-primary">{score} points</p></div><div className="mt-6 space-y-3">{q.clues.slice(0, clues).map((c, i) => <div key={c} className="rounded-2xl border border-border bg-background p-4"><span className="mr-3 text-primary">Clue {i + 1}</span>{c}</div>)}</div>{!revealed && <><div className="mt-5 flex gap-3"><input value={guess} onChange={(e) => setGuess(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && submit()} disabled={checkingProgress || Boolean(resumeState)} placeholder="Type the player name" className="min-w-0 flex-1 rounded-xl border border-border bg-background px-4 py-3 outline-none focus:border-primary disabled:cursor-not-allowed disabled:opacity-65"/><button onClick={submit} disabled={checkingProgress || Boolean(resumeState)} className="rounded-xl bg-primary px-5 py-3 text-primary-foreground disabled:cursor-not-allowed disabled:opacity-65">Guess</button></div>{clues < 4 && <button onClick={revealAnotherClue} disabled={checkingProgress || Boolean(resumeState)} className="mt-3 text-sm text-primary disabled:cursor-not-allowed disabled:opacity-65">Reveal another clue (-1 point)</button>}</>}{revealed && <div className="mt-6 rounded-2xl bg-secondary/40 p-5"><p className="text-sm text-muted-foreground">Answer</p><h2 className="mt-1 text-3xl font-semibold">{q.answer}</h2><div className="mt-4">{!last ? <button onClick={next} className="rounded-xl bg-primary px-5 py-3 text-primary-foreground">Next player</button> : <button onClick={() => void save()} disabled={!user || saved || saving} className="rounded-xl bg-primary px-5 py-3 text-primary-foreground disabled:opacity-50">{!user ? 'Sign in to save' : saving ? 'Saving...' : saved ? 'Saved' : 'Finish and save XP'}</button>}</div></div>}</div>
 }

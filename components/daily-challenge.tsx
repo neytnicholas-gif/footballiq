@@ -167,7 +167,7 @@ export function DailyChallenge() {
   }, [])
 
   function choose(optionIndex: number) {
-    if (selected !== null || completed) return
+    if (checkingProgress || resumeState || selected !== null || completed) return
     const nextScore = optionIndex === item.answer ? score + 1 : score
     setSelected(optionIndex)
     setScore(nextScore)
@@ -379,7 +379,7 @@ export function DailyChallenge() {
                 <button
                   key={option}
                   onClick={() => choose(optionIndex)}
-                  disabled={selected !== null}
+                  disabled={checkingProgress || Boolean(resumeState) || selected !== null}
                   className={`min-h-12 rounded-xl border p-4 text-left text-sm font-medium outline-none transition focus-visible:ring-2 focus-visible:ring-amber-200 ${correct ? 'border-emerald-300/50 bg-emerald-300/12 text-emerald-100' : wrong ? 'border-rose-300/50 bg-rose-300/10 text-rose-100' : 'border-slate-700 bg-slate-900/70 text-slate-200 hover:border-amber-300/40 hover:bg-slate-800'} disabled:cursor-default`}
                 >
                   {option}

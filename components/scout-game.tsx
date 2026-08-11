@@ -79,7 +79,7 @@ export function ScoutGame() {
   }, [user])
 
   function choose(decision: ScoutDecision) {
-    if (selected) return
+    if (checkingProgress || resumeState || selected) return
     const nextScore = score + (decision === dossier.strongestDecision ? 2 : dossier.defensibleAlternative === decision ? 1 : 0)
     setSelected(decision)
     setScore(nextScore)
@@ -178,7 +178,7 @@ export function ScoutGame() {
                   <button
                     key={option}
                     onClick={() => choose(option)}
-                    disabled={Boolean(selected)}
+                    disabled={checkingProgress || Boolean(resumeState) || Boolean(selected)}
                     className={`rounded-xl border px-4 py-3 text-left text-sm font-semibold transition ${isBest ? 'border-primary bg-primary/10 text-primary' : active ? 'border-border bg-secondary' : 'border-border bg-card hover:border-primary/45'}`}
                   >
                     {option}

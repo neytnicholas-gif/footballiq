@@ -276,5 +276,28 @@ describe('Player Market launch gates', () => {
     const quiz = read('components/choice-quiz.tsx')
     expect(quiz).toContain('if (checkingProgress || resumeState || selected !== null) return')
     expect(quiz).toContain('disabled={checkingProgress || Boolean(resumeState) || selected !== null}')
+
+    const resumeAwareGames = [
+      'components/daily-challenge.tsx',
+      'components/career-path-game.tsx',
+      'components/higher-lower-game.tsx',
+      'components/scout-game.tsx',
+      'components/who-am-i-game.tsx',
+      'components/duel-quiz.tsx',
+    ]
+    for (const file of resumeAwareGames) {
+      const source = read(file)
+      expect(source, file).toContain('checkingProgress || resumeState')
+      expect(source, file).toContain('Boolean(resumeState)')
+    }
+  })
+
+  it('rebrands database-backed Market challenge copy', () => {
+    const sql = read('supabase/migrations/20260811204945_rebrand_market_reward_copy.sql')
+    expect(sql).toContain('all three Verdict XI leagues')
+    expect(sql).toContain('1.0m VX')
+    expect(sql).toContain('10.0m VX')
+    expect(sql).not.toContain('FootballIQ')
+    expect(sql).not.toContain('FIQ')
   })
 })

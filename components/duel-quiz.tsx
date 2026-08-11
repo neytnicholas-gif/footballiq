@@ -158,7 +158,7 @@ export function DuelQuiz({ pack, onComplete }: { pack: DuelPack; onComplete?: (p
   }, [progressQuizId])
 
   const lockAnswer = useCallback((choice: Choice | 'timeout') => {
-    if (answered) return
+    if (checkingProgress || resumeState || answered) return
     setSelected(choice)
     const correct = choice === answer
     if (correct) {
@@ -199,10 +199,10 @@ export function DuelQuiz({ pack, onComplete }: { pack: DuelPack; onComplete?: (p
         timeLeft,
       })
     }
-  }, [answer, answered, bestCombo, combo, index, pack.id, persistProgress, points, questions, score, speed, timeLeft])
+  }, [answer, answered, bestCombo, checkingProgress, combo, index, pack.id, persistProgress, points, questions, resumeState, score, speed, timeLeft])
 
   useEffect(() => {
-    if (speed !== 'timed' || answered || showResults) return
+    if (speed !== 'timed' || checkingProgress || resumeState || answered || showResults) return
     const timer = window.setTimeout(() => {
       if (timeLeft <= 0) {
         lockAnswer('timeout')
@@ -211,18 +211,18 @@ export function DuelQuiz({ pack, onComplete }: { pack: DuelPack; onComplete?: (p
       }
     }, timeLeft <= 0 ? 0 : 1000)
     return () => window.clearTimeout(timer)
-  }, [answered, lockAnswer, showResults, speed, timeLeft])
+  }, [answered, checkingProgress, lockAnswer, resumeState, showResults, speed, timeLeft])
 
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
-      if (showResults || answered || shouldIgnoreGlobalShortcut(event)) return
+      if (showResults || checkingProgress || resumeState || answered || shouldIgnoreGlobalShortcut(event)) return
       if (event.key === '1') lockAnswer('left')
       if (event.key === '2') lockAnswer('same')
       if (event.key === '3') lockAnswer('right')
     }
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
-  }, [answered, lockAnswer, showResults])
+  }, [answered, checkingProgress, lockAnswer, resumeState, showResults])
 
   async function saveResult() {
     if (!user || !profile || saved || saving) return
@@ -453,9 +453,9 @@ export function DuelQuiz({ pack, onComplete }: { pack: DuelPack; onComplete?: (p
 
       <div className="p-5 sm:p-7">
         <div className="grid items-stretch gap-4 md:grid-cols-[1fr_auto_1fr]">
-          <PlayerChoice side="left" option={question.left} selected={selected} answer={answer} answered={answered} statLabel={currentStatLabel} onChoose={lockAnswer} />
-          <button onClick={() => lockAnswer('same')} disabled={answered} className={`self-center rounded-2xl border px-5 py-3 text-sm font-bold transition md:px-4 ${answered && answer === 'same' ? 'border-primary bg-primary text-primary-foreground' : answered && selected === 'same' ? 'border-destructive bg-destructive/10 text-destructive' : 'border-border bg-secondary hover:border-primary hover:text-primary'}`}><span className="md:hidden">Same total</span><span className="hidden md:block">SAME</span><span className="ml-2 text-[10px] opacity-60">2</span></button>
-          <PlayerChoice side="right" option={question.right} selected={selected} answer={answer} answered={answered} statLabel={currentStatLabel} onChoose={lockAnswer} />
+          <PlayerChoice side="left" option={question.left} selected={selected} answer={answer} answered={answered || checkingProgress || Boolean(resumeState)} statLabel={currentStatLabel} onChoose={lockAnswer} />
+          <button onClick={() => lockAnswer('same')} disabled={answered || checkingProgress || Boolean(resumeState)} className={`self-center rounded-2xl border px-5 py-3 text-sm font-bold transition disabled:cursor-not-allowed disabled:opacity-65 md:px-4 ${answered && answer === 'same' ? 'border-primary bg-primary text-primary-foreground' : answered && selected === 'same' ? 'border-destructive bg-destructive/10 text-destructive' : 'border-border bg-secondary hover:border-primary hover:text-primary'}`}><span className="md:hidden">Same total</span><span className="hidden md:block">SAME</span><span className="ml-2 text-[10px] opacity-60">2</span></button>
+          <PlayerChoice side="right" option={question.right} selected={selected} answer={answer} answered={answered || checkingProgress || Boolean(resumeState)} statLabel={currentStatLabel} onChoose={lockAnswer} />
         </div>
 
         {!answered && <p className="mt-5 text-center text-xs text-muted-foreground">Click a player, choose Same, or use keyboard keys 1 • 2 • 3</p>}
