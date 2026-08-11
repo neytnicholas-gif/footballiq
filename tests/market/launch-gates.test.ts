@@ -182,13 +182,13 @@ describe('Player Market launch gates', () => {
     expect(browser).toContain('Squad value')
     expect(browser).toContain('Total spent')
     expect(browser).toContain('Budget left')
-    expect(browser).toContain('href="/market/portfolio"')
+    expect(browser).toContain('href="/market/roster"')
     expect(browser.indexOf('<MarketRosterBoard')).toBeLessThan(browser.indexOf('placeholder="Player or club"'))
   })
 
   it('returns from a player card directly to the live roster', () => {
     const detail = read('components/market/player-market-detail.tsx')
-    expect(detail).toContain('href="/market/portfolio"')
+    expect(detail).toContain('href="/market/roster"')
     expect(detail).toContain('Back to full roster')
   })
 
@@ -217,5 +217,27 @@ describe('Player Market launch gates', () => {
     const market = `${read('components/market/player-market-browser.tsx')}\n${read('components/market/player-market-home.tsx')}`
     expect(market).not.toContain('data_source_label.includes(')
     expect(market).toContain("data_source_label?.includes('preview valuation experiment')")
+  })
+
+  it('provides a first-class roster route with a formation board and player dossiers', () => {
+    const route = read('app/market/roster/page.tsx')
+    const roster = read('components/market/player-market-portfolio.tsx')
+    const navigation = read('components/market/market-navigation.tsx')
+    expect(route).toContain("from '../portfolio/page'")
+    expect(navigation).toContain("href: '/market/roster'")
+    expect(navigation).toContain("label: 'Roster'")
+    expect(roster).toContain('Full-screen roster')
+    expect(roster).toContain('Your {activeFormation} team')
+    expect(roster).toContain('Tap any player to open their full stats')
+    expect(roster).toContain('href={`/market/player/${encodeURIComponent(player.slug)}`}')
+    expect(roster).toContain('ownership_percentage')
+  })
+
+  it('turns backend failures into safe player-facing market messages', () => {
+    const client = read('lib/market/client.ts')
+    const readErrors = read('lib/market/user-errors.ts')
+    expect(client).toContain('That action could not be completed. Nothing changed')
+    expect(client).toContain('You have used all 11 signings for this gameweek.')
+    expect(readErrors).toContain('Your roster and budget were not changed.')
   })
 })

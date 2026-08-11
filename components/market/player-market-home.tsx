@@ -250,7 +250,7 @@ export function PlayerMarketHome() {
           <p className="mt-2 text-sm text-muted-foreground">Formation is strict: 1 GK, 4 DEF, 3 MID, 3 FWD. Start with a goalkeeper and core defenders, then complete midfield and attack.</p>
           <div className="mt-4 flex flex-wrap gap-3">
             <Link href="/market/players" className="rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground">Open player marketplace</Link>
-            <Link href="/market/portfolio" className="rounded-xl border border-border px-4 py-2 text-sm font-semibold">View empty portfolio</Link>
+            <Link href="/market/roster" className="rounded-xl border border-border px-4 py-2 text-sm font-semibold">View empty roster</Link>
           </div>
         </section>
       ) : null}
@@ -259,7 +259,7 @@ export function PlayerMarketHome() {
         <div className="rounded-[2rem] border border-border bg-card p-6">
           <div className="mb-4 flex items-center justify-between">
             <h2 className="text-xl font-bold">Current holdings</h2>
-            <Link href="/market/portfolio" className="text-sm font-semibold text-primary">Open portfolio</Link>
+            <Link href="/market/roster" className="text-sm font-semibold text-primary">Open roster</Link>
           </div>
           {loading ? <p className="text-sm text-muted-foreground">Loading your players…</p> : holdings.length === 0 ? <p className="text-sm text-muted-foreground">You have no players yet. Start building your 11-player team.</p> : (
             <div className="space-y-3">

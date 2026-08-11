@@ -229,7 +229,7 @@ export function PlayerMarketBrowser({
               <p className="mt-0.5 text-[11px] text-slate-600">{openSlots === 0 ? 'Review value movement or replace a holding.' : `${openSlots} places open · ${formatFiqCompact(Math.floor(availableCash / openSlots))} average budget per open place.`}</p>
             </div>
           </div>
-          <Link href="/market/portfolio" className="text-xs font-black text-emerald-800 underline decoration-emerald-300 underline-offset-4">See your full team</Link>
+          <Link href="/market/roster" className="text-xs font-black text-emerald-800 underline decoration-emerald-300 underline-offset-4">Open full roster</Link>
         </div>
 
         <div className="mt-5 flex flex-wrap gap-2" aria-label="Catalogue views">
@@ -485,7 +485,7 @@ function MarketRosterBoard({
           <RosterTotal label="Squad value" value={currentRosterValue} />
           <RosterTotal label="Total spent" value={totalSpent} />
           <RosterTotal label="Budget left" value={availableCash} />
-          <Link href="/market/portfolio" className="rounded-lg border border-white/20 bg-white/10 px-2.5 py-1.5 font-black text-white transition hover:bg-white/20 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white">View full roster</Link>
+          <Link href="/market/roster" className="rounded-lg border border-white/20 bg-white/10 px-2.5 py-1.5 font-black text-white transition hover:bg-white/20 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white">View full roster</Link>
         </div>
       </div>
 

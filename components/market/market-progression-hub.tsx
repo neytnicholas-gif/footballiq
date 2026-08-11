@@ -99,7 +99,7 @@ export function MarketProgressionHub() {
           <p className="mt-3 max-w-xl text-sm leading-6 text-emerald-50/85">Complete simple Market goals. Each completed goal gives you a badge and Style Credits. Use those credits on profile rewards that stay yours.</p>
           <div className="mt-5 flex flex-wrap gap-3">
             <Link href="/market/players" className="rounded-xl bg-white px-4 py-2.5 text-sm font-black text-emerald-950">Go to player market</Link>
-            <Link href="/market/portfolio" className="rounded-xl border border-white/20 bg-white/10 px-4 py-2.5 text-sm font-bold text-white">See my team</Link>
+            <Link href="/market/roster" className="rounded-xl border border-white/20 bg-white/10 px-4 py-2.5 text-sm font-bold text-white">See my roster</Link>
           </div>
         </div>
         <div className="min-w-56 rounded-2xl border border-white/15 bg-white/10 px-6 py-5 backdrop-blur">

@@ -14,6 +14,7 @@ import {
   loadPlayerValueHistory,
 } from '@/lib/market/client'
 import type { MarketHolding, MarketPlayer, MarketSeasonStats, MarketValueHistoryPoint } from '@/lib/market/types'
+import { friendlyMarketLoadError } from '@/lib/market/user-errors'
 
 export default function PlayerMarketDetailPage() {
   const params = useParams<{ slug: string }>()
@@ -37,7 +38,7 @@ export default function PlayerMarketDetailPage() {
 
     const { data: marketPlayers, error: playerError } = await loadMarketPlayers()
     if (playerError) {
-      setError(playerError.message)
+      setError(friendlyMarketLoadError(playerError))
       setLoading(false)
       return
     }
@@ -56,9 +57,9 @@ export default function PlayerMarketDetailPage() {
       loadMyGameweekStatus(),
     ])
 
-    if (statsResult.error) setError(statsResult.error.message)
-    if (historyResult.error) setError(historyResult.error.message)
-    if (portfolioResult.error) setError(portfolioResult.error.message)
+    if (statsResult.error) setError(friendlyMarketLoadError(statsResult.error))
+    if (historyResult.error) setError(friendlyMarketLoadError(historyResult.error))
+    if (portfolioResult.error) setError(friendlyMarketLoadError(portfolioResult.error))
 
     setStats(statsResult.data)
     setHistory(historyResult.data)

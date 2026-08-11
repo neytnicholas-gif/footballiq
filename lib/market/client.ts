@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any -- RPCs added after the generated Supabase schema use a narrow runtime compatibility bridge. */
 import { supabase } from '@/lib/supabase'
 import {
   createMarketRequestKey,
@@ -16,7 +17,7 @@ import {
   clearAnonymousState,
   readAnonymousState,
 } from '@/lib/market/anonymous-state'
-import { loadLatestReveal, loadRevealHistory } from '@/lib/market/reveal'
+import { loadRevealHistory } from '@/lib/market/reveal'
 import type {
   MarketFriendLeague,
   MarketFriendLeagueLeaderboardRow,
@@ -59,7 +60,20 @@ function normalizeMarketMutationError(error: unknown): Error | null {
   if (/MARKET_(PAUSED|UPDATING|TEMPORARILY_UNAVAILABLE)/i.test(row.message ?? '')) {
     return new Error('Trading is temporarily paused to protect player accounts. No change was made.')
   }
-  return error instanceof Error ? error : Object.assign(new Error(row.message ?? 'The market request could not be completed.'), row)
+  const message = row.message ?? ''
+  const friendlyErrors: Array<[RegExp, string]> = [
+    [/AUTH_REQUIRED/i, 'Sign in before making this change.'],
+    [/ALREADY_OWNED/i, 'That player is already in your roster.'],
+    [/MAX_HOLDINGS|PORTFOLIO_LIMIT/i, 'Your 11-player roster is full. Sell a player before adding another.'],
+    [/FORMATION_LIMIT/i, 'That position is full in your current formation.'],
+    [/INSUFFICIENT_(BALANCE|FUNDS)/i, 'You do not have enough FIQ budget for that player.'],
+    [/GAMEWEEK_TRANSFER_LIMIT/i, 'You have used all 11 signings for this gameweek.'],
+    [/GAMEWEEK_LOCKED/i, 'Trading is closed while this gameweek is being processed. Nothing changed.'],
+    [/NOT_OWNED/i, 'That player is not currently in your roster.'],
+    [/PLAYER_NOT_FOUND|PLAYER_NOT_FOUND_OR_UNAVAILABLE/i, 'That player is no longer available. Refresh the market and choose another.'],
+  ]
+  const friendly = friendlyErrors.find(([pattern]) => pattern.test(message))?.[1]
+  return new Error(friendly ?? 'That action could not be completed. Nothing changed—please try again.')
 }
 
 export type GuestMarketImportResult = {

@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { useMemo } from 'react'
 import type { ReactNode } from 'react'
-import { ArrowUpRight, Award, Wallet } from 'lucide-react'
+import { ArrowUpRight, Award, Minus, TrendingDown, TrendingUp, Wallet } from 'lucide-react'
 import { MarketPlayerChip } from '@/components/market/market-player-chip'
 import { useMarketFormation } from '@/components/market/use-market-formation'
 import { countFormation } from '@/lib/market/formation'
@@ -157,6 +157,8 @@ export function PlayerMarketPortfolio({
         )}
       </section>
 
+      <RosterPitch holdings={holdings} playersById={playersById} limits={limits} activeFormation={activeFormation} />
+
       <section className="rounded-[2rem] border border-border bg-card p-6">
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
           <div>
@@ -242,6 +244,64 @@ export function PlayerMarketPortfolio({
       </section>
     </div>
   )
+}
+
+const positionRows = [
+  { position: 'FWD', label: 'Forwards' },
+  { position: 'MID', label: 'Midfielders' },
+  { position: 'DEF', label: 'Defenders' },
+  { position: 'GK', label: 'Goalkeeper' },
+] as const
+
+function RosterPitch({
+  holdings,
+  playersById,
+  limits,
+  activeFormation,
+}: {
+  holdings: MarketHolding[]
+  playersById: Map<number, MarketPlayer>
+  limits: Record<'GK' | 'DEF' | 'MID' | 'FWD', number>
+  activeFormation: string
+}) {
+  const holdingByPlayerId = new Map(holdings.map((holding) => [holding.player_id, holding]))
+  return (
+    <section aria-labelledby="formation-board-title" className="overflow-hidden rounded-[2rem] border border-emerald-950/20 bg-emerald-950 text-white shadow-[0_28px_80px_-45px_rgba(6,78,59,.9)]">
+      <div className="flex flex-wrap items-start justify-between gap-3 border-b border-white/10 px-5 py-4 sm:px-7">
+        <div><p className="text-[10px] font-bold uppercase tracking-[.2em] text-emerald-200">Full-screen roster</p><h2 id="formation-board-title" className="mt-1 text-2xl font-black">Your {activeFormation} team</h2><p className="mt-1 text-xs text-emerald-100/70">Tap any player to open their full stats, form and price details.</p></div>
+        <Link href="/market/players" className="rounded-xl border border-white/20 bg-white/10 px-4 py-2 text-sm font-bold transition hover:bg-white/20 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white">Change your team</Link>
+      </div>
+      <div className="relative bg-[linear-gradient(90deg,rgba(255,255,255,.025)_50%,transparent_50%),linear-gradient(rgba(255,255,255,.035)_50%,transparent_50%)] bg-[size:48px_48px] px-3 py-6 sm:px-6 sm:py-8">
+        <div aria-hidden="true" className="pointer-events-none absolute inset-4 rounded-[1.5rem] border-2 border-white/12"><span className="absolute left-1/2 top-1/2 size-24 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white/10" /><span className="absolute left-1/2 top-0 h-full border-l-2 border-white/10" /></div>
+        <div className="relative space-y-6 sm:space-y-7">
+          {positionRows.map(({ position, label }) => {
+            const players = holdings.map((holding) => playersById.get(holding.player_id)).filter((player): player is MarketPlayer => player?.position === position)
+            const slots = Array.from({ length: limits[position] }, (_, index) => players[index] ?? null)
+            return <div key={position}><p className="mb-2 text-center text-[10px] font-bold uppercase tracking-[.18em] text-emerald-100/60">{label}</p><div role="list" aria-label={label} className="flex snap-x justify-start gap-2 overflow-x-auto px-1 pb-1 sm:justify-center sm:overflow-visible">{slots.map((player, index) => player ? <RosterPlayerCard key={player.id} player={player} holding={holdingByPlayerId.get(player.id)} /> : <EmptyRosterSlot key={`${position}-${index}`} position={position} />)}</div></div>
+          })}
+        </div>
+      </div>
+    </section>
+  )
+}
+
+function RosterPlayerCard({ player, holding }: { player: MarketPlayer; holding?: MarketHolding }) {
+  const movement = holding?.unrealized_profit_loss ?? player.current_value - player.previous_value
+  const MovementIcon = movement > 0 ? TrendingUp : movement < 0 ? TrendingDown : Minus
+  return (
+    <Link role="listitem" href={`/market/player/${encodeURIComponent(player.slug)}`} aria-label={`Open ${player.display_name} details`} className="group w-28 shrink-0 snap-center rounded-2xl border border-white/20 bg-white/95 p-2 text-center text-slate-950 shadow-lg outline-none transition hover:-translate-y-1 hover:border-emerald-200 focus-visible:ring-2 focus-visible:ring-white sm:w-32">
+      <span className="mx-auto block w-fit"><MarketPlayerChip player={player} /></span>
+      <span className="mt-2 block truncate text-xs font-black" title={player.display_name}>{player.short_name || player.display_name}</span>
+      <span className="mt-0.5 block truncate text-[9px] text-slate-500">{player.club_name}</span>
+      <span className="mt-1.5 block text-[11px] font-black text-emerald-800">{formatFiqCompact(player.current_value)}</span>
+      <span className={`mt-0.5 flex items-center justify-center gap-1 text-[9px] font-bold ${movement > 0 ? 'text-emerald-700' : movement < 0 ? 'text-rose-700' : 'text-slate-500'}`}><MovementIcon className="size-3" aria-hidden="true" />{movement === 0 ? 'No change' : `${movement > 0 ? '+' : '-'}${formatFiqCompact(Math.abs(movement))}`}</span>
+      <span className="mt-1 block text-[9px] text-slate-500">Owned by {(player.ownership_percentage ?? 0).toFixed(1)}%</span>
+    </Link>
+  )
+}
+
+function EmptyRosterSlot({ position }: { position: 'GK' | 'DEF' | 'MID' | 'FWD' }) {
+  return <Link role="listitem" href={`/market/players?position=${position}`} className="flex h-[150px] w-28 shrink-0 snap-center flex-col items-center justify-center rounded-2xl border border-dashed border-white/30 bg-white/5 p-2 text-center text-emerald-100 transition hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white sm:w-32"><span className="text-2xl font-black">+</span><span className="mt-1 text-[10px] font-bold">Add {position}</span></Link>
 }
 
 function Metric({ label, value, tone = 'default' }: { label: string; value: string; tone?: 'default' | 'positive' | 'negative' }) {

@@ -62,7 +62,7 @@ export function PlayerMarketReveal({ latest, history }: { latest: MarketRevealSu
         </div>
 
         <div className="mt-5 flex flex-wrap gap-3">
-          <Link href="/market/portfolio" className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground">
+          <Link href="/market/roster" className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground">
             Continue to Portfolio
             <ArrowRight className="size-4" />
           </Link>

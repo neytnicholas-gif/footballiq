@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { SiteHeader } from '@/components/site-header'
 import { PlayerMarketPortfolio } from '@/components/market/player-market-portfolio'
+import { MarketNavigation } from '@/components/market/market-navigation'
 import { useAuth } from '@/components/auth-provider'
 import {
   calculateTradesRemaining,
@@ -14,6 +15,7 @@ import {
 } from '@/lib/market/client'
 import type { MarketHolding, MarketMatchweekRun, MarketPlayer, MarketPortfolio, MarketRevealSummary, MarketTransaction } from '@/lib/market/types'
 import type { GuestMarketImportResult } from '@/lib/market/client'
+import { friendlyMarketLoadError } from '@/lib/market/user-errors'
 
 export default function PlayerMarketPortfolioPage() {
   const { user } = useAuth()
@@ -67,10 +69,10 @@ export default function PlayerMarketPortfolioPage() {
 
       if (!active) return
 
-      if (playerError) setError(playerError.message)
-      if (portfolioData.error) setError(portfolioData.error.message)
-      if (runsResult.error) setError(runsResult.error.message)
-      if (revealsResult.error) setError(revealsResult.error.message)
+      if (playerError) setError(friendlyMarketLoadError(playerError))
+      if (portfolioData.error) setError(friendlyMarketLoadError(portfolioData.error))
+      if (runsResult.error) setError(friendlyMarketLoadError(runsResult.error))
+      if (revealsResult.error) setError(friendlyMarketLoadError(revealsResult.error))
 
       setPlayers(marketPlayers)
       setPortfolio(portfolioData.portfolio)
@@ -95,6 +97,7 @@ export default function PlayerMarketPortfolioPage() {
     <main className="market-theme min-h-screen bg-[radial-gradient(circle_at_top_left,rgba(16,185,129,.10),transparent_34%),linear-gradient(180deg,#f7fbf9_0%,#eef6f2_48%,#f8faf9_100%)]">
       <SiteHeader />
       <section className="mx-auto max-w-7xl px-4 py-10 sm:px-6 sm:py-14">
+        <MarketNavigation />
         {importResult?.imported ? (
           <div className="mb-4 flex items-start justify-between gap-3 rounded-2xl border border-emerald-700/25 bg-emerald-50 px-4 py-3 text-sm text-emerald-950 shadow-sm">
             <div>
@@ -104,7 +107,7 @@ export default function PlayerMarketPortfolioPage() {
             <button type="button" onClick={() => setImportResult(null)} className="rounded-lg border border-emerald-800/15 px-2 py-1 text-xs font-semibold">Dismiss</button>
           </div>
         ) : null}
-        {error ? <p className="mb-4 rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">{error}</p> : null}
+        {error ? <p role="alert" className="mb-4 rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">{error}</p> : null}
         {loading ? <p className="text-sm text-muted-foreground">Loading portfolio…</p> : (
           <PlayerMarketPortfolio
             portfolio={portfolio}
