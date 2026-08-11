@@ -119,6 +119,8 @@ export function PlayerMarketPortfolio({
         </div>
       </section>
 
+      <RosterPitch holdings={holdings} playersById={playersById} limits={limits} activeFormation={activeFormation} />
+
       <section className="rounded-[2rem] border border-border bg-card p-6">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-xl font-bold">Current holdings ({holdings.length}/{MARKET_MAX_PORTFOLIO_SIZE})</h2>
@@ -156,8 +158,6 @@ export function PlayerMarketPortfolio({
           </div>
         )}
       </section>
-
-      <RosterPitch holdings={holdings} playersById={playersById} limits={limits} activeFormation={activeFormation} />
 
       <section className="rounded-[2rem] border border-border bg-card p-6">
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
@@ -289,19 +289,19 @@ function RosterPlayerCard({ player, holding }: { player: MarketPlayer; holding?:
   const movement = holding?.unrealized_profit_loss ?? player.current_value - player.previous_value
   const MovementIcon = movement > 0 ? TrendingUp : movement < 0 ? TrendingDown : Minus
   return (
-    <Link role="listitem" href={`/market/player/${encodeURIComponent(player.slug)}`} aria-label={`Open ${player.display_name} details`} className="group w-28 shrink-0 snap-center rounded-2xl border border-white/20 bg-white/95 p-2 text-center text-slate-950 shadow-lg outline-none transition hover:-translate-y-1 hover:border-emerald-200 focus-visible:ring-2 focus-visible:ring-white sm:w-32">
+    <div role="listitem" className="w-28 shrink-0 snap-center sm:w-32"><Link href={`/market/player/${encodeURIComponent(player.slug)}`} aria-label={`Open ${player.display_name} details`} className="group block rounded-2xl border border-white/20 bg-white/95 p-2 text-center text-slate-950 shadow-lg outline-none transition hover:-translate-y-1 hover:border-emerald-200 focus-visible:ring-2 focus-visible:ring-white">
       <span className="mx-auto block w-fit"><MarketPlayerChip player={player} /></span>
       <span className="mt-2 block truncate text-xs font-black" title={player.display_name}>{player.short_name || player.display_name}</span>
       <span className="mt-0.5 block truncate text-[9px] text-slate-500">{player.club_name}</span>
       <span className="mt-1.5 block text-[11px] font-black text-emerald-800">{formatFiqCompact(player.current_value)}</span>
       <span className={`mt-0.5 flex items-center justify-center gap-1 text-[9px] font-bold ${movement > 0 ? 'text-emerald-700' : movement < 0 ? 'text-rose-700' : 'text-slate-500'}`}><MovementIcon className="size-3" aria-hidden="true" />{movement === 0 ? 'No change' : `${movement > 0 ? '+' : '-'}${formatFiqCompact(Math.abs(movement))}`}</span>
       <span className="mt-1 block text-[9px] text-slate-500">Owned by {(player.ownership_percentage ?? 0).toFixed(1)}%</span>
-    </Link>
+    </Link></div>
   )
 }
 
 function EmptyRosterSlot({ position }: { position: 'GK' | 'DEF' | 'MID' | 'FWD' }) {
-  return <Link role="listitem" href={`/market/players?position=${position}`} className="flex h-[150px] w-28 shrink-0 snap-center flex-col items-center justify-center rounded-2xl border border-dashed border-white/30 bg-white/5 p-2 text-center text-emerald-100 transition hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white sm:w-32"><span className="text-2xl font-black">+</span><span className="mt-1 text-[10px] font-bold">Add {position}</span></Link>
+  return <div role="listitem" className="w-28 shrink-0 snap-center sm:w-32"><Link href={`/market/players?position=${position}`} aria-label={`Add a ${position} player`} className="flex h-[150px] flex-col items-center justify-center rounded-2xl border border-dashed border-white/30 bg-white/5 p-2 text-center text-emerald-100 transition hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"><span className="text-2xl font-black">+</span><span className="mt-1 text-[10px] font-bold">Add {position}</span></Link></div>
 }
 
 function Metric({ label, value, tone = 'default' }: { label: string; value: string; tone?: 'default' | 'positive' | 'negative' }) {

@@ -231,6 +231,8 @@ describe('Player Market launch gates', () => {
     expect(roster).toContain('Tap any player to open their full stats')
     expect(roster).toContain('href={`/market/player/${encodeURIComponent(player.slug)}`}')
     expect(roster).toContain('ownership_percentage')
+    expect(roster).not.toContain('<Link role="listitem"')
+    expect(roster).toContain('aria-label={`Open ${player.display_name} details`}')
   })
 
   it('turns backend failures into safe player-facing market messages', () => {
