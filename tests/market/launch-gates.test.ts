@@ -5,6 +5,33 @@ import { describe, expect, it } from 'vitest'
 const read = (file: string) => fs.readFileSync(path.join(process.cwd(), file), 'utf8')
 
 describe('Player Market launch gates', () => {
+  it('makes future database functions private until explicitly granted', () => {
+    const sql = read('supabase/migrations/20260811133000_secure_function_defaults.sql')
+    expect(sql).toContain('alter default privileges in schema public')
+    expect(sql).toContain('revoke execute on functions from public, anon, authenticated')
+  })
+
+  it('covers every rewards/profile foreign key flagged by the live performance advisor', () => {
+    const sql = read('supabase/migrations/20260811134000_index_progression_foreign_keys.sql')
+    for (const column of ['active_avatar', 'active_background', 'active_frame', 'challenge_key', 'item_key']) {
+      expect(sql).toContain(`(${column})`)
+    }
+  })
+
+  it('revokes every security-definer function explicitly and pins its search path', () => {
+    const migrationDir = path.join(process.cwd(), 'supabase/migrations')
+    const migrations = fs.readdirSync(migrationDir).filter((file) => file.endsWith('.sql')).sort()
+    const allSql = migrations.map((file) => fs.readFileSync(path.join(migrationDir, file), 'utf8')).join('\n').toLowerCase()
+    const definitions = [...allSql.matchAll(/create or replace function\s+([a-z0-9_.]+)\s*\([^$]*?security definer\s+set search_path\s*=\s*([^\n]+?)\s+as\s+\$\$/g)]
+    const revokedFunctions = [...allSql.matchAll(/revoke all on function\s+([\s\S]*?)\s+from\s+/g)].map((match) => match[1]!)
+    expect(definitions.length).toBeGreaterThan(10)
+    for (const definition of definitions) {
+      const functionName = definition[1]!
+      expect(definition[2], `${functionName} must pin search_path`).toMatch(/pg_catalog|''/)
+      expect(revokedFunctions.some((block) => block.includes(`${functionName}(`)), `${functionName} must have an explicit revoke`).toBe(true)
+    }
+  })
+
   it('serves the catalogue outside Preview with an authoritative opening baseline', () => {
     const route = read('app/api/market/catalogue/route.ts')
     expect(route).not.toContain("VERCEL_ENV !== 'preview'")

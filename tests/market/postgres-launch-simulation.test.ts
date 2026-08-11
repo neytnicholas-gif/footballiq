@@ -1,6 +1,8 @@
 // @vitest-environment node
 import { readFileSync } from 'node:fs'
 import { PGlite } from '@electric-sql/pglite'
+import { PGLiteSocketServer } from '@electric-sql/pglite-socket'
+import pg from 'pg'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
 const foundation = readFileSync('supabase/migrations/20260809203000_market_gameweek_engine.sql', 'utf8')
@@ -109,6 +111,7 @@ create function public.market_refresh_my_progression() returns jsonb language sq
 `;
 
 const db = new PGlite()
+const socketServer = new PGLiteSocketServer({ db, host: '127.0.0.1', port: 0, maxConnections: 64 })
 const seasonId = '10000000-0000-0000-0000-000000000001'
 const catalogueId = '20000000-0000-0000-0000-000000000001'
 const userA = '30000000-0000-0000-0000-000000000001'
@@ -149,9 +152,53 @@ describe('executed PostgreSQL launch simulation', () => {
       await db.query(`insert into public.market_portfolios(user_id,season_id,starting_balance_minor,cash_balance_minor,total_portfolio_value_minor)
         values($1,$2,100000000,100000000,100000000)`, [userId, seasonId])
     }
+    await socketServer.start()
   }, 30_000)
 
-  afterAll(async () => { await db.close() })
+  afterAll(async () => {
+    await socketServer.stop()
+    await db.close()
+  })
+
+  it('keeps independent authenticated sessions isolated under retry and roster races', async () => {
+    const racingUser = '30000000-0000-0000-0000-000000000003'
+    await db.query(`insert into public.market_portfolios(user_id,season_id,starting_balance_minor,cash_balance_minor,total_portfolio_value_minor)
+      values($1,$2,100000000,100000000,100000000)`, [racingUser, seasonId])
+    const [host, portText] = socketServer.getServerConn().split(':')
+    const clients = await Promise.all(Array.from({ length: 25 }, async () => {
+      const client = new pg.Client({ host, port: Number(portText), database: 'postgres', user: 'postgres', ssl: false })
+      await client.connect()
+      await client.query("select set_config('request.jwt.claim.sub',$1,false)", [racingUser])
+      return client
+    }))
+
+    try {
+      const duplicateRetries = await Promise.all(clients.map((client) =>
+        client.query('select public.market_buy_player($1,$2)', ['player-1', 'racing-same-request'])))
+      expect(duplicateRetries).toHaveLength(25)
+      expect(await count('public.market_transactions', `idempotency_key='racing-same-request'`)).toBe(1)
+
+      const candidates = ['player-2', 'player-3', 'player-4', 'player-5', 'player-6', 'player-7', 'player-8', 'player-9', 'player-10', 'player-11', 'player-12', 'player-13', 'player-14', 'player-15']
+      const outcomes = await Promise.allSettled(candidates.map((slug, index) =>
+        clients[index]!.query('select public.market_buy_player($1,$2)', [slug, `racing-${slug}`])))
+      expect(outcomes.filter((outcome) => outcome.status === 'fulfilled')).toHaveLength(10)
+
+      const snapshot = await db.query<{ holdings: number; cash: number; signings: number; gk: number; def: number; mid: number; fwd: number }>(`
+        select count(h.id)::integer holdings,p.cash_balance_minor cash,a.signings_used signings,
+          count(h.id) filter(where mp.position_group='GK')::integer gk,
+          count(h.id) filter(where mp.position_group='DEF')::integer def,
+          count(h.id) filter(where mp.position_group='MID')::integer mid,
+          count(h.id) filter(where mp.position_group='FWD')::integer fwd
+        from public.market_portfolios p
+        join public.market_holdings h on h.portfolio_id=p.id
+        join public.market_players mp on mp.id=h.player_id
+        join public.market_gameweek_allowances a on a.portfolio_id=p.id
+        where p.user_id=$1 group by p.id,a.signings_used`, [racingUser])
+      expect(snapshot.rows[0]).toEqual({ holdings: 11, cash: 45_000_000, signings: 11, gk: 1, def: 4, mid: 3, fwd: 3 })
+    } finally {
+      await Promise.all(clients.map((client) => client.end()))
+    }
+  }, 30_000)
 
   it('executes a complete authenticated 1-4-3-3 purchase ledger and idempotent retry', async () => {
     await asUser(userA)
@@ -162,8 +209,8 @@ describe('executed PostgreSQL launch simulation', () => {
       db.query('select public.market_buy_player($1,$2)', ['player-14', 'user-a-buy-10']),
     ])
     expect(duplicate).toHaveLength(2)
-    expect(await count('public.market_holdings')).toBe(11)
-    expect(await count('public.market_transactions')).toBe(11)
+    expect(await count('public.market_holdings', `portfolio_id in (select id from public.market_portfolios where user_id='${userA}')`)).toBe(11)
+    expect(await count('public.market_transactions', `portfolio_id in (select id from public.market_portfolios where user_id='${userA}')`)).toBe(11)
     const snapshot = await db.query<{ cash: number; invested: number; total: number; signings: number }>(`
       select p.cash_balance_minor cash,p.current_holdings_value_minor invested,p.total_portfolio_value_minor total,a.signings_used signings
       from public.market_portfolios p join public.market_gameweek_allowances a on a.portfolio_id=p.id where p.user_id=$1`, [userA])
