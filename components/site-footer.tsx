@@ -10,6 +10,7 @@ const navLinks = [
   { label: 'Academy', href: '/academy' },
   { label: 'Founder beta', href: '/beta' },
   { label: 'Access & roadmap', href: '/pro' },
+  { label: 'Partner with us', href: '/partners' },
   { label: 'Daily Challenge', href: '/daily' },
   { label: 'Predictions', href: '/predictions' },
   { label: 'Leaderboard', href: '/leaderboard' },
