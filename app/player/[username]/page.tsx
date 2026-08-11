@@ -8,6 +8,7 @@ import { SiteHeader } from '@/components/site-header'
 import { getRankProgress } from '@/lib/progression'
 import { supabase, type Profile } from '@/lib/supabase'
 import { SectionHeader, StatCard, SurfaceCard, StatusBadge } from '@/components/platform/primitives'
+import { ClubColourDot } from '@/components/market/club-colour-dot'
 import type { Database } from '@/lib/supabase/types'
 
 type PublicProfile = Database['public']['Views']['public_leaderboard_profiles']['Row']
@@ -141,7 +142,7 @@ export default function PublicPlayerPage() {
 
           <SurfaceCard className="mt-6 p-6 sm:p-8">
             <div className="flex flex-wrap items-end justify-between gap-3"><div><p className="text-xs font-bold uppercase tracking-[.22em] text-primary">Public roster</p><h2 className="mt-2 text-2xl font-black">{marketProfile?.preferences?.active_formation ?? '4-3-3'} team</h2></div><span className="rounded-xl bg-secondary px-3 py-2 text-sm font-bold"><Users className="mr-1 inline size-4"/>{marketProfile?.roster?.length ?? 0}/11</span></div>
-            {!marketProfile?.roster?.length ? <p className="mt-5 text-sm text-muted-foreground">This player has not signed a market player yet.</p> : <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">{marketProfile.roster.map((player)=><Link key={player.player_id} href={`/market/player/${encodeURIComponent(player.slug)}`} className="rounded-2xl border border-border bg-background/75 p-4"><div className="flex items-center justify-between gap-2"><span className="rounded-lg bg-primary/10 px-2 py-1 text-xs font-black text-primary">{player.position}</span><span className="text-xs text-muted-foreground">{(player.value/1_000_000).toFixed(1)}m VX</span></div><p className="mt-3 truncate font-black">{player.name}</p><p className="truncate text-xs text-muted-foreground">{player.club}</p></Link>)}</div>}
+            {!marketProfile?.roster?.length ? <p className="mt-5 text-sm text-muted-foreground">This player has not signed a market player yet.</p> : <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">{marketProfile.roster.map((player)=><Link key={player.player_id} href={`/market/player/${encodeURIComponent(player.slug)}`} className="rounded-2xl border border-border bg-background/75 p-4"><div className="flex items-center justify-between gap-2"><span className="rounded-lg bg-primary/10 px-2 py-1 text-xs font-black text-primary">{player.position}</span><span className="text-xs text-muted-foreground">{(player.value/1_000_000).toFixed(1)}m VX</span></div><p className="mt-3 flex min-w-0 items-center gap-2 font-black"><ClubColourDot clubName={player.club} /><span className="truncate">{player.name}</span></p><p className="truncate text-xs text-muted-foreground">{player.club}</p></Link>)}</div>}
           </SurfaceCard>
 
           {marketProfile?.market_stats ? <div className="mt-6 grid gap-4 sm:grid-cols-3"><StatCard label="Market account" value={`${(marketProfile.market_stats.total_account_value/1_000_000).toFixed(1)}m VX`} /><StatCard label="Realised game gain" value={`${(marketProfile.market_stats.realised_profit/1_000_000).toFixed(1)}m VX`} /><StatCard label="Trades" value={marketProfile.market_stats.trades.toLocaleString()} /></div> : null}

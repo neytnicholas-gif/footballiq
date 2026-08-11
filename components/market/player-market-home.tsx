@@ -8,6 +8,7 @@ import { countFormation } from '@/lib/market/formation'
 import { useAuth } from '@/components/auth-provider'
 import { MarketDisclaimer } from '@/components/market/market-disclaimer'
 import { MarketPlayerChip } from '@/components/market/market-player-chip'
+import { ClubColourDot } from '@/components/market/club-colour-dot'
 import { useMarketFormation } from '@/components/market/use-market-formation'
 import {
   calculateTradesRemaining,
@@ -221,7 +222,7 @@ export function PlayerMarketHome() {
               const delta = player.current_value - player.previous_value
               return (
                 <Link key={player.id} href={`/market/player/${encodeURIComponent(player.slug)}`} className="flex items-center justify-between rounded-xl border border-slate-200 bg-white/80 px-3 py-2 text-sm text-slate-900 transition hover:border-emerald-500">
-                  <span><strong>{player.display_name}</strong><span className="ml-2 text-xs text-slate-500">{player.position}</span></span>
+                  <span className="flex min-w-0 items-center gap-2"><ClubColourDot clubName={player.club_name} /><strong className="truncate">{player.display_name}</strong><span className="text-xs text-slate-500">{player.position}</span></span>
                   <span className={delta > 0 ? 'font-bold text-emerald-700' : delta < 0 ? 'font-bold text-red-700' : 'font-bold text-slate-600'}>{delta > 0 ? '+' : delta < 0 ? '−' : ''}{formatFiqCompact(Math.abs(delta))}</span>
                 </Link>
               )
@@ -271,7 +272,7 @@ export function PlayerMarketHome() {
                     <div className="flex items-center gap-3">
                       <MarketPlayerChip player={player} />
                       <div>
-                        <p className="font-semibold">{player.display_name}</p>
+                        <p className="flex items-center gap-2 font-semibold"><ClubColourDot clubName={player.club_name} /><span>{player.display_name}</span></p>
                         <p className="text-xs text-muted-foreground">{player.club_name} · {player.position}</p>
                       </div>
                     </div>
@@ -348,7 +349,7 @@ export function PlayerMarketHome() {
                   <MarketPlayerChip player={player} />
                   <span className="rounded-full border border-border px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">{player.position}</span>
                 </div>
-                <p className="mt-3 font-semibold">{player.display_name}</p>
+                <p className="mt-3 flex items-center gap-2 font-semibold"><ClubColourDot clubName={player.club_name} /><span>{player.display_name}</span></p>
                 <p className="text-xs text-muted-foreground">{player.club_name}</p>
                 <p className="mt-2 text-sm text-primary">{formatFiqCompact(player.current_value)}</p>
                 <p className="text-xs text-muted-foreground">{owned ? 'In your team' : 'See player details'}</p>
@@ -387,7 +388,7 @@ function MoverRow({ player, positive }: { player: MarketPlayer; positive: boolea
   const icon = positive ? <TrendingUp className="size-3.5" /> : <TrendingDown className="size-3.5" />
   return (
     <Link href={`/market/player/${encodeURIComponent(player.slug)}`} className="flex items-center justify-between rounded-xl border border-border bg-background/60 px-3 py-2 text-sm">
-      <span className="truncate pr-3">{player.display_name}</span>
+      <span className="flex min-w-0 items-center gap-2 pr-3"><ClubColourDot clubName={player.club_name} /><span className="truncate">{player.display_name}</span></span>
       <span className={`inline-flex items-center gap-1 ${delta >= 0 ? 'text-primary' : 'text-destructive'}`}>
         {icon}
         {delta >= 0 ? '+' : ''}{formatFiqCompact(Math.abs(delta))}

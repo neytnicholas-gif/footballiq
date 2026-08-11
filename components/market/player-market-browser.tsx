@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
 import { ArrowUpDown, CheckCircle2, Clock3, Search, Shield, Sparkles, Star, UserPlus, Users, WalletCards, X } from 'lucide-react'
 import { MarketPlayerChip } from '@/components/market/market-player-chip'
+import { ClubColourDot } from '@/components/market/club-colour-dot'
 import { MarketTradeDialog } from '@/components/market/market-trade-dialog'
 import { useMarketFormation } from '@/components/market/use-market-formation'
 import { buyMarketPlayer, sellMarketPlayer, toggleMarketWatchlist } from '@/lib/market/client'
@@ -319,7 +320,7 @@ export function PlayerMarketBrowser({
                   <div className="flex min-w-0 items-center gap-3">
                     <MarketPlayerChip player={player} />
                     <div className="min-w-0">
-                      <p className="truncate text-base font-black tracking-tight text-slate-950">{player.display_name}</p>
+                      <p className="flex min-w-0 items-center gap-2 text-base font-black tracking-tight text-slate-950"><ClubColourDot clubName={player.club_name} /><span className="truncate">{player.display_name}</span></p>
                       <p className="truncate text-xs font-medium text-slate-500">{player.club_name} · {player.competition_name ?? 'Verdict XI'} · {player.position}</p>
                     </div>
                   </div>
@@ -503,7 +504,7 @@ function MarketRosterBoard({
               className="min-w-0 rounded-xl border border-white/15 bg-white/10 px-2 py-2 text-center transition hover:bg-white/15 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
             >
               <span className="block text-[9px] font-black uppercase tracking-wide text-emerald-200">{position}</span>
-              <span className="mt-1 block truncate text-[11px] font-bold text-white">{player.display_name}</span>
+              <span className="mt-1 flex min-w-0 items-center justify-center gap-1.5 text-[11px] font-bold text-white"><ClubColourDot clubName={player.club_name} className="size-2.5 shadow-[0_0_0_1px_rgba(255,255,255,.7)]" /><span className="truncate">{player.display_name}</span></span>
               <span className="mt-1 block truncate text-[9px] font-black text-emerald-100">{formatFiqCompact(player.current_value)}</span>
             </Link>
           ) : (

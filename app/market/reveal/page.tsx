@@ -4,13 +4,14 @@ import { useEffect, useState } from 'react'
 import { SiteHeader } from '@/components/site-header'
 import { PlayerMarketReveal } from '@/components/market/player-market-reveal'
 import { MarketNavigation } from '@/components/market/market-navigation'
-import { loadMyLatestReveal, loadMyRevealHistory } from '@/lib/market/client'
-import type { MarketRevealSummary } from '@/lib/market/types'
+import { loadMarketPlayers, loadMyLatestReveal, loadMyRevealHistory } from '@/lib/market/client'
+import type { MarketPlayer, MarketRevealSummary } from '@/lib/market/types'
 import { friendlyMarketLoadError } from '@/lib/market/user-errors'
 
 export default function PlayerMarketRevealPage() {
   const [latest, setLatest] = useState<MarketRevealSummary | null>(null)
   const [history, setHistory] = useState<MarketRevealSummary[]>([])
+  const [players, setPlayers] = useState<MarketPlayer[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
@@ -20,12 +21,13 @@ export default function PlayerMarketRevealPage() {
     void (async () => {
       setLoading(true)
       setError('')
-      const [latestResult, historyResult] = await Promise.all([loadMyLatestReveal(), loadMyRevealHistory(12)])
+      const [latestResult, historyResult, playersResult] = await Promise.all([loadMyLatestReveal(), loadMyRevealHistory(12), loadMarketPlayers()])
       if (!active) return
       if (latestResult.error) setError(friendlyMarketLoadError(latestResult.error))
       if (historyResult.error) setError(friendlyMarketLoadError(historyResult.error))
       setLatest(latestResult.data)
       setHistory(historyResult.data)
+      setPlayers(playersResult.data)
       setLoading(false)
     })()
 
@@ -40,7 +42,7 @@ export default function PlayerMarketRevealPage() {
       <section className="mx-auto max-w-7xl px-4 py-10 sm:px-6 sm:py-14">
         <MarketNavigation />
         {error ? <p role="alert" className="mb-4 rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">{error}</p> : null}
-        {loading ? <p className="text-sm text-muted-foreground">Loading Reveal…</p> : <PlayerMarketReveal latest={latest} history={history} />}
+        {loading ? <p className="text-sm text-muted-foreground">Loading Reveal…</p> : <PlayerMarketReveal latest={latest} history={history} players={players} />}
       </section>
     </main>
   )

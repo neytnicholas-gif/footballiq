@@ -5,6 +5,7 @@ import { useMemo } from 'react'
 import type { ReactNode } from 'react'
 import { ArrowUpRight, Award, Minus, TrendingDown, TrendingUp, Wallet } from 'lucide-react'
 import { MarketPlayerChip } from '@/components/market/market-player-chip'
+import { ClubColourDot } from '@/components/market/club-colour-dot'
 import { useMarketFormation } from '@/components/market/use-market-formation'
 import { countFormation } from '@/lib/market/formation'
 import { formatFiqCompact, formatMarketDateTime, MARKET_MAX_PORTFOLIO_SIZE } from '@/lib/market/format'
@@ -136,7 +137,7 @@ export function PlayerMarketPortfolio({
                   <div className="flex min-w-0 items-center gap-3">
                     <MarketPlayerChip player={player} />
                     <div className="min-w-0">
-                      <p className="truncate font-semibold">{player.display_name}</p>
+                      <p className="flex min-w-0 items-center gap-2 font-semibold"><ClubColourDot clubName={player.club_name} /><span className="truncate">{player.display_name}</span></p>
                       <p className="truncate text-xs text-muted-foreground">{player.club_name} · {player.position}</p>
                       <p className="mt-1 text-sm font-black text-primary">{formatFiqCompact(player.current_value)}</p>
                     </div>
@@ -173,7 +174,7 @@ export function PlayerMarketPortfolio({
               <Link key={player.id} href={`/market/player/${encodeURIComponent(player.slug)}`} className="flex min-w-0 items-center gap-3 rounded-2xl border border-border bg-background/70 p-3 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">
                 <MarketPlayerChip player={player} />
                 <div className="min-w-0">
-                  <p className="truncate font-semibold">{player.display_name}</p>
+                  <p className="flex min-w-0 items-center gap-2 font-semibold"><ClubColourDot clubName={player.club_name} /><span className="truncate">{player.display_name}</span></p>
                   <p className="truncate text-xs text-muted-foreground">{player.club_name} · {player.competition_name}</p>
                   <p className="mt-1 text-sm font-bold text-primary">{formatFiqCompact(player.current_value)}</p>
                 </div>
@@ -191,7 +192,7 @@ export function PlayerMarketPortfolio({
               const player = playersById.get(tx.player_id)
               return (
                 <div key={tx.id} className="rounded-xl border border-border bg-background/60 p-3 text-sm">
-                  <p className="font-semibold">{tx.transaction_type.toUpperCase()} · {player?.display_name ?? 'Player'}</p>
+                  <p className="flex items-center gap-2 font-semibold">{player ? <ClubColourDot clubName={player.club_name} /> : null}<span>{tx.transaction_type.toUpperCase()} · {player?.display_name ?? 'Player'}</span></p>
                   <p className="mt-1 text-xs text-muted-foreground">{formatMarketDateTime(tx.created_at)} · {formatFiqCompact(tx.execution_value)}</p>
                   <p className="mt-1 text-xs text-muted-foreground">Balance {formatFiqCompact(tx.balance_before)} → {formatFiqCompact(tx.balance_after)}</p>
                 </div>
@@ -291,7 +292,7 @@ function RosterPlayerCard({ player, holding }: { player: MarketPlayer; holding?:
   return (
     <div role="listitem" className="w-28 shrink-0 snap-center sm:w-32"><Link href={`/market/player/${encodeURIComponent(player.slug)}`} aria-label={`Open ${player.display_name} details`} className="group block rounded-2xl border border-white/20 bg-white/95 p-2 text-center text-slate-950 shadow-lg outline-none transition hover:-translate-y-1 hover:border-emerald-200 focus-visible:ring-2 focus-visible:ring-white">
       <span className="mx-auto block w-fit"><MarketPlayerChip player={player} /></span>
-      <span className="mt-2 block truncate text-xs font-black" title={player.display_name}>{player.short_name || player.display_name}</span>
+      <span className="mt-2 flex min-w-0 items-center justify-center gap-1.5 text-xs font-black" title={player.display_name}><ClubColourDot clubName={player.club_name} className="size-2.5 shadow-[0_0_0_1px_rgba(255,255,255,.8)]" /><span className="truncate">{player.short_name || player.display_name}</span></span>
       <span className="mt-0.5 block truncate text-[9px] text-slate-500">{player.club_name}</span>
       <span className="mt-1.5 block text-[11px] font-black text-emerald-800">{formatFiqCompact(player.current_value)}</span>
       <span className={`mt-0.5 flex items-center justify-center gap-1 text-[9px] font-bold ${movement > 0 ? 'text-emerald-700' : movement < 0 ? 'text-rose-700' : 'text-slate-500'}`}><MovementIcon className="size-3" aria-hidden="true" />{movement === 0 ? 'No change' : `${movement > 0 ? '+' : '-'}${formatFiqCompact(Math.abs(movement))}`}</span>

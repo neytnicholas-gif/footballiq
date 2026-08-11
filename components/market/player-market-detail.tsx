@@ -6,6 +6,7 @@ import type { ReactNode } from 'react'
 import { AlertCircle, CheckCircle2, Clock3, Star } from 'lucide-react'
 import { useAuth } from '@/components/auth-provider'
 import { MarketPlayerChip } from '@/components/market/market-player-chip'
+import { ClubColourDot } from '@/components/market/club-colour-dot'
 import { MarketTradeDialog } from '@/components/market/market-trade-dialog'
 import { useMarketFormation } from '@/components/market/use-market-formation'
 import { buyMarketPlayer, sellMarketPlayer, toggleMarketWatchlist } from '@/lib/market/client'
@@ -111,7 +112,7 @@ export function PlayerMarketDetail({
             <MarketPlayerChip player={player} />
             <div>
               <p className="text-xs font-semibold uppercase tracking-[.2em] text-primary">Player card</p>
-              <h1 className="mt-2 text-3xl font-black sm:text-4xl">{player.display_name}</h1>
+              <h1 className="mt-2 flex items-center gap-3 text-3xl font-black sm:text-4xl"><ClubColourDot clubName={player.club_name} className="size-4 sm:size-5" /><span>{player.display_name}</span></h1>
               <p className="mt-1 text-sm text-muted-foreground">{player.club_name} · {player.position}{player.nationality ? ` · ${player.nationality}` : ''}</p>
               {player.availability_status ? <p className={`mt-2 inline-flex rounded-full border px-2.5 py-1 text-xs font-bold ${player.availability_status === 'available' ? 'border-emerald-700/20 bg-emerald-50 text-emerald-800' : player.availability_status === 'limited' ? 'border-amber-700/20 bg-amber-50 text-amber-800' : 'border-red-700/20 bg-red-50 text-red-800'}`}>{player.availability_status === 'available' ? 'Available' : player.availability_status === 'limited' ? 'Limited availability' : 'Unavailable'}</p> : null}
             </div>

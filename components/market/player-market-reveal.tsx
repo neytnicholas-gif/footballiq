@@ -2,10 +2,11 @@
 
 import Link from 'next/link'
 import { ArrowRight, TrendingDown, TrendingUp } from 'lucide-react'
+import { ClubColourDot } from '@/components/market/club-colour-dot'
 import { formatFiqCompact } from '@/lib/market/format'
-import type { MarketRevealSummary } from '@/lib/market/types'
+import type { MarketPlayer, MarketRevealSummary } from '@/lib/market/types'
 
-export function PlayerMarketReveal({ latest, history }: { latest: MarketRevealSummary | null; history: MarketRevealSummary[] }) {
+export function PlayerMarketReveal({ latest, history, players }: { latest: MarketRevealSummary | null; history: MarketRevealSummary[]; players: MarketPlayer[] }) {
   if (!latest) {
     return (
       <section className="rounded-[2rem] border border-border bg-card p-6 sm:p-8">
@@ -18,6 +19,8 @@ export function PlayerMarketReveal({ latest, history }: { latest: MarketRevealSu
       </section>
     )
   }
+
+  const playersById = new Map(players.map((player) => [player.id, player]))
 
   return (
     <div className="space-y-5">
@@ -38,24 +41,28 @@ export function PlayerMarketReveal({ latest, history }: { latest: MarketRevealSu
           <MovementCard
             title="Biggest winner"
             name={latest.biggest_winner.player_name ?? 'N/A'}
+            clubName={latest.biggest_winner.player_id ? playersById.get(latest.biggest_winner.player_id)?.club_name : undefined}
             delta={latest.biggest_winner.delta}
             positive
           />
           <MovementCard
             title="Biggest loser"
             name={latest.biggest_loser.player_name ?? 'N/A'}
+            clubName={latest.biggest_loser.player_id ? playersById.get(latest.biggest_loser.player_id)?.club_name : undefined}
             delta={latest.biggest_loser.delta}
             positive={false}
           />
           <MovementCard
             title="Best held player"
             name={latest.best_held_player.player_name ?? 'N/A'}
+            clubName={latest.best_held_player.player_id ? playersById.get(latest.best_held_player.player_id)?.club_name : undefined}
             delta={latest.best_held_player.delta}
             positive
           />
           <MovementCard
             title="Weakest held player"
             name={latest.weakest_held_player.player_name ?? 'N/A'}
+            clubName={latest.weakest_held_player.player_id ? playersById.get(latest.weakest_held_player.player_id)?.club_name : undefined}
             delta={latest.weakest_held_player.delta}
             positive={false}
           />
@@ -77,7 +84,7 @@ export function PlayerMarketReveal({ latest, history }: { latest: MarketRevealSu
           {latest.holdings.map((holding) => (
             <article key={`${latest.week_number}-${holding.player_id}`} className="rounded-xl border border-border bg-background/60 p-3">
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <p className="font-semibold">{holding.player_name} · {holding.position}</p>
+                <p className="flex items-center gap-2 font-semibold">{playersById.get(holding.player_id)?.club_name ? <ClubColourDot clubName={playersById.get(holding.player_id)!.club_name} /> : null}<span>{holding.player_name} · {holding.position}</span></p>
                 <p className={holding.delta >= 0 ? 'text-sm font-semibold text-primary' : 'text-sm font-semibold text-destructive'}>
                   {holding.delta >= 0 ? '+' : '-'}{formatFiqCompact(Math.abs(holding.delta))}
                 </p>
@@ -114,13 +121,13 @@ function Metric({ label, value, tone = 'default' }: { label: string; value: stri
   )
 }
 
-function MovementCard({ title, name, delta, positive }: { title: string; name: string; delta: number; positive: boolean }) {
+function MovementCard({ title, name, clubName, delta, positive }: { title: string; name: string; clubName?: string; delta: number; positive: boolean }) {
   const icon = positive ? <TrendingUp className="size-4" /> : <TrendingDown className="size-4" />
   const color = positive ? 'text-primary' : 'text-destructive'
   return (
     <div className="rounded-xl border border-border bg-background/60 p-3">
       <p className="text-xs text-muted-foreground">{title}</p>
-      <p className="mt-1 font-semibold">{name}</p>
+      <p className="mt-1 flex items-center gap-2 font-semibold">{clubName ? <ClubColourDot clubName={clubName} /> : null}<span>{name}</span></p>
       <p className={`mt-1 inline-flex items-center gap-1 text-sm font-semibold ${color}`}>{icon}{delta >= 0 ? '+' : '-'}{formatFiqCompact(Math.abs(delta))}</p>
     </div>
   )
