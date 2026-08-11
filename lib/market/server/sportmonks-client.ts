@@ -598,7 +598,7 @@ function mondayFor(date: Date) {
 
 export async function fetchSportmonksCompletedGameweeks(
   apiToken = process.env.SPORTMONKS_API_TOKEN,
-  processedFixtureIds: ReadonlySet<string> = new Set(),
+  processedPerformanceKeys: ReadonlySet<string> = new Set(),
 ): Promise<SportmonksCompletedGameweek[]> {
   const client = createSportmonksClient(apiToken)
   const leagueConfigs = [
@@ -624,18 +624,19 @@ export async function fetchSportmonksCompletedGameweeks(
   })
     .sort((a, b) => Date.parse(fixtureDate(b)!) - Date.parse(fixtureDate(a)!))
   if (finished.length === 0) return []
-  const selected = finished.filter((fixture) => !processedFixtureIds.has(String(fixture.id)))
-  if (selected.length === 0) return []
   const updatesByWeek = new Map<string, SportmonksGameweekUpdate[]>()
+  let eligibleAppearanceCount = 0
+  let failedFixtureCount = 0
 
-  for (let offset = 0; offset < selected.length; offset += 5) {
-    const chunk = selected.slice(offset, offset + 5)
+  for (let offset = 0; offset < finished.length; offset += 5) {
+    const chunk = finished.slice(offset, offset + 5)
     const settled = await Promise.allSettled(chunk.map(async (fixture) => ({
       fixture,
       payload: record(await client.get(`/fixtures/${encodeURIComponent(String(fixture.id))}?include=lineups.details.type;state`, { fresh: true })),
     })))
     const payloads = settled.flatMap((result) => {
       if (result.status === 'fulfilled') return [result.value]
+      failedFixtureCount += 1
       console.error('[market-gameweek] fixture detail fetch failed', result.reason)
       return []
     })
@@ -646,6 +647,8 @@ export async function fetchSportmonksCompletedGameweeks(
         const minutes = numericDetail(lineup, 'MINUTES_PLAYED')
         const rating = numericDetail(lineup, 'RATING')
         if (!Number.isSafeInteger(playerId) || !Number.isInteger(minutes) || minutes! <= 0 || minutes! > 130 || rating === null || rating < 0 || rating > 10) continue
+        eligibleAppearanceCount += 1
+        if (processedPerformanceKeys.has(`${providerFixtureId}:${playerId}`)) continue
         const fixtureAt = new Date(fixtureDate(fixture)!)
         const { year, week } = isoWeek(fixtureAt)
         const key = `${year}-${String(week).padStart(2, '0')}`
@@ -659,7 +662,8 @@ export async function fetchSportmonksCompletedGameweeks(
       }
     }
   }
-  if (selected.length > 0 && updatesByWeek.size === 0) throw new Error('Completed fixtures could not be converted into verified player updates; valuation was aborted safely.')
+  if (updatesByWeek.size === 0 && failedFixtureCount > 0) throw new Error('One or more completed fixtures could not be checked; valuation will retry safely.')
+  if (updatesByWeek.size === 0 && eligibleAppearanceCount > 0) return []
   if (updatesByWeek.size === 0) throw new Error('Completed fixtures did not contain eligible Sportmonks ratings and minutes.')
 
   return [...updatesByWeek.entries()].map(([key, updates]) => {

@@ -90,14 +90,16 @@ describe('Player Market launch gates', () => {
     expect(reveals.indexOf('loadRevealHistory')).toBeGreaterThan(reveals.indexOf('if (authData.user)'))
   })
 
-  it('refreshes catalogue prices and skips already processed paid fixture calls', () => {
+  it('refreshes catalogue prices and skips processed player appearances without losing late fixture ratings', () => {
     const client = read('lib/market/client.ts')
     const sportmonks = read('lib/market/server/sportmonks-client.ts')
     const engine = read('lib/market/server/gameweek-engine.ts')
     expect(client).toContain('VERIFIED_CATALOGUE_TTL_MS = 300_000')
     expect(client).not.toContain("fetch('/api/market/catalogue', { cache: 'no-store' })")
-    expect(sportmonks).toContain('processedFixtureIds.has(String(fixture.id))')
-    expect(engine).toContain("select('provider_fixture_id')")
+    expect(sportmonks).toContain('processedPerformanceKeys.has(`${providerFixtureId}:${playerId}`)')
+    expect(sportmonks).not.toContain('processedFixtureIds.has(String(fixture.id))')
+    expect(engine).toContain("select('provider_fixture_id,player:market_players!inner(provider_player_id)')")
+    expect(engine).toContain('.range(from, from + 999)')
     expect(engine).toContain('verified-gameweek-heartbeat:')
   })
 

@@ -186,6 +186,20 @@ export function anonymousBuyPlayer(players: MarketPlayer[], slug: string, idempo
   const player = players.find((row) => row.slug === slug)
   if (!player) return { data: null, error: new Error('Player not found') }
 
+  const existing = state.transactions.find((row) => row.idempotency_key === idempotencyKey)
+  if (existing) {
+    if (existing.transaction_type !== 'buy' || existing.player_id !== player.id) {
+      return { data: null, error: new Error('This request key was already used for a different trade.') }
+    }
+    return {
+      data: {
+        ok: true, duplicate: true, message: 'Purchase already completed', player_slug: slug,
+        execution_value: existing.execution_value, max_portfolio_size: MARKET_MAX_PORTFOLIO_SIZE,
+      },
+      error: null,
+    }
+  }
+
   const validationError = ensureCanBuy(players, state, player)
   if (validationError) return { data: null, error: new Error(validationError) }
 
@@ -239,6 +253,20 @@ export function anonymousSellPlayer(players: MarketPlayer[], slug: string, idemp
   const state = readAnonymousState()
   const player = players.find((row) => row.slug === slug)
   if (!player) return { data: null, error: new Error('Player not found') }
+
+  const existing = state.transactions.find((row) => row.idempotency_key === idempotencyKey)
+  if (existing) {
+    if (existing.transaction_type !== 'sell' || existing.player_id !== player.id) {
+      return { data: null, error: new Error('This request key was already used for a different trade.') }
+    }
+    return {
+      data: {
+        ok: true, duplicate: true, message: 'Sale already completed', player_slug: slug,
+        execution_value: existing.execution_value, realized_profit_loss: existing.realized_profit_loss,
+      },
+      error: null,
+    }
+  }
 
   const holdingIndex = state.holdings.findIndex((holding) => holding.player_id === player.id)
   if (holdingIndex === -1) return { data: null, error: new Error('You do not hold this player.') }

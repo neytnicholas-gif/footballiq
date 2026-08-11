@@ -73,6 +73,28 @@ describe('anonymous market state', () => {
     expect(String(sellAgain.error?.message).toLowerCase()).toContain('do not hold')
   })
 
+  it('returns the original guest trade result when a network retry reuses its request key', () => {
+    const player = players[0]
+    const firstBuy = anonymousBuyPlayer(players, player.slug, 'stable-buy-key')
+    const retriedBuy = anonymousBuyPlayer(players, player.slug, 'stable-buy-key')
+    expect(firstBuy.data?.duplicate).toBe(false)
+    expect(retriedBuy).toMatchObject({ data: { ok: true, duplicate: true, execution_value: player.current_value }, error: null })
+    expect(readAnonymousState().transactions).toHaveLength(1)
+
+    const firstSell = anonymousSellPlayer(players, player.slug, 'stable-sell-key')
+    const retriedSell = anonymousSellPlayer(players, player.slug, 'stable-sell-key')
+    expect(firstSell.data?.duplicate).toBe(false)
+    expect(retriedSell).toMatchObject({ data: { ok: true, duplicate: true, execution_value: player.current_value }, error: null })
+    expect(readAnonymousState().transactions).toHaveLength(2)
+  })
+
+  it('rejects a request key reused for a different guest trade', () => {
+    expect(anonymousBuyPlayer(players, players[0].slug, 'reused-key').error).toBeNull()
+    const result = anonymousBuyPlayer(players, players[1].slug, 'reused-key')
+    expect(result.data).toBeNull()
+    expect(result.error?.message).toContain('different trade')
+  })
+
   it('enforces budget constraints', () => {
     const state = readAnonymousState()
     state.cash = 1

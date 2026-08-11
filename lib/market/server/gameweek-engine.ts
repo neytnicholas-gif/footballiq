@@ -49,13 +49,25 @@ export async function processLatestVerifiedGameweek() {
 
   try {
     const cutoff = new Date(Date.now() - 28 * 86_400_000).toISOString()
-    const { data: processedRows, error: processedError } = await admin
-      .from('market_player_match_stats')
-      .select('provider_fixture_id')
-      .gte('fixture_date', cutoff)
-    if (processedError) throw new Error(`Processed-fixture lookup failed: ${processedError.message}`)
-    const processedFixtureIds = new Set((processedRows ?? []).map((row) => String(row.provider_fixture_id)))
-    const gameweeks = await fetchSportmonksCompletedGameweeks(process.env.SPORTMONKS_API_TOKEN, processedFixtureIds)
+    const processedPerformanceKeys = new Set<string>()
+    for (let from = 0; ; from += 1_000) {
+      const { data: processedRows, error: processedError } = await admin
+        .from('market_player_match_stats')
+        .select('provider_fixture_id,player:market_players!inner(provider_player_id)')
+        .gte('fixture_date', cutoff)
+        .range(from, from + 999)
+      if (processedError) throw new Error(`Processed-performance lookup failed: ${processedError.message}`)
+      for (const row of processedRows ?? []) {
+        const relation = row.player as unknown
+        const player = Array.isArray(relation) ? relation[0] : relation
+        const providerPlayerId = player && typeof player === 'object' && 'provider_player_id' in player
+          ? String(player.provider_player_id)
+          : ''
+        if (providerPlayerId) processedPerformanceKeys.add(`${row.provider_fixture_id}:${providerPlayerId}`)
+      }
+      if ((processedRows ?? []).length < 1_000) break
+    }
+    const gameweeks = await fetchSportmonksCompletedGameweeks(process.env.SPORTMONKS_API_TOKEN, processedPerformanceKeys)
     const batches = []
     for (const gameweek of gameweeks) batches.push(await processBatch(admin, gameweek))
     const report = { batchCount: batches.length, durationMs: Date.now() - startedAt, batches }

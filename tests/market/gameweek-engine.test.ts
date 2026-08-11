@@ -11,6 +11,7 @@ const publicCatalogue = readFileSync('supabase/migrations/20260809234500_publish
 const transferRollover = readFileSync('supabase/migrations/20260810144500_close_expired_transfer_gameweeks.sql', 'utf8')
 const residualBank = readFileSync('supabase/migrations/20260810170000_bank_subthreshold_market_performance.sql', 'utf8')
 const route = readFileSync('app/api/market/process-gameweek/route.ts', 'utf8')
+const runtime = readFileSync('lib/market/server/gameweek-engine.ts', 'utf8')
 
 describe('verified gameweek engine', () => {
   it('closes expired transfer windows before returning the current gameweek', () => {
@@ -23,6 +24,8 @@ describe('verified gameweek engine', () => {
     expect(foundation).toContain('market_player_match_stats_fixture_player_uidx')
     expect(migration).toContain('on conflict(provider_fixture_id,player_id) do nothing')
     expect(migration).toContain("'sportmonks:'||(item->>'provider_fixture_id')||':'||(item->>'provider_player_id')")
+    expect(runtime).toContain("processedPerformanceKeys.add(`${row.provider_fixture_id}:${providerPlayerId}`)")
+    expect(runtime).toContain('.range(from, from + 999)')
   })
 
   it('enforces 11 signings per gameweek in the database', () => {

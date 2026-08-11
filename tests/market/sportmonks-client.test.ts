@@ -29,6 +29,28 @@ describe('Sportmonks coverage trial client', () => {
     expect(batches.flatMap((batch) => batch.updates).map((update) => update.provider_fixture_id).sort()).toEqual(['101', '102'])
   })
 
+  it('rechecks a processed fixture and accepts a late player rating exactly once', async () => {
+    const detail = (developer_name: string, value: number) => ({ data: { value }, type: { developer_name } })
+    const fixture = { id: 101, starting_at: '2026-08-08 14:00:00', state: { short_name: 'FT' } }
+    vi.spyOn(globalThis, 'fetch')
+      .mockResolvedValueOnce(response({ id: 8, currentSeason: { id: 1 } }))
+      .mockResolvedValueOnce(response({ id: 1, fixtures: [fixture] }))
+      .mockResolvedValueOnce(response({ id: 564, currentSeason: { id: 2 } }))
+      .mockResolvedValueOnce(response({ id: 2, fixtures: [] }))
+      .mockResolvedValueOnce(response({ id: 301, currentSeason: { id: 3 } }))
+      .mockResolvedValueOnce(response({ id: 3, fixtures: [] }))
+      .mockResolvedValueOnce(response({ id: 101, lineups: [
+        { player_id: 11, details: [detail('MINUTES_PLAYED', 90), detail('RATING', 7.1)] },
+        { player_id: 22, details: [detail('MINUTES_PLAYED', 72), detail('RATING', 7.4)] },
+      ] }))
+
+    const batches = await fetchSportmonksCompletedGameweeks('private-token', new Set(['101:11']))
+
+    expect(batches.flatMap((batch) => batch.updates)).toMatchObject([
+      { provider_fixture_id: '101', provider_player_id: '22', minutes_played: 72, rating: 7.4 },
+    ])
+  })
+
   it('audits squads and match ratings without exposing or writing the token', async () => {
     const detail = (developer_name: string, value: number) => ({ data: { value }, type: { developer_name } })
     const fetchMock = vi.spyOn(globalThis, 'fetch')
