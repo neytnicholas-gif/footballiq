@@ -25,6 +25,10 @@ import {
   MARKET_MAX_PORTFOLIO_SIZE,
 } from '@/lib/market/format'
 import type { MarketHolding, MarketMatchweekRun, MarketPlayer, MarketPortfolio } from '@/lib/market/types'
+import type { MarketGameweekStatus } from '@/lib/market/types'
+import { MarketFirstMission } from '@/components/market/market-first-mission'
+import { MarketMatchdayHub } from '@/components/market/market-matchday-hub'
+import { MARKET_JOURNEY_EVENT, MarketJourneyTracker, marketJourneyKey } from '@/components/market/market-journey-tracker'
 
 export function PlayerMarketHome() {
   const activeFormation = useMarketFormation()
@@ -35,6 +39,8 @@ export function PlayerMarketHome() {
   const [holdings, setHoldings] = useState<MarketHolding[]>([])
   const [lastRun, setLastRun] = useState<MarketMatchweekRun | null>(null)
   const [latestRevealWeek, setLatestRevealWeek] = useState<string | null>(null)
+  const [gameweekStatus, setGameweekStatus] = useState<MarketGameweekStatus | null>(null)
+  const [journey, setJourney] = useState({ market: false, roster: false })
   const [onboardingDismissed, setOnboardingDismissed] = useState(false)
   const [tradesMessage, setTradesMessage] = useState('')
   const [loading, setLoading] = useState(true)
@@ -71,6 +77,7 @@ export function PlayerMarketHome() {
     setPortfolio(portfolioData.portfolio)
     setHoldings(portfolioData.holdings)
     setLastRun(latestRunData.data)
+    setGameweekStatus(gameweekStatus.data)
 
     const remaining = calculateTradesRemaining(portfolioData.transactions)
     setTradesMessage(gameweekStatus.data
@@ -94,6 +101,16 @@ export function PlayerMarketHome() {
     const stored = window.localStorage.getItem(key)
     const timer = window.setTimeout(() => setOnboardingDismissed(stored === '1'), 0)
     return () => window.clearTimeout(timer)
+  }, [user])
+
+  useEffect(() => {
+    const readJourney = () => setJourney({
+      market: window.localStorage.getItem(marketJourneyKey(user?.id, 'market')) === '1',
+      roster: window.localStorage.getItem(marketJourneyKey(user?.id, 'roster')) === '1',
+    })
+    readJourney()
+    window.addEventListener(MARKET_JOURNEY_EVENT, readJourney)
+    return () => window.removeEventListener(MARKET_JOURNEY_EVENT, readJourney)
   }, [user])
 
   const movers = useMemo(() => {
@@ -120,6 +137,7 @@ export function PlayerMarketHome() {
 
   return (
     <div className="space-y-6">
+      <MarketJourneyTracker userId={user?.id} />
       <section className="rounded-[2rem] border border-border bg-card p-6 sm:p-8">
         <div className="flex flex-wrap items-start justify-between gap-5">
           <div className="max-w-3xl">
@@ -142,7 +160,7 @@ export function PlayerMarketHome() {
           <div className="mt-5 rounded-2xl border border-primary/25 bg-primary/10 px-4 py-3 text-sm">
             <p className="font-semibold">Pick players you think will play well and rise in game price.</p>
             <button
-              className="mt-2 rounded-lg border border-border bg-background/60 px-3 py-1.5 text-xs font-semibold"
+              className="mt-2 inline-flex min-h-11 items-center rounded-lg border border-border bg-background/60 px-3 py-2 text-xs font-semibold"
               onClick={() => {
                 const key = `fiq-market-onboarding-dismissed:${user?.id ?? 'anon'}`
                 window.localStorage.setItem(key, '1')
@@ -169,6 +187,10 @@ export function PlayerMarketHome() {
           <MarketDisclaimer />
         </div>
       </section>
+
+      <MarketFirstMission visitedMarket={journey.market} hasFirstPlayer={holdings.length > 0} hasFullTeam={isValidSquad} visitedRoster={journey.roster} />
+
+      <MarketMatchdayHub status={gameweekStatus} hasFullTeam={isValidSquad} latestRevealWeek={latestRevealWeek} />
 
       {error ? (
         <div className="rounded-2xl border border-destructive/30 bg-destructive/10 p-4 text-sm text-destructive">
@@ -260,7 +282,7 @@ export function PlayerMarketHome() {
         <div className="rounded-[2rem] border border-border bg-card p-6">
           <div className="mb-4 flex items-center justify-between">
             <h2 className="text-xl font-bold">Current holdings</h2>
-            <Link href="/market/roster" className="text-sm font-semibold text-primary">Open roster</Link>
+            <Link href="/market/roster" className="inline-flex min-h-11 items-center text-sm font-semibold text-primary">Open roster</Link>
           </div>
           {loading ? <p className="text-sm text-muted-foreground">Loading your players…</p> : holdings.length === 0 ? <p className="text-sm text-muted-foreground">You have no players yet. Start building your 11-player team.</p> : (
             <div className="space-y-3">
@@ -292,7 +314,7 @@ export function PlayerMarketHome() {
         <div className="rounded-[2rem] border border-border bg-card p-6">
           <div className="mb-4 flex items-center justify-between">
             <h2 className="text-xl font-bold">Market movers</h2>
-            <Link href="/market/players" className="text-sm font-semibold text-primary">Open marketplace</Link>
+            <Link href="/market/players" className="inline-flex min-h-11 items-center text-sm font-semibold text-primary">Open marketplace</Link>
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
@@ -320,7 +342,7 @@ export function PlayerMarketHome() {
       <section className="rounded-[2rem] border border-border bg-card p-6">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-xl font-bold">Social pulse</h2>
-          <Link href="/market/leaderboard" className="text-sm font-semibold text-primary">See leaderboard</Link>
+          <Link href="/market/leaderboard" className="inline-flex min-h-11 items-center text-sm font-semibold text-primary">See leaderboard</Link>
         </div>
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           <SocialStub icon={<Trophy className="size-4" />} title="Top Traders" value="Coming live in Phase 2" hint="Highest average return over last 14 days" />

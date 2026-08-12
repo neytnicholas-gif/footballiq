@@ -300,4 +300,38 @@ describe('Player Market launch gates', () => {
     expect(sql).not.toContain('FootballIQ')
     expect(sql).not.toContain('FIQ')
   })
+
+  it('guides a first-time player with saved, evidence-backed mission progress', () => {
+    const home = read('components/market/player-market-home.tsx')
+    const mission = read('components/market/market-first-mission.tsx')
+    const tracker = read('components/market/market-journey-tracker.tsx')
+    expect(home).toContain('hasFirstPlayer={holdings.length > 0}')
+    expect(home).toContain('hasFullTeam={isValidSquad}')
+    expect(mission).toContain('Build your first team.')
+    expect(mission).toContain('Your progress saves automatically.')
+    expect(mission).toContain('aria-label={`${completeCount} of 4 first mission steps complete`}')
+    expect(tracker).toContain('window.localStorage.setItem')
+    expect(tracker).toContain("pathname === '/market/roster'")
+  })
+
+  it('turns authoritative gameweek state into one clear next action', () => {
+    const hub = read('components/market/market-matchday-hub.tsx')
+    const home = read('components/market/player-market-home.tsx')
+    expect(home).toContain('setGameweekStatus(gameweekStatus.data)')
+    for (const state of ['processing', 'revealed', 'failed', 'closed']) expect(hub).toContain(`status.state === '${state}'`)
+    expect(hub).toContain('Ratings are being checked')
+    expect(hub).toContain('Your new prices are ready')
+    expect(hub).toContain('No player or budget change is being guessed')
+    expect(hub).toContain('aria-live="polite"')
+  })
+
+  it('offers privacy-safe contextual beta feedback without hydration drift', () => {
+    const feedback = read('components/beta-feedback-button.tsx')
+    expect(feedback).toContain("pathname.startsWith('/market')")
+    expect(feedback).toContain('NEXT_PUBLIC_VERCEL_GIT_COMMIT_SHA')
+    expect(feedback).toContain("useState('Browser details will be added when you send this')")
+    expect(feedback).toContain('setBrowserDetails(window.navigator.userAgent)')
+    expect(feedback).not.toContain('user?.id')
+    expect(feedback).not.toContain('portfolio')
+  })
 })

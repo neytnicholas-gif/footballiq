@@ -6,7 +6,7 @@ if (!baseUrl.startsWith('http://127.0.0.1') && !baseUrl.startsWith('http://local
 }
 
 const routes = [
-  '/', '/market', '/market/players', '/market/roster', '/market/reveal', '/market/rewards',
+  '/', '/market', '/market/players', '/market/roster', '/market/reveal', '/market/rewards', '/market/arena', '/market/tools',
   '/market/leaderboard', '/quizzes', '/daily', '/leaderboard', '/game-rules', '/privacy', '/terms',
 ]
 

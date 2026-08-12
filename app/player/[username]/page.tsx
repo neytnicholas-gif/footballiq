@@ -13,7 +13,7 @@ import type { Database } from '@/lib/supabase/types'
 
 type PublicProfile = Database['public']['Views']['public_leaderboard_profiles']['Row']
 type MarketPublicProfile = {
-  preferences?: { show_badges: boolean; show_market_stats: boolean; active_background: string | null; active_avatar: string | null; active_frame: string | null; active_formation: string }
+  preferences?: { show_badges: boolean; show_market_stats: boolean; active_background: string | null; active_avatar: string | null; active_frame: string | null; active_title: string | null; active_formation: string }
   market_stats?: { total_account_value: number; realised_profit: number; trades: number } | null
   badges?: Array<{ key: string; name: string; title: string; icon_key: string }> | null
   roster?: Array<{ player_id: number; slug: string; name: string; club: string; position: string; value: number }>
@@ -93,12 +93,25 @@ export default function PublicPlayerPage() {
       ? 'bg-[linear-gradient(rgba(16,185,129,.08)_1px,transparent_1px),linear-gradient(90deg,rgba(16,185,129,.08)_1px,transparent_1px),linear-gradient(135deg,#f5fbf8,#e8f5ef)] bg-[size:24px_24px]'
       : marketProfile?.preferences?.active_background === 'bg_trophy_wall'
         ? 'bg-[radial-gradient(circle_at_top,#f8d77b33,transparent_45%),linear-gradient(135deg,#231d10,#55431e)] text-white'
-        : 'bg-[radial-gradient(circle_at_top_left,rgba(54,206,163,.16),transparent_48%),radial-gradient(circle_at_85%_20%,rgba(56,123,255,.12),transparent_42%)]'
+        : marketProfile?.preferences?.active_background === 'bg_press_box'
+          ? 'bg-[linear-gradient(135deg,#f8fafc,#e2e8f0)]'
+          : marketProfile?.preferences?.active_background === 'bg_derby_night'
+            ? 'bg-[radial-gradient(circle_at_18%_0%,rgba(250,204,21,.25),transparent_32%),linear-gradient(135deg,#081b16,#174b3a)] text-white'
+            : marketProfile?.preferences?.active_background === 'bg_champions_tunnel'
+              ? 'bg-[linear-gradient(120deg,#071d18_0%,#0f766e_48%,#f5c451_50%,#10251f_53%,#071d18_100%)] text-white'
+              : marketProfile?.preferences?.active_background === 'bg_legend_gallery'
+                ? 'bg-[radial-gradient(circle_at_50%_-20%,rgba(251,191,36,.42),transparent_42%),linear-gradient(135deg,#111827,#064e3b)] text-white'
+                : 'bg-[radial-gradient(circle_at_top_left,rgba(54,206,163,.16),transparent_48%),radial-gradient(circle_at_85%_20%,rgba(56,123,255,.12),transparent_42%)]'
   const avatar = marketProfile?.preferences?.active_avatar === 'avatar_captain' ? 'C'
     : marketProfile?.preferences?.active_avatar === 'avatar_scout' ? '◎'
       : marketProfile?.preferences?.active_avatar === 'avatar_playmaker' ? '★' : profile?.username?.slice(0, 1).toUpperCase()
   const avatarFrame = marketProfile?.preferences?.active_frame === 'frame_rising' ? 'ring-4 ring-emerald-400'
-    : marketProfile?.preferences?.active_frame === 'frame_clean_sheet' ? 'ring-4 ring-sky-400' : 'ring-2 ring-white/30'
+    : marketProfile?.preferences?.active_frame === 'frame_clean_sheet' ? 'ring-4 ring-sky-400'
+      : marketProfile?.preferences?.active_frame === 'frame_rookie' ? 'ring-4 ring-slate-300'
+        : marketProfile?.preferences?.active_frame === 'frame_hot_streak' ? 'ring-4 ring-orange-400'
+          : marketProfile?.preferences?.active_frame === 'frame_invincible' ? 'ring-4 ring-amber-400' : 'ring-2 ring-white/30'
+  const resolvedAvatar = ({ avatar_keeper: 'GK', avatar_tactician: 'X', avatar_number_ten: '10', avatar_market_ace: 'A' } as Record<string,string>)[marketProfile?.preferences?.active_avatar ?? ''] ?? avatar
+  const activeTitle = ({ title_early_adopter: 'Founder Beta', title_value_hunter: 'Value Hunter', title_market_mind: 'Market Mind', title_club_legend: 'Club Legend' } as Record<string,string>)[marketProfile?.preferences?.active_title ?? '']
 
   return (
     <main className="min-h-screen bg-background">
@@ -110,8 +123,9 @@ export default function PublicPlayerPage() {
               <StatusBadge label="Public Verdict XI profile" tone="good" />
               <div className="mt-4 flex flex-wrap items-end justify-between gap-6">
                 <div>
-                  <div className={`mb-4 grid size-16 place-items-center rounded-2xl bg-foreground text-2xl font-black text-background shadow-lg ${avatarFrame}`} aria-label="Player profile icon">{avatar}</div>
+                  <div className={`mb-4 grid size-16 place-items-center rounded-2xl bg-foreground text-2xl font-black text-background shadow-lg ${avatarFrame}`} aria-label="Player profile icon">{resolvedAvatar}</div>
                   <h1 className="text-4xl font-black tracking-tight text-foreground sm:text-6xl">{profile.username}</h1>
+                  {activeTitle ? <p className="mt-2 inline-flex rounded-full border border-amber-400/30 bg-amber-100 px-3 py-1 text-xs font-black uppercase tracking-wider text-amber-950">{activeTitle}</p> : null}
                   <p className="mt-3 text-muted-foreground">Joined {new Date(profile.created_at).toLocaleDateString()}</p>
                 </div>
                 <div className="rounded-3xl border border-border bg-card/90 px-6 py-5 shadow-sm">

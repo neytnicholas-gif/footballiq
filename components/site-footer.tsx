@@ -46,12 +46,12 @@ export function SiteFooter() {
             <p className="text-xs font-medium uppercase tracking-widest text-muted-foreground">
               Navigation
             </p>
-            <ul className="mt-4 grid grid-cols-2 gap-x-10 gap-y-3">
+            <ul className="mt-4 grid grid-cols-2 gap-x-6 gap-y-1 sm:gap-x-10">
               {navLinks.map((link) => (
                 <li key={link.href}>
                   <a
                     href={link.href}
-                    className="text-sm text-muted-foreground transition-colors hover:text-foreground"
+                    className="inline-flex min-h-11 items-center py-2 text-sm text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
                   >
                     {link.label}
                   </a>

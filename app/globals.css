@@ -330,4 +330,14 @@ button, a {
 .mode-card-referee{--card-accent:250 204 21}.mode-card-scout{--card-accent:50 230 170}.mode-card-duels{--card-accent:255 198 72}.mode-card-mystery{--card-accent:188 118 255}.mode-card-career{--card-accent:70 200 255}.mode-card-higher{--card-accent:255 92 120}
 
 @keyframes fiq-drift { to { transform: translate3d(3rem,-2rem,0) scale(1.08); } }
+@keyframes reward-confetti {
+  0% { opacity: 0; transform: translate3d(0,-1rem,0) rotate(0deg) scale(.7); }
+  12% { opacity: 1; }
+  100% { opacity: 0; transform: translate3d(var(--reward-drift,1.5rem),32rem,0) rotate(540deg) scale(1); }
+}
+@keyframes reward-pop {
+  0% { opacity: 0; transform: scale(.55) rotate(-8deg); }
+  58% { opacity: 1; transform: scale(1.1) rotate(2deg); }
+  100% { opacity: 1; transform: scale(1) rotate(0); }
+}
 @media (prefers-reduced-motion: reduce){.mode-atmosphere span{animation:none}}

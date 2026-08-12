@@ -13,7 +13,7 @@ export function BallIcon({ className }: { className?: string }) {
 
 export function Logo({ className }: { className?: string }) {
   return (
-    <Link href="/" className={cn('group flex items-center gap-2 text-foreground', className)} aria-label="Verdict XI home">
+    <Link href="/" className={cn('group flex min-h-11 items-center gap-2 text-foreground', className)} aria-label="Verdict XI home">
       <span className="flex size-9 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-400 to-sky-400 text-[11px] font-black tracking-[-0.08em] text-slate-950 shadow-sm shadow-emerald-400/20 transition-transform group-hover:-rotate-3 group-hover:scale-105">
         XI
       </span>

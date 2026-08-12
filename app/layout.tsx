@@ -4,6 +4,8 @@ import { IBM_Plex_Mono, Sora } from 'next/font/google'
 import { AuthProvider } from '@/components/auth-provider'
 import { AccountPrompt } from '@/components/account-prompt'
 import { SiteFooter } from '@/components/site-footer'
+import { MarketRewardCelebration } from '@/components/market/market-reward-celebration'
+import { BetaFeedbackButton } from '@/components/beta-feedback-button'
 import { BRAND } from '@/lib/brand'
 import './globals.css'
 
@@ -67,6 +69,8 @@ export default function RootLayout({
       <body className={`${sora.variable} ${plexMono.variable} bg-background font-sans antialiased`}>
         <AuthProvider>
           {children}
+          <MarketRewardCelebration />
+          <BetaFeedbackButton />
           <AccountPrompt />
           <SiteFooter />
         </AuthProvider>

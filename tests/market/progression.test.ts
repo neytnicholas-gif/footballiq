@@ -9,8 +9,9 @@ describe('market progression rules', () => {
   })
 
   it('requires both trade experience and Reveals for permanent rewards', () => {
-    const item = { required_trades: 10, required_reveals: 1 } as MarketRewardItem
-    const base = { trade_count: 10, reveal_count: 0 } as MarketProgression
+    const item = { required_trades: 10, required_reveals: 1, required_badges: 1 } as MarketRewardItem
+    const badge = { completed_at: '2026-08-12' } as MarketChallenge
+    const base = { trade_count: 10, reveal_count: 0, challenges: [badge] } as MarketProgression
     expect(rewardItemUnlocked(item, base)).toBe(false)
     expect(rewardItemUnlocked(item, { ...base, reveal_count: 1 })).toBe(true)
   })

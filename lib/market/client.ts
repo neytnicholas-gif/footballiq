@@ -34,6 +34,7 @@ import type {
   MarketTransaction,
   MarketValueHistoryPoint,
 } from '@/lib/market/types'
+import { EMPTY_MARKET_ARENA, type MarketArenaState } from '@/lib/market/arena'
 import { EMPTY_MARKET_PROGRESSION, type MarketProgression } from '@/lib/market/progression'
 
 function isMarketBackendUnavailable(error: unknown) {
@@ -69,6 +70,9 @@ function normalizeMarketMutationError(error: unknown): Error | null {
     [/INSUFFICIENT_(BALANCE|FUNDS)/i, 'You do not have enough VX budget for that player.'],
     [/GAMEWEEK_TRANSFER_LIMIT/i, 'You have used all 11 signings for this gameweek.'],
     [/GAMEWEEK_LOCKED/i, 'Trading is closed while this gameweek is being processed. Nothing changed.'],
+    [/WATCHLIST_FULL:20/i, 'Your 20-player watchlist is full. Remove one player or unlock Bigger Shortlist in Rewards.'],
+    [/WATCHLIST_FULL:50/i, 'Your 50-player watchlist is full. Remove one player or unlock Scout Network in Rewards.'],
+    [/WATCHLIST_FULL/i, 'Your watchlist is full. Remove one player before adding another.'],
     [/NOT_OWNED/i, 'That player is not currently in your roster.'],
     [/PLAYER_NOT_FOUND|PLAYER_NOT_FOUND_OR_UNAVAILABLE/i, 'That player is no longer available. Refresh the market and choose another.'],
   ]
@@ -769,5 +773,50 @@ export async function updateMarketProfilePreferences(preferences: Pick<MarketPro
 
 export async function setMarketShowcaseBadges(challengeKeys: string[]) {
   const { data, error } = await (supabase as any).rpc('market_set_showcase_badges', { p_challenge_keys: challengeKeys })
+  return { data: data as Record<string, unknown> | null, error: normalizeMarketMutationError(error) }
+}
+
+export async function setMarketRewardCelebrations(enabled: boolean) {
+  const { data, error } = await (supabase as any).rpc('market_set_reward_celebrations', { p_enabled: enabled })
+  return { data: data as Record<string, unknown> | null, error: normalizeMarketMutationError(error) }
+}
+
+export async function loadMyMarketArena() {
+  const { data: authData } = await supabase.auth.getUser()
+  if (!authData.user) return { data: EMPTY_MARKET_ARENA, error: null }
+  const { data, error } = await (supabase as any).rpc('market_my_arena', {})
+  const row = data as Partial<MarketArenaState> | null
+  return {
+    data: {
+      ...EMPTY_MARKET_ARENA,
+      ...row,
+      profile: { ...EMPTY_MARKET_ARENA.profile, ...(row?.profile ?? {}) },
+      matches: row?.matches ?? [],
+    } satisfies MarketArenaState,
+    error: normalizeMarketMutationError(error),
+  }
+}
+
+export async function joinMarketArena() {
+  const { data, error } = await (supabase as any).rpc('market_arena_join', {})
+  return { data: data as Record<string, unknown> | null, error: normalizeMarketMutationError(error) }
+}
+
+export async function cancelMarketArenaQueue() {
+  const { data, error } = await (supabase as any).rpc('market_arena_cancel_queue', {})
+  return { data: data as Record<string, unknown> | null, error: normalizeMarketMutationError(error) }
+}
+
+export type MarketScoutNote = { player_id: number; player_slug: string; note: string; updated_at: string }
+
+export async function loadMyScoutNotes() {
+  const { data: authData } = await supabase.auth.getUser()
+  if (!authData.user) return { data: [] as MarketScoutNote[], error: null }
+  const { data, error } = await (supabase as any).rpc('market_my_scout_notes', {})
+  return { data: Array.isArray(data) ? data as MarketScoutNote[] : [], error: normalizeMarketMutationError(error) }
+}
+
+export async function saveMarketScoutNote(playerSlug: string, note: string) {
+  const { data, error } = await (supabase as any).rpc('market_save_scout_note', { p_player_slug: playerSlug, p_note: note })
   return { data: data as Record<string, unknown> | null, error: normalizeMarketMutationError(error) }
 }
