@@ -61,7 +61,7 @@ export default function LoginPage() {
           <Logo />
           <div className="mt-6">
             <StatusBadge label="Welcome back" tone="good" />
-            <h1 className="mt-3 text-3xl font-black tracking-tight text-foreground sm:text-4xl">Sign in to Verdict XI</h1>
+            <h1 className="mt-3 text-3xl font-black tracking-tight text-foreground sm:text-4xl">Sign in to Back Your Eye</h1>
             <p className="mt-3 text-sm leading-relaxed text-muted-foreground">Sign in to keep playing with your saved team, XP and scores.</p>
           </div>
           <ul className="mt-6 space-y-2 text-sm text-muted-foreground">

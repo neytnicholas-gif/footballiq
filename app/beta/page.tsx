@@ -60,7 +60,7 @@ export default function BetaPage() {
     setJoining(false)
   }
 
-  const feedbackHref = `mailto:${BRAND.supportEmail}?subject=${encodeURIComponent('Verdict XI beta feedback')}&body=${encodeURIComponent('Page or feature:\n\nWhat happened:\n\nWhat did you expect:\n\nDevice/browser:\n\nAnything you especially liked:')}`
+  const feedbackHref = `mailto:${BRAND.supportEmail}?subject=${encodeURIComponent('Back Your Eye beta feedback')}&body=${encodeURIComponent('Page or feature:\n\nWhat happened:\n\nWhat did you expect:\n\nDevice/browser:\n\nAnything you especially liked:')}`
 
   return (
     <main className="min-h-screen bg-background">
@@ -69,8 +69,8 @@ export default function BetaPage() {
         <SurfaceCard className="overflow-hidden">
           <div className="bg-[linear-gradient(135deg,rgba(16,185,129,.2),rgba(59,130,246,.13),rgba(8,14,26,.97))] p-7 text-white sm:p-10">
             <p className="inline-flex items-center gap-2 rounded-full border border-emerald-300/35 bg-emerald-300/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-emerald-200"><Users className="size-4" /> Founder beta</p>
-            <h1 className="mt-4 max-w-4xl text-4xl font-black tracking-tight sm:text-6xl">Help shape Verdict XI before the paid launch.</h1>
-            <p className="mt-4 max-w-3xl text-base leading-relaxed text-slate-300 sm:text-lg">Play the quizzes and Player Market free, report what feels brilliant or broken, and build the first real Verdict XI community.</p>
+            <h1 className="mt-4 max-w-4xl text-4xl font-black tracking-tight sm:text-6xl">Help shape Back Your Eye before the paid launch.</h1>
+            <p className="mt-4 max-w-3xl text-base leading-relaxed text-slate-300 sm:text-lg">Play the quizzes and Player Market free, report what feels brilliant or broken, and build the first real Back Your Eye community.</p>
           </div>
         </SurfaceCard>
 
@@ -78,7 +78,7 @@ export default function BetaPage() {
           <SurfaceCard className="p-6 sm:p-7">
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">Founder benefit</p>
             <h2 className="mt-2 flex items-center gap-2 text-2xl font-black tracking-tight"><Gift className="size-6 text-primary" /> Twelve months on us</h2>
-            <p className="mt-3 text-sm leading-relaxed text-muted-foreground">Join with your Verdict XI account during the founder beta. If paid Player Market access launches, your account will receive its first 12 months free. There is no payment, card request or automatic renewal today.</p>
+            <p className="mt-3 text-sm leading-relaxed text-muted-foreground">Join with your Back Your Eye account during the founder beta. If paid Player Market access launches, your account will receive its first 12 months free. There is no payment, card request or automatic renewal today.</p>
             <ul className="mt-5 space-y-3 text-sm text-muted-foreground">
               <li className="flex gap-2"><CheckCircle2 className="mt-0.5 size-4 shrink-0 text-primary" /> Enrollment is recorded against your account.</li>
               <li className="flex gap-2"><CheckCircle2 className="mt-0.5 size-4 shrink-0 text-primary" /> The benefit is non-transferable and has no cash value.</li>
@@ -113,7 +113,7 @@ export default function BetaPage() {
 
             <SurfaceCard className="p-6">
               <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-primary"><ShieldCheck className="size-4" /> Beta reality</p>
-              <p className="mt-3 text-sm leading-relaxed text-muted-foreground">Features, rules and values can change while testing. VX Credits are free game credits with no cash value. Verdict XI is independent and is not affiliated with any league, club, player or data provider.</p>
+              <p className="mt-3 text-sm leading-relaxed text-muted-foreground">Features, rules and values can change while testing. Eye Credits are free game credits with no cash value. Back Your Eye is independent and is not affiliated with any league, club, player or data provider.</p>
               <Link href="/terms" className="mt-4 inline-flex text-sm font-semibold text-primary hover:underline">Read beta terms</Link>
             </SurfaceCard>
           </div>

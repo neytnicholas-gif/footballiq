@@ -7,7 +7,7 @@ export default function Loading() {
       <SiteHeader />
       <section className="mx-auto max-w-5xl px-4 py-12 sm:px-6">
         <SurfaceCard className="p-6 sm:p-8">
-          <p className="text-xs font-semibold uppercase tracking-[0.22em] text-primary">Verdict XI</p>
+          <p className="text-xs font-semibold uppercase tracking-[0.22em] text-primary">Back Your Eye</p>
           <h1 className="mt-2 text-3xl font-black tracking-tight text-foreground sm:text-4xl">Loading page…</h1>
           <div className="mt-5 grid gap-3 sm:grid-cols-3">
             <div className="h-20 animate-pulse rounded-2xl border border-border bg-secondary/60" aria-hidden="true" />

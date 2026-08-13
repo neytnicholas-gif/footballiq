@@ -15,6 +15,7 @@ type Speed = 'relaxed' | 'timed'
 type RewardStatus = 'idle' | 'saving' | 'saved' | 'already' | 'error'
 
 type StoredBest = { score: number; points: number; bestCombo: number }
+type DuelProofAnswer = { left: string; right: string; choice: Choice | 'timeout'; speed: Speed; timeLeft: number }
 type SavedDuelProgress = {
   packId: string
   questions: DuelQuestion[]
@@ -26,6 +27,7 @@ type SavedDuelProgress = {
   bestCombo: number
   speed: Speed
   timeLeft: number
+  answers: DuelProofAnswer[]
 }
 
 function stableSeed(value: string) {
@@ -75,6 +77,7 @@ export function DuelQuiz({ pack, onComplete }: { pack: DuelPack; onComplete?: (p
   const [points, setPoints] = useState(0)
   const [combo, setCombo] = useState(0)
   const [bestCombo, setBestCombo] = useState(0)
+  const [proofAnswers, setProofAnswers] = useState<DuelProofAnswer[]>([])
   const [speed, setSpeed] = useState<Speed>('timed')
   const [timeLeft, setTimeLeft] = useState(15)
   const [showResults, setShowResults] = useState(false)
@@ -160,6 +163,8 @@ export function DuelQuiz({ pack, onComplete }: { pack: DuelPack; onComplete?: (p
   const lockAnswer = useCallback((choice: Choice | 'timeout') => {
     if (checkingProgress || resumeState || answered) return
     setSelected(choice)
+    const nextProofAnswers = [...proofAnswers, { left: question.left.name, right: question.right.name, choice, speed, timeLeft }]
+    setProofAnswers(nextProofAnswers)
     const correct = choice === answer
     if (correct) {
       const nextCombo = combo + 1
@@ -183,6 +188,7 @@ export function DuelQuiz({ pack, onComplete }: { pack: DuelPack; onComplete?: (p
         bestCombo: Math.max(bestCombo, nextCombo),
         speed,
         timeLeft,
+        answers: nextProofAnswers,
       })
     } else {
       setCombo(0)
@@ -197,9 +203,10 @@ export function DuelQuiz({ pack, onComplete }: { pack: DuelPack; onComplete?: (p
         bestCombo,
         speed,
         timeLeft,
+        answers: nextProofAnswers,
       })
     }
-  }, [answer, answered, bestCombo, checkingProgress, combo, index, pack.id, persistProgress, points, questions, resumeState, score, speed, timeLeft])
+  }, [answer, answered, bestCombo, checkingProgress, combo, index, pack.id, persistProgress, points, proofAnswers, question.left.name, question.right.name, questions, resumeState, score, speed, timeLeft])
 
   useEffect(() => {
     if (speed !== 'timed' || checkingProgress || resumeState || answered || showResults) return
@@ -235,6 +242,8 @@ export function DuelQuiz({ pack, onComplete }: { pack: DuelPack; onComplete?: (p
       total: questions.length,
       xp: xpEarned,
       completionKey: buildCompletionKey(pack.id, runKey),
+      metrics: { bestCombo, points },
+      proof: { kind: 'duel', packId: pack.id, answers: proofAnswers },
     })
     if (!error) {
       setSaved(true)
@@ -263,6 +272,7 @@ export function DuelQuiz({ pack, onComplete }: { pack: DuelPack; onComplete?: (p
       bestCombo,
       speed,
       timeLeft,
+      answers: proofAnswers,
     }, 'completed')
     setShowResults(true)
     const best: StoredBest = {
@@ -296,6 +306,7 @@ export function DuelQuiz({ pack, onComplete }: { pack: DuelPack; onComplete?: (p
       bestCombo,
       speed,
       timeLeft: 15,
+      answers: proofAnswers,
     })
   }
 
@@ -318,6 +329,7 @@ export function DuelQuiz({ pack, onComplete }: { pack: DuelPack; onComplete?: (p
     setPoints(0)
     setCombo(0)
     setBestCombo(0)
+    setProofAnswers([])
     setTimeLeft(15)
     setShowResults(false)
     setSaved(false)
@@ -337,6 +349,7 @@ export function DuelQuiz({ pack, onComplete }: { pack: DuelPack; onComplete?: (p
     setPoints(resumeState.points)
     setCombo(resumeState.combo)
     setBestCombo(resumeState.bestCombo)
+    setProofAnswers(Array.isArray(resumeState.answers) ? resumeState.answers : [])
     setSpeed(resumeState.speed)
     setTimeLeft(resumeState.timeLeft)
     setShowResults(false)
@@ -353,6 +366,7 @@ export function DuelQuiz({ pack, onComplete }: { pack: DuelPack; onComplete?: (p
     setPoints(0)
     setCombo(0)
     setBestCombo(0)
+    setProofAnswers([])
     setSpeed('timed')
     setTimeLeft(15)
     setShowResults(false)
@@ -365,7 +379,7 @@ export function DuelQuiz({ pack, onComplete }: { pack: DuelPack; onComplete?: (p
 
   async function shareResult() {
     const blocks = questions.map((_, questionIndex) => questionIndex < score ? '🟩' : '⬛').join('')
-    const text = `Verdict XI — ${pack.title}\n${score}/${questions.length} • ${points} pts • ${bestCombo} best combo\n${blocks}\nfootballiq-tau.vercel.app/quizzes/football-duels`
+    const text = `Back Your Eye — ${pack.title}\n${score}/${questions.length} • ${points} pts • ${bestCombo} best combo\n${blocks}\nbackyoureye.com/quizzes/football-duels`
     try {
       await navigator.clipboard.writeText(text)
       setCopied(true)
@@ -424,7 +438,7 @@ export function DuelQuiz({ pack, onComplete }: { pack: DuelPack; onComplete?: (p
             <button onClick={restart} className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-primary px-5 py-3 font-semibold text-primary-foreground"><RotateCcw className="size-4" /> Play again</button>
             <button onClick={() => void shareResult()} className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl border border-border px-5 py-3 font-semibold"><Copy className="size-4" /> {copied ? 'Copied!' : 'Share score'}</button>
           </div>
-          <p className="mt-4 text-center text-xs text-muted-foreground">{!user ? 'Create an account to save this progress, earn XP and build your Verdict XI profile.' : rewardStatus === 'saving' ? 'Saving your result…' : rewardStatus === 'saved' ? 'XP, rating and streak updates saved to your profile.' : rewardStatus === 'already' ? 'This duel reward was already credited for your account.' : rewardStatus === 'error' ? 'Result save failed. You can retry by replaying this duel.' : 'Checking reward status…'}</p>
+          <p className="mt-4 text-center text-xs text-muted-foreground">{!user ? 'Create an account to save this progress, earn XP and build your Back Your Eye profile.' : rewardStatus === 'saving' ? 'Saving your result…' : rewardStatus === 'saved' ? 'XP, rating and streak updates saved to your profile.' : rewardStatus === 'already' ? 'This duel reward was already credited for your account.' : rewardStatus === 'error' ? 'Result save failed. You can retry by replaying this duel.' : 'Checking reward status…'}</p>
         </div>
       </div>
     )

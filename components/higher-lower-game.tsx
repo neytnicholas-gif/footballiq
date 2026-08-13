@@ -27,11 +27,12 @@ export function HigherLowerGame() {
   const deck = useMemo(() => seededShuffle(higherLowerItems, deckSeed), [deckSeed])
   const [index, setIndex] = useState(1)
   const [streak, setStreak] = useState(0)
+  const [answers, setAnswers] = useState<boolean[]>([])
   const [over, setOver] = useState(false)
   const [saved, setSaved] = useState(false)
   const [saving, setSaving] = useState(false)
   const [runKey, setRunKey] = useState(() => createCompletionRunId())
-  const [resumeState, setResumeState] = useState<{ index: number; streak: number; deckSeed: number } | null>(null)
+  const [resumeState, setResumeState] = useState<{ index: number; streak: number; deckSeed: number; answers: boolean[] } | null>(null)
   const [checkingProgress, setCheckingProgress] = useState(Boolean(user))
 
   const left = deck[index - 1]
@@ -56,13 +57,14 @@ export function HigherLowerGame() {
     void (async () => {
       const progress = await loadQuizProgress('higher-lower-pl-goals')
       if (!active) return
-      const savedState = progress?.progress as { index?: number; streak?: number; deckSeed?: number } | undefined
+      const savedState = progress?.progress as { index?: number; streak?: number; deckSeed?: number; answers?: boolean[] } | undefined
       const savedIndex = typeof savedState?.index === 'number' && Number.isInteger(savedState.index) ? savedState.index : null
       if (progress && progress.status === 'in_progress' && savedState && savedIndex !== null && savedIndex > 0 && savedIndex < higherLowerItems.length) {
         setResumeState({
           index: savedIndex,
           streak: typeof savedState.streak === 'number' ? savedState.streak : progress.score,
           deckSeed: typeof savedState.deckSeed === 'number' ? savedState.deckSeed : initialDeckSeed.current,
+          answers: Array.isArray(savedState.answers) ? savedState.answers.filter((answer): answer is boolean => typeof answer === 'boolean') : [],
         })
       } else {
         setResumeState(null)
@@ -78,6 +80,8 @@ export function HigherLowerGame() {
   function answer(higher: boolean) {
     if (checkingProgress || resumeState) return
     const correct = higher ? right.value >= left.value : right.value <= left.value
+    const nextAnswers = [...answers, higher]
+    setAnswers(nextAnswers)
     if (!correct || index === deck.length - 1) {
       setOver(true)
       void clearQuizProgress('higher-lower-pl-goals')
@@ -92,7 +96,7 @@ export function HigherLowerGame() {
       currentIndex: nextIndex,
       score: nextStreak,
       total: Math.max(1, deck.length - 1),
-      progress: { index: nextIndex, streak: nextStreak, deckSeed },
+      progress: { index: nextIndex, streak: nextStreak, deckSeed, answers: nextAnswers },
     })
   }
 
@@ -100,7 +104,7 @@ export function HigherLowerGame() {
     if (!user || saved || saving) return
     setSaving(true)
     const total = Math.max(1, deck.length - 1)
-    const { error, alreadyCompleted } = await saveQuizResult({ quizId: 'higher-lower-pl-goals', score: streak, total, xp: 20 + streak * 8, completionKey: buildCompletionKey('higher-lower-pl-goals', runKey) })
+    const { error, alreadyCompleted } = await saveQuizResult({ quizId: 'higher-lower-pl-goals', score: streak, total, xp: 20 + streak * 8, completionKey: buildCompletionKey('higher-lower-pl-goals', runKey), proof: { kind: 'higher-lower', deckSeed, answers } })
     if (!error) {
       setSaved(true)
       void clearQuizProgress('higher-lower-pl-goals')
@@ -114,6 +118,7 @@ export function HigherLowerGame() {
     setDeckSeed(resumeState.deckSeed)
     setIndex(resumeState.index)
     setStreak(resumeState.streak)
+    setAnswers(resumeState.answers)
     setOver(false)
     setResumeState(null)
   }
@@ -124,6 +129,7 @@ export function HigherLowerGame() {
     setRunKey(createCompletionRunId())
     setIndex(1)
     setStreak(0)
+    setAnswers([])
     setOver(false)
     setSaved(false)
     setResumeState(null)

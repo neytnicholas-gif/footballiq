@@ -20,7 +20,7 @@ export default function AccessRoadmapPage() {
           <div className="bg-[linear-gradient(135deg,rgba(34,197,94,.18),rgba(59,130,246,.12),rgba(8,14,26,.96))] p-7 text-white sm:p-10">
             <p className="inline-flex items-center gap-2 rounded-full border border-emerald-300/30 bg-emerald-300/12 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-emerald-200"><Compass className="size-3.5" /> Access & roadmap</p>
             <h1 className="mt-4 max-w-4xl text-4xl font-black tracking-tight sm:text-6xl">Quality first. No payment until the game proves it deserves one.</h1>
-            <p className="mt-4 max-w-3xl text-base leading-relaxed text-slate-300 sm:text-lg">All current learning experiences are free. Player Market access is also free during testing. Verdict XI is not collecting a subscription or one-off game payment today.</p>
+            <p className="mt-4 max-w-3xl text-base leading-relaxed text-slate-300 sm:text-lg">All current learning experiences are free. Player Market access is also free during testing. Back Your Eye is not collecting a subscription or one-off game payment today.</p>
           </div>
         </SurfaceCard>
 

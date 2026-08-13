@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { ArrowRight, CalendarDays, Flag, Handshake, Radar, ShieldCheck, Sparkles, Trophy, Workflow } from 'lucide-react'
+import { ArrowRight, CalendarDays, Flag, Handshake, Radar, ShieldCheck, Smartphone, Sparkles, Trophy, Workflow } from 'lucide-react'
 import { SiteHeader } from '@/components/site-header'
 import { SponsorPlacement } from '@/components/sponsor-placement'
 import { useAuth } from '@/components/auth-provider'
@@ -71,13 +71,14 @@ export default function HomePage() {
             <div className="relative max-w-xl">
               <p className="inline-flex items-center gap-2 rounded-full border border-emerald-300/30 bg-emerald-400/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.23em] text-emerald-200">
                 <Sparkles className="size-3.5" />
-                Verdict XI
+                Back Your Eye
               </p>
               <h1 className="mt-5 text-4xl font-black tracking-tight text-slate-50 sm:text-5xl lg:text-6xl">
-                Read the game. Make the call.
+                <span className="brand-display block">BACK</span>
+                <span className="brand-display brand-display-gradient block">YOUR EYE.</span>
               </h1>
               <p className="mt-4 max-w-lg text-base leading-relaxed text-slate-300 sm:text-lg">
-                Make football choices, learn why they are right and get better at reading the game.
+                Trust what you see. Spot talent, make football choices and prove how well you read the game.
               </p>
 
               <div className="mt-7 flex flex-wrap items-center gap-3">
@@ -88,6 +89,15 @@ export default function HomePage() {
                 <Link href="/quizzes" className="inline-flex h-11 items-center rounded-xl border border-white/15 bg-white/5 px-5 text-sm font-semibold text-slate-200 transition hover:border-emerald-300/45 hover:bg-white/10">
                   Explore games
                 </Link>
+              </div>
+              <div className="mt-5 inline-flex max-w-full items-center gap-3 rounded-2xl border border-sky-300/20 bg-sky-400/[0.07] px-3.5 py-2.5 text-left shadow-[inset_0_1px_0_rgba(255,255,255,.04)]">
+                <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-sky-300/10 text-sky-200">
+                  <Smartphone className="size-4.5" aria-hidden="true" />
+                </span>
+                <span className="min-w-0">
+                  <span className="block text-[11px] font-bold uppercase tracking-[0.17em] text-sky-200">Mobile app coming soon</span>
+                  <span className="mt-0.5 block text-xs text-slate-400">The full beta is ready to play in your browser.</span>
+                </span>
               </div>
             </div>
           </div>
@@ -171,7 +181,7 @@ export default function HomePage() {
               <span className="flex size-11 shrink-0 items-center justify-center rounded-xl border border-sky-300/25 bg-sky-400/10 text-sky-200"><Handshake className="size-5" /></span>
               <span>
                 <span className="block text-xs font-bold uppercase tracking-[0.18em] text-sky-300">For brands and organisations</span>
-                <span className="mt-1 block text-lg font-black text-slate-100">Become a Verdict XI launch partner.</span>
+                <span className="mt-1 block text-lg font-black text-slate-100">Become a Back Your Eye launch partner.</span>
                 <span className="mt-1 block text-sm text-slate-300">Support independent football games with clear, respectful sponsorship.</span>
               </span>
             </span>

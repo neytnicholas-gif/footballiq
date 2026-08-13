@@ -68,7 +68,7 @@ export function AccountPrompt() {
           <Sparkles className="size-5" />
         </div>
         <div className="min-w-0 flex-1">
-          <p className="text-sm font-semibold text-foreground">Save your Verdict XI progress</p>
+          <p className="text-sm font-semibold text-foreground">Save your Back Your Eye progress</p>
           <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground sm:mt-1 sm:text-sm">
             Make a free account to save your team, XP and scores on every device.
           </p>

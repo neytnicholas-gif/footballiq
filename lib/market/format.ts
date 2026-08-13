@@ -10,7 +10,7 @@ export function formatFiqCompact(value: number) {
 
 export function formatFiqLong(value: number) {
   const safe = Number.isFinite(value) ? value : 0
-  return `${safe.toLocaleString()} VX Credits`
+  return `${safe.toLocaleString()} Eye Credits`
 }
 
 export function formatChange(value: number) {

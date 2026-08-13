@@ -2,6 +2,26 @@
 @import 'tw-animate-css';
 @import 'shadcn/tailwind.css';
 
+.brand-wordmark {
+  text-wrap: nowrap;
+  text-shadow: 0 0 24px color-mix(in srgb, var(--primary) 24%, transparent);
+}
+
+.brand-display {
+  font-stretch: condensed;
+  letter-spacing: -0.075em;
+  line-height: 0.86;
+  text-shadow: 0 18px 55px rgb(0 0 0 / 0.34);
+}
+
+.brand-display-gradient {
+  background-image: linear-gradient(90deg, #6ee7b7, #7dd3fc);
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+}
+
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
@@ -244,7 +264,7 @@ button, a {
   animation: fiq-pulse-soft 1.4s ease-in-out infinite;
 }
 
-/* FootballIQ V3 mode identities */
+/* Back Your Eye mode identities */
 .mode-shell {
   --mode-accent: 54 206 163;
   --mode-accent-2: 59 123 255;

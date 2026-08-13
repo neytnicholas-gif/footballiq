@@ -212,10 +212,10 @@ export function PlayerMarketDetail({
           <h2 className="text-xl font-bold">How this game value works</h2>
           <div className="mt-4 space-y-3 text-sm">
             <p className="rounded-xl border border-border bg-background/60 p-3">
-              Verdict XI value is an internal strategy metric (not a real-world transfer value) generated using Verdict XI methodology versioning.
+              Back Your Eye value is an internal strategy metric (not a real-world transfer value) generated using Back Your Eye methodology versioning.
             </p>
             <p className="rounded-xl border border-border bg-background/60 p-3">
-              Player identity and eligible match inputs come from a licensed football-data provider. Verdict XI creates the game price independently.
+              Player identity and eligible match inputs come from a licensed football-data provider. Back Your Eye creates the game price independently.
             </p>
             <p className="rounded-xl border border-border bg-background/60 p-3">
               Input validation: {player.provenance_status === 'verified' && player.owner_verified ? 'passed' : 'pending'}. A missing or ineligible rating freezes the price instead of guessing.

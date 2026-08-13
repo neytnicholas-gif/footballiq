@@ -6,6 +6,19 @@ import {
   resetCompletionAttemptsForTests,
   saveQuizResult,
 } from '@/lib/quiz-save'
+import type { QuizProof } from '@/lib/quiz-proof'
+
+type TestCompletionPayload = {
+  quizId: string
+  score: number
+  total: number
+  xp: number
+  completionKey: string
+  metrics?: { bestCombo?: number; points?: number }
+  proof: QuizProof
+}
+
+const testProof: QuizProof = { kind: 'choice', answers: [] }
 
 describe('quiz save progression integrity', () => {
   it('reuses an in-flight completion attempt', async () => {
@@ -13,9 +26,9 @@ describe('quiz save progression integrity', () => {
 
     let calls = 0
     let release: (() => void) | null = null
-    const rpc = async (_functionName: 'complete_quiz', payload: { p_completion_key: string }) => {
+    const request = async (payload: TestCompletionPayload) => {
       calls += 1
-      expect(isValidCompletionKey(payload.p_completion_key)).toBe(true)
+      expect(isValidCompletionKey(payload.completionKey)).toBe(true)
       await new Promise<void>((resolve) => {
         release = resolve
       })
@@ -23,7 +36,7 @@ describe('quiz save progression integrity', () => {
         data: {
           awarded: true,
           already_processed: false,
-          completion_key: payload.p_completion_key,
+          completion_key: payload.completionKey,
           activity_date: '2026-08-01',
         },
         error: null,
@@ -31,8 +44,8 @@ describe('quiz save progression integrity', () => {
     }
 
     const completionKey = buildCompletionKey('referee-arena', createCompletionRunId())
-    const firstAttempt = saveQuizResult({ quizId: 'referee-arena', score: 4, total: 5, xp: 72, completionKey }, { rpc })
-    const secondAttempt = saveQuizResult({ quizId: 'referee-arena', score: 4, total: 5, xp: 72, completionKey }, { rpc })
+    const firstAttempt = saveQuizResult({ quizId: 'referee-arena', score: 4, total: 5, xp: 72, completionKey, proof: testProof }, { request })
+    const secondAttempt = saveQuizResult({ quizId: 'referee-arena', score: 4, total: 5, xp: 72, completionKey, proof: testProof }, { request })
 
     expect(calls).toBe(1)
     expect(release).not.toBeNull()
@@ -47,7 +60,7 @@ describe('quiz save progression integrity', () => {
     resetCompletionAttemptsForTests()
 
     let calls = 0
-    const rpc = async (_functionName: 'complete_quiz', payload: { p_completion_key: string }) => {
+    const request = async (payload: TestCompletionPayload) => {
       calls += 1
       if (calls === 1) {
         return { data: null, error: new Error('Temporary failure') }
@@ -57,7 +70,7 @@ describe('quiz save progression integrity', () => {
         data: {
           awarded: true,
           already_processed: false,
-          completion_key: payload.p_completion_key,
+          completion_key: payload.completionKey,
           activity_date: '2026-08-01',
         },
         error: null,
@@ -65,8 +78,8 @@ describe('quiz save progression integrity', () => {
     }
 
     const completionKey = buildCompletionKey('daily-2026-08-01', createCompletionRunId())
-    const firstResult = await saveQuizResult({ quizId: 'daily-2026-08-01', score: 5, total: 5, xp: 110, completionKey }, { rpc })
-    const secondResult = await saveQuizResult({ quizId: 'daily-2026-08-01', score: 5, total: 5, xp: 110, completionKey }, { rpc })
+    const firstResult = await saveQuizResult({ quizId: 'daily-2026-08-01', score: 5, total: 5, xp: 110, completionKey, proof: testProof }, { request })
+    const secondResult = await saveQuizResult({ quizId: 'daily-2026-08-01', score: 5, total: 5, xp: 110, completionKey, proof: testProof }, { request })
 
     expect(calls).toBe(2)
     expect(firstResult.error?.message).toBe('Temporary failure')
@@ -91,14 +104,14 @@ describe('quiz save progression integrity', () => {
   it('sends completion key and reports already processed responses', async () => {
     resetCompletionAttemptsForTests()
 
-    let seenPayload: Record<string, unknown> | null = null
-    const rpc = async (_functionName: 'complete_quiz', payload: Record<string, unknown>) => {
-      seenPayload = payload
+    let seenCompletionKey: string | null = null
+    const request = async (payload: TestCompletionPayload) => {
+      seenCompletionKey = payload.completionKey
       return {
         data: {
           awarded: false,
           already_processed: true,
-          completion_key: String(payload.p_completion_key),
+          completion_key: String(payload.completionKey),
           activity_date: '2026-08-01',
         },
         error: null,
@@ -106,10 +119,9 @@ describe('quiz save progression integrity', () => {
     }
 
     const completionKey = buildCompletionKey('referee-arena', createCompletionRunId())
-    const result = await saveQuizResult({ quizId: 'referee-arena', score: 3, total: 5, xp: 42, completionKey }, { rpc })
+    const result = await saveQuizResult({ quizId: 'referee-arena', score: 3, total: 5, xp: 42, completionKey, proof: testProof }, { request })
 
     expect(result).toEqual({ error: null, alreadyCompleted: true })
-    expect(seenPayload?.['p_completion_key']).toBe(completionKey)
-    expect('p_activity_date' in (seenPayload ?? {})).toBe(false)
+    expect(seenCompletionKey).toBe(completionKey)
   })
 })

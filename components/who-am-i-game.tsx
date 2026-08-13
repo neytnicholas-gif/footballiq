@@ -13,11 +13,12 @@ export function WhoAmIGame() {
   const [clues, setClues] = useState(1)
   const [guess, setGuess] = useState('')
   const [score, setScore] = useState(0)
+  const [answers, setAnswers] = useState<Array<{ guess: string; clues: number }>>([])
   const [revealed, setRevealed] = useState(false)
   const [saved, setSaved] = useState(false)
   const [saving, setSaving] = useState(false)
   const [runKey, setRunKey] = useState(() => createCompletionRunId())
-  const [resumeState, setResumeState] = useState<{ index: number; clues: number; guess: string; score: number; revealed: boolean } | null>(null)
+  const [resumeState, setResumeState] = useState<{ index: number; clues: number; guess: string; score: number; revealed: boolean; answers: Array<{ guess: string; clues: number }> } | null>(null)
   const [checkingProgress, setCheckingProgress] = useState(Boolean(user))
   const q = whoAmIQuestions[index]
   const last = index === whoAmIQuestions.length - 1
@@ -41,7 +42,7 @@ export function WhoAmIGame() {
     void (async () => {
       const progress = await loadQuizProgress('who-am-i-1')
       if (!active) return
-      const savedState = progress?.progress as { index?: number; clues?: number; guess?: string; score?: number; revealed?: boolean } | undefined
+      const savedState = progress?.progress as { index?: number; clues?: number; guess?: string; score?: number; revealed?: boolean; answers?: Array<{ guess: string; clues: number }> } | undefined
       const savedIndex = typeof savedState?.index === 'number' && Number.isInteger(savedState.index) ? savedState.index : null
       if (progress && progress.status === 'in_progress' && savedState && savedIndex !== null && savedIndex >= 0 && savedIndex < whoAmIQuestions.length) {
         setResumeState({
@@ -50,6 +51,7 @@ export function WhoAmIGame() {
           guess: typeof savedState.guess === 'string' ? savedState.guess : '',
           score: typeof savedState.score === 'number' ? savedState.score : progress.score,
           revealed: Boolean(savedState.revealed),
+          answers: Array.isArray(savedState.answers) ? savedState.answers : [],
         })
       } else {
         setResumeState(null)
@@ -66,14 +68,16 @@ export function WhoAmIGame() {
     if (checkingProgress || resumeState || revealed || !guess.trim()) return
     const ok = guess.trim().toLowerCase() === q.answer.toLowerCase()
     const nextScore = ok ? score + (5 - clues) : score
+    const nextAnswers = [...answers, { guess: guess.trim(), clues }]
     if (ok) setScore(nextScore)
+    setAnswers(nextAnswers)
     setRevealed(true)
     void saveQuizProgress({
       quizId: 'who-am-i-1',
       currentIndex: index,
       score: nextScore,
       total: 40,
-      progress: { index, clues, guess, score: nextScore, revealed: true },
+      progress: { index, clues, guess, score: nextScore, revealed: true, answers: nextAnswers },
     })
   }
   function next() {
@@ -87,7 +91,7 @@ export function WhoAmIGame() {
       currentIndex: nextIndex,
       score,
       total: 40,
-      progress: { index: nextIndex, clues: 1, guess: '', score, revealed: false },
+      progress: { index: nextIndex, clues: 1, guess: '', score, revealed: false, answers },
     })
   }
   function revealAnotherClue() {
@@ -99,7 +103,7 @@ export function WhoAmIGame() {
         currentIndex: index,
         score,
         total: 40,
-        progress: { index, clues: nextClues, guess, score, revealed },
+        progress: { index, clues: nextClues, guess, score, revealed, answers },
       })
       return nextClues
     })
@@ -111,6 +115,7 @@ export function WhoAmIGame() {
     setGuess(resumeState.guess)
     setScore(resumeState.score)
     setRevealed(resumeState.revealed)
+    setAnswers(resumeState.answers)
     setResumeState(null)
   }
   function restart() {
@@ -118,6 +123,7 @@ export function WhoAmIGame() {
     setClues(1)
     setGuess('')
     setScore(0)
+    setAnswers([])
     setRevealed(false)
     setSaved(false)
     setRunKey(createCompletionRunId())
@@ -127,7 +133,7 @@ export function WhoAmIGame() {
   async function save() {
     if (!user || saved || saving) return
     setSaving(true)
-    const { error, alreadyCompleted } = await saveQuizResult({ quizId: 'who-am-i-1', score, total: 40, xp: 20 + score * 3, completionKey: buildCompletionKey('who-am-i-1', runKey) })
+    const { error, alreadyCompleted } = await saveQuizResult({ quizId: 'who-am-i-1', score, total: 40, xp: 20 + score * 3, completionKey: buildCompletionKey('who-am-i-1', runKey), proof: { kind: 'who-am-i', answers } })
     if (!error) {
       setSaved(true)
       void clearQuizProgress('who-am-i-1')

@@ -15,11 +15,12 @@ export function ScoutGame() {
   const [index, setIndex] = useState(0)
   const [selected, setSelected] = useState<ScoutDecision | null>(null)
   const [score, setScore] = useState(0)
+  const [answers, setAnswers] = useState<ScoutDecision[]>([])
   const [saved, setSaved] = useState(false)
   const [saving, setSaving] = useState(false)
   const [alreadyCredited, setAlreadyCredited] = useState(false)
   const [runKey, setRunKey] = useState(() => createCompletionRunId())
-  const [resumeState, setResumeState] = useState<{ index: number; selected: ScoutDecision | null; score: number } | null>(null)
+  const [resumeState, setResumeState] = useState<{ index: number; selected: ScoutDecision | null; score: number; answers: ScoutDecision[] } | null>(null)
   const [checkingProgress, setCheckingProgress] = useState(Boolean(user))
 
   const dossier = scoutQuestions[index]
@@ -59,13 +60,14 @@ export function ScoutGame() {
     void (async () => {
       const progress = await loadQuizProgress('would-you-scout-1')
       if (!active) return
-      const savedState = progress?.progress as { index?: number; selected?: ScoutDecision | null; score?: number } | undefined
+      const savedState = progress?.progress as { index?: number; selected?: ScoutDecision | null; score?: number; answers?: ScoutDecision[] } | undefined
       const savedIndex = typeof savedState?.index === 'number' && Number.isInteger(savedState.index) ? savedState.index : null
       if (progress && progress.status === 'in_progress' && savedState && savedIndex !== null && savedIndex >= 0 && savedIndex < scoutQuestions.length) {
         setResumeState({
           index: savedIndex,
           selected: typeof savedState.selected === 'string' ? (savedState.selected as ScoutDecision) : null,
           score: typeof savedState.score === 'number' ? savedState.score : progress.score,
+          answers: Array.isArray(savedState.answers) ? savedState.answers : [],
         })
       } else {
         setResumeState(null)
@@ -81,14 +83,16 @@ export function ScoutGame() {
   function choose(decision: ScoutDecision) {
     if (checkingProgress || resumeState || selected) return
     const nextScore = score + (decision === dossier.strongestDecision ? 2 : dossier.defensibleAlternative === decision ? 1 : 0)
+    const nextAnswers = [...answers, decision]
     setSelected(decision)
     setScore(nextScore)
+    setAnswers(nextAnswers)
     void saveQuizProgress({
       quizId: 'would-you-scout-1',
       currentIndex: index,
       score: nextScore,
       total: scoutQuestions.length * 2,
-      progress: { index, selected: decision, score: nextScore },
+      progress: { index, selected: decision, score: nextScore, answers: nextAnswers },
     })
   }
 
@@ -101,14 +105,14 @@ export function ScoutGame() {
       currentIndex: nextIndex,
       score,
       total: scoutQuestions.length * 2,
-      progress: { index: nextIndex, selected: null, score },
+      progress: { index: nextIndex, selected: null, score, answers },
     })
   }
 
   async function saveResult() {
     if (!user || saved || saving) return
     setSaving(true)
-    const { error, alreadyCompleted } = await saveQuizResult({ quizId: 'would-you-scout-1', score, total: maxScore, xp, completionKey: buildCompletionKey('would-you-scout-1', runKey) })
+    const { error, alreadyCompleted } = await saveQuizResult({ quizId: 'would-you-scout-1', score, total: maxScore, xp, completionKey: buildCompletionKey('would-you-scout-1', runKey), proof: { kind: 'scout-dossier', answers } })
     if (!error) {
       setSaved(true)
       setAlreadyCredited(alreadyCompleted)
@@ -122,6 +126,7 @@ export function ScoutGame() {
     setIndex(0)
     setSelected(null)
     setScore(0)
+    setAnswers([])
     setSaved(false)
     setAlreadyCredited(false)
     setRunKey(createCompletionRunId())
@@ -134,6 +139,7 @@ export function ScoutGame() {
     setIndex(resumeState.index)
     setSelected(resumeState.selected)
     setScore(resumeState.score)
+    setAnswers(resumeState.answers)
     setResumeState(null)
   }
 
@@ -218,7 +224,7 @@ export function ScoutGame() {
                         <p className="mt-1 text-muted-foreground">{rank.next ? `${rank.remaining} XP to ${rank.next.title}` : 'Maximum rank reached'}</p>
                       </div>
                     ) : (
-                      <p className="mt-4 text-sm text-muted-foreground">Create an account to save this progress, earn XP and build your Verdict XI profile.</p>
+                      <p className="mt-4 text-sm text-muted-foreground">Create an account to save this progress, earn XP and build your Back Your Eye profile.</p>
                     )}
                   </div>
                   <div className="flex flex-wrap gap-3">

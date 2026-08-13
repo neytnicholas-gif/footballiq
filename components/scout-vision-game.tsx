@@ -214,6 +214,7 @@ export function ScoutVisionGame() {
   const [index, setIndex] = useState(0)
   const [selected, setSelected] = useState<ScoutDecision | null>(null)
   const [score, setScore] = useState(0)
+  const [answers, setAnswers] = useState<Array<{ scenarioId: string; decision: ScoutDecision }>>([])
   const [saved, setSaved] = useState(false)
   const [runKey, setRunKey] = useState(() => createCompletionRunId())
   const [sessionOffset, setSessionOffset] = useState(0)
@@ -229,6 +230,7 @@ export function ScoutVisionGame() {
   function choose(decision: ScoutDecision) {
     if (selected) return
     setSelected(decision)
+    setAnswers((current) => [...current, { scenarioId: scenario.id, decision }])
     if (decision === scenario.recommended) {
       setScore((current) => current + 1)
     }
@@ -245,6 +247,7 @@ export function ScoutVisionGame() {
     setIndex(0)
     setSelected(null)
     setScore(0)
+    setAnswers([])
     setSaved(false)
     setRunKey(createCompletionRunId())
   }
@@ -258,6 +261,7 @@ export function ScoutVisionGame() {
       total: scenarios.length,
       xp,
       completionKey: buildCompletionKey('would-you-scout-v1', runKey),
+      proof: { kind: 'scout-vision', answers },
     })
     if (!error) {
       setSaved(true)

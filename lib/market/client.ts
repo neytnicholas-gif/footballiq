@@ -107,7 +107,7 @@ function hydratePublicCataloguePlayer(player: PublicCataloguePlayer): MarketPlay
     short_name: null,
     active: true,
     data_updated_at: player.value_updated_at,
-    data_source_label: 'Provider-sourced identity · Verdict XI game price book',
+    data_source_label: 'Provider-sourced identity · Back Your Eye game price book',
     source_reference: null,
     provenance_status: 'verified',
     owner_verified: true,
@@ -121,7 +121,7 @@ function hydratePublicCataloguePlayer(player: PublicCataloguePlayer): MarketPlay
     role_security_indicator: 'rotation',
     decision_support_note: player.current_value === player.opening_season_value
       ? 'Opening game price. This value stays frozen until eligible ratings and minutes are processed.'
-      : 'Eligible match evidence has been processed using Verdict XI’s published game-price rules.',
+      : 'Eligible match evidence has been processed using Back Your Eye’s published game-price rules.',
     matchweek_performance_history: [],
     created_at: player.value_updated_at,
     updated_at: player.value_updated_at,

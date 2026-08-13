@@ -22,6 +22,7 @@ type DailyHistoryEntry = {
   total: number
   completedAt: string
   shared?: boolean
+  answers?: number[]
 }
 
 const DAILY_HISTORY_STORAGE_KEY = 'footballiq-daily-history-v1'
@@ -60,13 +61,14 @@ export function DailyChallenge() {
   const [index, setIndex] = useState(0)
   const [selected, setSelected] = useState<number | null>(null)
   const [score, setScore] = useState(0)
+  const [answers, setAnswers] = useState<number[]>([])
   const [completed, setCompleted] = useState(false)
   const [savedReward, setSavedReward] = useState(false)
   const [savingReward, setSavingReward] = useState(false)
   const [saveMessage, setSaveMessage] = useState('')
   const [copied, setCopied] = useState(false)
   const [history, setHistory] = useState<Record<string, DailyHistoryEntry>>({})
-  const [resumeState, setResumeState] = useState<{ dailyKey: string; index: number; selected: number | null; score: number; completed: boolean } | null>(null)
+  const [resumeState, setResumeState] = useState<{ dailyKey: string; index: number; selected: number | null; score: number; completed: boolean; answers: number[] } | null>(null)
   const [checkingProgress, setCheckingProgress] = useState(Boolean(user))
 
   const items = useMemo(() => {
@@ -115,7 +117,7 @@ export function DailyChallenge() {
     void (async () => {
       const progress = await loadQuizProgress(`daily-${dailyKey}`)
       if (!active) return
-      const savedState = progress?.progress as { dailyKey?: string; index?: number; selected?: number | null; score?: number; completed?: boolean } | undefined
+      const savedState = progress?.progress as { dailyKey?: string; index?: number; selected?: number | null; score?: number; completed?: boolean; answers?: number[] } | undefined
       const savedIndex = typeof savedState?.index === 'number' && Number.isInteger(savedState.index) ? savedState.index : null
       if (progress && progress.status === 'in_progress' && savedState && savedState.dailyKey === dailyKey && savedIndex !== null && savedIndex >= 0 && savedIndex < items.length) {
         setResumeState({
@@ -124,6 +126,7 @@ export function DailyChallenge() {
           selected: typeof savedState.selected === 'number' ? savedState.selected : null,
           score: typeof savedState.score === 'number' ? savedState.score : progress.score,
           completed: Boolean(savedState.completed),
+          answers: Array.isArray(savedState.answers) ? savedState.answers.filter(Number.isSafeInteger) : [],
         })
       } else {
         setResumeState(null)
@@ -140,11 +143,13 @@ export function DailyChallenge() {
     const today = history[dailyKey]
     if (today) {
       setScore(today.score)
+      setAnswers(today.answers ?? [])
       setCompleted(true)
       setIndex(0)
       setSelected(null)
     } else {
       setScore(0)
+      setAnswers([])
       setCompleted(false)
       setIndex(0)
       setSelected(null)
@@ -169,14 +174,16 @@ export function DailyChallenge() {
   function choose(optionIndex: number) {
     if (checkingProgress || resumeState || selected !== null || completed) return
     const nextScore = optionIndex === item.answer ? score + 1 : score
+    const nextAnswers = [...answers, optionIndex]
     setSelected(optionIndex)
     setScore(nextScore)
+    setAnswers(nextAnswers)
     void saveQuizProgress({
       quizId,
       currentIndex: index,
       score: nextScore,
       total: items.length,
-      progress: { dailyKey, index, selected: optionIndex, score: nextScore, completed: false },
+      progress: { dailyKey, index, selected: optionIndex, score: nextScore, completed: false, answers: nextAnswers },
     })
   }
 
@@ -190,7 +197,7 @@ export function DailyChallenge() {
       currentIndex: nextIndex,
       score,
       total: items.length,
-      progress: { dailyKey, index: nextIndex, selected: null, score, completed: false },
+      progress: { dailyKey, index: nextIndex, selected: null, score, completed: false, answers },
     })
   }
 
@@ -205,6 +212,7 @@ export function DailyChallenge() {
       total: items.length,
       xp: xpFor(score, items.length),
       completionKey: buildCompletionKey(quizId, 'reward'),
+      proof: { kind: 'daily', dateKey: dailyKey, answers },
     })
 
     if (error) {
@@ -227,7 +235,7 @@ export function DailyChallenge() {
 
   async function shareResult() {
     const blocks = Array.from({ length: items.length }, (_, i) => (i < score ? '🟩' : '⬛')).join('')
-    const text = `Verdict XI Daily Challenge ${dailyKey}\nScore: ${score}/${items.length}\n${blocks}\nTimezone: Europe/Brussels`
+    const text = `Back Your Eye Daily Challenge ${dailyKey}\nScore: ${score}/${items.length}\n${blocks}\nTimezone: Europe/Brussels\nbackyoureye.com/daily`
     try {
       await navigator.clipboard.writeText(text)
       setCopied(true)
@@ -242,6 +250,7 @@ export function DailyChallenge() {
             completedAt: new Date().toISOString(),
           }),
           shared: true,
+          answers,
         },
       }
       setHistory(nextHistory)
@@ -258,6 +267,7 @@ export function DailyChallenge() {
       total: items.length,
       completedAt: new Date().toISOString(),
       shared: history[dailyKey]?.shared,
+      answers,
     }
     const nextHistory = { ...history, [dailyKey]: entry }
     setHistory(nextHistory)
@@ -270,6 +280,7 @@ export function DailyChallenge() {
     setIndex(0)
     setSelected(null)
     setScore(0)
+    setAnswers([])
     setCompleted(false)
     setSavedReward(false)
     setSaveMessage('Practice run active. Daily account reward remains once per day.')
@@ -278,7 +289,7 @@ export function DailyChallenge() {
       currentIndex: 0,
       score: 0,
       total: items.length,
-      progress: { dailyKey, index: 0, selected: null, score: 0, completed: false },
+      progress: { dailyKey, index: 0, selected: null, score: 0, completed: false, answers: [] },
     })
   }
 
@@ -288,6 +299,7 @@ export function DailyChallenge() {
     setSelected(resumeState.selected)
     setScore(resumeState.score)
     setCompleted(resumeState.completed)
+    setAnswers(resumeState.answers)
     setResumeState(null)
   }
 
@@ -295,6 +307,7 @@ export function DailyChallenge() {
     setIndex(0)
     setSelected(null)
     setScore(0)
+    setAnswers([])
     setCompleted(false)
     setSavedReward(false)
     setResumeState(null)

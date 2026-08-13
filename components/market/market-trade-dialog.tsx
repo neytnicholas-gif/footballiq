@@ -64,7 +64,7 @@ export function MarketTradeDialog({
         <p className="text-xs font-black uppercase tracking-[.2em] text-emerald-700">Confirm {action}</p>
         <h2 id={titleId} className="mt-2 text-2xl font-black">{isBuy ? 'Buy' : 'Sell'} {playerName}?</h2>
         <p id={descriptionId} className="mt-2 text-sm text-slate-600">
-          Review the Verdict XI game-value details before confirming. No real money is involved.
+          Review the Back Your Eye game-value details before confirming. No real money is involved.
         </p>
 
         <dl className="mt-5 space-y-2 rounded-2xl border border-emerald-900/10 bg-emerald-50/70 p-4">

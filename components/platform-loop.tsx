@@ -4,7 +4,7 @@ import { Reveal } from '@/components/reveal'
 const loops = [
   {
     icon: Gauge,
-    title: 'Football IQ Rating',
+    title: 'Eye Rating',
     text: 'Start at 1000. Correct answers move you up. Mistakes pull you down. Simple, addictive, clear.',
   },
   {
@@ -43,7 +43,7 @@ export function PlatformLoop() {
           The part that makes people come back
         </h2>
         <p className="mt-4 text-pretty text-muted-foreground">
-          Verdict XI is made to feel like a game, not a school test. Pick an answer, learn something and try again.
+          Back Your Eye is made to feel like a game, not a school test. Pick an answer, learn something and try again.
         </p>
       </Reveal>
 

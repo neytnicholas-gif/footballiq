@@ -95,8 +95,8 @@ export default function SignupPage() {
         <SurfaceCard className="p-6 sm:p-8">
           <Logo />
           <div className="mt-6">
-            <StatusBadge label="Join Verdict XI" tone="good" />
-            <h1 className="mt-3 text-3xl font-black tracking-tight text-foreground sm:text-4xl">Make your free Verdict XI account.</h1>
+            <StatusBadge label="Join Back Your Eye" tone="good" />
+            <h1 className="mt-3 text-3xl font-black tracking-tight text-foreground sm:text-4xl">Make your free Back Your Eye account.</h1>
             <p className="mt-3 text-sm leading-relaxed text-muted-foreground">Save your team, XP, scores and streak in one place.</p>
           </div>
           <ul className="mt-6 space-y-2 text-sm text-muted-foreground">

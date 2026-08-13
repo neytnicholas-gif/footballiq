@@ -45,7 +45,7 @@ export default function UsernamePage() {
         <SurfaceCard className="mt-10 p-6 sm:p-8">
           <StatusBadge label="One final step" tone="good" />
           <h1 className="mt-3 text-3xl font-black tracking-tight text-foreground">Create your username</h1>
-          <p className="mt-3 text-sm text-muted-foreground">Letters, numbers and underscores only. This is the name that appears on your Verdict XI profile and leaderboards.</p>
+          <p className="mt-3 text-sm text-muted-foreground">Letters, numbers and underscores only. This is the name that appears on your Back Your Eye profile and leaderboards.</p>
           <form onSubmit={save} className="mt-6 space-y-4">
             <input value={username} onChange={(e) => setUsername(clean(e.target.value))} minLength={3} required placeholder="NicholasIQ" className="h-11 w-full rounded-xl border border-border bg-background px-4 outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/30" />
             {message && <p className="rounded-xl border border-destructive/25 bg-destructive/10 p-3 text-sm text-destructive">{message}</p>}
