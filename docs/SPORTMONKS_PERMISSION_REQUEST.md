@@ -2,11 +2,11 @@
 
 Send this from the account that owns the Sportmonks subscription and retain the written reply with the product's compliance records.
 
-**Subject:** Confirmation of permitted public data use for Back Your Eye fantasy game
+**Subject:** Confirmation of permitted public data use for Early Shout fantasy game
 
 Hello Sportmonks team,
 
-I am building **Back Your Eye**, a free-to-play football knowledge and fantasy-style game operated from Belgium. Before opening the beta to public users, I would like written confirmation that my current Sportmonks subscription permits the following use:
+I am building **Early Shout**, a free-to-play football knowledge and fantasy-style game operated from Belgium. Before opening the beta to public users, I would like written confirmation that my current Sportmonks subscription permits the following use:
 
 - import player names, competition/club associations, match participation, minutes and Sportmonks player ratings for the competitions included in my plan;
 - display player names, selected factual match information and ratings to logged-in and logged-out users;
@@ -32,6 +32,6 @@ Kind regards,
 
 [LEGAL NAME]
 
-Back Your Eye
+Early Shout
 
 [ACCOUNT EMAIL]

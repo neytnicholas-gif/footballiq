@@ -34,7 +34,7 @@ export default function AcademyPage() {
       <section className="mx-auto max-w-7xl px-4 py-10 sm:px-6 sm:py-14">
         <SurfaceCard className="overflow-hidden">
           <div className="bg-[linear-gradient(130deg,rgba(40,197,130,.18),rgba(35,134,255,.12),rgba(7,14,26,.96))] p-7 sm:p-10">
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">Back Your Eye Academy</p>
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">Early Shout Academy</p>
             <h1 className="mt-3 text-4xl font-black tracking-tight sm:text-6xl">Learn to think like a scout or referee</h1>
             <p className="mt-3 max-w-3xl text-muted-foreground">Choose a lesson. Make football decisions. We explain the answer after each one.</p>
             <div className="mt-4 flex flex-wrap items-center gap-3">

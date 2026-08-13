@@ -1,4 +1,4 @@
-# Back Your Eye value-game audit — 12 August 2026
+# Early Shout value-game audit — 12 August 2026
 
 ## Verdict
 

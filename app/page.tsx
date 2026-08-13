@@ -71,14 +71,14 @@ export default function HomePage() {
             <div className="relative max-w-xl">
               <p className="inline-flex items-center gap-2 rounded-full border border-emerald-300/30 bg-emerald-400/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.23em] text-emerald-200">
                 <Sparkles className="size-3.5" />
-                Back Your Eye
+                Early Shout
               </p>
               <h1 className="mt-5 text-4xl font-black tracking-tight text-slate-50 sm:text-5xl lg:text-6xl">
-                <span className="brand-display block">BACK</span>
-                <span className="brand-display brand-display-gradient block">YOUR EYE.</span>
+                <span className="brand-display block">EARLY</span>
+                <span className="brand-display brand-display-gradient block">SHOUT.</span>
               </h1>
               <p className="mt-4 max-w-lg text-base leading-relaxed text-slate-300 sm:text-lg">
-                Trust what you see. Spot talent, make football choices and prove how well you read the game.
+                See it early. Make the call. Build your football eye through quick decisions, challenges and the Player Market.
               </p>
 
               <div className="mt-7 flex flex-wrap items-center gap-3">
@@ -181,7 +181,7 @@ export default function HomePage() {
               <span className="flex size-11 shrink-0 items-center justify-center rounded-xl border border-sky-300/25 bg-sky-400/10 text-sky-200"><Handshake className="size-5" /></span>
               <span>
                 <span className="block text-xs font-bold uppercase tracking-[0.18em] text-sky-300">For brands and organisations</span>
-                <span className="mt-1 block text-lg font-black text-slate-100">Become a Back Your Eye launch partner.</span>
+                <span className="mt-1 block text-lg font-black text-slate-100">Become an Early Shout launch partner.</span>
                 <span className="mt-1 block text-sm text-slate-300">Support independent football games with clear, respectful sponsorship.</span>
               </span>
             </span>

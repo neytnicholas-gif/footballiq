@@ -488,14 +488,14 @@ async function buildSportmonksLeagueCatalogue(
       position, age, nationality: textValue(player?.nationality_name ?? player?.nationality), active: true,
       current_value: value, previous_value: previousValue, opening_season_value: openingValue,
       value_updated_at: now, data_updated_at: now,
-      data_source_label: 'Sportmonks-sourced squad data · Back Your Eye opening game price',
+      data_source_label: 'Sportmonks-sourced squad data · Early Shout opening game price',
       source_reference: `sportmonks-player-${id}`, provenance_status: 'verified', owner_verified: true,
       is_trade_locked: false, trade_lock_reason: null, trade_lock_started_at: null, trade_lock_ends_at: null,
       value_trend: value > previousValue ? 'rising' : value < previousValue ? 'falling' : 'flat',
       recent_form_indicator: currentUpdate ? currentUpdate.rollingRating >= 7.2 ? 'hot' : currentUpdate.rollingRating < 6.5 ? 'cool' : 'steady' : 'steady',
       role_security_indicator: performances[0]?.minutesPlayed && performances[0].minutesPlayed >= 75 ? 'secure' : 'rotation', availability_status: 'available',
       decision_support_note: currentUpdate
-        ? `Verified ${currentUpdate.appearancesUsed}-appearance rolling rating: ${currentUpdate.rollingRating.toFixed(2)}. Latest movement follows Back Your Eye v2 controls.`
+        ? `Verified ${currentUpdate.appearancesUsed}-appearance rolling rating: ${currentUpdate.rollingRating.toFixed(2)}. Latest movement follows Early Shout v2 controls.`
         : 'Opening game price. This value remains frozen until verified ratings and minutes are available.',
       matchweek_performance_history: performances.slice(0, 5).reverse().map((event, index) => ({ week: event.gameweek ?? index + 1, rating: event.rating!, minutes: event.minutesPlayed })),
       created_at: now, updated_at: now,

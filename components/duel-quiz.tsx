@@ -379,7 +379,7 @@ export function DuelQuiz({ pack, onComplete }: { pack: DuelPack; onComplete?: (p
 
   async function shareResult() {
     const blocks = questions.map((_, questionIndex) => questionIndex < score ? '🟩' : '⬛').join('')
-    const text = `Back Your Eye — ${pack.title}\n${score}/${questions.length} • ${points} pts • ${bestCombo} best combo\n${blocks}\nbackyoureye.com/quizzes/football-duels`
+    const text = `Early Shout — ${pack.title}\n${score}/${questions.length} • ${points} pts • ${bestCombo} best combo\n${blocks}\n${window.location.origin}/quizzes/football-duels`
     try {
       await navigator.clipboard.writeText(text)
       setCopied(true)
@@ -438,7 +438,7 @@ export function DuelQuiz({ pack, onComplete }: { pack: DuelPack; onComplete?: (p
             <button onClick={restart} className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-primary px-5 py-3 font-semibold text-primary-foreground"><RotateCcw className="size-4" /> Play again</button>
             <button onClick={() => void shareResult()} className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl border border-border px-5 py-3 font-semibold"><Copy className="size-4" /> {copied ? 'Copied!' : 'Share score'}</button>
           </div>
-          <p className="mt-4 text-center text-xs text-muted-foreground">{!user ? 'Create an account to save this progress, earn XP and build your Back Your Eye profile.' : rewardStatus === 'saving' ? 'Saving your result…' : rewardStatus === 'saved' ? 'XP, rating and streak updates saved to your profile.' : rewardStatus === 'already' ? 'This duel reward was already credited for your account.' : rewardStatus === 'error' ? 'Result save failed. You can retry by replaying this duel.' : 'Checking reward status…'}</p>
+          <p className="mt-4 text-center text-xs text-muted-foreground">{!user ? 'Create an account to save this progress, earn XP and build your Early Shout profile.' : rewardStatus === 'saving' ? 'Saving your result…' : rewardStatus === 'saved' ? 'XP, rating and streak updates saved to your profile.' : rewardStatus === 'already' ? 'This duel reward was already credited for your account.' : rewardStatus === 'error' ? 'Result save failed. You can retry by replaying this duel.' : 'Checking reward status…'}</p>
         </div>
       </div>
     )

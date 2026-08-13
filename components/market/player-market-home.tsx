@@ -141,8 +141,8 @@ export function PlayerMarketHome() {
       <section className="rounded-[2rem] border border-border bg-card p-6 sm:p-8">
         <div className="flex flex-wrap items-start justify-between gap-5">
           <div className="max-w-3xl">
-            <p className="text-xs font-semibold uppercase tracking-[.25em] text-primary">Back Your Eye flagship</p>
-            <h1 className="mt-3 text-4xl font-black tracking-tight sm:text-5xl">Back Your Eye Player Market</h1>
+            <p className="text-xs font-semibold uppercase tracking-[.25em] text-primary">Early Shout flagship</p>
+            <h1 className="mt-3 text-4xl font-black tracking-tight sm:text-5xl">Early Shout Player Market</h1>
             <p className="mt-3 text-muted-foreground">
               Build an 11-player team. Buy players before you think their game price will rise. Sell them when you want to change your team.
             </p>
@@ -203,7 +203,7 @@ export function PlayerMarketHome() {
             <div>
               <p className="text-xs font-semibold uppercase tracking-[.2em] text-emerald-800">Verified-performance engine</p>
               <h2 className="mt-1 text-2xl font-black">{previewExperimentActive ? '11-player preview experiment is live' : players.some((player) => player.current_value !== player.opening_season_value) ? 'Verified price movement is live' : 'Opening market is live'}</h2>
-              <p className="mt-2 max-w-3xl text-sm text-muted-foreground">{previewExperimentActive ? 'A controlled set of ratings and minutes is running through the real Back Your Eye valuation rules. It proves the portfolio loop without presenting test evidence as a completed fixture.' : 'Licensed provider data supplies current squads plus completed-fixture ratings and minutes. Back Your Eye processes eligible prices after validated gameweeks and freezes any player whose evidence is missing.'}</p>
+              <p className="mt-2 max-w-3xl text-sm text-muted-foreground">{previewExperimentActive ? 'A controlled set of ratings and minutes is running through the real Early Shout valuation rules. It proves the portfolio loop without presenting test evidence as a completed fixture.' : 'Licensed provider data supplies current squads plus completed-fixture ratings and minutes. Early Shout processes eligible prices after validated gameweeks and freezes any player whose evidence is missing.'}</p>
             </div>
             <div className="flex flex-wrap gap-2">
               <span className="inline-flex items-center gap-2 rounded-xl border border-emerald-700/20 bg-emerald-700/10 px-4 py-2.5 text-sm font-semibold text-emerald-900"><DatabaseZap className="size-4" /> {previewExperimentActive ? 'Controlled preview data' : 'Provider-sourced catalogue'}</span>

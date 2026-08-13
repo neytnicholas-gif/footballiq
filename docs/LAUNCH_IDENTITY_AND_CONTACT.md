@@ -1,6 +1,6 @@
 # Launch identity and contact gate
 
-Back Your Eye must not enter a wider public or paid launch until all four public values below are real and monitored:
+Early Shout must not enter a wider public or paid launch until all four public values below are real and monitored:
 
 1. `NEXT_PUBLIC_LEGAL_OPERATOR_NAME` — the founder's full legal name or the registered business name.
 2. `NEXT_PUBLIC_LEGAL_OPERATOR_ADDRESS` — an appropriate service/business address that can lawfully be published.
@@ -11,7 +11,7 @@ These values are intentionally not guessed in source control. Add them to **Prod
 
 ## Current domain finding (2026-08-13)
 
-`backyoureye.com` returned DNS `NXDOMAIN`: it is not currently configured as a working website or mail domain. Consequently, the source-code fallback `hello@backyoureye.com` must not be advertised as a monitored address yet.
+`earlyshout.com` returned DNS `NXDOMAIN`: it is not currently configured as a working website or mail domain. Consequently, the source-code fallback `hello@earlyshout.com` must not be advertised as a monitored address yet.
 
 Before inviting external testers, either:
 

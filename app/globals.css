@@ -264,7 +264,7 @@ button, a {
   animation: fiq-pulse-soft 1.4s ease-in-out infinite;
 }
 
-/* Back Your Eye mode identities */
+/* Early Shout mode identities */
 .mode-shell {
   --mode-accent: 54 206 163;
   --mode-accent-2: 59 123 255;

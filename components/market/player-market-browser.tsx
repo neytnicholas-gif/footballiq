@@ -183,7 +183,7 @@ export function PlayerMarketBrowser({
         <div className="pointer-events-none absolute -right-20 -top-24 size-72 rounded-full border-[38px] border-emerald-500/[.06]" />
         <div className="relative flex flex-wrap items-start justify-between gap-4">
           <div>
-            <p className="mb-2 inline-flex items-center gap-2 rounded-full border border-emerald-700/15 bg-emerald-900/[.06] px-3 py-1 text-[10px] font-black uppercase tracking-[.2em] text-emerald-900"><Sparkles className="size-3" /> Back Your Eye Exchange</p>
+            <p className="mb-2 inline-flex items-center gap-2 rounded-full border border-emerald-700/15 bg-emerald-900/[.06] px-3 py-1 text-[10px] font-black uppercase tracking-[.2em] text-emerald-900"><Sparkles className="size-3" /> Early Shout Exchange</p>
             <h1 className="text-3xl font-black tracking-tight text-slate-950 sm:text-4xl">Player market</h1>
             <p className="mt-2 max-w-2xl text-sm text-slate-600">Pick 11 players: 1 goalkeeper, 4 defenders, 3 midfielders and 3 forwards. Their game prices can change after they play.</p>
           </div>
@@ -196,7 +196,7 @@ export function PlayerMarketBrowser({
         {players[0]?.data_source_label?.includes('Sportmonks') || previewExperimentActive ? (
           <div className="relative mt-4 rounded-2xl border border-emerald-700/20 bg-emerald-950/[.055] px-4 py-3 text-sm">
             <p className="font-bold text-emerald-900">{previewExperimentActive ? 'Controlled preview valuation experiment' : `Verified ${liveCompetitionLabel} market · ${players.length} players live`}</p>
-            <p className="mt-1 text-xs text-slate-600">Player identities and current squads come from Sportmonks. These are Back Your Eye game prices—not real transfer values. {previewExperimentActive ? 'Eleven selected players use clearly labelled test ratings and minutes to prove the value engine before completed 2026/27 fixtures arrive.' : marketHasMoved ? 'Price movement is calculated from verified completed-fixture ratings and minutes.' : 'Opening prices stay fixed until verified ratings and minutes trigger transparent movement.'}</p>
+            <p className="mt-1 text-xs text-slate-600">Player identities and current squads come from Sportmonks. These are Early Shout game prices—not real transfer values. {previewExperimentActive ? 'Eleven selected players use clearly labelled test ratings and minutes to prove the value engine before completed 2026/27 fixtures arrive.' : marketHasMoved ? 'Price movement is calculated from verified completed-fixture ratings and minutes.' : 'Opening prices stay fixed until verified ratings and minutes trigger transparent movement.'}</p>
           </div>
         ) : null}
 
@@ -321,7 +321,7 @@ export function PlayerMarketBrowser({
                     <MarketPlayerChip player={player} />
                     <div className="min-w-0">
                       <p className="flex min-w-0 items-center gap-2 text-base font-black tracking-tight text-slate-950"><ClubColourDot clubName={player.club_name} /><span className="truncate">{player.display_name}</span></p>
-                      <p className="truncate text-xs font-medium text-slate-500">{player.club_name} · {player.competition_name ?? 'Back Your Eye'} · {player.position}</p>
+                      <p className="truncate text-xs font-medium text-slate-500">{player.club_name} · {player.competition_name ?? 'Early Shout'} · {player.position}</p>
                     </div>
                   </div>
                   <div className="flex flex-col items-end gap-1"><span className="rounded-full border border-emerald-900/10 bg-emerald-950/[.055] px-2 py-1 text-[10px] font-black uppercase tracking-wide text-emerald-900">{player.position}</span>{player.availability_status ? <span className={`text-[10px] font-bold ${player.availability_status === 'available' ? 'text-emerald-700' : player.availability_status === 'limited' ? 'text-amber-700' : 'text-red-700'}`}>{player.availability_status === 'available' ? 'Available' : player.availability_status === 'limited' ? 'Limited availability' : 'Unavailable'}</span> : null}</div>

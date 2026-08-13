@@ -43,7 +43,7 @@ export function PlatformLoop() {
           The part that makes people come back
         </h2>
         <p className="mt-4 text-pretty text-muted-foreground">
-          Back Your Eye is made to feel like a game, not a school test. Pick an answer, learn something and try again.
+          Early Shout is made to feel like a game, not a school test. Pick an answer, learn something and try again.
         </p>
       </Reveal>
 

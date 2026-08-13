@@ -102,7 +102,7 @@ export default function PlayerMarketPortfolioPage() {
           <div className="mb-4 flex items-start justify-between gap-3 rounded-2xl border border-emerald-700/25 bg-emerald-50 px-4 py-3 text-sm text-emerald-950 shadow-sm">
             <div>
               <p className="font-bold">Your guest portfolio is now saved to your account.</p>
-              <p className="mt-1 text-xs text-emerald-900/75">Preserved {importResult.holdings ?? 0} player selections and {importResult.watchlist ?? 0} watchlist picks at current Back Your Eye prices.</p>
+              <p className="mt-1 text-xs text-emerald-900/75">Preserved {importResult.holdings ?? 0} player selections and {importResult.watchlist ?? 0} watchlist picks at current Early Shout prices.</p>
             </div>
             <button type="button" onClick={() => setImportResult(null)} className="rounded-lg border border-emerald-800/15 px-2 py-1 text-xs font-semibold">Dismiss</button>
           </div>

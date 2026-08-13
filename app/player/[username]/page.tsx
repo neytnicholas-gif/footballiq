@@ -120,7 +120,7 @@ export default function PublicPlayerPage() {
         {loading ? <p className="text-muted-foreground">Loading player…</p> : !profile ? <SurfaceCard className="p-8"><h1 className="text-3xl font-black tracking-tight text-foreground">Player not found</h1><Link href="/leaderboard" className="mt-5 inline-block text-primary">Return to leaderboard →</Link></SurfaceCard> : <>
           <SurfaceCard className="overflow-hidden">
             <div className={`${backgroundClass} p-8 sm:p-10`}>
-              <StatusBadge label="Public Back Your Eye profile" tone="good" />
+              <StatusBadge label="Public Early Shout profile" tone="good" />
               <div className="mt-4 flex flex-wrap items-end justify-between gap-6">
                 <div>
                   <div className={`mb-4 grid size-16 place-items-center rounded-2xl bg-foreground text-2xl font-black text-background shadow-lg ${avatarFrame}`} aria-label="Player profile icon">{resolvedAvatar}</div>
@@ -151,7 +151,7 @@ export default function PublicPlayerPage() {
           </div>
 
           <div className="mt-8">
-            <SectionHeader eyebrow="Profile snapshot" title="What this player has actually built" copy="XP, rating, streaks and accuracy all roll up from completed Back Your Eye runs." />
+            <SectionHeader eyebrow="Profile snapshot" title="What this player has actually built" copy="XP, rating, streaks and accuracy all roll up from completed Early Shout runs." />
           </div>
 
           <SurfaceCard className="mt-6 p-6 sm:p-8">

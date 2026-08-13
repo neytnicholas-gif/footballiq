@@ -19,7 +19,7 @@ export function LegalPage({ title, summary, children }: { title: string; summary
           <Link href="/privacy" className="font-semibold text-primary hover:underline">Privacy</Link>
           <Link href="/game-rules" className="font-semibold text-primary hover:underline">Game rules</Link>
           <a href={`mailto:${BRAND.supportEmail}`} className="font-semibold text-primary hover:underline">Contact</a>
-          <a href={`mailto:${BRAND.supportEmail}?subject=${encodeURIComponent('Back Your Eye legal or content report')}`} className="font-semibold text-primary hover:underline">Report content</a>
+          <a href={`mailto:${BRAND.supportEmail}?subject=${encodeURIComponent('Early Shout legal or content report')}`} className="font-semibold text-primary hover:underline">Report content</a>
           <Link href="/" className="font-semibold text-primary hover:underline">Return home</Link>
         </div>
       </article>

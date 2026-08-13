@@ -204,7 +204,7 @@ export function PlayerMarketPortfolio({
         <div className="rounded-[2rem] border border-border bg-card p-6">
           <h2 className="text-xl font-bold">Portfolio growth guidance</h2>
           <div className="mt-4 space-y-3 text-sm text-muted-foreground">
-            <p className="rounded-xl border border-border bg-background/60 p-3">Holdings are valued at current Back Your Eye market values, not real transfer fees.</p>
+            <p className="rounded-xl border border-border bg-background/60 p-3">Holdings are valued at current Early Shout market values, not real transfer fees.</p>
             <p className="rounded-xl border border-border bg-background/60 p-3">Each gameweek grants 11 new signings. Sales free squad slots without consuming another signing.</p>
             <p className="rounded-xl border border-border bg-background/60 p-3">{userSignedIn ? 'Atomic server-side execution protects account trades against duplicate clicks and multi-tab race conditions.' : 'Guest progress is saved on this device. Create an account to protect trades with server-side execution and sync across devices.'}</p>
             <Link href="/market/leaderboard" className="inline-flex items-center gap-2 rounded-xl border border-primary/30 bg-primary/10 px-4 py-2 font-semibold text-primary">
