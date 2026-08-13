@@ -53,9 +53,34 @@ export function MarketProgressionHub() {
   }, [])
 
   useEffect(() => {
-    const timer = window.setTimeout(() => void reload(), 0)
-    return () => window.clearTimeout(timer)
-  }, [reload, user])
+    let active = true
+    const timer = window.setTimeout(() => {
+      void (async () => {
+        // Show the last saved Clubhouse state quickly. Recalculate challenge
+        // progress afterwards so a slower database refresh never traps the
+        // player behind a long loading screen.
+        setLoading(true)
+        const snapshot = await loadMyMarketProgression(false)
+        if (!active) return
+        setProgression(snapshot.data)
+        setError(snapshot.error ? friendlyProgressionError(snapshot.error.message) : '')
+        setLoading(false)
+
+        const refreshed = await loadMyMarketProgression(true)
+        if (!active) return
+        if (refreshed.error) {
+          setError(friendlyProgressionError(refreshed.error.message))
+        } else {
+          setProgression(refreshed.data)
+          setError('')
+        }
+      })()
+    }, 0)
+    return () => {
+      active = false
+      window.clearTimeout(timer)
+    }
+  }, [user])
 
   useEffect(() => {
     const followHash = () => { if (window.location.hash === '#reward-shop') setView('shop') }
