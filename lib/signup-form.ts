@@ -3,6 +3,23 @@ export function getPasswordMismatchMessage(password: string, confirmPassword: st
   return password === confirmPassword ? '' : 'Passwords do not match.'
 }
 
+export const MINIMUM_PASSWORD_LENGTH = 10
+
+export function getNewPasswordValidationMessage(password: string, confirmPassword: string) {
+  if (!password || !confirmPassword) return 'Enter and confirm your password.'
+  if (password.length < MINIMUM_PASSWORD_LENGTH) {
+    return `Password must be at least ${MINIMUM_PASSWORD_LENGTH} characters.`
+  }
+  if (!/[A-Za-z]/.test(password) || !/[0-9]/.test(password)) {
+    return 'Password must include at least one letter and one number.'
+  }
+  return getPasswordMismatchMessage(password, confirmPassword)
+}
+
+export function getCaptchaValidationMessage(isConfigured: boolean, captchaToken: string) {
+  return isConfigured && !captchaToken ? 'Complete the safety check first.' : ''
+}
+
 type AuthErrorLike = {
   message?: string
   code?: string
@@ -174,7 +191,10 @@ export function togglePasswordVisibility(isVisible: boolean) {
 }
 
 type ResetPasswordAuthClient = {
-  resetPasswordForEmail: (email: string, options: { redirectTo: string }) => Promise<{ error: AuthErrorLike }>
+  resetPasswordForEmail: (
+    email: string,
+    options: { redirectTo: string; captchaToken?: string },
+  ) => Promise<{ error: AuthErrorLike }>
 }
 
 type UpdatePasswordAuthClient = {
@@ -185,6 +205,7 @@ export async function requestPasswordReset(
   authClient: ResetPasswordAuthClient,
   email: string,
   origin: string,
+  captchaToken?: string,
 ) {
   const trimmedEmail = email.trim()
   if (!trimmedEmail) {
@@ -195,9 +216,12 @@ export async function requestPasswordReset(
     }
   }
 
-  const { error } = await authClient.resetPasswordForEmail(trimmedEmail, {
+  const options: { redirectTo: string; captchaToken?: string } = {
     redirectTo: `${origin}/auth/callback?next=/reset-password`,
-  })
+  }
+  if (captchaToken) options.captchaToken = captchaToken
+
+  const { error } = await authClient.resetPasswordForEmail(trimmedEmail, options)
 
   if (!error) {
     return {
@@ -233,8 +257,8 @@ export function getResetPasswordValidationMessage(password: string, confirmPassw
     return 'Enter and confirm your new password.'
   }
 
-  if (password.length < 8) {
-    return 'Password must be at least 8 characters.'
+  if (password.length < MINIMUM_PASSWORD_LENGTH) {
+    return `Password must be at least ${MINIMUM_PASSWORD_LENGTH} characters.`
   }
 
   if (!/[A-Za-z]/.test(password) || !/[0-9]/.test(password)) {

@@ -6,8 +6,9 @@ import { useRouter } from 'next/navigation'
 import { ArrowRight } from 'lucide-react'
 import { Logo } from '@/components/logo'
 import { SurfaceCard, StatusBadge } from '@/components/platform/primitives'
+import { TurnstileChallenge, TURNSTILE_SITE_KEY } from '@/components/auth/turnstile-challenge'
 import { supabase } from '@/lib/supabase'
-import { getLoginErrorState, resendSignupConfirmation, shouldBlockDoubleSubmission } from '@/lib/signup-form'
+import { getCaptchaValidationMessage, getLoginErrorState, resendSignupConfirmation, shouldBlockDoubleSubmission } from '@/lib/signup-form'
 
 export default function LoginPage() {
   const router = useRouter()
@@ -18,6 +19,8 @@ export default function LoginPage() {
   const [message, setMessage] = useState('')
   const [messageTone, setMessageTone] = useState<'neutral' | 'error'>('error')
   const [showResend, setShowResend] = useState(false)
+  const [captchaToken, setCaptchaToken] = useState('')
+  const [captchaResetKey, setCaptchaResetKey] = useState(0)
 
   async function signIn(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -25,12 +28,25 @@ export default function LoginPage() {
       return
     }
 
+    const captchaMessage = getCaptchaValidationMessage(Boolean(TURNSTILE_SITE_KEY), captchaToken)
+    if (captchaMessage) {
+      setMessage(captchaMessage)
+      setMessageTone('error')
+      return
+    }
+
     setLoading(true)
     setMessage('')
     setShowResend(false)
-    const { error } = await supabase.auth.signInWithPassword({ email, password })
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+      ...(captchaToken ? { options: { captchaToken } } : {}),
+    })
     setLoading(false)
     if (error) {
+      setCaptchaToken('')
+      setCaptchaResetKey((value) => value + 1)
       const mapped = getLoginErrorState(error)
       setMessage(mapped.message)
       setMessageTone(mapped.tone)
@@ -80,6 +96,7 @@ export default function LoginPage() {
             <div className="flex justify-end">
               <Link href="/forgot-password" className="text-sm font-semibold text-primary hover:underline">Forgot password?</Link>
             </div>
+            <TurnstileChallenge onTokenChange={setCaptchaToken} resetKey={captchaResetKey} />
             {message && (
               <p
                 role={messageTone === 'error' ? 'alert' : 'status'}

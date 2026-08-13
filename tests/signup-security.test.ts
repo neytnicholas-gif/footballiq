@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import {
   getCallbackErrorMessage,
+  getCaptchaValidationMessage,
   getForgotPasswordSuccessMessage,
   getLoginErrorState,
+  getNewPasswordValidationMessage,
   getPasswordMismatchMessage,
   getRecoverySessionErrorMessage,
   getResetPasswordValidationMessage,
@@ -53,6 +55,15 @@ describe('signup security helpers', () => {
   it('flags mismatched passwords and accepts matching ones', () => {
     expect(getPasswordMismatchMessage('secret-123', 'secret-321')).toBe('Passwords do not match.')
     expect(getPasswordMismatchMessage('secret-123', 'secret-123')).toBe('')
+  })
+
+  it('enforces strong 10-character passwords and a configured CAPTCHA token', () => {
+    expect(getNewPasswordValidationMessage('abc12345', 'abc12345')).toBe('Password must be at least 10 characters.')
+    expect(getNewPasswordValidationMessage('abcdefghij', 'abcdefghij')).toBe('Password must include at least one letter and one number.')
+    expect(getNewPasswordValidationMessage('early12345', 'early12345')).toBe('')
+    expect(getCaptchaValidationMessage(false, '')).toBe('')
+    expect(getCaptchaValidationMessage(true, '')).toBe('Complete the safety check first.')
+    expect(getCaptchaValidationMessage(true, 'verified-token')).toBe('')
   })
 
   it('toggles password visibility state', () => {
@@ -211,10 +222,10 @@ describe('signup security helpers', () => {
 
   it('validates reset passwords and mismatch requirements', () => {
     expect(getResetPasswordValidationMessage('', '')).toBe('Enter and confirm your new password.')
-    expect(getResetPasswordValidationMessage('abc', 'abc')).toBe('Password must be at least 8 characters.')
-    expect(getResetPasswordValidationMessage('abcdefgh', 'abcdefgh')).toBe('Password must include at least one letter and one number.')
-    expect(getResetPasswordValidationMessage('abc12345', 'abc54321')).toBe('Passwords do not match.')
-    expect(getResetPasswordValidationMessage('abc12345', 'abc12345')).toBe('')
+    expect(getResetPasswordValidationMessage('abc', 'abc')).toBe('Password must be at least 10 characters.')
+    expect(getResetPasswordValidationMessage('abcdefghij', 'abcdefghij')).toBe('Password must include at least one letter and one number.')
+    expect(getResetPasswordValidationMessage('early12345', 'early54321')).toBe('Passwords do not match.')
+    expect(getResetPasswordValidationMessage('early12345', 'early12345')).toBe('')
   })
 
   it('handles missing or expired recovery session states safely', () => {

@@ -142,7 +142,7 @@ export default function ResetPasswordPage() {
             <p className="mt-3 text-sm leading-relaxed text-muted-foreground">Use this page only from a valid recovery link. If your session expired, request a new reset email.</p>
           </div>
           <ul className="mt-6 space-y-2 text-sm text-muted-foreground">
-            <li>• Minimum 8 characters</li>
+            <li>• Minimum 10 characters</li>
             <li>• Include at least one letter and one number</li>
             <li>• After reset, return to sign in with your new password</li>
           </ul>
@@ -159,6 +159,7 @@ export default function ResetPasswordPage() {
                 <input
                   type={showPassword ? 'text' : 'password'}
                   autoComplete="new-password"
+                  minLength={10}
                   value={password}
                   onChange={(event) => {
                     setPassword(event.target.value)
@@ -186,6 +187,7 @@ export default function ResetPasswordPage() {
                 <input
                   type={showConfirmPassword ? 'text' : 'password'}
                   autoComplete="new-password"
+                  minLength={10}
                   value={confirmPassword}
                   onChange={(event) => {
                     setConfirmPassword(event.target.value)

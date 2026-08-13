@@ -5,9 +5,11 @@ import { useState } from 'react'
 import { ArrowRight } from 'lucide-react'
 import { Logo } from '@/components/logo'
 import { SurfaceCard, StatusBadge } from '@/components/platform/primitives'
+import { TurnstileChallenge, TURNSTILE_SITE_KEY } from '@/components/auth/turnstile-challenge'
 import { supabase } from '@/lib/supabase'
 import {
-  getPasswordMismatchMessage,
+  getCaptchaValidationMessage,
+  getNewPasswordValidationMessage,
   getSignupErrorMessage,
   getSignupSuccessMessage,
   resendSignupConfirmation,
@@ -27,6 +29,8 @@ export default function SignupPage() {
   const [messageTone, setMessageTone] = useState<'neutral' | 'success' | 'error'>('neutral')
   const [passwordError, setPasswordError] = useState('')
   const [showResend, setShowResend] = useState(false)
+  const [captchaToken, setCaptchaToken] = useState('')
+  const [captchaResetKey, setCaptchaResetKey] = useState(0)
 
   async function signUp(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -34,10 +38,17 @@ export default function SignupPage() {
       return
     }
 
-    const mismatchMessage = getPasswordMismatchMessage(password, confirmPassword)
-    if (mismatchMessage) {
-      setPasswordError(mismatchMessage)
+    const passwordMessage = getNewPasswordValidationMessage(password, confirmPassword)
+    if (passwordMessage) {
+      setPasswordError(passwordMessage)
       setMessage('')
+      setMessageTone('error')
+      return
+    }
+
+    const captchaMessage = getCaptchaValidationMessage(Boolean(TURNSTILE_SITE_KEY), captchaToken)
+    if (captchaMessage) {
+      setMessage(captchaMessage)
       setMessageTone('error')
       return
     }
@@ -49,10 +60,15 @@ export default function SignupPage() {
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
-      options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
+      options: {
+        emailRedirectTo: `${window.location.origin}/auth/callback`,
+        ...(captchaToken ? { captchaToken } : {}),
+      },
     })
     setLoading(false)
     if (error) {
+      setCaptchaToken('')
+      setCaptchaResetKey((value) => value + 1)
       const safeMessage = getSignupErrorMessage(error)
       setShowResend(safeMessage === getSignupSuccessMessage(false))
       setMessageTone(safeMessage === getSignupSuccessMessage(false) ? 'neutral' : 'error')
@@ -118,7 +134,7 @@ export default function SignupPage() {
                   name="password"
                   type={showPassword ? 'text' : 'password'}
                   autoComplete="new-password"
-                  minLength={8}
+                  minLength={10}
                   value={password}
                   onChange={(e) => onPasswordChange(e.target.value)}
                   required
@@ -142,7 +158,7 @@ export default function SignupPage() {
                   name="confirmPassword"
                   type={showConfirmPassword ? 'text' : 'password'}
                   autoComplete="new-password"
-                  minLength={8}
+                  minLength={10}
                   value={confirmPassword}
                   onChange={(e) => onConfirmPasswordChange(e.target.value)}
                   required
@@ -161,10 +177,12 @@ export default function SignupPage() {
               </div>
             </label>
             {passwordError && <p id="confirm-password-error" role="alert" className="rounded-xl border border-destructive/25 bg-destructive/10 p-3 text-sm text-destructive">{passwordError}</p>}
+            <p className="text-xs text-muted-foreground">Use at least 10 characters, including a letter and a number.</p>
             <label className="flex items-start gap-3 rounded-xl border border-border bg-secondary/25 p-3 text-sm text-muted-foreground">
               <input name="legalAcknowledgement" type="checkbox" required className="mt-1 size-4 accent-emerald-500" />
               <span>I am at least 13, agree to the <Link href="/terms" target="_blank" className="font-semibold text-primary hover:underline">Terms of Use</Link>, and acknowledge the <Link href="/privacy" target="_blank" className="font-semibold text-primary hover:underline">Privacy Notice</Link>.</span>
             </label>
+            <TurnstileChallenge onTokenChange={setCaptchaToken} resetKey={captchaResetKey} />
             {message && (
               <p
                 role={messageTone === 'error' ? 'alert' : 'status'}

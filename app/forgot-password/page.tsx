@@ -2,17 +2,20 @@
 
 import Link from 'next/link'
 import { useState } from 'react'
-import { ArrowRight, Mail } from 'lucide-react'
+import { Mail } from 'lucide-react'
 import { Logo } from '@/components/logo'
 import { SurfaceCard, StatusBadge } from '@/components/platform/primitives'
+import { TurnstileChallenge, TURNSTILE_SITE_KEY } from '@/components/auth/turnstile-challenge'
 import { supabase } from '@/lib/supabase'
-import { requestPasswordReset, shouldBlockDoubleSubmission } from '@/lib/signup-form'
+import { getCaptchaValidationMessage, requestPasswordReset, shouldBlockDoubleSubmission } from '@/lib/signup-form'
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState('')
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState('')
   const [messageTone, setMessageTone] = useState<'neutral' | 'error'>('neutral')
+  const [captchaToken, setCaptchaToken] = useState('')
+  const [captchaResetKey, setCaptchaResetKey] = useState(0)
 
   async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -20,9 +23,18 @@ export default function ForgotPasswordPage() {
       return
     }
 
+    const captchaMessage = getCaptchaValidationMessage(Boolean(TURNSTILE_SITE_KEY), captchaToken)
+    if (captchaMessage) {
+      setMessage(captchaMessage)
+      setMessageTone('error')
+      return
+    }
+
     setLoading(true)
-    const result = await requestPasswordReset(supabase.auth, email, window.location.origin)
+    const result = await requestPasswordReset(supabase.auth, email, window.location.origin, captchaToken)
     setLoading(false)
+    setCaptchaToken('')
+    setCaptchaResetKey((value) => value + 1)
     setMessage(result.message)
     setMessageTone(result.tone)
   }
@@ -60,6 +72,8 @@ export default function ForgotPasswordPage() {
                 className="mt-2 h-11 w-full rounded-xl border border-border bg-background px-4 outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/30"
               />
             </label>
+
+            <TurnstileChallenge onTokenChange={setCaptchaToken} resetKey={captchaResetKey} />
 
             {message ? (
               <p
