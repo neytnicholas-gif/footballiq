@@ -13,7 +13,8 @@
     "test:launch-simulation": "vitest run tests/market/postgres-launch-simulation.test.ts tests/market/scale-simulation.test.ts",
     "load-test:market": "node scripts/load-test-market.mjs",
     "smoke-test:public": "node scripts/smoke-test-public.mjs",
-    "check:launch-config": "node scripts/check-launch-readiness.mjs"
+    "check:launch-config": "node scripts/check-launch-readiness.mjs",
+    "backup:supabase": "powershell -ExecutionPolicy Bypass -File scripts/backup-supabase.ps1"
   },
   "dependencies": {
     "@base-ui/react": "^1.5.0",

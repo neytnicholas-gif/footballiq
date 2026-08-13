@@ -3,6 +3,7 @@ import { resolveMx } from 'node:dns/promises'
 const required = [
   'NEXT_PUBLIC_SUPABASE_URL',
   'NEXT_PUBLIC_SUPABASE_ANON_KEY',
+  'NEXT_PUBLIC_TURNSTILE_SITE_KEY',
   'SUPABASE_SERVICE_ROLE_KEY',
   'SPORTMONKS_API_TOKEN',
   'CRON_SECRET',
