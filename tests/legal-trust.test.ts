@@ -31,6 +31,18 @@ describe('legal and market trust guards', () => {
     expect(legalPage).toContain('Early Shout legal or content report')
   })
 
+  it('credits the licensed data source without claiming endorsement', () => {
+    const footer = read('components/site-footer.tsx')
+    const terms = read('app/terms/page.tsx')
+
+    expect(footer).toContain('Football data supplied by')
+    expect(footer).toContain('https://www.sportmonks.com/')
+    expect(footer).toContain('Early Shout independently creates its fictional prices, rules and rewards')
+    expect(footer).toMatch(/no\s+endorsement is implied/)
+    expect(terms).toContain('Football data is supplied by')
+    expect(terms).toContain('Early Shout independently creates its fictional prices, game rules and rewards')
+  })
+
   it('does not expose simulated player data or financial-promotion copy in routed market UI', () => {
     const detailRoute = read('app/market/player/[slug]/page.tsx')
     const visibleMarket = [

@@ -1,6 +1,25 @@
 # Sportmonks written-permission request
 
-Send this from the account that owns the Sportmonks subscription and retain the written reply with the product's compliance records.
+**Status:** Approved in writing by Sportmonks Support on 13 August 2026 (support reference `107405:1217471`). The reply expressly permits the requested factual player/participation/rating use, derived fictional prices, caching for game logic and audits, and free or paid game access without raw-data resale. The original reply belongs in the private compliance records, not this public repository.
+
+Two narrow points remain to be confirmed: the exact rate allowance for the active plan and whether private temporary Vercel Preview URLs require another domain licence when the token is configured only for Production on `earlyshout.com`.
+
+## Follow-up sent after approval
+
+> Hi Drake,
+>
+> Thank you for the clear written confirmation. We will use **earlyshout.com** as Early Shout's single public licensed domain.
+>
+> Vercel also creates temporary Preview URLs for private deployment testing. If `SPORTMONKS_API_TOKEN` is configured only for Production on earlyshout.com, and those Preview deployments do not call Sportmonks, can you confirm that the private temporary Preview URLs do not require a second domain licence?
+>
+> Please also confirm the exact calls-per-entity-per-hour allowance on my current Football Starter plan, or where that number is shown in MySportmonks, so I can configure the weekly importer below the limit.
+>
+> Many thanks,
+> Nicholas
+
+## Original request
+
+This was sent from the account that owns the Sportmonks subscription. The approved request is retained here as the product's public compliance specification.
 
 **To:** support@sportmonks.com
 

@@ -1,5 +1,7 @@
 # FootballIQ Player Market: real-data launch readiness
 
+> **Historical design memo — superseded.** This document records the provider-selection and proposed-ingestion design as it stood on 6 August 2026. It must not be used as the current launch status. Sportmonks subsequently gave Early Shout product-specific written approval on 13 August 2026, the real catalogue and gameweek engine were implemented, and current operational gates are maintained in `docs/PRODUCTION_PROMOTION_CHECKLIST.md` and `docs/PRODUCTION_GAMEWEEK_RUNBOOK.md`.
+
 Status as of 2026-08-06: pipeline contract implemented; production provider and verified Premier League catalogue not configured.
 
 ## Provider decision: permission first, trial second

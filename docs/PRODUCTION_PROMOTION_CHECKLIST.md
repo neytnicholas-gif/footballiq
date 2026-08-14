@@ -4,7 +4,9 @@ The current Early Shout beta branch is newer than the Vercel Production deployme
 
 ## Before promotion
 
-- Receive and retain Sportmonks' written licensing response.
+- Retain Sportmonks' 13 August 2026 written approval with the private compliance records. It expressly permits player names, participation and ratings, Early Shout's derived fictional prices, caching for game logic/auditing, and free or paid game access without raw-data resale.
+- Use `earlyshout.com` as the single licensed public domain. Keep `SPORTMONKS_API_TOKEN` out of Preview after the Production cutover unless Sportmonks confirms that private temporary Vercel previews do not require another domain licence.
+- Ask Sportmonks to confirm the exact calls-per-entity-per-hour allowance for the active Football Starter plan and record the answer in the gameweek runbook.
 - Create a fresh private backup with `npm run backup:supabase`.
 - Confirm the Production values exist for:
   - `NEXT_PUBLIC_SUPABASE_URL`
@@ -18,6 +20,7 @@ The current Early Shout beta branch is newer than the Vercel Production deployme
   - `NEXT_PUBLIC_SUPPORT_EMAIL`
   - `NEXT_PUBLIC_LEGAL_OPERATOR_NAME`
   - `NEXT_PUBLIC_LEGAL_OPERATOR_ADDRESS`
+- Confirm `SPORTMONKS_API_TOKEN` is scoped to Production only after the final-domain cutover. The protected Preview coverage-trial route is expected to return a configuration error without a Preview token.
 - Set Supabase's minimum password length to 10.
 - Add the final domain and current preview hostname to the Turnstile widget.
 - Deploy the public Turnstile site key before enabling CAPTCHA in Supabase.

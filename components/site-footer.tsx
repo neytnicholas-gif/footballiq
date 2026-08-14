@@ -63,6 +63,17 @@ export function SiteFooter() {
           <div className="max-w-xs">
             <p className="text-xs font-medium uppercase tracking-widest text-muted-foreground">Launch approach</p>
             <p className="mt-4 text-sm leading-relaxed text-muted-foreground">All quizzes and current Academy learning experiences are free. Player Market access is also free during product testing; no payment is being collected.</p>
+            <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
+              Football data supplied by{' '}
+              <a
+                href="https://www.sportmonks.com/"
+                className="font-medium text-foreground underline decoration-border underline-offset-4 transition-colors hover:text-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+              >
+                Sportmonks
+              </a>
+              . Early Shout independently creates its fictional prices, rules and rewards; no
+              endorsement is implied.
+            </p>
           </div>
         </div>
 
