@@ -110,9 +110,9 @@ export async function GET(request: Request) {
       competitions: Array.from(grouped.values()),
     }, {
       headers: {
-        'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=60',
-        'CDN-Cache-Control': 'public, s-maxage=300, stale-while-revalidate=60',
-        'Vercel-CDN-Cache-Control': 'public, s-maxage=300, stale-while-revalidate=60',
+        'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=60',
+        'CDN-Cache-Control': 'public, s-maxage=60, stale-while-revalidate=60',
+        'Vercel-CDN-Cache-Control': 'public, s-maxage=60, stale-while-revalidate=60',
         'X-Verdict-XI-Request-Id': requestId,
       },
     })

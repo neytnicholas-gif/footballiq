@@ -93,6 +93,7 @@ export type GuestMarketImportResult = {
 let verifiedCatalogueRequest: Promise<MarketPlayer[]> | null = null
 let verifiedCatalogueFetchedAt = 0
 const VERIFIED_CATALOGUE_TTL_MS = 300_000
+const CATALOGUE_RELEASE = process.env.NEXT_PUBLIC_VERCEL_GIT_COMMIT_SHA?.slice(0, 8) ?? 'local'
 
 type PublicCataloguePlayer = Pick<MarketPlayer,
   | 'id' | 'slug' | 'display_name' | 'club_name' | 'competition_key'
@@ -132,7 +133,7 @@ function fetchVerifiedMarketPlayers() {
   const now = Date.now()
   if (!verifiedCatalogueRequest || now - verifiedCatalogueFetchedAt >= VERIFIED_CATALOGUE_TTL_MS) {
     verifiedCatalogueFetchedAt = now
-    verifiedCatalogueRequest = fetch('/api/market/catalogue')
+    verifiedCatalogueRequest = fetch(`/api/market/catalogue?release=${encodeURIComponent(CATALOGUE_RELEASE)}`)
       .then(async (response) => {
         if (!response.ok) throw new Error('The verified player catalogue request failed.')
         const payload = await response.json() as { players?: PublicCataloguePlayer[] }
