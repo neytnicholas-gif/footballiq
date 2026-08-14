@@ -141,11 +141,11 @@ export default function ProfilePage() {
 
               <SurfaceCard className="p-6">
                 <p className="text-xs font-semibold uppercase tracking-[0.22em] text-primary">Progression overview</p>
-                <h2 className="mt-2 text-2xl font-black tracking-tight text-foreground">What the profile already tells you</h2>
+                <h2 className="mt-2 text-2xl font-black tracking-tight text-foreground">Your progress at a glance</h2>
                 <ul className="mt-4 space-y-2 text-sm text-muted-foreground">
-                  <li>• XP, rating and streaks are live and persist across sessions</li>
-                  <li>• Accuracy now falls back to completed result data if counters are empty</li>
-                  <li>• Academy completions and advanced progress remain visible</li>
+                  <li>• Your XP, rating and streaks are saved</li>
+                  <li>• Your accuracy updates when you finish a quiz</li>
+                  <li>• Finished Academy lessons appear here</li>
                   {academyExperiences.filter((item) => item.status !== 'available').slice(0, 2).map((item) => <li key={item.key}>• {item.title} · {item.status === 'coming-next' ? 'Coming next' : 'Planned later'}</li>)}
                 </ul>
                 <div className="mt-4 flex flex-wrap gap-3">

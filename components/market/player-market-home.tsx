@@ -201,12 +201,12 @@ export function PlayerMarketHome() {
       <section className="rounded-[2rem] border border-border bg-card p-6 sm:p-8">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-[.2em] text-emerald-800">Verified-performance engine</p>
-              <h2 className="mt-1 text-2xl font-black">{previewExperimentActive ? '11-player preview experiment is live' : players.some((player) => player.current_value !== player.opening_season_value) ? 'Verified price movement is live' : 'Opening market is live'}</h2>
-              <p className="mt-2 max-w-3xl text-sm text-muted-foreground">{previewExperimentActive ? 'A controlled set of ratings and minutes is running through the real Early Shout valuation rules. It proves the portfolio loop without presenting test evidence as a completed fixture.' : 'Licensed provider data supplies current squads plus completed-fixture ratings and minutes. Early Shout processes eligible prices after validated gameweeks and freezes any player whose evidence is missing.'}</p>
+              <p className="text-xs font-semibold uppercase tracking-[.2em] text-emerald-800">Price update status</p>
+              <h2 className="mt-1 text-2xl font-black">{previewExperimentActive ? '11-player price test is live' : players.some((player) => player.current_value !== player.opening_season_value) ? 'Gameweek price changes are live' : 'The opening market is live'}</h2>
+              <p className="mt-2 max-w-3xl text-sm text-muted-foreground">{previewExperimentActive ? 'We are testing 11 players with the same rules the full game uses. Test results stay clearly marked and never pretend to be a real match.' : 'After each gameweek, real ratings and minutes update game prices. If a player has no trusted match data, their price stays the same.'}</p>
             </div>
             <div className="flex flex-wrap gap-2">
-              <span className="inline-flex items-center gap-2 rounded-xl border border-emerald-700/20 bg-emerald-700/10 px-4 py-2.5 text-sm font-semibold text-emerald-900"><DatabaseZap className="size-4" /> {previewExperimentActive ? 'Controlled preview data' : 'Provider-sourced catalogue'}</span>
+              <span className="inline-flex items-center gap-2 rounded-xl border border-emerald-700/20 bg-emerald-700/10 px-4 py-2.5 text-sm font-semibold text-emerald-900"><DatabaseZap className="size-4" /> {previewExperimentActive ? 'Clearly marked test data' : 'Live squad data'}</span>
               <Link href="/market/reveal" className="inline-flex items-center gap-2 rounded-xl border border-border px-4 py-2.5 text-sm font-semibold">
                 Open The Reveal
               </Link>
@@ -260,7 +260,7 @@ export function PlayerMarketHome() {
             <div>
               <h2 className="text-xl font-bold">Anonymous Market mode is active.</h2>
               <p className="mt-2 text-sm text-muted-foreground">
-                Your portfolio is saved locally on this device. Account-backed cross-device syncing will activate only after the protected market database passes staging approval.
+                Your guest team is saved on this device. Create an account to keep it when you switch devices.
               </p>
             </div>
           </div>

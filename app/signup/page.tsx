@@ -145,7 +145,7 @@ export default function SignupPage() {
                   aria-pressed={showPassword}
                   aria-label={showPassword ? 'Hide password' : 'Show password'}
                   onClick={() => setShowPassword(togglePasswordVisibility)}
-                  className="absolute inset-y-0 right-2 my-1 rounded-lg px-3 text-xs font-medium text-muted-foreground hover:bg-secondary/80 hover:text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
+                  className="absolute right-1 top-1/2 min-h-11 -translate-y-1/2 rounded-lg px-3 text-xs font-medium text-muted-foreground hover:bg-secondary/80 hover:text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
                 >
                   {showPassword ? 'Hide' : 'Show'}
                 </button>
@@ -170,7 +170,7 @@ export default function SignupPage() {
                   aria-pressed={showConfirmPassword}
                   aria-label={showConfirmPassword ? 'Hide confirm password' : 'Show confirm password'}
                   onClick={() => setShowConfirmPassword(togglePasswordVisibility)}
-                  className="absolute inset-y-0 right-2 my-1 rounded-lg px-3 text-xs font-medium text-muted-foreground hover:bg-secondary/80 hover:text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
+                  className="absolute right-1 top-1/2 min-h-11 -translate-y-1/2 rounded-lg px-3 text-xs font-medium text-muted-foreground hover:bg-secondary/80 hover:text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
                 >
                   {showConfirmPassword ? 'Hide' : 'Show'}
                 </button>

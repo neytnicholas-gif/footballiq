@@ -14,7 +14,7 @@ const navLinks = [
   { label: 'Daily Challenge', href: '/daily' },
   { label: 'Predictions', href: '/predictions' },
   { label: 'Leaderboard', href: '/leaderboard' },
-  { label: 'Sign in', href: '/login' },
+  { label: 'Profile / sign in', href: '/profile' },
   { label: 'Terms', href: '/terms' },
   { label: 'Privacy', href: '/privacy' },
   { label: 'Game rules', href: '/game-rules' },
@@ -35,7 +35,7 @@ export function SiteFooter() {
               variant="outline"
               nativeButton={false}
               render={<a href={`mailto:${BRAND.supportEmail}`} />}
-              className="mt-5 h-10 rounded-lg border-border bg-secondary/30 px-4 text-sm font-semibold text-foreground hover:bg-secondary/60"
+              className="mt-5 min-h-11 rounded-lg border-border bg-secondary/30 px-4 text-sm font-semibold text-foreground hover:bg-secondary/60"
             >
               <Mail className="size-4" />
               Contact

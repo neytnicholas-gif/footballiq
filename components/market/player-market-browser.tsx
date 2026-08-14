@@ -559,7 +559,7 @@ function FormationPill({ label, value, subtle }: { label: string; value: string;
   return (
     <div className="rounded-xl border border-emerald-950/10 bg-white/75 px-3 py-2 shadow-sm">
       <p className="text-[10px] uppercase tracking-[.15em] text-muted-foreground">{label}</p>
-      <p className="mt-1 text-sm font-semibold text-primary">{value}{subtle ? <span className="ml-1 text-[10px] font-medium text-muted-foreground">{subtle}</span> : null}</p>
+      <p className="mt-1 text-sm font-semibold text-primary">{value}{subtle ? <>{' '}<span className="ml-1 text-[10px] font-medium text-muted-foreground">{subtle}</span></> : null}</p>
     </div>
   )
 }
@@ -594,7 +594,7 @@ function Notice({ kind, message, onDismiss }: { kind: 'success' | 'error' | 'inf
 }
 
 function ScopeButton({ active, onClick, children }: { active: boolean; onClick: () => void; children: ReactNode }) {
-  return <button type="button" aria-pressed={active} onClick={onClick} className={`min-h-10 rounded-full border px-3 py-2 text-xs font-black transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-700 ${active ? 'border-emerald-800 bg-emerald-900 text-white shadow-sm' : 'border-emerald-900/15 bg-white/70 text-emerald-950 hover:bg-emerald-50'}`}>{children}</button>
+  return <button type="button" aria-pressed={active} onClick={onClick} className={`min-h-11 rounded-full border px-3 py-2 text-xs font-black transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-700 ${active ? 'border-emerald-800 bg-emerald-900 text-white shadow-sm' : 'border-emerald-900/15 bg-white/70 text-emerald-950 hover:bg-emerald-50'}`}>{children}</button>
 }
 
 function FilterSelect({ label, value, onChange, options }: { label: string; value: string; onChange: (value: string) => void; options: string[] }) {

@@ -115,7 +115,7 @@ export function PlayerMarketPortfolio({
         </div>
 
         <div className="mt-4 rounded-xl border border-border bg-background/60 px-4 py-3 text-sm text-muted-foreground">
-          Gameweek allowance: {buysRemaining} of 11 signings remaining · sales free squad slots
+          Transfers this gameweek: {buysRemaining} of 11 signings left · sell players whenever you like
           <span className="ml-2">· {activeFormation}: GK {formation.GK}/{limits.GK}, DEF {formation.DEF}/{limits.DEF}, MID {formation.MID}/{limits.MID}, FWD {formation.FWD}/{limits.FWD}</span>
         </div>
       </section>
@@ -202,11 +202,11 @@ export function PlayerMarketPortfolio({
         </div>
 
         <div className="rounded-[2rem] border border-border bg-card p-6">
-          <h2 className="text-xl font-bold">Portfolio growth guidance</h2>
+          <h2 className="text-xl font-bold">How your team value works</h2>
           <div className="mt-4 space-y-3 text-sm text-muted-foreground">
-            <p className="rounded-xl border border-border bg-background/60 p-3">Holdings are valued at current Early Shout market values, not real transfer fees.</p>
-            <p className="rounded-xl border border-border bg-background/60 p-3">Each gameweek grants 11 new signings. Sales free squad slots without consuming another signing.</p>
-            <p className="rounded-xl border border-border bg-background/60 p-3">{userSignedIn ? 'Atomic server-side execution protects account trades against duplicate clicks and multi-tab race conditions.' : 'Guest progress is saved on this device. Create an account to protect trades with server-side execution and sync across devices.'}</p>
+            <p className="rounded-xl border border-border bg-background/60 p-3">Your players use current Early Shout game prices, not real transfer fees.</p>
+            <p className="rounded-xl border border-border bg-background/60 p-3">Each gameweek gives you 11 signings. Selling a player opens their squad slot and does not use another signing.</p>
+            <p className="rounded-xl border border-border bg-background/60 p-3">{userSignedIn ? 'If you tap twice, Early Shout only completes the trade once.' : 'Guest progress is saved on this device. Create an account to keep your team when you switch devices.'}</p>
             <Link href="/market/leaderboard" className="inline-flex items-center gap-2 rounded-xl border border-primary/30 bg-primary/10 px-4 py-2 font-semibold text-primary">
               Compare performance on leaderboard
               <ArrowUpRight className="size-4" />
