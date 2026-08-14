@@ -182,7 +182,7 @@ export function PlayerMarketDetail({
       <section className="grid gap-5 lg:grid-cols-2">
         <div className="rounded-[2rem] border border-border bg-card p-6">
           <h2 className="text-xl font-bold">Season statistics</h2>
-          <p className="mt-1 text-xs text-muted-foreground">Nullable metrics are intentionally shown as unavailable when unverified or missing.</p>
+          <p className="mt-1 text-xs text-muted-foreground">We only show stats received from our data provider. Missing stats are labelled “Not available”.</p>
           {stats.length === 0 ? <p className="mt-4 text-sm text-muted-foreground">No season stats available for this player yet.</p> : (
             <div className="mt-4 space-y-4">
               {stats.slice(0, 2).map((row) => (
@@ -212,13 +212,13 @@ export function PlayerMarketDetail({
           <h2 className="text-xl font-bold">How this game value works</h2>
           <div className="mt-4 space-y-3 text-sm">
             <p className="rounded-xl border border-border bg-background/60 p-3">
-              Early Shout value is an internal strategy metric (not a real-world transfer value) generated using Early Shout methodology versioning.
+              This is an Early Shout game price, not a real transfer value.
             </p>
             <p className="rounded-xl border border-border bg-background/60 p-3">
-              Player identity and eligible match inputs come from a licensed football-data provider. Early Shout creates the game price independently.
+              Player and match data comes from licensed Sportmonks data. Early Shout creates the game price.
             </p>
             <p className="rounded-xl border border-border bg-background/60 p-3">
-              Input validation: {player.provenance_status === 'verified' && player.owner_verified ? 'passed' : 'pending'}. A missing or ineligible rating freezes the price instead of guessing.
+              No valid rating or minutes? The price stays the same. We never guess a result.
             </p>
             <p className="rounded-xl border border-border bg-background/60 p-3">
               Last value update: {formatMarketDateTime(player.value_updated_at)}
@@ -240,7 +240,7 @@ export function PlayerMarketDetail({
             : [
                 { label: 'Purchase price', value: formatFiqCompact(holding?.acquisition_value ?? player.current_value) },
                 { label: 'Current value', value: formatFiqCompact(player.current_value) },
-                { label: 'Realised P/L', value: `${player.current_value - (holding?.acquisition_value ?? player.current_value) >= 0 ? '+' : '-'}${formatFiqCompact(Math.abs(player.current_value - (holding?.acquisition_value ?? player.current_value)))}` },
+                { label: 'Game profit/loss', value: `${player.current_value - (holding?.acquisition_value ?? player.current_value) >= 0 ? '+' : '-'}${formatFiqCompact(Math.abs(player.current_value - (holding?.acquisition_value ?? player.current_value)))}` },
               ]}
           onCancel={() => setTradeIntent(null)}
           onConfirm={() => {

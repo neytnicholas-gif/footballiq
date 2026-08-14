@@ -211,8 +211,8 @@ export function PlayerMarketBrowser({
           <FormationPill label="DEF" value={`${formation.DEF}/4`} />
           <FormationPill label="MID" value={`${formation.MID}/3`} />
           <FormationPill label="FWD" value={`${formation.FWD}/3`} />
-          <FormationPill label="Gameweek signings" value={String(buysRemaining)} subtle="remaining of 11" />
-          <FormationPill label="Sales" value="No limit" subtle="free squad slots" />
+          <FormationPill label="Gameweek signings" value={`${buysRemaining} of 11`} subtle="left this gameweek" />
+          <FormationPill label="Sales" value="No limit" subtle="sell to open a squad slot" />
         </div>
 
         <MarketRosterBoard

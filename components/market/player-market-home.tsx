@@ -345,11 +345,11 @@ export function PlayerMarketHome() {
           <Link href="/market/leaderboard" className="inline-flex min-h-11 items-center text-sm font-semibold text-primary">See leaderboard</Link>
         </div>
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          <SocialStub icon={<Trophy className="size-4" />} title="Top Traders" value="Coming live in Phase 2" hint="Highest average return over last 14 days" />
-          <SocialStub icon={<Wallet className="size-4" />} title="Highest Portfolio" value="Coming live in Phase 2" hint="Largest total account value this week" />
-          <SocialStub icon={<TrendingUp className="size-4" />} title="Biggest Weekly Gain" value="Coming live in Phase 2" hint="Strongest week-on-week performance" />
-          <SocialStub icon={<Coins className="size-4" />} title="Biggest Game Gain" value="Coming live in Phase 2" hint="Largest realised VX Credit gain" />
-          <SocialStub icon={<Users className="size-4" />} title="Friends" value="Coming live in Phase 2" hint="Invite friends and build private leagues" />
+          <SocialStub icon={<Trophy className="size-4" />} title="Top Traders" value="Starts after the first price update" hint="Highest average return over the last 14 days" />
+          <SocialStub icon={<Wallet className="size-4" />} title="Highest Portfolio" value="Waiting for more players" hint="Largest total account value this week" />
+          <SocialStub icon={<TrendingUp className="size-4" />} title="Biggest Weekly Gain" value="Starts after the first price update" hint="Strongest week-on-week performance" />
+          <SocialStub icon={<Coins className="size-4" />} title="Biggest Game Gain" value="Starts after the first sale for profit" hint="Largest game-credit profit from a sale" />
+          <SocialStub icon={<Users className="size-4" />} title="Friends" value="Friends leagues are in beta" hint="Invite friends and build a private league" />
           <SocialStub icon={<BarChart3 className="size-4" />} title="Market Leaderboard" value="Live now" hint="Track daily, weekly and season performance" />
         </div>
       </section>

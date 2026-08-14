@@ -61,6 +61,27 @@ describe('Player Market launch gates', () => {
     expect(detail).toContain('% of teams')
   })
 
+  it('keeps the public leaderboard current while respecting the profile privacy switch', () => {
+    const sql = read('supabase/migrations/20260814160000_keep_market_leaderboard_in_sync.sql')
+    expect(sql).toContain('market_sync_public_leaderboard_for_portfolio')
+    expect(sql).toContain('coalesce(preferences.show_market_stats, true)')
+    expect(sql).toContain('delete from public.market_public_leaderboard')
+    expect(sql).toContain('deferrable initially deferred')
+    expect(sql).toContain('after update of username on public.profiles')
+    expect(sql).toContain('security definer')
+    expect(sql).toContain("set search_path = 'pg_catalog', 'public'")
+    expect(sql).toContain('from public, anon, authenticated')
+  })
+
+  it('refuses to publish a fallback-heavy Sportmonks opening price book', () => {
+    const client = read('lib/market/server/sportmonks-client.ts')
+    expect(client).toContain('qualityCoveragePercent >= 65')
+    expect(client).toContain('latestEstablishedPlayerQuality')
+    expect(client).toContain('statistics.details.type;statistics.season')
+    expect(client).toContain("values.get('CLEAN_SHEET')")
+    expect(client).toContain('unsafeRequiredCatalogue')
+  })
+
   it('runs server work close to the database with Fluid Compute enabled', () => {
     const config = read('vercel.json')
     expect(config).toContain('"fluid": true')

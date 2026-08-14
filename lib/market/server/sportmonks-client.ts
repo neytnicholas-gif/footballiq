@@ -135,9 +135,9 @@ function statisticValue(detail: JsonRecord) {
 function qualityOpeningGameValue(position: MarketPosition, age: number | null, quality?: PlayerSeasonQuality) {
   if (!quality || (quality.appearances === 0 && quality.minutes === 0 && quality.averageRating === null)) {
     return calculateOpeningGameplayValue({
-      position, establishedPerformanceScore: 35, recentMinutesScore: 20,
-      squadRoleScore: 25, availabilityScore: 100,
-      agePotentialScore: age !== null && age <= 23 ? 75 : 45,
+      position, establishedPerformanceScore: 15, recentMinutesScore: 0,
+      squadRoleScore: 10, availabilityScore: 80,
+      agePotentialScore: age !== null && age <= 23 ? 65 : 35,
     })
   }
   const ratingScore = quality.averageRating === null ? 45 : clampScore(((quality.averageRating - 5.8) / 2.2) * 100)
@@ -163,28 +163,87 @@ function qualityOpeningGameValue(position: MarketPosition, age: number | null, q
   })
 }
 
+function isEstablishedQuality(quality: PlayerSeasonQuality | undefined) {
+  return Boolean(quality && (quality.minutes >= 450 || quality.appearances >= 5))
+}
+
+function qualityFromStatisticsRow(row: JsonRecord): PlayerSeasonQuality {
+  const values = new Map<string, number>()
+  for (const detail of relationRows(row, 'details')) {
+    const name = String(relation(detail, 'type')?.developer_name ?? detail.developer_name ?? '').toUpperCase()
+    const value = statisticValue(detail)
+    if (name && value !== null) values.set(name, value)
+  }
+  return {
+    appearances: values.get('APPEARANCES') ?? 0,
+    starts: values.get('STARTED') ?? values.get('LINEUPS') ?? values.get('STARTS') ?? 0,
+    minutes: values.get('MINUTES_PLAYED') ?? values.get('MINUTES') ?? 0,
+    averageRating: values.get('RATING') ?? values.get('AVERAGE_RATING') ?? null,
+    goals: values.get('GOALS') ?? 0,
+    assists: values.get('ASSISTS') ?? 0,
+    cleanSheets: values.get('CLEAN_SHEET') ?? values.get('CLEAN_SHEETS') ?? 0,
+  }
+}
+
+function mergeSeasonQuality(current: PlayerSeasonQuality | undefined, next: PlayerSeasonQuality) {
+  if (!current) return next
+  const currentWeight = current.minutes || current.appearances || 0
+  const nextWeight = next.minutes || next.appearances || 0
+  const ratingWeight = currentWeight + nextWeight
+  const averageRating = current.averageRating === null
+    ? next.averageRating
+    : next.averageRating === null
+      ? current.averageRating
+      : ratingWeight > 0
+        ? ((current.averageRating * currentWeight) + (next.averageRating * nextWeight)) / ratingWeight
+        : (current.averageRating + next.averageRating) / 2
+  return {
+    appearances: current.appearances + next.appearances,
+    starts: current.starts + next.starts,
+    minutes: current.minutes + next.minutes,
+    averageRating,
+    goals: current.goals + next.goals,
+    assists: current.assists + next.assists,
+    cleanSheets: current.cleanSheets + next.cleanSheets,
+  }
+}
+
 function seasonQualityByPlayer(rows: JsonRecord[]) {
   const result = new Map<number, PlayerSeasonQuality>()
   for (const row of rows) {
     const playerId = Number(row.player_id)
     if (!Number.isSafeInteger(playerId)) continue
-    const values = new Map<string, number>()
-    for (const detail of relationRows(row, 'details')) {
-      const name = String(relation(detail, 'type')?.developer_name ?? detail.developer_name ?? '').toUpperCase()
-      const value = statisticValue(detail)
-      if (name && value !== null) values.set(name, value)
-    }
-    result.set(playerId, {
-      appearances: values.get('APPEARANCES') ?? 0,
-      starts: values.get('STARTED') ?? values.get('LINEUPS') ?? values.get('STARTS') ?? 0,
-      minutes: values.get('MINUTES_PLAYED') ?? values.get('MINUTES') ?? 0,
-      averageRating: values.get('RATING') ?? values.get('AVERAGE_RATING') ?? null,
-      goals: values.get('GOALS') ?? 0,
-      assists: values.get('ASSISTS') ?? 0,
-      cleanSheets: values.get('CLEAN_SHEETS') ?? 0,
-    })
+    result.set(playerId, mergeSeasonQuality(result.get(playerId), qualityFromStatisticsRow(row)))
   }
   return result
+}
+
+function latestEstablishedPlayerQuality(player: JsonRecord) {
+  const candidates = relationRows(player, 'statistics')
+    .map((row) => ({
+      row,
+      quality: qualityFromStatisticsRow(row),
+      seasonDate: Date.parse(String(relation(row, 'season')?.ending_at ?? relation(row, 'season')?.starting_at ?? '')),
+      seasonId: Number(row.season_id ?? relation(row, 'season')?.id ?? 0),
+    }))
+    .filter((candidate) => isEstablishedQuality(candidate.quality))
+    .sort((a, b) => {
+      const aDate = Number.isFinite(a.seasonDate) ? a.seasonDate : 0
+      const bDate = Number.isFinite(b.seasonDate) ? b.seasonDate : 0
+      return bDate - aDate || b.seasonId - a.seasonId
+    })
+  return candidates[0]?.quality
+}
+
+async function mapWithConcurrency<T>(items: T[], concurrency: number, worker: (item: T) => Promise<void>) {
+  let cursor = 0
+  await Promise.all(Array.from({ length: Math.min(concurrency, items.length) }, async () => {
+    while (cursor < items.length) {
+      const item = items[cursor]
+      cursor += 1
+      await worker(item)
+    }
+  }))
 }
 
 export type SportmonksMarketCatalogue = {
@@ -199,6 +258,9 @@ export type SportmonksMarketCatalogue = {
   marketPhase: 'opening' | 'verified_movement'
   completedFixturesApplied: number
   ratedPlayerCount: number
+  qualityPricedPlayerCount: number
+  fallbackPricedPlayerCount: number
+  qualityCoveragePercent: number
   latestCompletedAt: string | null
   players: MarketPlayer[]
 }
@@ -477,14 +539,39 @@ async function buildSportmonksLeagueCatalogue(
     } as JsonRecord))
   }))).flat()
   const seasonSchedule = record(await client.get(`/seasons/${encodeURIComponent(seasonId)}?include=fixtures.state`))
-  const [currentQualityRows, previousQualityRows] = await Promise.all([
-    client.getAllPages(`/statistics/seasons/players/${encodeURIComponent(seasonId)}?include=details.type`).catch(() => []),
+  const [currentQualityResult, previousQualityResult] = await Promise.allSettled([
+    client.getAllPages(`/statistics/seasons/players/${encodeURIComponent(seasonId)}?include=details.type`),
     previousSeasonId
-      ? client.getAllPages(`/statistics/seasons/players/${encodeURIComponent(previousSeasonId)}?include=details.type`).catch(() => [])
+      ? client.getAllPages(`/statistics/seasons/players/${encodeURIComponent(previousSeasonId)}?include=details.type`)
       : Promise.resolve([]),
   ])
+  const currentQualityRows = currentQualityResult.status === 'fulfilled' ? currentQualityResult.value : []
+  const previousQualityRows = previousQualityResult.status === 'fulfilled' ? previousQualityResult.value : []
+  if (currentQualityResult.status === 'rejected') {
+    console.error(JSON.stringify({ event: 'sportmonks.season_quality.failed', competition: leagueConfig.competition, seasonId }))
+  }
+  if (previousQualityResult.status === 'rejected') {
+    console.error(JSON.stringify({ event: 'sportmonks.season_quality.failed', competition: leagueConfig.competition, seasonId: previousSeasonId }))
+  }
   const currentQualityByPlayer = seasonQualityByPlayer(currentQualityRows)
   const previousQualityByPlayer = seasonQualityByPlayer(previousQualityRows)
+  const squadPlayerIds = [...new Set(squads.map((row) => Number(row.player_id ?? relation(row, 'player')?.id)).filter(Number.isSafeInteger))]
+  const missingEstablishedPlayerIds = previousSeasonId
+    ? squadPlayerIds.filter((id) => !isEstablishedQuality(currentQualityByPlayer.get(id)) && !isEstablishedQuality(previousQualityByPlayer.get(id)))
+    : []
+  const historicalQualityByPlayer = new Map<number, PlayerSeasonQuality>()
+  await mapWithConcurrency(missingEstablishedPlayerIds, 4, async (playerId) => {
+    try {
+      const player = record(await client.get(
+        `/players/${encodeURIComponent(String(playerId))}?include=statistics.details.type;statistics.season`,
+      ))
+      if (!player) return
+      const quality = latestEstablishedPlayerQuality(player)
+      if (quality) historicalQualityByPlayer.set(playerId, quality)
+    } catch {
+      // Coverage below decides whether this price book is safe to publish.
+    }
+  })
   const completedFixtures = relationRows(seasonSchedule ?? {}, 'fixtures')
     .filter((fixture) => isFinishedFixture(fixture) && fixtureDate(fixture))
     .sort((a, b) => Date.parse(fixtureDate(b)!) - Date.parse(fixtureDate(a)!))
@@ -498,6 +585,7 @@ async function buildSportmonksLeagueCatalogue(
   const slugs = new Set<string>()
   const players: MarketPlayer[] = []
   const performancesByPlayer = new Map<number, ValidatedPerformance[]>()
+  let qualityPricedPlayerCount = 0
 
   for (const { fixture, payload } of fixtureLineups) {
     const lineups = payload ? relationRows(payload, 'lineups') : []
@@ -533,9 +621,12 @@ async function buildSportmonksLeagueCatalogue(
     seen.add(id)
     const age = playerAge(player ?? {})
     const currentQuality = currentQualityByPlayer.get(id)
-    const establishedQuality = currentQuality && (currentQuality.minutes >= 450 || currentQuality.appearances >= 5)
+    const establishedQuality = isEstablishedQuality(currentQuality)
       ? currentQuality
-      : previousQualityByPlayer.get(id) ?? currentQuality
+      : isEstablishedQuality(previousQualityByPlayer.get(id))
+        ? previousQualityByPlayer.get(id)
+        : historicalQualityByPlayer.get(id)
+    if (establishedQuality) qualityPricedPlayerCount += 1
     const openingValue = qualityOpeningGameValue(position, age, establishedQuality)
     const performances = (performancesByPlayer.get(id) ?? []).sort((a, b) => Date.parse(b.matchDate) - Date.parse(a.matchDate))
     const currentUpdate = calculatePerformanceValueUpdate({ position, currentValue: openingValue, rollingWeekMovement: 0, performances })
@@ -566,12 +657,17 @@ async function buildSportmonksLeagueCatalogue(
   }
 
   players.sort((a, b) => b.current_value - a.current_value || a.display_name.localeCompare(b.display_name))
+  const fallbackPricedPlayerCount = Math.max(0, players.length - qualityPricedPlayerCount)
+  const qualityCoveragePercent = players.length
+    ? Math.round((qualityPricedPlayerCount / players.length) * 10_000) / 100
+    : 0
   return {
     provider: 'Sportmonks Football API', competition: leagueConfig.competition,
     competitionKey: leagueConfig.competitionKey, leagueId: leagueConfig.leagueId, seasonId,
     seasonName: textValue(season?.name), generatedAt: now, playerCount: players.length,
     marketPhase: performancesByPlayer.size > 0 ? 'verified_movement' : 'opening',
     completedFixturesApplied: completedFixtures.length, ratedPlayerCount: performancesByPlayer.size,
+    qualityPricedPlayerCount, fallbackPricedPlayerCount, qualityCoveragePercent,
     latestCompletedAt: completedFixtures[0] ? fixtureDate(completedFixtures[0]) : null,
     players,
   }
@@ -601,12 +697,13 @@ export function catalogueCoverage(catalogue: SportmonksMarketCatalogue) {
   return {
     playerCount: catalogue.players.length,
     clubCount: new Set(catalogue.players.map((player) => player.club_name)).size,
+    qualityCoveragePercent: catalogue.qualityCoveragePercent,
   }
 }
 
 export function isCatalogueReady(catalogue: SportmonksMarketCatalogue) {
   const coverage = catalogueCoverage(catalogue)
-  return coverage.clubCount >= 16 && coverage.playerCount >= 300
+  return coverage.clubCount >= 16 && coverage.playerCount >= 300 && coverage.qualityCoveragePercent >= 65
 }
 
 export async function buildSportmonksCombinedCatalogue(apiToken = process.env.SPORTMONKS_API_TOKEN) {
@@ -623,6 +720,13 @@ export async function buildSportmonksCombinedCatalogue(apiToken = process.env.SP
   const optionalCatalogues = optionalResults
     .map((result) => result.catalogue)
     .filter((catalogue): catalogue is SportmonksMarketCatalogue => Boolean(catalogue && isCatalogueReady(catalogue)))
+  const unsafeRequiredCatalogue = [premierLeague, laLiga].find((catalogue) => !isCatalogueReady(catalogue))
+  if (unsafeRequiredCatalogue) {
+    const coverage = catalogueCoverage(unsafeRequiredCatalogue)
+    throw new Error(
+      `${unsafeRequiredCatalogue.competition} price book is not ready: ${coverage.playerCount} players, ${coverage.clubCount} clubs, ${coverage.qualityCoveragePercent}% quality-priced.`,
+    )
+  }
   const competitions = [premierLeague, laLiga, ...optionalCatalogues]
   const unavailableCompetitions = optionalResults.flatMap((result) => {
     if (result.catalogue && isCatalogueReady(result.catalogue)) return []
@@ -632,6 +736,7 @@ export async function buildSportmonksCombinedCatalogue(apiToken = process.env.SP
       reason: result.error ?? 'Current provider squad coverage is incomplete',
       playerCount: coverage?.playerCount ?? 0,
       clubCount: coverage?.clubCount ?? 0,
+      qualityCoveragePercent: coverage?.qualityCoveragePercent ?? 0,
     }]
   })
   return {

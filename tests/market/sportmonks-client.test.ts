@@ -148,6 +148,49 @@ describe('Sportmonks coverage trial client', () => {
     expect(fetchMock).toHaveBeenCalledTimes(5)
   })
 
+  it('aggregates split-season rows, recovers transfer history, and keeps unknown players below proven performers', async () => {
+    const stat = (developer_name: string, value: number) => ({ value: { total: value, average: value }, type: { developer_name } })
+    const fetchMock = vi.spyOn(globalThis, 'fetch')
+      .mockResolvedValueOnce(response({
+        id: 8,
+        currentSeason: { id: 99, name: '2026/2027' },
+        seasons: [{ id: 99, ending_at: '2027-05-30' }, { id: 88, ending_at: '2026-05-30' }],
+      }))
+      .mockResolvedValueOnce(response([{ id: 1, name: 'North FC' }]))
+      .mockResolvedValueOnce(response([
+        { player_id: 10, player: { id: 10, display_name: 'Proven Star', date_of_birth: '2002-01-01' }, team: { id: 1, name: 'North FC' }, position: { developer_name: 'FORWARD' } },
+        { player_id: 20, player: { id: 20, display_name: 'Recent Transfer', date_of_birth: '2002-01-01' }, team: { id: 1, name: 'North FC' }, position: { developer_name: 'FORWARD' } },
+        { player_id: 30, player: { id: 30, display_name: 'Unknown Prospect', date_of_birth: '2002-01-01' }, team: { id: 1, name: 'North FC' }, position: { developer_name: 'FORWARD' } },
+      ]))
+      .mockResolvedValueOnce(response({ id: 99, fixtures: [] }))
+      .mockResolvedValueOnce(response([
+        { player_id: 10, details: [stat('APPEARANCES', 3), stat('STARTED', 3), stat('MINUTES_PLAYED', 300), stat('RATING', 7.8), stat('GOALS', 4)] },
+        { player_id: 10, details: [stat('APPEARANCES', 3), stat('STARTED', 2), stat('MINUTES_PLAYED', 300), stat('RATING', 7.0), stat('GOALS', 2)] },
+      ]))
+      .mockResolvedValueOnce(response([]))
+      .mockResolvedValueOnce(response({ id: 20, statistics: [{
+        player_id: 20,
+        season_id: 70,
+        season: { id: 70, ending_at: '2026-05-30' },
+        details: [stat('APPEARANCES', 25), stat('STARTED', 20), stat('MINUTES_PLAYED', 1_900), stat('RATING', 6.9), stat('GOALS', 9)],
+      }] }))
+      .mockResolvedValueOnce(response({ id: 30, statistics: [] }))
+
+    const catalogue = await buildSportmonksPremierLeagueCatalogue('private-token')
+    const proven = catalogue.players.find((player) => player.id === 10)!
+    const transfer = catalogue.players.find((player) => player.id === 20)!
+    const unknown = catalogue.players.find((player) => player.id === 30)!
+
+    expect(catalogue).toMatchObject({
+      qualityPricedPlayerCount: 2,
+      fallbackPricedPlayerCount: 1,
+      qualityCoveragePercent: 66.67,
+    })
+    expect(proven.opening_season_value).toBeGreaterThan(unknown.opening_season_value)
+    expect(transfer.opening_season_value).toBeGreaterThan(unknown.opening_season_value)
+    expect(fetchMock).toHaveBeenCalledTimes(8)
+  })
+
   it('moves prices only from finished fixtures with verified ratings and minutes', async () => {
     const detail = (developer_name: string, value: number) => ({ data: { value }, type: { developer_name } })
     vi.spyOn(globalThis, 'fetch')
