@@ -10,6 +10,56 @@ describe('Sportmonks coverage trial client', () => {
     expect(() => createSportmonksClient('')).toThrow('SPORTMONKS_API_TOKEN is not configured')
   })
 
+  it('blocks every Sportmonks request from a Vercel Preview deployment', () => {
+    const previousEnvironment = process.env.VERCEL_ENV
+    process.env.VERCEL_ENV = 'preview'
+    try {
+      expect(() => createSportmonksClient('private-token')).toThrow('disabled outside the licensed Production environment')
+    } finally {
+      if (previousEnvironment === undefined) delete process.env.VERCEL_ENV
+      else process.env.VERCEL_ENV = previousEnvironment
+    }
+  })
+
+  it('records the lowest remaining allowance reported for each API entity', async () => {
+    const client = createSportmonksClient('private-token')
+    vi.spyOn(globalThis, 'fetch')
+      .mockResolvedValueOnce(new Response(JSON.stringify({
+        data: { id: 8 },
+        rate_limit: { requested_entity: 'League', remaining: 1_999, resets_in_seconds: 3_599 },
+      }), { status: 200 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({
+        data: { id: 564 },
+        rate_limit: { requested_entity: 'League', remaining: 1_998, resets_in_seconds: 3_598 },
+      }), { status: 200 }))
+
+    await client.get('/leagues/8')
+    await client.get('/leagues/564')
+
+    expect(client.getTelemetry()).toEqual({
+      requestsMade: 2,
+      rateLimits: [{ requestedEntity: 'League', lowestRemaining: 1_998, resetsInSeconds: 3_598 }],
+    })
+  })
+
+  it('stops immediately on a depleted entity allowance and preserves the reset evidence', async () => {
+    const client = createSportmonksClient('private-token')
+    const warning = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
+    const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(new Response(JSON.stringify({
+      error: 'Too Many Requests',
+      retry_after: 1_847,
+      rate_limit: { requested_entity: 'Fixture', remaining: 0, resets_in_seconds: 1_847 },
+    }), { status: 429 }))
+
+    await expect(client.get('/fixtures/1')).rejects.toThrow('Fixture rate limit reached; retry after 1847 seconds')
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+    expect(client.getTelemetry()).toEqual({
+      requestsMade: 1,
+      rateLimits: [{ requestedEntity: 'Fixture', lowestRemaining: 0, resetsInSeconds: 1_847 }],
+    })
+    expect(warning).toHaveBeenCalledWith(expect.stringContaining('sportmonks.rate_limit.low'))
+  })
+
   it('groups cross-league results by calendar week instead of unrelated provider round ids', async () => {
     const detail = (developer_name: string, value: number) => ({ data: { value }, type: { developer_name } })
     const finished = (id: number, starting_at: string, round_id: number) => ({ id, starting_at, round_id, state: { short_name: 'FT' } })

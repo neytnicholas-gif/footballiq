@@ -1,8 +1,8 @@
 # Sportmonks written-permission request
 
-**Status:** Approved in writing by Sportmonks Support on 13 August 2026 (support reference `107405:1217471`). The reply expressly permits the requested factual player/participation/rating use, derived fictional prices, caching for game logic and audits, and free or paid game access without raw-data resale. The original reply belongs in the private compliance records, not this public repository.
+**Status:** Fully clarified in writing by Sportmonks Support on 13–14 August 2026 (support reference `107405:1217471`). The replies expressly permit the requested factual player/participation/rating use, derived fictional prices, caching for game logic and audits, and free or paid game access without raw-data resale. Sportmonks also confirmed that private Vercel Preview URLs need no additional domain licence when they make no Sportmonks requests and the integration is restricted to Production on `earlyshout.com`. The Football Starter allowance is 2,000 calls per entity per hour. The original replies belong in the private compliance records, not this public repository.
 
-Two narrow points remain to be confirmed: the exact rate allowance for the active plan and whether private temporary Vercel Preview URLs require another domain licence when the token is configured only for Production on `earlyshout.com`.
+No Sportmonks licensing or rate-limit clarification remains open for the documented Early Shout use. Full terms still apply and must be reviewed for future product changes.
 
 ## Follow-up sent after approval
 
@@ -16,6 +16,8 @@ Two narrow points remain to be confirmed: the exact rate allowance for the activ
 >
 > Many thanks,
 > Nicholas
+
+**Reply received 14 August 2026:** Sportmonks confirmed that these non-requesting Preview URLs do not require another domain licence, confirmed the Starter limit of 2,000 API calls per entity per hour, and directed the operator to the response `rate_limit` metadata and MySportmonks usage dashboard.
 
 ## Original request
 

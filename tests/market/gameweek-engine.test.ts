@@ -77,4 +77,10 @@ describe('verified gameweek engine', () => {
     expect(route).toContain('process.env.MARKET_ADMIN_SECRET')
     expect(route).toContain("supplied === `Bearer ${secret}`")
   })
+
+  it('records provider request and per-entity rate-limit telemetry in every run', () => {
+    expect(runtime).toContain('providerTelemetry')
+    expect(runtime).toContain('requestsMade: 0, rateLimits: []')
+    expect(runtime).toContain('report: { durationMs: Date.now() - startedAt, providerTelemetry }')
+  })
 })

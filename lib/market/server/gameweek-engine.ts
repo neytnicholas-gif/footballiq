@@ -1,7 +1,7 @@
 import 'server-only'
 
 import { createClient } from '@supabase/supabase-js'
-import { fetchSportmonksCompletedGameweeks, type SportmonksCompletedGameweek } from '@/lib/market/server/sportmonks-client'
+import { fetchSportmonksCompletedGameweeks, type SportmonksCompletedGameweek, type SportmonksRequestTelemetry } from '@/lib/market/server/sportmonks-client'
 
 function adminClient() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -39,6 +39,7 @@ async function processBatch(admin: ReturnType<typeof adminClient>, gameweek: Spo
 
 export async function processLatestVerifiedGameweek() {
   const startedAt = Date.now()
+  let providerTelemetry: SportmonksRequestTelemetry = { requestsMade: 0, rateLimits: [] }
   const admin = adminClient()
   const heartbeatRunKey = `verified-gameweek-heartbeat:${new Date().toISOString().slice(0, 10)}`
   const { error: heartbeatError } = await admin.from('market_processing_runs').upsert({
@@ -67,10 +68,14 @@ export async function processLatestVerifiedGameweek() {
       }
       if ((processedRows ?? []).length < 1_000) break
     }
-    const gameweeks = await fetchSportmonksCompletedGameweeks(process.env.SPORTMONKS_API_TOKEN, processedPerformanceKeys)
+    const gameweeks = await fetchSportmonksCompletedGameweeks(
+      process.env.SPORTMONKS_API_TOKEN,
+      processedPerformanceKeys,
+      (telemetry) => { providerTelemetry = telemetry },
+    )
     const batches = []
     for (const gameweek of gameweeks) batches.push(await processBatch(admin, gameweek))
-    const report = { batchCount: batches.length, durationMs: Date.now() - startedAt, batches }
+    const report = { batchCount: batches.length, durationMs: Date.now() - startedAt, providerTelemetry, batches }
     await admin.from('market_processing_runs').update({
       status: 'completed', finished_at: new Date().toISOString(), report, error_message: null,
     }).eq('run_key', heartbeatRunKey)
@@ -79,7 +84,8 @@ export async function processLatestVerifiedGameweek() {
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown gameweek processing failure.'
     await admin.from('market_processing_runs').update({
-      status: 'failed', finished_at: new Date().toISOString(), error_message: message,
+      status: 'failed', finished_at: new Date().toISOString(),
+      report: { durationMs: Date.now() - startedAt, providerTelemetry }, error_message: message,
     }).eq('run_key', heartbeatRunKey)
     throw error
   }

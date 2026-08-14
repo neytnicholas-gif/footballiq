@@ -222,6 +222,15 @@ export type SportmonksCompletedGameweek = {
   updates: SportmonksGameweekUpdate[]
 }
 
+export type SportmonksRequestTelemetry = {
+  requestsMade: number
+  rateLimits: Array<{
+    requestedEntity: string
+    lowestRemaining: number
+    resetsInSeconds: number
+  }>
+}
+
 function isFinishedFixture(row: JsonRecord) {
   const state = relation(row, 'state')
   const value = String(state?.developer_name ?? state?.short_name ?? '').toUpperCase().replace(/[\s-]+/g, '_')
@@ -235,15 +244,57 @@ function fixtureDate(row: JsonRecord) {
   return Number.isNaN(parsed.getTime()) ? null : parsed.toISOString()
 }
 
+class SportmonksRateLimitError extends Error {}
+
+function assertLicensedRuntime() {
+  const vercelEnvironment = process.env.VERCEL_ENV
+  if (vercelEnvironment && vercelEnvironment !== 'production') {
+    throw new Error('Sportmonks API calls are disabled outside the licensed Production environment.')
+  }
+}
+
 export function createSportmonksClient(apiToken = process.env.SPORTMONKS_API_TOKEN) {
   if (typeof window !== 'undefined') throw new Error('Sportmonks access is server-only.')
+  assertLicensedRuntime()
   if (!apiToken?.trim()) throw new Error('SPORTMONKS_API_TOKEN is not configured.')
   const token: string = apiToken.trim()
+  let requestsMade = 0
+  const rateLimits = new Map<string, SportmonksRequestTelemetry['rateLimits'][number]>()
+  const warnedEntities = new Set<string>()
+
+  function observeRateLimit(payload: JsonRecord | null) {
+    const rateLimit = payload ? record(payload.rate_limit) : null
+    const requestedEntity = textValue(rateLimit?.requested_entity)
+    const remaining = Number(rateLimit?.remaining)
+    const resetsInSeconds = Number(rateLimit?.resets_in_seconds)
+    if (!requestedEntity || !Number.isInteger(remaining) || remaining < 0 || !Number.isFinite(resetsInSeconds) || resetsInSeconds < 0) return
+    const previous = rateLimits.get(requestedEntity)
+    rateLimits.set(requestedEntity, {
+      requestedEntity,
+      lowestRemaining: Math.min(previous?.lowestRemaining ?? remaining, remaining),
+      resetsInSeconds: Math.ceil(resetsInSeconds),
+    })
+    if (remaining <= 200 && !warnedEntities.has(requestedEntity)) {
+      warnedEntities.add(requestedEntity)
+      console.warn(JSON.stringify({
+        event: 'sportmonks.rate_limit.low', requestedEntity, remaining,
+        resetsInSeconds: Math.ceil(resetsInSeconds),
+      }))
+    }
+  }
+
+  function getTelemetry(): SportmonksRequestTelemetry {
+    return {
+      requestsMade,
+      rateLimits: [...rateLimits.values()].sort((a, b) => a.requestedEntity.localeCompare(b.requestedEntity)),
+    }
+  }
 
   async function get(path: string, options: { fresh?: boolean } = {}) {
     let lastStatus = 0
     for (let attempt = 0; attempt < 3; attempt += 1) {
       try {
+        requestsMade += 1
         const response = await fetch(`${BASE_URL}${path}`, {
           headers: { Authorization: token },
           ...(options.fresh ? { cache: 'no-store' as const } : { next: { revalidate: 3600 } }),
@@ -253,12 +304,24 @@ export function createSportmonksClient(apiToken = process.env.SPORTMONKS_API_TOK
         if (response.ok) {
           const payload = record(await response.json())
           if (!payload || !('data' in payload)) throw new Error('Sportmonks returned an invalid response.')
+          observeRateLimit(payload)
           return payload.data
         }
-        if (response.status !== 429 && response.status < 500) break
+        const errorPayload = record(await response.json().catch(() => null))
+        observeRateLimit(errorPayload)
+        if (response.status === 429) {
+          const rateLimit = errorPayload ? record(errorPayload.rate_limit) : null
+          const entity = textValue(rateLimit?.requested_entity) ?? 'requested entity'
+          const reset = Number(rateLimit?.resets_in_seconds)
+          throw new SportmonksRateLimitError(
+            `Sportmonks ${entity} rate limit reached; retry after ${Number.isFinite(reset) ? Math.max(1, Math.ceil(reset)) : 3_600} seconds.`,
+          )
+        }
+        if (response.status < 500) break
         const retryAfter = Number(response.headers.get('retry-after'))
         await new Promise((resolve) => setTimeout(resolve, Number.isFinite(retryAfter) ? Math.min(retryAfter * 1000, 5_000) : 500 * (attempt + 1)))
       } catch (error) {
+        if (error instanceof SportmonksRateLimitError) throw error
         if (attempt === 2) throw error
         await new Promise((resolve) => setTimeout(resolve, 500 * (attempt + 1)))
       }
@@ -279,7 +342,7 @@ export function createSportmonksClient(apiToken = process.env.SPORTMONKS_API_TOK
     return output
   }
 
-  return { get, getAllPages }
+  return { get, getAllPages, getTelemetry }
 }
 
 export async function runSportmonksCoverageTrial(apiToken = process.env.SPORTMONKS_API_TOKEN): Promise<SportmonksCoverageReport> {
@@ -599,8 +662,10 @@ function mondayFor(date: Date) {
 export async function fetchSportmonksCompletedGameweeks(
   apiToken = process.env.SPORTMONKS_API_TOKEN,
   processedPerformanceKeys: ReadonlySet<string> = new Set(),
+  observeTelemetry?: (telemetry: SportmonksRequestTelemetry) => void,
 ): Promise<SportmonksCompletedGameweek[]> {
   const client = createSportmonksClient(apiToken)
+  try {
   const leagueConfigs = [
     { id: PREMIER_LEAGUE_ID, name: 'Premier League' },
     { id: LA_LIGA_ID, name: 'La Liga' },
@@ -679,6 +744,9 @@ export async function fetchSportmonksCompletedGameweeks(
       opensAt: opensAt.toISOString(), closesAt: closesAt.toISOString(), updates,
     }
   }).sort((a, b) => a.opensAt.localeCompare(b.opensAt))
+  } finally {
+    observeTelemetry?.(client.getTelemetry())
+  }
 }
 
 export async function fetchSportmonksCompletedGameweek(apiToken = process.env.SPORTMONKS_API_TOKEN): Promise<SportmonksCompletedGameweek> {

@@ -14,6 +14,10 @@ The valuation engine is implemented, but zero imported performances and zero val
 
 Never put service-role, Sportmonks or cron secrets in a `NEXT_PUBLIC_` variable.
 
+Sportmonks confirmed a Football Starter allowance of **2,000 calls per entity per hour** on 14 August 2026. Every successful provider response includes `rate_limit` metadata. Early Shout stores a safe summary in the processing-run report: total requests made plus the lowest remaining allowance observed for each requested entity and its reset time. It never stores the token or raw provider response. A remaining allowance at or below 200 emits one structured warning per entity per run. Usage can also be checked at `https://my.sportmonks.com/api/usage/current`.
+
+Sportmonks API access is production-only. Temporary Vercel Preview deployments are licensed without an extra domain only because they make no provider requests; `SPORTMONKS_API_TOKEN` must therefore not be configured for Preview.
+
 ## First proof
 
 1. Confirm the production variables point to the Supabase project containing the current market migrations and player catalogue.
@@ -44,6 +48,7 @@ limit 20;
 - a retry does not duplicate price movement;
 - incomplete, unrated or ineligible performances freeze honestly rather than moving a price;
 - the processing run is completed with a useful report and no raw provider secret in logs;
+- the processing report contains `providerTelemetry`, stays well below 2,000 calls for every entity, and does not expose raw provider data;
 - the UI shows affected holdings, gain/loss and Reveal consistently.
 
 ## Failure handling

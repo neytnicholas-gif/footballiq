@@ -5,8 +5,9 @@ The current Early Shout beta branch is newer than the Vercel Production deployme
 ## Before promotion
 
 - Retain Sportmonks' 13 August 2026 written approval with the private compliance records. It expressly permits player names, participation and ratings, Early Shout's derived fictional prices, caching for game logic/auditing, and free or paid game access without raw-data resale.
-- Use `earlyshout.com` as the single licensed public domain. Keep `SPORTMONKS_API_TOKEN` out of Preview after the Production cutover unless Sportmonks confirms that private temporary Vercel previews do not require another domain licence.
-- Ask Sportmonks to confirm the exact calls-per-entity-per-hour allowance for the active Football Starter plan and record the answer in the gameweek runbook.
+- Use `earlyshout.com` as the single licensed public domain. Sportmonks confirmed on 14 August 2026 that temporary Vercel Preview URLs need no additional domain licence when they make no Sportmonks requests and the integration is restricted to Production on `earlyshout.com`.
+- Keep every Sportmonks credential out of Preview. Application code also blocks Sportmonks requests whenever Vercel identifies the runtime as anything other than Production.
+- Budget against the confirmed Football Starter allowance of 2,000 calls per entity per hour and inspect the recorded response telemetry after every processing run.
 - Create a fresh private backup with `npm run backup:supabase`.
 - Confirm the Production values exist for:
   - `NEXT_PUBLIC_SUPABASE_URL`
@@ -20,7 +21,7 @@ The current Early Shout beta branch is newer than the Vercel Production deployme
   - `NEXT_PUBLIC_SUPPORT_EMAIL`
   - `NEXT_PUBLIC_LEGAL_OPERATOR_NAME`
   - `NEXT_PUBLIC_LEGAL_OPERATOR_ADDRESS`
-- Confirm `SPORTMONKS_API_TOKEN` is scoped to Production only after the final-domain cutover. The protected Preview coverage-trial route is expected to return a configuration error without a Preview token.
+- Confirm `SPORTMONKS_API_TOKEN` is scoped to Production only after the final-domain cutover. Preview provider routes are expected to fail closed without making an upstream request.
 - Set Supabase's minimum password length to 10.
 - Add the final domain and current preview hostname to the Turnstile widget.
 - Deploy the public Turnstile site key before enabling CAPTCHA in Supabase.
