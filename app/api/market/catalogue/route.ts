@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { unstable_cache } from 'next/cache'
 import { createClient } from '@supabase/supabase-js'
 import type { MarketPlayer } from '@/lib/market/types'
+import { MARKET_CATALOGUE_CACHE_TAG } from '@/lib/market/cache'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -81,8 +82,8 @@ async function loadAuthoritativeCatalogue(competition: string | null) {
 
 const loadCachedAuthoritativeCatalogue = unstable_cache(
   loadAuthoritativeCatalogue,
-  ['market-public-catalogue-v1'],
-  { revalidate: 300, tags: ['market-public-catalogue'] },
+  ['market-public-catalogue-v2-canonical-slugs'],
+  { revalidate: 300, tags: [MARKET_CATALOGUE_CACHE_TAG] },
 )
 
 export async function GET(request: Request) {
@@ -109,9 +110,9 @@ export async function GET(request: Request) {
       competitions: Array.from(grouped.values()),
     }, {
       headers: {
-        'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=86400',
-        'CDN-Cache-Control': 'public, s-maxage=300, stale-while-revalidate=86400',
-        'Vercel-CDN-Cache-Control': 'public, s-maxage=300, stale-while-revalidate=86400',
+        'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=60',
+        'CDN-Cache-Control': 'public, s-maxage=300, stale-while-revalidate=60',
+        'Vercel-CDN-Cache-Control': 'public, s-maxage=300, stale-while-revalidate=60',
         'X-Verdict-XI-Request-Id': requestId,
       },
     })

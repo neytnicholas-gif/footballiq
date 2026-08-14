@@ -40,12 +40,20 @@ describe('Player Market launch gates', () => {
     expect(route).toContain('Promise.all(keys.map')
     expect(route).toContain('p_competition_key: key')
     expect(route).toContain('unstable_cache')
-    expect(route).toContain("tags: ['market-public-catalogue']")
+    expect(route).toContain('market-public-catalogue-v2-canonical-slugs')
+    expect(route).toContain('tags: [MARKET_CATALOGUE_CACHE_TAG]')
     expect(route).not.toContain('buildSportmonksCombinedCatalogue')
     expect(route).toContain('s-maxage=300')
-    expect(route).toContain('stale-while-revalidate=86400')
+    expect(route).toContain('stale-while-revalidate=60')
     expect(route).toContain("event: 'market.catalogue.failed'")
     expect(route).toContain("'Retry-After': '30'")
+  })
+
+  it('invalidates public catalogue caches after catalogue and gameweek writes', () => {
+    const sync = read('app/api/market/sync-catalogue/route.ts')
+    const gameweek = read('app/api/market/process-gameweek/route.ts')
+    expect(sync).toContain("revalidateTag(MARKET_CATALOGUE_CACHE_TAG, 'max')")
+    expect(gameweek).toContain("revalidateTag(MARKET_CATALOGUE_CACHE_TAG, 'max')")
   })
 
   it('publishes a cached, privacy-safe player ownership percentage', () => {

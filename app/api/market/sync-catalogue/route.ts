@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server'
+import { revalidateTag } from 'next/cache'
 import { syncSportmonksCatalogueToSupabase } from '@/lib/market/server/catalogue-sync'
+import { MARKET_CATALOGUE_CACHE_TAG } from '@/lib/market/cache'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -17,6 +19,7 @@ export async function POST(request: Request) {
 
   try {
     const result = await syncSportmonksCatalogueToSupabase()
+    revalidateTag(MARKET_CATALOGUE_CACHE_TAG, 'max')
     return NextResponse.json({ ok: true, ...result }, { headers: { 'Cache-Control': 'private, no-store' } })
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Catalogue synchronization failed.'
