@@ -59,11 +59,13 @@ export default function PlayerMarketPortfolioPage() {
       setLoading(true)
       setError('')
 
-      const [{ data: marketPlayers, error: playerError }, portfolioData, runsResult, revealsResult, gameweekStatus] = await Promise.all([
-        loadMarketPlayers(),
-        loadMyPortfolioData(),
+      const historyPromise = Promise.all([
         loadMatchweekRuns(12),
         loadMyRevealHistory(12),
+      ])
+      const [{ data: marketPlayers, error: playerError }, portfolioData, gameweekStatus] = await Promise.all([
+        loadMarketPlayers(),
+        loadMyPortfolioData(),
         loadMyGameweekStatus(),
       ])
 
@@ -71,21 +73,22 @@ export default function PlayerMarketPortfolioPage() {
 
       if (playerError) setError(friendlyMarketLoadError(playerError))
       if (portfolioData.error) setError(friendlyMarketLoadError(portfolioData.error))
-      if (runsResult.error) setError(friendlyMarketLoadError(runsResult.error))
-      if (revealsResult.error) setError(friendlyMarketLoadError(revealsResult.error))
-
       setPlayers(marketPlayers)
       setPortfolio(portfolioData.portfolio)
       setHoldings(portfolioData.holdings)
       setTransactions(portfolioData.transactions)
       setWatchlist(portfolioData.watchlist)
-      setRuns(runsResult.data)
-      setReveals(revealsResult.data)
-
       const remaining = calculateTradesRemaining(portfolioData.transactions)
       setBuysRemaining(gameweekStatus.data?.signings_remaining ?? remaining.buysRemaining)
 
       setLoading(false)
+
+      const [runsResult, revealsResult] = await historyPromise
+      if (!active) return
+      if (runsResult.error) setError(friendlyMarketLoadError(runsResult.error))
+      if (revealsResult.error) setError(friendlyMarketLoadError(revealsResult.error))
+      setRuns(runsResult.data)
+      setReveals(revealsResult.data)
     })()
 
     return () => {
@@ -108,7 +111,15 @@ export default function PlayerMarketPortfolioPage() {
           </div>
         ) : null}
         {error ? <p role="alert" className="mb-4 rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">{error}</p> : null}
-        {loading ? <p className="text-sm text-muted-foreground">Loading portfolio…</p> : (
+        {loading ? (
+          <div role="status" aria-live="polite" className="rounded-[2rem] border border-emerald-900/10 bg-white/75 p-6 shadow-sm sm:p-8">
+            <p className="font-black text-slate-900">Opening your roster…</p>
+            <p className="mt-1 text-sm text-slate-600">Loading your players and budget.</p>
+            <div aria-hidden="true" className="mt-5 grid animate-pulse gap-3 sm:grid-cols-4">
+              {Array.from({ length: 4 }).map((_, index) => <span key={index} className="h-20 rounded-2xl bg-emerald-950/10" />)}
+            </div>
+          </div>
+        ) : (
           <PlayerMarketPortfolio
             portfolio={portfolio}
             players={players}
