@@ -9,6 +9,7 @@ const foundation = readFileSync('supabase/migrations/20260809203000_market_gamew
 const progression = readFileSync('supabase/migrations/20260811120000_market_progression_rewards.sql', 'utf8')
 const unattended = readFileSync('supabase/migrations/20260810123000_harden_unattended_market_operations.sql', 'utf8')
 const residualBank = readFileSync('supabase/migrations/20260810170000_bank_subthreshold_market_performance.sql', 'utf8')
+const isolatedFailures = readFileSync('supabase/migrations/20260814180347_isolate_gameweek_player_failures.sql', 'utf8')
 
 function functionSql(source: string, signature: string) {
   const start = source.indexOf(`create or replace function ${signature}`)
@@ -136,6 +137,7 @@ describe('executed PostgreSQL launch simulation', () => {
     await db.exec(functionSql(progression, 'public.market_buy_player(p_player_slug text,p_idempotency_key text)'))
     await db.exec(functionSql(progression, 'public.market_sell_player(p_player_slug text,p_idempotency_key text)'))
     await db.exec(functionSql(residualBank, 'public.market_apply_verified_gameweek('))
+    await db.exec(functionSql(isolatedFailures, 'public.market_apply_verified_gameweek('))
     const triggerStart = unattended.indexOf('create or replace function public.market_enforce_trading_open()')
     const triggerEnd = unattended.indexOf('-- Keep hot user requests', triggerStart)
     await db.exec(unattended.slice(triggerStart, triggerEnd))
@@ -275,6 +277,40 @@ describe('executed PostgreSQL launch simulation', () => {
     expect(await count('public.market_player_match_stats')).toBe(11)
     expect(await count('public.market_valuation_events')).toBe(11)
   }, 30_000)
+
+  it('quarantines one hard provider-row failure and still prices the valid player', async () => {
+    await asUser('')
+    const updates = [
+      {
+        provider_player_id: 'provider-12',
+        provider_fixture_id: 'fixture-hard-failure',
+        fixture_date: '2026-08-11T16:00:00Z',
+        started: true,
+        minutes_played: 90,
+        rating: 7.5,
+        retrieved_at: 'not-a-timestamp',
+      },
+      {
+        provider_player_id: 'provider-13',
+        provider_fixture_id: 'fixture-valid-after-failure',
+        fixture_date: '2026-08-11T16:00:00Z',
+        started: true,
+        minutes_played: 90,
+        rating: 7.7,
+        retrieved_at: '2026-08-11T19:00:00Z',
+      },
+    ]
+    const result = await db.query<{ result: { processed_players: number; skipped_players: number; failed_items: Array<{ provider_fixture_id: string; sqlstate: string }> } }>(
+      `select public.market_apply_verified_gameweek($1,$2,$3,$4,$5,$6::jsonb) result`,
+      ['sportmonks-2026-33', 'Results - 2026-33', 33, '2026-08-10T00:00:00Z', '2026-08-17T00:00:00Z', JSON.stringify(updates)],
+    )
+    expect(result.rows[0]!.result).toMatchObject({ processed_players: 1, skipped_players: 1 })
+    expect(result.rows[0]!.result.failed_items).toEqual([
+      expect.objectContaining({ provider_fixture_id: 'fixture-hard-failure', sqlstate: '22007' }),
+    ])
+    expect(await count('public.market_player_match_stats', `provider_fixture_id='fixture-hard-failure'`)).toBe(0)
+    expect(await count('public.market_player_match_stats', `provider_fixture_id='fixture-valid-after-failure'`)).toBe(1)
+  })
 
   it('bulk-reconciles 10,000 database portfolios and 110,000 holdings after repricing', async () => {
     await asUser('')

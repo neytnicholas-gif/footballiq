@@ -28,6 +28,7 @@ export type MarketRewardItem = {
 export type MarketProfilePreferences = {
   show_badges: boolean
   show_market_stats: boolean
+  show_roster: boolean
   show_activity: boolean
   reward_celebrations: boolean
   active_background: string | null
@@ -51,6 +52,7 @@ export const EMPTY_MARKET_PROGRESSION: MarketProgression = {
   preferences: {
     show_badges: true,
     show_market_stats: true,
+    show_roster: true,
     show_activity: false,
     reward_celebrations: true,
     active_background: null,

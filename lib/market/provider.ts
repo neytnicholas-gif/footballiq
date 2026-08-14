@@ -91,13 +91,20 @@ export function validateProviderAudit(meta: ProviderAuditMeta) {
 }
 
 export function toMarketSlug(name: string) {
-  return name
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
+  const latinFallbacks: Record<string, string> = {
+    '\u00c6': 'AE', '\u00e6': 'ae', '\u0152': 'OE', '\u0153': 'oe', '\u00d8': 'O', '\u00f8': 'o',
+    '\u0141': 'L', '\u0142': 'l', '\u0110': 'D', '\u0111': 'd', '\u00d0': 'D', '\u00f0': 'd',
+    '\u00de': 'Th', '\u00fe': 'th', '\u00df': 'ss', '\u0131': 'i', '\u014a': 'N', '\u014b': 'n',
+  }
+  const transliterated = [...name].map((character) => latinFallbacks[character] ?? character).join('')
+  return transliterated
+    .normalize('NFKD')
+    .replace(/\p{M}+/gu, '')
     .toLowerCase()
     .replace(/[^a-z0-9\s-]/g, '')
     .trim()
     .replace(/\s+/g, '-')
+    .replace(/-+/g, '-')
 }
 
 export function mapMarketPlayerRow(player: MarketPlayer): NormalizedPlayer {

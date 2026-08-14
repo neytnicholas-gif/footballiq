@@ -73,6 +73,29 @@ describe('Player Market launch gates', () => {
     expect(sql).toContain('from public, anon, authenticated')
   })
 
+  it('tracks the leaderboard baseline and lets players hide their roster separately', () => {
+    const baseline = read('supabase/migrations/20260809122943_grant_market_public_leaderboard_read.sql')
+    const privacy = read('supabase/migrations/20260814175926_harden_market_privacy_and_resilience.sql')
+    const progression = read('lib/market/progression.ts')
+    const profile = read('app/player/[username]/page.tsx')
+    expect(baseline).toContain('create table if not exists public.market_public_leaderboard')
+    expect(baseline).toContain('market_upsert_public_leaderboard_row')
+    expect(baseline).toContain('enable row level security')
+    expect(privacy).toContain('show_roster boolean not null default true')
+    expect(privacy).toContain("'roster', case when (select show_roster from prefs)")
+    expect(privacy).toContain('market_update_profile_preferences(boolean, boolean, boolean, boolean)')
+    expect(progression).toContain('show_roster: boolean')
+    expect(profile).toContain('chosen to keep their roster private')
+  })
+
+  it('isolates unexpected provider-row failures inside a gameweek batch', () => {
+    const sql = read('supabase/migrations/20260814180347_isolate_gameweek_player_failures.sql')
+    expect(sql).toContain("failed_items jsonb:='[]'::jsonb")
+    expect(sql).toContain("'provider_fixture_id',left(coalesce(item->>'provider_fixture_id','unknown'),80)")
+    expect(sql).toContain("'failed_items',failed_items")
+    expect(sql).toContain('exception when others then\n      skipped:=skipped+1')
+  })
+
   it('refuses to publish a fallback-heavy Sportmonks opening price book', () => {
     const client = read('lib/market/server/sportmonks-client.ts')
     expect(client).toContain('qualityCoveragePercent >= 65')
@@ -80,6 +103,8 @@ describe('Player Market launch gates', () => {
     expect(client).toContain('statistics.details.type;statistics.season')
     expect(client).toContain("values.get('CLEAN_SHEET')")
     expect(client).toContain('unsafeRequiredCatalogue')
+    expect(client).toContain('quality.minutes >= 450 && quality.appearances >= 5')
+    expect(client).toContain('sampleConfidence')
   })
 
   it('runs server work close to the database with Fluid Compute enabled', () => {

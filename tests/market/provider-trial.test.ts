@@ -37,6 +37,15 @@ describe('disabled Sportmonks trial boundary', () => {
   })
 })
 
+describe('market player slug transliteration', () => {
+  it('keeps uncommon Latin letters readable and deterministic', () => {
+    expect(toMarketSlug('Adri\u00e1n Ni\u00f1o')).toBe('adrian-nino')
+    expect(toMarketSlug('Alexander S\u00f8rloth')).toBe('alexander-sorloth')
+    expect(toMarketSlug('\u0141ukasz Piszczek')).toBe('lukasz-piszczek')
+    expect(toMarketSlug('Fran\u00e7ois L\u2019\u0152uf')).toBe('francois-loeuf')
+  })
+})
+
 describe('provider trial report', () => {
   it('measures 300-player coverage and rating integrity', () => {
     const positions = ['GK', 'DEF', 'MID', 'FWD'] as const

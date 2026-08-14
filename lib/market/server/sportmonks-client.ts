@@ -140,7 +140,11 @@ function qualityOpeningGameValue(position: MarketPosition, age: number | null, q
       agePotentialScore: age !== null && age <= 23 ? 65 : 35,
     })
   }
-  const ratingScore = quality.averageRating === null ? 45 : clampScore(((quality.averageRating - 5.8) / 2.2) * 100)
+  const sampleConfidence = clampScore((quality.minutes / 900) * 100) / 100
+  const stabilizedRating = quality.averageRating === null
+    ? null
+    : 6.6 + ((quality.averageRating - 6.6) * sampleConfidence)
+  const ratingScore = stabilizedRating === null ? 45 : clampScore(((stabilizedRating - 5.8) / 2.2) * 100)
   const per90 = quality.minutes > 0 ? 90 / quality.minutes : 0
   const outputRate = position === 'FWD'
     ? (quality.goals * 1.2 + quality.assists * 0.75) * per90
@@ -150,7 +154,7 @@ function qualityOpeningGameValue(position: MarketPosition, age: number | null, q
         ? (quality.cleanSheets * 0.8 + quality.goals * 0.35 + quality.assists * 0.4) * per90
         : quality.cleanSheets * per90
   const outputTarget: Record<MarketPosition, number> = { GK: 0.38, DEF: 0.42, MID: 0.52, FWD: 0.8 }
-  const outputScore = clampScore((outputRate / outputTarget[position]) * 100)
+  const outputScore = clampScore(((outputRate * sampleConfidence) / outputTarget[position]) * 100)
   const establishedPerformanceScore = ratingScore * 0.82 + outputScore * 0.18
   const recentMinutesScore = clampScore((quality.minutes / 2_700) * 100)
   const squadRoleScore = quality.appearances > 0
@@ -164,7 +168,7 @@ function qualityOpeningGameValue(position: MarketPosition, age: number | null, q
 }
 
 function isEstablishedQuality(quality: PlayerSeasonQuality | undefined) {
-  return Boolean(quality && (quality.minutes >= 450 || quality.appearances >= 5))
+  return Boolean(quality && quality.minutes >= 450 && quality.appearances >= 5)
 }
 
 function qualityFromStatisticsRow(row: JsonRecord): PlayerSeasonQuality {

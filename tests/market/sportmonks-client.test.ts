@@ -166,6 +166,7 @@ describe('Sportmonks coverage trial client', () => {
       .mockResolvedValueOnce(response([
         { player_id: 10, details: [stat('APPEARANCES', 3), stat('STARTED', 3), stat('MINUTES_PLAYED', 300), stat('RATING', 7.8), stat('GOALS', 4)] },
         { player_id: 10, details: [stat('APPEARANCES', 3), stat('STARTED', 2), stat('MINUTES_PLAYED', 300), stat('RATING', 7.0), stat('GOALS', 2)] },
+        { player_id: 30, details: [stat('APPEARANCES', 5), stat('STARTED', 0), stat('MINUTES_PLAYED', 50), stat('RATING', 9.0), stat('GOALS', 1)] },
       ]))
       .mockResolvedValueOnce(response([]))
       .mockResolvedValueOnce(response({ id: 20, statistics: [{
@@ -188,6 +189,7 @@ describe('Sportmonks coverage trial client', () => {
     })
     expect(proven.opening_season_value).toBeGreaterThan(unknown.opening_season_value)
     expect(transfer.opening_season_value).toBeGreaterThan(unknown.opening_season_value)
+    expect(fetchMock.mock.calls.some(([url]) => String(url).includes('/players/30?'))).toBe(true)
     expect(fetchMock).toHaveBeenCalledTimes(8)
   })
 
@@ -236,6 +238,7 @@ describe('Sportmonks coverage trial client', () => {
         { player_id: 77, player: { id: 77, display_name: 'Alex Example', date_of_birth: '2001-01-01' }, team: { id: 10, name: 'Madrid FC' }, position: { developer_name: 'MIDFIELDER' } },
       ]))
       .mockResolvedValueOnce(response({ id: 27965, fixtures: [] }))
+      .mockResolvedValue(response({}))
 
     const catalogue = await buildSportmonksLaLigaCatalogue('private-token')
 
@@ -252,6 +255,7 @@ describe('Sportmonks coverage trial client', () => {
         { player_id: 88, player: { id: 88, display_name: 'Max Example', date_of_birth: '2000-01-01' }, team: { id: 20, name: 'Berlin FC' }, position: { developer_name: 'DEFENDER' } },
       ]))
       .mockResolvedValueOnce(response({ id: 28321, fixtures: [] }))
+      .mockResolvedValue(response({}))
 
     const catalogue = await buildSportmonksBundesligaCatalogue('private-token')
 
@@ -269,6 +273,7 @@ describe('Sportmonks coverage trial client', () => {
         { player_id: 99, player: { id: 99, display_name: 'Marco Example', date_of_birth: '2000-01-01' }, team: { id: 30, name: 'Milano FC' }, position: { developer_name: 'MIDFIELDER' } },
       ]))
       .mockResolvedValueOnce(response({ id: 27895, fixtures: [] }))
+      .mockResolvedValue(response({}))
 
     const catalogue = await buildSportmonksSerieACatalogue('private-token')
 
@@ -287,6 +292,7 @@ describe('Sportmonks coverage trial client', () => {
         { id: 120, display_name: 'Extended Player', date_of_birth: '2000-01-01', position: { developer_name: 'MIDFIELDER' } },
       ]))
       .mockResolvedValueOnce(response({ id: 27895, fixtures: [] }))
+      .mockResolvedValue(response({}))
 
     const catalogue = await buildSportmonksSerieACatalogue('private-token')
 
@@ -304,6 +310,7 @@ describe('Sportmonks coverage trial client', () => {
         { player_id: 121, player: { id: 121, display_name: 'Nested Player', date_of_birth: '2000-01-01' }, position: { developer_name: 'FORWARD' } },
       ] }))
       .mockResolvedValueOnce(response({ id: 27895, fixtures: [] }))
+      .mockResolvedValue(response({}))
 
     const catalogue = await buildSportmonksSerieACatalogue('private-token')
 
@@ -319,6 +326,7 @@ describe('Sportmonks coverage trial client', () => {
         { player_id: 111, player: { id: 111, display_name: 'Pierre Example', date_of_birth: '2000-01-01' }, team: { id: 40, name: 'Paris FC' }, position: { developer_name: 'FORWARD' } },
       ]))
       .mockResolvedValueOnce(response({ id: 27962, fixtures: [] }))
+      .mockResolvedValue(response({}))
 
     const catalogue = await buildSportmonksLigue1Catalogue('private-token')
 

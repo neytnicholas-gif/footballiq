@@ -762,10 +762,11 @@ export async function setMarketFormation(formation: '4-3-3' | '3-4-3') {
   return { data: data as Record<string, unknown> | null, error: normalizeMarketMutationError(error) }
 }
 
-export async function updateMarketProfilePreferences(preferences: Pick<MarketProgression['preferences'], 'show_badges' | 'show_market_stats' | 'show_activity'>) {
+export async function updateMarketProfilePreferences(preferences: Pick<MarketProgression['preferences'], 'show_badges' | 'show_market_stats' | 'show_roster' | 'show_activity'>) {
   const { data, error } = await (supabase as any).rpc('market_update_profile_preferences', {
     p_show_badges: preferences.show_badges,
     p_show_market_stats: preferences.show_market_stats,
+    p_show_roster: preferences.show_roster,
     p_show_activity: preferences.show_activity,
   })
   return { data: data as Record<string, unknown> | null, error: normalizeMarketMutationError(error) }
