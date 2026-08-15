@@ -1,7 +1,9 @@
 import 'server-only'
 
 import { createClient } from '@supabase/supabase-js'
-import { fetchSportmonksCompletedGameweeks, type SportmonksCompletedGameweek, type SportmonksRequestTelemetry } from '@/lib/market/server/sportmonks-client'
+import { fetchSportmonksCompletedGameweeks, fetchSportmonksPredictionFixtures, type SportmonksCompletedGameweek, type SportmonksRequestTelemetry } from '@/lib/market/server/sportmonks-client'
+
+const NO_ELIGIBLE_COMPLETED_RATINGS = 'Completed fixtures did not contain eligible Sportmonks ratings and minutes.'
 
 function adminClient() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -40,6 +42,7 @@ async function processBatch(admin: ReturnType<typeof adminClient>, gameweek: Spo
 export async function processLatestVerifiedGameweek() {
   const startedAt = Date.now()
   let providerTelemetry: SportmonksRequestTelemetry = { requestsMade: 0, rateLimits: [] }
+  let predictionTelemetry: SportmonksRequestTelemetry = { requestsMade: 0, rateLimits: [] }
   const admin = adminClient()
   const heartbeatRunKey = `verified-gameweek-heartbeat:${new Date().toISOString().slice(0, 10)}`
   const { error: heartbeatError } = await admin.from('market_processing_runs').upsert({
@@ -49,6 +52,19 @@ export async function processLatestVerifiedGameweek() {
   if (heartbeatError) throw new Error(`Gameweek heartbeat could not start: ${heartbeatError.message}`)
 
   try {
+    const predictionFixtures = await fetchSportmonksPredictionFixtures(
+      process.env.SPORTMONKS_API_TOKEN,
+      (telemetry) => { predictionTelemetry = telemetry },
+    )
+    if (predictionFixtures.length) {
+      const { error: fixtureError } = await admin.from('prediction_fixtures').upsert(predictionFixtures, { onConflict: 'fixture_id' })
+      if (fixtureError) throw new Error(`Prediction fixture sync failed: ${fixtureError.message}`)
+    }
+    const { data: leagueFixturesAssigned, error: leagueFixtureError } = await admin.rpc('prediction_refresh_league_fixtures')
+    if (leagueFixtureError) throw new Error(`Prediction league fixture assignment failed: ${leagueFixtureError.message}`)
+    const { data: predictionScoring, error: predictionScoringError } = await admin.rpc('prediction_score_completed_fixtures')
+    if (predictionScoringError) throw new Error(`Prediction scoring failed: ${predictionScoringError.message}`)
+
     const cutoff = new Date(Date.now() - 28 * 86_400_000).toISOString()
     const processedPerformanceKeys = new Set<string>()
     for (let from = 0; ; from += 1_000) {
@@ -68,14 +84,21 @@ export async function processLatestVerifiedGameweek() {
       }
       if ((processedRows ?? []).length < 1_000) break
     }
-    const gameweeks = await fetchSportmonksCompletedGameweeks(
-      process.env.SPORTMONKS_API_TOKEN,
-      processedPerformanceKeys,
-      (telemetry) => { providerTelemetry = telemetry },
-    )
+    let gameweeks: SportmonksCompletedGameweek[] = []
+    try {
+      gameweeks = await fetchSportmonksCompletedGameweeks(
+        process.env.SPORTMONKS_API_TOKEN,
+        processedPerformanceKeys,
+        (telemetry) => { providerTelemetry = telemetry },
+      )
+    } catch (error) {
+      // A quiet week (or an off-season day) is a successful no-op. Provider,
+      // parsing, or partial-fixture failures still escape and mark the run failed.
+      if (!(error instanceof Error) || error.message !== NO_ELIGIBLE_COMPLETED_RATINGS) throw error
+    }
     const batches = []
     for (const gameweek of gameweeks) batches.push(await processBatch(admin, gameweek))
-    const report = { batchCount: batches.length, durationMs: Date.now() - startedAt, providerTelemetry, batches }
+    const report = { batchCount: batches.length, durationMs: Date.now() - startedAt, providerTelemetry, predictionTelemetry, predictionFixtureCount: predictionFixtures.length, leagueFixturesAssigned, predictionScoring, batches }
     await admin.from('market_processing_runs').update({
       status: 'completed', finished_at: new Date().toISOString(), report, error_message: null,
     }).eq('run_key', heartbeatRunKey)
@@ -85,7 +108,7 @@ export async function processLatestVerifiedGameweek() {
     const message = error instanceof Error ? error.message : 'Unknown gameweek processing failure.'
     await admin.from('market_processing_runs').update({
       status: 'failed', finished_at: new Date().toISOString(),
-      report: { durationMs: Date.now() - startedAt, providerTelemetry }, error_message: message,
+      report: { durationMs: Date.now() - startedAt, providerTelemetry, predictionTelemetry }, error_message: message,
     }).eq('run_key', heartbeatRunKey)
     throw error
   }

@@ -151,6 +151,9 @@ export type Database = {
           home_team: string
           away_team: string
           pick: 'home' | 'draw' | 'away'
+          confidence: number
+          points_awarded: number | null
+          scored_at: string | null
           created_at: string
           updated_at: string
         }
@@ -162,6 +165,9 @@ export type Database = {
           home_team: string
           away_team: string
           pick: 'home' | 'draw' | 'away'
+          confidence?: number
+          points_awarded?: number | null
+          scored_at?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -173,9 +179,96 @@ export type Database = {
           home_team?: string
           away_team?: string
           pick?: 'home' | 'draw' | 'away'
+          confidence?: number
+          points_awarded?: number | null
+          scored_at?: string | null
           created_at?: string
           updated_at?: string
         }
+        Relationships: []
+      }
+      prediction_fixtures: {
+        Row: {
+          fixture_id: string
+          league_key: 'premier-league' | 'la-liga' | 'ligue-1'
+          league_name: string
+          gameweek_key: string
+          home_team: string
+          away_team: string
+          kickoff_at: string
+          status: 'scheduled' | 'live' | 'completed' | 'postponed' | 'cancelled'
+          home_score: number | null
+          away_score: number | null
+          is_derby: boolean
+          scoring_completed_at: string | null
+          source_updated_at: string
+          created_at: string
+        }
+        Insert: {
+          fixture_id: string
+          league_key: 'premier-league' | 'la-liga' | 'ligue-1'
+          league_name: string
+          gameweek_key: string
+          home_team: string
+          away_team: string
+          kickoff_at: string
+          status?: 'scheduled' | 'live' | 'completed' | 'postponed' | 'cancelled'
+          home_score?: number | null
+          away_score?: number | null
+          is_derby?: boolean
+          scoring_completed_at?: string | null
+          source_updated_at?: string
+          created_at?: string
+        }
+        Update: Partial<Database['public']['Tables']['prediction_fixtures']['Insert']>
+        Relationships: []
+      }
+      prediction_leagues: {
+        Row: {
+          id: string
+          league_code: string
+          name: string
+          owner_user_id: string
+          rule_mode: 'all' | 'random_1' | 'random_5'
+          league_keys: string[]
+          is_active: boolean
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          league_code: string
+          name: string
+          owner_user_id: string
+          rule_mode?: 'all' | 'random_1' | 'random_5'
+          league_keys?: string[]
+          is_active?: boolean
+          created_at?: string
+        }
+        Update: Partial<Database['public']['Tables']['prediction_leagues']['Insert']>
+        Relationships: []
+      }
+      prediction_league_members: {
+        Row: { league_id: string; user_id: string; role: 'owner' | 'member'; joined_at: string }
+        Insert: { league_id: string; user_id: string; role?: 'owner' | 'member'; joined_at?: string }
+        Update: { league_id?: string; user_id?: string; role?: 'owner' | 'member'; joined_at?: string }
+        Relationships: []
+      }
+      prediction_league_fixtures: {
+        Row: { league_id: string; fixture_id: string; gameweek_key: string; created_at: string }
+        Insert: { league_id: string; fixture_id: string; gameweek_key: string; created_at?: string }
+        Update: { league_id?: string; fixture_id?: string; gameweek_key?: string; created_at?: string }
+        Relationships: []
+      }
+      prediction_perfect_week_rewards: {
+        Row: { user_id: string; gameweek_key: string; credits_awarded: number; awarded_at: string }
+        Insert: { user_id: string; gameweek_key: string; credits_awarded?: number; awarded_at?: string }
+        Update: { user_id?: string; gameweek_key?: string; credits_awarded?: number; awarded_at?: string }
+        Relationships: []
+      }
+      prediction_player_settings: {
+        Row: { user_id: string; country_code: string | null; continent_code: string | null; share_location: boolean; updated_at: string }
+        Insert: { user_id: string; country_code?: string | null; continent_code?: string | null; share_location?: boolean; updated_at?: string }
+        Update: { user_id?: string; country_code?: string | null; continent_code?: string | null; share_location?: boolean; updated_at?: string }
         Relationships: []
       }
       mode_stats: {
@@ -806,6 +899,34 @@ export type Database = {
           p_methodology_version: string
           p_apply?: boolean
         }
+        Returns: Record<string, unknown>
+      }
+      prediction_create_league: {
+        Args: { p_name: string; p_rule_mode: string; p_league_keys: string[] }
+        Returns: Record<string, unknown>
+      }
+      prediction_join_league: {
+        Args: { p_league_code: string }
+        Returns: Record<string, unknown>
+      }
+      prediction_leave_league: {
+        Args: { p_league_id: string }
+        Returns: Record<string, unknown>
+      }
+      prediction_save_picks: {
+        Args: { p_picks: Array<{ fixture_id: string; pick: 'home' | 'draw' | 'away'; confidence: number }> }
+        Returns: Record<string, unknown>
+      }
+      prediction_get_public_leaderboard: {
+        Args: { p_period?: string; p_scope?: string; p_scope_value?: string | null }
+        Returns: Array<{ user_id: string; username: string; points: number; picks_scored: number; correct_picks: number; confidence_won: number; last_scored_at: string }>
+      }
+      prediction_get_league_leaderboard: {
+        Args: { p_league_id: string }
+        Returns: Array<{ user_id: string; username: string; points: number; picks_scored: number; correct_picks: number; rank: number }>
+      }
+      prediction_set_location: {
+        Args: { p_country_code: string; p_continent_code: string; p_share_location: boolean }
         Returns: Record<string, unknown>
       }
     }

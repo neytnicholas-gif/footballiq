@@ -1,7 +1,7 @@
 // @vitest-environment node
 
 import { describe, expect, it, vi } from 'vitest'
-import { buildSportmonksBundesligaCatalogue, buildSportmonksLaLigaCatalogue, buildSportmonksLigue1Catalogue, buildSportmonksPremierLeagueCatalogue, buildSportmonksSerieACatalogue, createSportmonksClient, fetchSportmonksCompletedGameweeks, isCatalogueReady, runSportmonksCoverageTrial } from '@/lib/market/server/sportmonks-client'
+import { buildSportmonksBundesligaCatalogue, buildSportmonksLaLigaCatalogue, buildSportmonksLigue1Catalogue, buildSportmonksPremierLeagueCatalogue, buildSportmonksSerieACatalogue, createSportmonksClient, fetchSportmonksCompletedGameweeks, fetchSportmonksPredictionFixtures, isCatalogueReady, runSportmonksCoverageTrial } from '@/lib/market/server/sportmonks-client'
 
 const response = (data: unknown) => new Response(JSON.stringify({ data }), { status: 200 })
 
@@ -77,6 +77,49 @@ describe('Sportmonks coverage trial client', () => {
 
     expect(batches.map((batch) => batch.gameweekKey)).toEqual(['sportmonks-2026-31', 'sportmonks-2026-32'])
     expect(batches.flatMap((batch) => batch.updates).map((update) => update.provider_fixture_id).sort()).toEqual(['101', '102'])
+  })
+
+  it('normalizes real fixture cards, scores and derby flags across the three licensed leagues', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(response([
+      {
+        id: 9001, league_id: 8, starting_at: '2026-08-16 15:30:00',
+        state: { short_name: 'NS' },
+        participants: [
+          { name: 'Arsenal', meta: { location: 'home' } },
+          { name: 'Tottenham Hotspur', meta: { location: 'away' } },
+        ],
+        scores: [],
+      },
+      {
+        id: 9002, league_id: 564, starting_at: '2026-08-15 19:00:00',
+        state: { short_name: 'FT' },
+        participants: [
+          { name: 'Real Madrid', meta: { location: 'home' } },
+          { name: 'Barcelona', meta: { location: 'away' } },
+        ],
+        scores: [
+          { description: 'CURRENT', score: { participant: 'home', goals: 2 } },
+          { description: 'CURRENT', score: { participant: 'away', goals: 1 } },
+        ],
+      },
+      {
+        id: 9003, league_id: 301, starting_at: '2026-08-17 18:00:00',
+        state: { short_name: 'NS' },
+        participants: [
+          { name: 'Lyon', meta: { location: 'home' } },
+          { name: 'Marseille', meta: { location: 'away' } },
+        ],
+        scores: [],
+      },
+    ]))
+
+    const fixtures = await fetchSportmonksPredictionFixtures('private-token')
+
+    expect(fixtures).toHaveLength(3)
+    expect(fixtures.map((fixture) => fixture.league_key)).toEqual(['premier-league', 'la-liga', 'ligue-1'])
+    expect(fixtures[0]).toMatchObject({ fixture_id: '9001', is_derby: true, status: 'scheduled' })
+    expect(fixtures[1]).toMatchObject({ fixture_id: '9002', is_derby: true, status: 'completed', home_score: 2, away_score: 1 })
+    expect(fixtures[2]).toMatchObject({ fixture_id: '9003', is_derby: false, status: 'scheduled' })
   })
 
   it('rechecks a processed fixture and accepts a late player rating exactly once', async () => {

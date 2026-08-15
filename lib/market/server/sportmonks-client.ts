@@ -288,6 +288,21 @@ export type SportmonksCompletedGameweek = {
   updates: SportmonksGameweekUpdate[]
 }
 
+export type SportmonksPredictionFixture = {
+  fixture_id: string
+  league_key: 'premier-league' | 'la-liga' | 'ligue-1'
+  league_name: 'Premier League' | 'La Liga' | 'Ligue 1'
+  gameweek_key: string
+  home_team: string
+  away_team: string
+  kickoff_at: string
+  status: 'scheduled' | 'live' | 'completed' | 'postponed' | 'cancelled'
+  home_score: number | null
+  away_score: number | null
+  is_derby: boolean
+  source_updated_at: string
+}
+
 export type SportmonksRequestTelemetry = {
   requestsMade: number
   rateLimits: Array<{
@@ -856,6 +871,72 @@ export async function fetchSportmonksCompletedGameweeks(
   } finally {
     observeTelemetry?.(client.getTelemetry())
   }
+}
+
+const DERBY_PAIRS = new Set([
+  'arsenal|tottenham hotspur','everton|liverpool','manchester city|manchester united',
+  'barcelona|real madrid','atletico madrid|real madrid','real betis|sevilla','athletic club|real sociedad',
+  'marseille|paris saint germain','lyon|saint etienne','lens|lille','monaco|nice',
+])
+
+function normalizedTeamName(value: string) {
+  return value.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,' ').trim()
+}
+
+function isKnownDerby(home: string, away: string) {
+  return DERBY_PAIRS.has([normalizedTeamName(home),normalizedTeamName(away)].sort().join('|'))
+}
+
+function predictionFixtureStatus(row: JsonRecord): SportmonksPredictionFixture['status'] {
+  const state = relation(row,'state')
+  const value = String(state?.developer_name ?? state?.short_name ?? '').toUpperCase().replace(/[\s-]+/g,'_')
+  if (['FT','AET','AFTER_EXTRA_TIME','FINISHED'].includes(value)) return 'completed'
+  if (['INPLAY','LIVE','HT','BREAK','EXTRA_TIME'].includes(value)) return 'live'
+  if (['POSTPONED','DELAYED'].includes(value)) return 'postponed'
+  if (['CANCELLED','ABANDONED'].includes(value)) return 'cancelled'
+  return 'scheduled'
+}
+
+function currentFixtureScore(row: JsonRecord) {
+  const scores = relationRows(row,'scores')
+  const preferred = scores.filter((score)=>String(score.description ?? '').toUpperCase()==='CURRENT')
+  const source = preferred.length ? preferred : scores
+  const values:{home:number|null;away:number|null}={home:null,away:null}
+  for(const score of source){
+    const detail=record(score.score)
+    const side=String(detail?.participant ?? '').toLowerCase()
+    const goals=Number(detail?.goals)
+    if((side==='home'||side==='away')&&Number.isInteger(goals)&&goals>=0)values[side]=goals
+  }
+  return values
+}
+
+export async function fetchSportmonksPredictionFixtures(
+  apiToken = process.env.SPORTMONKS_API_TOKEN,
+  observeTelemetry?: (telemetry: SportmonksRequestTelemetry) => void,
+): Promise<SportmonksPredictionFixture[]> {
+  const client=createSportmonksClient(apiToken)
+  try{
+    const start=new Date(Date.now()-2*86_400_000).toISOString().slice(0,10)
+    const end=new Date(Date.now()+16*86_400_000).toISOString().slice(0,10)
+    const rows=await client.getAllPages(`/fixtures/between/${start}/${end}?include=participants;state;scores&filters=fixtureLeagues:${PREMIER_LEAGUE_ID},${LA_LIGA_ID},${LIGUE_1_ID}`,{fresh:true,maxPages:10})
+    const configs=new Map<number,{key:SportmonksPredictionFixture['league_key'];name:SportmonksPredictionFixture['league_name']}>([
+      [PREMIER_LEAGUE_ID,{key:'premier-league',name:'Premier League'}],
+      [LA_LIGA_ID,{key:'la-liga',name:'La Liga'}],
+      [LIGUE_1_ID,{key:'ligue-1',name:'Ligue 1'}],
+    ])
+    const now=new Date().toISOString()
+    return rows.flatMap((row)=>{
+      const config=configs.get(Number(row.league_id));const kickoff=fixtureDate(row);const fixtureId=String(row.id ?? '')
+      const participants=relationRows(row,'participants')
+      const home=participants.find((team)=>String(record(team.meta)?.location ?? '').toLowerCase()==='home')
+      const away=participants.find((team)=>String(record(team.meta)?.location ?? '').toLowerCase()==='away')
+      const homeTeam=textValue(home?.name);const awayTeam=textValue(away?.name)
+      if(!config||!kickoff||!fixtureId||!homeTeam||!awayTeam)return []
+      const date=new Date(kickoff);const {year,week}=isoWeek(date);const score=currentFixtureScore(row);const status=predictionFixtureStatus(row)
+      return [{fixture_id:fixtureId,league_key:config.key,league_name:config.name,gameweek_key:`${year}-${String(week).padStart(2,'0')}`,home_team:homeTeam,away_team:awayTeam,kickoff_at:kickoff,status,home_score:status==='completed'?score.home:null,away_score:status==='completed'?score.away:null,is_derby:isKnownDerby(homeTeam,awayTeam),source_updated_at:now}]
+    })
+  }finally{observeTelemetry?.(client.getTelemetry())}
 }
 
 export async function fetchSportmonksCompletedGameweek(apiToken = process.env.SPORTMONKS_API_TOKEN): Promise<SportmonksCompletedGameweek> {

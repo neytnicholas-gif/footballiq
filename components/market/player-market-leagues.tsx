@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
-import { Check, Copy, Trash2, Users } from 'lucide-react'
+import { Check, Copy, Share2, Trash2, Users } from 'lucide-react'
 import { createFriendLeague, deleteFriendLeague, joinFriendLeague, leaveFriendLeague } from '@/lib/market/client'
 import { formatFiqCompact } from '@/lib/market/format'
 import type { MarketFriendLeague, MarketFriendLeagueLeaderboardRow, MarketFriendLeagueMember } from '@/lib/market/types'
@@ -54,6 +54,13 @@ export function PlayerMarketLeagues({
     return () => { document.body.style.overflow = previousOverflow; window.removeEventListener('keydown', closeOnEscape) }
   }, [busy, deleteIntent])
 
+  useEffect(() => {
+    const code = new URLSearchParams(window.location.search).get('join')?.trim().toUpperCase()
+    if (!code) return
+    const frame = window.requestAnimationFrame(() => setJoinCode(code))
+    return () => window.cancelAnimationFrame(frame)
+  }, [])
+
   async function copyLeagueCode(code: string) {
     try {
       await navigator.clipboard.writeText(code)
@@ -62,6 +69,22 @@ export function PlayerMarketLeagues({
       window.setTimeout(() => setCopiedCode((current) => current === code ? '' : current), 2000)
     } catch {
       setError(`Could not copy automatically. Select this code: ${code}`)
+    }
+  }
+
+  async function shareLeague(league: MarketFriendLeague) {
+    const url = `${window.location.origin}/market/leagues?join=${encodeURIComponent(league.league_code)}`
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: `Join ${league.name} on Early Shout`, text: `Use code ${league.league_code} to join my friends league.`, url })
+        return
+      }
+      await navigator.clipboard.writeText(url)
+      setCopiedCode(league.league_code)
+      setNotice('Invite link copied. Send it to your friends.')
+    } catch (shareError) {
+      if (shareError instanceof DOMException && shareError.name === 'AbortError') return
+      setError(`Could not share automatically. Copy this link: ${url}`)
     }
   }
 
@@ -152,25 +175,25 @@ export function PlayerMarketLeagues({
 
   return (
     <div className="space-y-6">
-      <section className="rounded-[2rem] border border-border bg-card p-6 sm:p-8">
+      <section className="overflow-hidden rounded-[2rem] border border-emerald-900/15 bg-[radial-gradient(circle_at_90%_10%,rgba(250,204,21,.20),transparent_30%),linear-gradient(135deg,#062c24,#0d4b3d)] p-6 text-white shadow-xl sm:p-8">
         <div className="flex items-start gap-3">
-          <Users className="mt-0.5 size-5 text-primary" />
+          <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-white/10 text-emerald-200"><Users className="size-5" /></span>
           <div>
-            <h1 className="text-3xl font-black sm:text-4xl">Friends leagues beta</h1>
-            <p className="mt-2 text-sm text-muted-foreground">
+            <h1 className="text-3xl font-black sm:text-4xl">Your private league room</h1>
+            <p className="mt-2 max-w-2xl text-sm text-emerald-50/75">
               Create a private league, share the code, and compare total account value with friends.
             </p>
           </div>
         </div>
 
         <div className="mt-5 grid gap-4 lg:grid-cols-2">
-          <div className="rounded-2xl border border-border bg-background/60 p-4">
+          <div className="rounded-2xl border border-white/15 bg-white/10 p-4 backdrop-blur">
             <p className="text-sm font-semibold">Create a league</p>
             <input
               value={createName}
               onChange={(event) => setCreateName(event.target.value)}
               placeholder="League name"
-              className="mt-2 min-h-11 w-full rounded-xl border border-border bg-card px-3 py-2 text-base outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 sm:text-sm"
+              className="mt-2 min-h-11 w-full rounded-xl border border-white/20 bg-white px-3 py-2 text-base text-slate-950 outline-none focus-visible:ring-2 focus-visible:ring-emerald-300 sm:text-sm"
             />
             <button
               disabled={busy !== null || createName.trim().length < 3}
@@ -181,13 +204,13 @@ export function PlayerMarketLeagues({
             </button>
           </div>
 
-          <div className="rounded-2xl border border-border bg-background/60 p-4">
+          <div className="rounded-2xl border border-white/15 bg-white/10 p-4 backdrop-blur">
             <p className="text-sm font-semibold">Join by code</p>
             <input
               value={joinCode}
               onChange={(event) => setJoinCode(event.target.value.toUpperCase())}
               placeholder="Example: A1B2C3D4"
-              className="mt-2 min-h-11 w-full rounded-xl border border-border bg-card px-3 py-2 text-base uppercase outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 sm:text-sm"
+              className="mt-2 min-h-11 w-full rounded-xl border border-white/20 bg-white px-3 py-2 text-base uppercase text-slate-950 outline-none focus-visible:ring-2 focus-visible:ring-emerald-300 sm:text-sm"
             />
             <button
               disabled={busy !== null || joinCode.trim().length < 6}
@@ -223,7 +246,7 @@ export function PlayerMarketLeagues({
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <div>
                       <p className="font-semibold">{league.name}</p>
-                      <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-muted-foreground"><span>Code: <strong className="text-foreground">{league.league_code}</strong> · Role: {membership?.role ?? 'member'}</span><button type="button" onClick={() => void copyLeagueCode(league.league_code)} className="inline-flex min-h-9 items-center gap-1 rounded-lg border border-border px-2 py-1 font-semibold text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"><span className="sr-only">Copy league code </span>{copiedCode === league.league_code ? <Check className="size-3.5" /> : <Copy className="size-3.5" />}{copiedCode === league.league_code ? 'Copied' : 'Copy'}</button></div>
+                      <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-muted-foreground"><span>Code: <strong className="text-foreground">{league.league_code}</strong> · Role: {membership?.role ?? 'member'}</span><button type="button" onClick={() => void copyLeagueCode(league.league_code)} className="inline-flex min-h-9 items-center gap-1 rounded-lg border border-border px-2 py-1 font-semibold text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"><span className="sr-only">Copy league code </span>{copiedCode === league.league_code ? <Check className="size-3.5" /> : <Copy className="size-3.5" />}{copiedCode === league.league_code ? 'Copied' : 'Copy code'}</button><button type="button" onClick={() => void shareLeague(league)} className="inline-flex min-h-9 items-center gap-1 rounded-lg border border-border px-2 py-1 font-semibold text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"><Share2 className="size-3.5"/>Share invite</button></div>
                     </div>
                     {!isOwner ? (
                       <button

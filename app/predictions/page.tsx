@@ -6,9 +6,9 @@ export default function PredictionsPage() {
     <ModePage
       theme="predictions"
       compact
-      eyebrow="Five fixtures • one match card"
-      title="Matchday Predictions"
-      description="Pick 1 for a home win, X for a draw or 2 for an away win. Make all five picks, then lock them in. These are practice matches, not live games."
+      eyebrow="Predictions • real fixtures • friend leagues"
+      title="Make your early shout."
+      description="Predict real league matches before kickoff. Earn points for correct calls, climb the global table or make a private league for your friends."
     >
       <PredictionsGame />
     </ModePage>

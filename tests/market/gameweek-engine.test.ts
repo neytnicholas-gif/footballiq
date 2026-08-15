@@ -81,6 +81,12 @@ describe('verified gameweek engine', () => {
   it('records provider request and per-entity rate-limit telemetry in every run', () => {
     expect(runtime).toContain('providerTelemetry')
     expect(runtime).toContain('requestsMade: 0, rateLimits: []')
-    expect(runtime).toContain('report: { durationMs: Date.now() - startedAt, providerTelemetry }')
+    expect(runtime).toContain('report: { durationMs: Date.now() - startedAt, providerTelemetry, predictionTelemetry }')
+  })
+
+  it('treats a quiet ratings day as a successful no-op without hiding real importer failures', () => {
+    expect(runtime).toContain("const NO_ELIGIBLE_COMPLETED_RATINGS = 'Completed fixtures did not contain eligible Sportmonks ratings and minutes.'")
+    expect(runtime).toContain('error.message !== NO_ELIGIBLE_COMPLETED_RATINGS')
+    expect(runtime).toContain('throw error')
   })
 })

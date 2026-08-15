@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { SiteHeader } from '@/components/site-header'
 import { CompetitiveLeaderboard } from '@/components/competitive-leaderboard'
 import { CallToAction, SurfaceCard, StatusBadge } from '@/components/platform/primitives'
+import { ArrowRight, Globe2, Users } from 'lucide-react'
 
 export default async function LeaderboardPage({ searchParams }: { searchParams: Promise<{ board?: string }> }) {
   const params = await searchParams
@@ -19,6 +20,11 @@ export default async function LeaderboardPage({ searchParams }: { searchParams: 
             <Link href="/market/leaderboard" className="inline-flex rounded-xl border border-border bg-background px-4 py-2.5 text-sm font-semibold text-foreground transition hover:border-primary/35 hover:bg-secondary/40">Player Market leaderboard</Link>
           </div>
         </SurfaceCard>
+
+        <Link href="/predictions" className="group mt-6 flex flex-col gap-4 overflow-hidden rounded-[1.5rem] border border-sky-300/25 bg-[radial-gradient(circle_at_top_right,rgba(56,189,248,.2),transparent_38%),linear-gradient(135deg,#071827,#0d2731)] p-5 text-white shadow-lg transition hover:-translate-y-0.5 hover:border-sky-300/45 sm:flex-row sm:items-center sm:justify-between sm:p-6">
+          <div className="flex items-start gap-3"><span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-sky-300/15 text-sky-200"><Globe2 className="size-5" /></span><div><p className="text-xs font-black uppercase tracking-[.18em] text-sky-300">Match predictions</p><h2 className="mt-1 text-xl font-black">Global, country, continent and friend tables</h2><p className="mt-1 text-sm text-slate-300"><Users className="mr-1 inline size-3.5" />Compare today, this week, this month, this season or all time.</p></div></div>
+          <span className="inline-flex min-h-10 shrink-0 items-center justify-center gap-2 rounded-xl bg-sky-300 px-4 text-sm font-black text-slate-950">Open prediction tables <ArrowRight className="size-4 transition group-hover:translate-x-0.5" /></span>
+        </Link>
 
         <div className="mt-6">
           <CompetitiveLeaderboard initialBoard={params.board} />
