@@ -10,12 +10,12 @@ export default function Page() {
         <div className="rounded-2xl border border-border bg-card p-6 sm:p-8">
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">Referee Arena</p>
           <h1 className="mt-2 text-4xl font-black tracking-tight sm:text-5xl">What should the referee do?</h1>
-          <p className="mt-3 max-w-3xl text-muted-foreground">Read what happened and pick the right call. We explain the rule after you answer. There are 150 situations to play.</p>
+          <p className="mt-3 max-w-3xl text-muted-foreground">Read what happened and pick the right call. We explain the rule after you answer. There are 450 situations to play.</p>
         </div>
 
         <div className="mt-6 grid gap-5 lg:grid-cols-[1.18fr_0.82fr]">
           <div>
-            <h2 className="mb-3 text-xl font-black tracking-tight">Referee Arena · 150 scenarios</h2>
+            <h2 className="mb-3 text-xl font-black tracking-tight">Referee Arena · 450 scenarios</h2>
             <RefereeGame />
           </div>
 

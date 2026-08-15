@@ -28,7 +28,7 @@ export function LeagueWorld() {
           <div>
             <p className="text-xs font-black uppercase tracking-[.2em] text-cyan-300">Now playing</p>
             <h2 className="mt-2 text-3xl font-black text-white">{selected.name}</h2>
-            <p className="mt-2 text-sm text-slate-300">Five quick questions. Learn where the league sits, then remember the clues.</p>
+            <p className="mt-2 text-sm text-slate-300">Fifteen quick questions. Learn where the league sits, then remember the clues.</p>
           </div>
           <span className="inline-flex w-fit items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-2 text-xs font-bold text-slate-200"><span className="rounded-md bg-cyan-300 px-2 py-1 text-slate-950">{selected.countryCode}</span>{selected.country} · Tier {selected.tier}</span>
         </div>
@@ -59,7 +59,7 @@ export function LeagueWorld() {
               <div className="flex items-start justify-between gap-3"><span className="rounded-lg bg-white/8 px-2 py-1 text-xs font-black text-slate-200">{league.countryCode}</span>{active ? <ShieldCheck className="size-5 text-cyan-300" /> : <BookOpenCheck className="size-5 text-slate-500 transition group-hover:text-cyan-300" />}</div>
               <h3 className="mt-4 text-lg font-black text-white">{league.name}</h3>
               <p className="mt-1 text-xs text-slate-400">{league.country} · {league.tier === 1 ? 'Top division' : `Tier ${league.tier}`}</p>
-              <p className="mt-3 text-xs font-bold text-cyan-300">{active ? 'Playing now' : 'Open five questions'} →</p>
+              <p className="mt-3 text-xs font-bold text-cyan-300">{active ? 'Playing now' : 'Open 15 questions'} →</p>
             </button>
           })}
         </div>

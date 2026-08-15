@@ -79,6 +79,56 @@ export function getLeagueWorldQuestions(key: string): LeagueWorldQuestion[] {
   const confederation = optionSet(league.confederation, ['UEFA', 'CONCACAF', 'CONMEBOL', 'AFC'], leagueIndex + 3)
   const identity = optionSet(league.name, footballLeagues.map((item) => item.name), leagueIndex + 4)
   const culture = optionSet(league.name, footballLeagues.map((item) => item.name), leagueIndex + 7)
+  const shortName = optionSet(league.shortName, footballLeagues.map((item) => item.shortName), leagueIndex + 9)
+  const countryCode = optionSet(league.countryCode, footballLeagues.map((item) => item.countryCode), leagueIndex + 11)
+  const roomIdentity = optionSet(league.name, footballLeagues.map((item) => item.name), leagueIndex + 13)
+  const sameRegion = footballLeagues.find((item) => item.key !== league.key && item.confederation === league.confederation)!
+  const otherRegion = footballLeagues.find((item) => item.confederation !== league.confederation)!
+  const regionalPeer = optionSet(
+    sameRegion.name,
+    footballLeagues.filter((item) => item.confederation !== league.confederation).map((item) => item.name),
+    leagueIndex + 15,
+  )
+  const thirdRegion = footballLeagues.find((item) => item.key !== league.key && item.key !== sameRegion.key && item.key !== otherRegion.key)!
+  const regionalPairs = [
+    `${league.name} — ${league.confederation}`,
+    `${sameRegion.name} — ${sameRegion.confederation}`,
+    `${thirdRegion.name} — ${thirdRegion.confederation}`,
+    `${otherRegion.name} — ${league.confederation}`,
+  ]
+  const regionalPairShift = leagueIndex % regionalPairs.length
+  const rotatedRegionalPairs = [...regionalPairs.slice(regionalPairShift), ...regionalPairs.slice(0, regionalPairShift)]
+  const nationalPeer = footballLeagues.find((item) => item.key !== league.key && item.country === league.country)
+  const relatedLeague = nationalPeer ?? sameRegion
+  const related = optionSet(
+    relatedLeague.name,
+    footballLeagues
+      .filter((item) => nationalPeer ? item.country !== league.country : item.confederation !== league.confederation)
+      .map((item) => item.name),
+    leagueIndex + 19,
+  )
+  const differentTier = ([1, 2, 3, 4] as const).find((value) => value !== league.tier)!
+  const differentConfederation = (['UEFA', 'CONCACAF', 'CONMEBOL', 'AFC'] as const).find((value) => value !== league.confederation)!
+  const wrongCountry = footballLeagues.find((item) => item.country !== league.country)!.country
+  const factOptions = [
+    `${league.name} is ${tierLabels[league.tier].toLowerCase()} football in ${league.country}.`,
+    `${league.name} is played in ${wrongCountry}.`,
+    `${league.name} is a ${tierLabels[differentTier].toLowerCase()} competition.`,
+    `${league.name} belongs to the ${differentConfederation} region.`,
+  ]
+  const factShift = leagueIndex % factOptions.length
+  const rotatedFacts = [...factOptions.slice(factShift), ...factOptions.slice(0, factShift)]
+  const relationship = league.tier === relatedLeague.tier
+    ? 'They sit at the same tier number in their own pyramids'
+    : league.tier < relatedLeague.tier
+      ? `${league.name} sits at a higher tier number`
+      : `${relatedLeague.name} sits at a higher tier number`
+  const relationshipOptions = optionSet(relationship, [
+    'They sit at the same tier number in their own pyramids',
+    `${league.name} sits at a higher tier number`,
+    `${relatedLeague.name} sits at a higher tier number`,
+    'Neither competition belongs to a national league pyramid',
+  ], leagueIndex + 21)
 
   return [
     { prompt: `Where is ${league.name} played?`, ...country, explanation: `${league.name} is played in ${league.country}.` },
@@ -86,6 +136,16 @@ export function getLeagueWorldQuestions(key: string): LeagueWorldQuestion[] {
     { prompt: `Which football confederation covers ${league.name}?`, ...confederation, explanation: `${league.name} belongs to the ${league.confederation} region.` },
     { prompt: `Which competition is ${league.identityClue.toLowerCase()}?`, ...identity, explanation: `That competition is ${league.name}.` },
     { prompt: `Which competition matches this clue: ${league.cultureClue}?`, ...culture, explanation: `The clue points to ${league.name}.` },
+    { prompt: `Which short name belongs to ${league.name}?`, ...shortName, explanation: `${league.shortName} is the short label used in this quiz room.` },
+    { prompt: `Which three-letter room code marks ${league.country}?`, ...countryCode, explanation: `${league.countryCode} is the room code used here for ${league.country}.` },
+    { prompt: `Pick the one true fact about ${league.name}.`, options: rotatedFacts, answer: rotatedFacts.indexOf(factOptions[0]!), explanation: `${league.name} is ${tierLabels[league.tier].toLowerCase()} football in ${league.country}, within ${league.confederation}.` },
+    { prompt: `A room card reads “${league.countryCode} · ${tierLabels[league.tier]}”. Which competition does it describe?`, ...roomIdentity, explanation: `That room card belongs to ${league.name}.` },
+    { prompt: `Which other competition in Quiz World is also covered by ${league.confederation}?`, ...regionalPeer, explanation: `${sameRegion.name} and ${league.name} are both in the ${league.confederation} region.` },
+    { prompt: 'Which competition-to-confederation pairing is wrong?', options: rotatedRegionalPairs, answer: rotatedRegionalPairs.indexOf(regionalPairs[3]!), explanation: `${otherRegion.name} belongs to ${otherRegion.confederation}, not ${league.confederation}.` },
+    { prompt: nationalPeer ? `Which other room belongs to the same national pyramid as ${league.name}?` : `Which room shares the same confederation as ${league.name}?`, ...related, explanation: nationalPeer ? `${relatedLeague.name} and ${league.name} are both played in ${league.country}.` : `${relatedLeague.name} and ${league.name} are both covered by ${league.confederation}.` },
+    { prompt: `Complete the room label: ${league.country} · ____ · ${league.confederation}.`, ...shortName, explanation: `${league.shortName} completes this Quiz World room label.` },
+    { prompt: `Which competition should you choose for this clue: “${league.identityClue} in the ${league.confederation} region”?`, ...identity, explanation: `Both clues identify ${league.name}.` },
+    { prompt: `Compare ${league.name} with ${relatedLeague.name}. Which tier statement is right?`, ...relationshipOptions, explanation: relationship },
   ]
 }
 

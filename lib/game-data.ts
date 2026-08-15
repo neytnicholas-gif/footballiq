@@ -4,7 +4,7 @@ import { expandedScoutScenarios } from './scout-scenario-expansion'
 export type HigherLowerItem = { name: string; value: number; detail: string }
 export type WhoAmIQuestion = { answer: string; clues: string[] }
 export type CareerQuestion = { answer: string; clubs: string[]; hint: string }
-export type RefereeQuestion = { scenario: string; options: string[]; answer: number; explanation: string }
+export type RefereeQuestion = { id?: string; scenario: string; options: string[]; answer: number; explanation: string }
 export type ScoutDecision = 'Strongly follow' | 'Follow' | 'Monitor' | 'Do not pursue'
 export type ScoutQaVerdict = 'launch-ready' | 'needs improvement' | 'replace'
 
@@ -75,7 +75,7 @@ export const careerQuestions: CareerQuestion[] = [
 ]
 
 export const legacyRefereeQuestions: RefereeQuestion[] = [
-  { scenario: 'A defender deliberately handles the ball on the goal line and prevents a certain goal. What is the correct decision?', options: ['Penalty only', 'Penalty and yellow card', 'Penalty and red card', 'Indirect free kick'], answer: 2, explanation: 'Deliberately denying a goal by handball is a sending-off offence, with a penalty if it occurs inside the penalty area.' },
+  { id: 'legacy-ref-01', scenario: 'A defender deliberately handles the ball on the goal line and prevents a certain goal. What is the correct decision?', options: ['Penalty only', 'Penalty and yellow card', 'Penalty and red card', 'Indirect free kick'], answer: 2, explanation: 'Deliberately denying a goal by handball is a sending-off offence, with a penalty if it occurs inside the penalty area.' },
   { scenario: 'An attacker is fouled in the penalty area while attempting to play the ball. The defender makes a genuine attempt to challenge for it and denies an obvious goal-scoring opportunity.', options: ['Penalty and red card', 'Penalty and yellow card', 'Penalty only', 'Indirect free kick and yellow card'], answer: 1, explanation: 'For a genuine attempt to play/challenge for the ball inside the penalty area, DOGSO is generally reduced from red to yellow.' },
   { scenario: 'A player removes their shirt while celebrating a goal.', options: ['No action', 'Verbal warning', 'Yellow card', 'Red card'], answer: 2, explanation: 'Removing the shirt during a goal celebration is a mandatory caution.' },
   { scenario: 'A goalkeeper controls the ball with the hands for too long under the current competition rules used by this quiz.', options: ['Play on forever', 'Direct free kick', 'Indirect free kick or the competition’s current restart sanction', 'Penalty kick'], answer: 2, explanation: 'The sanction depends on the applicable edition/competition implementation; the key principle is that the keeper cannot retain hand control indefinitely.' },
@@ -88,6 +88,7 @@ export const legacyRefereeQuestions: RefereeQuestion[] = [
 ]
 
 export const refereeQuestions: RefereeQuestion[] = refereeScenarios.map((scenario) => ({
+  id: scenario.id,
   scenario: scenario.situation,
   options: scenario.options,
   answer: scenario.options.indexOf(scenario.answer),

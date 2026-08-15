@@ -4,7 +4,7 @@ import { SiteHeader } from '@/components/site-header'
 import { SurfaceCard } from '@/components/platform/primitives'
 
 const freeNow = [
-  'All current quizzes and three 150-question football games',
+  'All current quizzes and three 450-question football games',
   'Scout and Referee Academy learning experiences',
   'XP, ranks, streaks, profiles and leaderboards',
   'Daily Challenge and predictions',

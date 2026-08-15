@@ -143,6 +143,42 @@ const applicationFrames = [
     situation: (value: string) => `In the closing minutes of a close match, with strong player and crowd pressure, the same incident occurs: ${value}`,
     explanation: (value: string) => `${value} Match time, score and outside pressure do not change the correct application of the Law.`,
   },
+  {
+    id: 'weather',
+    title: 'difficult-conditions application',
+    situation: (value: string) => `Heavy rain has made footing and visibility less reliable, but the referee clearly observes this incident: ${value}`,
+    explanation: (value: string) => `${value} Conditions can affect positioning and player control, but the decision must still follow the action that was actually observed.`,
+  },
+  {
+    id: 'communication',
+    title: 'referee-team communication',
+    situation: (value: string) => `The referee and nearest assistant use brief eye contact and headset communication before deciding this incident: ${value}`,
+    explanation: (value: string) => `${value} Good teamwork supplies the clearest available information; it does not create a different offence or restart.`,
+  },
+  {
+    id: 'restart-ready',
+    title: 'restart-control application',
+    situation: (value: string) => `Players want the match restarted immediately, so the referee must decide cleanly before allowing play to continue: ${value}`,
+    explanation: (value: string) => `${value} Restart speed must never replace the correct decision, sanction and restart procedure.`,
+  },
+  {
+    id: 'technical-area',
+    title: 'technical-area pressure',
+    situation: (value: string) => `Both technical areas react loudly, but the officials have an unobstructed view of the same facts: ${value}`,
+    explanation: (value: string) => `${value} Reactions from benches are not evidence; officials should use their view, crew information and the Laws.`,
+  },
+  {
+    id: 'young-referee',
+    title: 'development-match application',
+    situation: (value: string) => `A developing referee is being assessed on calm process and reaches this incident with a good viewing angle: ${value}`,
+    explanation: (value: string) => `${value} A clear sequence—observe, identify the offence, choose the sanction, set the restart—supports a confident decision.`,
+  },
+  {
+    id: 'post-incident',
+    title: 'post-incident control',
+    situation: (value: string) => `Several players appeal after the incident, but no new misconduct changes what originally happened: ${value}`,
+    explanation: (value: string) => `${value} The original decision remains based on the incident; any later misconduct would be managed separately.`,
+  },
 ] as const
 
 const contextualRefereeScenarios = applicationFrames.flatMap((frame, frameIndex) => coreRefereeScenarios.map((scenario, scenarioIndex) => ({
@@ -171,6 +207,6 @@ export function validateRefereeScenarios(items: RefereeScenario[]) {
     if (!item.explanation || !item.principle) errors.push(`${item.id}: missing learning feedback`)
     try { new URL(item.sourceUrl) } catch { errors.push(`${item.id}: invalid source URL`) }
   }
-  if (items.length !== 150) errors.push(`expected 150 referee scenarios, received ${items.length}`)
+  if (items.length !== 450) errors.push(`expected 450 referee scenarios, received ${items.length}`)
   return errors
 }

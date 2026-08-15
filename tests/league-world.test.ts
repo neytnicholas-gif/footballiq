@@ -13,7 +13,7 @@ describe('League World', () => {
 
   it.each(footballLeagues.map((league) => [league.key] as const))('builds a valid, server-scoreable room for %s', (key) => {
     const questions = getLeagueWorldQuestions(key)
-    expect(questions).toHaveLength(5)
+    expect(questions).toHaveLength(15)
     for (const question of questions) {
       expect(question.options).toHaveLength(4)
       expect(new Set(question.options).size).toBe(4)
@@ -21,11 +21,11 @@ describe('League World', () => {
       expect(question.answer).toBeLessThan(4)
     }
     const result = verifyQuizReward({
-      quizId:`league-world-${key}`,score:5,total:5,
+      quizId:`league-world-${key}`,score:15,total:15,
       completionKey:`cqk:league-world-test:${key}:12345678901234567890`,
       proof:{kind:'choice',answers:questions.map((question)=>question.answer)},
     })
-    expect(result.score).toBe(5)
+    expect(result.score).toBe(15)
     expect(result.xp).toBeGreaterThan(0)
   })
 })

@@ -10,12 +10,12 @@ export default function Page() {
         <div className="rounded-2xl border border-border bg-card p-6 sm:p-8">
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">Scout Vision</p>
           <h1 className="mt-2 text-4xl font-black tracking-tight sm:text-5xl">Would you scout this player?</h1>
-          <p className="mt-3 max-w-3xl text-muted-foreground">Read the player notes. Choose follow, watch or pass. We show what a scout should notice. There are 150 players to judge.</p>
+          <p className="mt-3 max-w-3xl text-muted-foreground">Read the player notes. Choose follow, watch or pass. We show what a scout should notice. There are 450 players to judge.</p>
         </div>
 
         <div className="mt-6 grid gap-5 lg:grid-cols-[1.18fr_0.82fr]">
           <div>
-            <h2 className="mb-3 text-xl font-black tracking-tight">Scout Vision · 150 scenarios</h2>
+            <h2 className="mb-3 text-xl font-black tracking-tight">Scout Vision · 450 scenarios</h2>
             <ScoutGame />
           </div>
 

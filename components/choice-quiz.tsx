@@ -6,6 +6,7 @@ import { QuizProgressBanner } from '@/components/quiz-progress-banner'
 import { clearQuizProgress, loadQuizProgress, saveQuizProgress } from '@/lib/quiz-progress'
 import { getRankProgress } from '@/lib/progression'
 import { buildCompletionKey, createCompletionRunId, saveQuizResult } from '@/lib/quiz-save'
+import type { QuizProof } from '@/lib/quiz-proof'
 
 type Item = { prompt: string; options: string[]; answer: number; explanation: string }
 type RewardStatus = 'idle' | 'saving' | 'saved' | 'already' | 'error'
@@ -17,7 +18,7 @@ type ChoiceQuizLabels = {
   restartAction?: string
 }
 
-export function ChoiceQuiz({ quizId, title, items, labels }: { quizId: string; title: string; items: Item[]; labels?: ChoiceQuizLabels }) {
+export function ChoiceQuiz({ quizId, title, items, labels, answerProof, onRestart }: { quizId: string; title: string; items: Item[]; labels?: ChoiceQuizLabels; answerProof?: (answers: number[]) => QuizProof; onRestart?: () => void }) {
   const { user, profile, refreshProfile } = useAuth()
   const unitSingular = labels?.unitSingular ?? 'Question'
   const nextAction = labels?.nextAction ?? 'Next question'
@@ -101,7 +102,7 @@ export function ChoiceQuiz({ quizId, title, items, labels }: { quizId: string; t
     if (!user || saved || saving) return
     setRewardStatus('saving')
     setSaving(true)
-    const { error, alreadyCompleted } = await saveQuizResult({ quizId, score, total: items.length, xp: baseXp, completionKey: buildCompletionKey(quizId, runKey), proof: { kind: 'choice', answers } })
+    const { error, alreadyCompleted } = await saveQuizResult({ quizId, score, total: items.length, xp: baseXp, completionKey: buildCompletionKey(quizId, runKey), proof: answerProof ? answerProof(answers) : { kind: 'choice', answers } })
     if (!error) {
       setSaved(true)
       setRewardStatus(alreadyCompleted ? 'already' : 'saved')
@@ -136,6 +137,7 @@ export function ChoiceQuiz({ quizId, title, items, labels }: { quizId: string; t
     setRunKey(createCompletionRunId())
     setResumeState(null)
     void clearQuizProgress(quizId)
+    onRestart?.()
   }
 
   function continueProgress() {

@@ -144,6 +144,42 @@ const tacticalApplicationFrames = [
     prompt: (value: string) => `Which principle-led choice remains strongest under fatigue? ${value}`,
     explanation: 'Fatigue changes the speed and clarity of execution, not the spatial evidence that makes this option the strongest.',
   },
+  {
+    id: 'opponent-adjustment',
+    context: (value: string) => `The opponent has just changed shape, yet the same space and numerical picture remain available: ${value}`,
+    prompt: (value: string) => `After checking the new shape, ${value.charAt(0).toLowerCase()}${value.slice(1)}`,
+    explanation: 'A formation label matters less than the live spacing, pressure and numbers described in the moment.',
+  },
+  {
+    id: 'one-touch',
+    context: (value: string) => `The next action must be recognised quickly because pressure is arriving, while the tactical evidence remains: ${value}`,
+    prompt: (value: string) => `What should the player recognise before the next touch? ${value}`,
+    explanation: 'Faster execution should come from earlier scanning, not from abandoning the strongest spatial solution.',
+  },
+  {
+    id: 'away-game',
+    context: (value: string) => `In a noisy away match, communication is harder but the same tactical picture is visible: ${value}`,
+    prompt: (value: string) => `Which simple team cue best protects the plan? ${value}`,
+    explanation: 'Noise increases the value of simple cues and shared reference points; it does not remove the underlying tactical principle.',
+  },
+  {
+    id: 'wet-surface',
+    context: (value: string) => `Rain has quickened the surface and made heavy touches riskier, while the relevant spaces remain: ${value}`,
+    prompt: (value: string) => `Which choice keeps the tactical idea clear in these conditions? ${value}`,
+    explanation: 'Technique and pass weight may change on a wet pitch, but players should still solve the same space and support problem.',
+  },
+  {
+    id: 'young-team',
+    context: (value: string) => `A young team needs one clear instruction rather than several new ideas, and the match problem is: ${value}`,
+    prompt: (value: string) => `Which instruction is easiest to recognise and repeat? ${value}`,
+    explanation: 'Good coaching turns the strongest tactical principle into one visible, repeatable cue without overloading the players.',
+  },
+  {
+    id: 'transition-reset',
+    context: (value: string) => `The team has just survived a transition and must regain its spacing before the next phase: ${value}`,
+    prompt: (value: string) => `Once the team is balanced again, ${value.charAt(0).toLowerCase()}${value.slice(1)}`,
+    explanation: 'Restoring distances first allows the original tactical solution to be executed without creating a second transition.',
+  },
 ] as const
 
 const contextualTacticalScenarios = tacticalApplicationFrames.flatMap((frame, frameIndex) => coreTacticalScenarios.map((scenario, scenarioIndex) => ({

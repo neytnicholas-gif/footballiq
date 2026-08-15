@@ -19,6 +19,19 @@ describe('server-owned quiz rewards', () => {
     expect(result.xp).toBe(20 + total * 10 + 40)
   })
 
+  it('verifies a short referee session by scenario id', () => {
+    const session = refereeQuestions.slice(0, 10)
+    const result = verifyQuizReward({
+      quizId: 'referee-decisions-1',
+      score: session.length,
+      total: session.length,
+      completionKey,
+      proof: { kind: 'scenario-choice', scenarioIds: session.map((question) => question.id!), answers: session.map((question) => question.answer) },
+    })
+    expect(result.score).toBe(10)
+    expect(result.xp).toBe(160)
+  })
+
   it('rejects a fabricated perfect score, unknown quizzes and fabricated lengths', () => {
     const wrongAnswers = refereeQuestions.map((question) => (question.answer + 1) % question.options.length)
     expect(() => verifyQuizReward({

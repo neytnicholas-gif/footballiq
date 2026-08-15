@@ -7,6 +7,7 @@ export const leaderboardModes = [
   { id: 'career-path', label: 'Career Path', emoji: '🧭', description: 'Club-history and player-career experts.' },
   { id: 'who-am-i', label: 'Who Am I?', emoji: '🕵️', description: 'Football identity deduction experts.' },
   { id: 'league-world', label: 'League World', emoji: '🌍', description: 'Knowledge across 24 leagues and four football regions.' },
+  { id: 'quiz-lab', label: 'Quiz Lab', emoji: '🧠', description: 'Patterns, sequences, connections and pitch-shape challenges.' },
 ] as const
 
 export type LeaderboardMode = typeof leaderboardModes[number]['id']
@@ -35,6 +36,7 @@ export function inferModeFromQuizId(quizId: string) {
   if (quizId.startsWith('career-path')) return 'career-path'
   if (quizId.startsWith('who-am-i')) return 'who-am-i'
   if (quizId.startsWith('league-world-')) return 'league-world'
+  if (quizId.startsWith('quiz-lab-')) return 'quiz-lab'
   return 'football-duels'
 }
 

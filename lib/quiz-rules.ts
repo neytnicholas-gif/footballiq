@@ -5,6 +5,7 @@ import { calculateDuelXp } from '@/lib/progression'
 import type { QuizProof } from '@/lib/quiz-proof'
 import { expandedScoutScenarios } from '@/lib/scout-scenario-expansion'
 import { getLeagueWorldQuestions } from '@/lib/football-leagues'
+import { quizLabCorrectAnswer, quizLabQuestionBank, type QuizLabFormat } from '@/lib/quiz-lab'
 
 export type QuizCompletionClaim = {
   quizId: string
@@ -24,6 +25,7 @@ export type VerifiedQuizReward = QuizCompletionClaim & {
 
 const DAILY_QUIZ_ID = /^daily-(\d{4}-\d{2}-\d{2})$/
 const LEAGUE_WORLD_QUIZ_ID = /^league-world-([a-z0-9-]+)$/
+const QUIZ_LAB_ID = /^quiz-lab-(odd-one-out|truth-trap|order-the-play|link-up|formation-fix)$/
 
 function integer(value: unknown, label: string) {
   if (typeof value !== 'number' || !Number.isSafeInteger(value)) {
@@ -90,6 +92,18 @@ export function verifyQuizReward(claim: QuizCompletionClaim): VerifiedQuizReward
   const total = integer(claim.total, 'Total')
 
   if (quizId === 'referee-decisions-1') {
+    if (claim.proof.kind === 'scenario-choice') {
+      const proof = requireProof(claim.proof, 'scenario-choice')
+      if (proof.scenarioIds.length < 1 || proof.scenarioIds.length > 20 || new Set(proof.scenarioIds).size !== proof.scenarioIds.length) throw new Error('Referee session proof is invalid.')
+      assertResult(score, total, proof.scenarioIds.length)
+      const correct = proof.scenarioIds.map((scenarioId) => {
+        const question = refereeQuestions.find((item) => item.id === scenarioId)
+        if (!question) throw new Error('Referee session contains an unknown scenario.')
+        return question.answer
+      })
+      const verifiedScore = assertClaimedScore(score, scoreChoiceAnswers(proof.answers, correct))
+      return { ...claim, quizId, score: verifiedScore, total, xp: standardXp(verifiedScore, total) }
+    }
     const proof = requireProof(claim.proof, 'choice')
     assertResult(score, total, refereeQuestions.length)
     const verifiedScore = assertClaimedScore(score, scoreChoiceAnswers(proof.answers, refereeQuestions.map((question) => question.answer)))
@@ -174,6 +188,21 @@ export function verifyQuizReward(claim: QuizCompletionClaim): VerifiedQuizReward
     const proof = requireProof(claim.proof, 'choice')
     assertResult(score, total, questions.length)
     const verifiedScore = assertClaimedScore(score, scoreChoiceAnswers(proof.answers, questions.map((question) => question.answer)))
+    return { ...claim, quizId, score: verifiedScore, total, xp: standardXp(verifiedScore, total) }
+  }
+
+  const quizLabMatch = QUIZ_LAB_ID.exec(quizId)
+  if (quizLabMatch) {
+    const format = quizLabMatch[1] as QuizLabFormat
+    const questions = quizLabQuestionBank[format]
+    const proof = requireProof(claim.proof, 'quiz-lab')
+    assertResult(score, total, questions.length)
+    if (proof.format !== format || proof.answers.length !== questions.length || proof.answers.some((answer) => typeof answer !== 'string')) {
+      throw new Error('Quiz Lab answer proof is incomplete.')
+    }
+    const verifiedScore = assertClaimedScore(score, proof.answers.reduce((sum, answer, index) => (
+      sum + (answer === quizLabCorrectAnswer(questions[index]!) ? 1 : 0)
+    ), 0))
     return { ...claim, quizId, score: verifiedScore, total, xp: standardXp(verifiedScore, total) }
   }
 
