@@ -182,7 +182,7 @@ export function PlayerMarketLeagues({
           <div>
             <h1 className="text-3xl font-black sm:text-4xl">Your private league room</h1>
             <p className="mt-2 max-w-2xl text-sm text-emerald-50/75">
-              Create a private league, share the code, and compare total account value with friends.
+              Create a private league, choose what wins, then share one code with your friends.
             </p>
           </div>
         </div>
