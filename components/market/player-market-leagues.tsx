@@ -21,6 +21,7 @@ export function PlayerMarketLeagues({
   onRefresh: () => Promise<void>
 }) {
   const [createName, setCreateName] = useState('')
+  const [scoreMode, setScoreMode] = useState<'wealth' | 'weekly_gain' | 'realised_profit'>('wealth')
   const [joinCode, setJoinCode] = useState('')
   const [busy, setBusy] = useState<'create' | 'join' | 'leave' | 'delete' | null>(null)
   const [deleteIntent, setDeleteIntent] = useState<MarketFriendLeague | null>(null)
@@ -112,7 +113,7 @@ export function PlayerMarketLeagues({
     setBusy('create')
     setError('')
     setNotice('')
-    const { data, error: createError } = await createFriendLeague(createName)
+    const { data, error: createError } = await createFriendLeague(createName, scoreMode)
     if (createError) {
       setError(createError.message)
       setBusy(null)
@@ -195,6 +196,12 @@ export function PlayerMarketLeagues({
               placeholder="League name"
               className="mt-2 min-h-11 w-full rounded-xl border border-white/20 bg-white px-3 py-2 text-base text-slate-950 outline-none focus-visible:ring-2 focus-visible:ring-emerald-300 sm:text-sm"
             />
+            <fieldset className="mt-3">
+              <legend className="text-xs font-bold uppercase tracking-[.12em] text-emerald-100/70">What wins?</legend>
+              <div className="mt-2 grid grid-cols-3 gap-2">
+                {([['wealth','Team value'],['weekly_gain','Weekly rise'],['realised_profit','Sale profit']] as const).map(([key,label]) => <button key={key} type="button" aria-pressed={scoreMode===key} onClick={()=>setScoreMode(key)} className={`min-h-10 rounded-lg border px-2 text-xs font-bold ${scoreMode===key?'border-amber-200 bg-amber-200 text-emerald-950':'border-white/15 bg-white/5 text-emerald-50'}`}>{label}</button>)}
+              </div>
+            </fieldset>
             <button
               disabled={busy !== null || createName.trim().length < 3}
               onClick={() => void handleCreate()}
@@ -246,6 +253,7 @@ export function PlayerMarketLeagues({
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <div>
                       <p className="font-semibold">{league.name}</p>
+                      <p className="mt-1 text-xs text-muted-foreground">Winner: {league.score_mode === 'weekly_gain' ? 'biggest rise this week' : league.score_mode === 'realised_profit' ? 'most profit from sales' : 'highest total team value'}</p>
                       <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-muted-foreground"><span>Code: <strong className="text-foreground">{league.league_code}</strong> · Role: {membership?.role ?? 'member'}</span><button type="button" onClick={() => void copyLeagueCode(league.league_code)} className="inline-flex min-h-9 items-center gap-1 rounded-lg border border-border px-2 py-1 font-semibold text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"><span className="sr-only">Copy league code </span>{copiedCode === league.league_code ? <Check className="size-3.5" /> : <Copy className="size-3.5" />}{copiedCode === league.league_code ? 'Copied' : 'Copy code'}</button><button type="button" onClick={() => void shareLeague(league)} className="inline-flex min-h-9 items-center gap-1 rounded-lg border border-border px-2 py-1 font-semibold text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"><Share2 className="size-3.5"/>Share invite</button></div>
                     </div>
                     {!isOwner ? (
@@ -279,7 +287,7 @@ export function PlayerMarketLeagues({
                       <div key={`${row.league_id}-${row.user_id}`} className="grid grid-cols-[auto_1fr_auto] items-center gap-3 rounded-xl border border-border bg-card px-3 py-2 text-sm">
                         <span className="text-xs font-semibold text-muted-foreground">#{row.rank}</span>
                         <span className="truncate font-medium">{row.username ?? 'User'}</span>
-                        <span className="font-semibold text-primary">{formatFiqCompact(row.total_account_value)}</span>
+                        <span className="font-semibold text-primary">{formatFiqCompact(row.score_value)}</span>
                       </div>
                     ))}
                   </div>

@@ -582,9 +582,10 @@ export async function loadMyFriendLeagues() {
   }
 }
 
-export async function createFriendLeague(name: string) {
+export async function createFriendLeague(name: string, scoreMode: 'wealth' | 'weekly_gain' | 'realised_profit' = 'wealth') {
   const { data, error } = await (supabase as any).rpc('market_create_friend_league', {
     p_name: name,
+    p_score_mode: scoreMode,
   })
 
   return {

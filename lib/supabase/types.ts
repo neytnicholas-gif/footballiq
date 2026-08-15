@@ -187,10 +187,28 @@ export type Database = {
         }
         Relationships: []
       }
+      quiz_league_catalogue: {
+        Row: { league_key: string; league_name: string; country_name: string; sort_order: number }
+        Insert: { league_key: string; league_name: string; country_name: string; sort_order: number }
+        Update: { league_key?: string; league_name?: string; country_name?: string; sort_order?: number }
+        Relationships: []
+      }
+      quiz_friend_leagues: {
+        Row: { id: string; league_code: string; name: string; owner_user_id: string; content_mode: 'all' | 'judgement' | 'quick_games' | 'league_world'; scoring_mode: 'xp' | 'accuracy'; period: 'weekly' | 'monthly' | 'season' | 'all'; league_keys: string[]; is_active: boolean; created_at: string }
+        Insert: { id?: string; league_code: string; name: string; owner_user_id: string; content_mode: 'all' | 'judgement' | 'quick_games' | 'league_world'; scoring_mode: 'xp' | 'accuracy'; period: 'weekly' | 'monthly' | 'season' | 'all'; league_keys?: string[]; is_active?: boolean; created_at?: string }
+        Update: Partial<Database['public']['Tables']['quiz_friend_leagues']['Insert']>
+        Relationships: []
+      }
+      quiz_friend_league_members: {
+        Row: { league_id: string; user_id: string; role: 'owner' | 'member'; joined_at: string }
+        Insert: { league_id: string; user_id: string; role?: 'owner' | 'member'; joined_at?: string }
+        Update: { league_id?: string; user_id?: string; role?: 'owner' | 'member'; joined_at?: string }
+        Relationships: []
+      }
       prediction_fixtures: {
         Row: {
           fixture_id: string
-          league_key: 'premier-league' | 'la-liga' | 'ligue-1'
+          league_key: string
           league_name: string
           gameweek_key: string
           home_team: string
@@ -206,7 +224,7 @@ export type Database = {
         }
         Insert: {
           fixture_id: string
-          league_key: 'premier-league' | 'la-liga' | 'ligue-1'
+          league_key: string
           league_name: string
           gameweek_key: string
           home_team: string
@@ -223,6 +241,12 @@ export type Database = {
         Update: Partial<Database['public']['Tables']['prediction_fixtures']['Insert']>
         Relationships: []
       }
+      prediction_competitions: {
+        Row: { league_key: string; provider_league_id: number; league_name: string; country_name: string | null; country_code: string | null; is_active: boolean; last_seen_at: string }
+        Insert: { league_key: string; provider_league_id: number; league_name: string; country_name?: string | null; country_code?: string | null; is_active?: boolean; last_seen_at?: string }
+        Update: { league_key?: string; provider_league_id?: number; league_name?: string; country_name?: string | null; country_code?: string | null; is_active?: boolean; last_seen_at?: string }
+        Relationships: []
+      }
       prediction_leagues: {
         Row: {
           id: string
@@ -231,6 +255,7 @@ export type Database = {
           owner_user_id: string
           rule_mode: 'all' | 'random_1' | 'random_5'
           league_keys: string[]
+          ranking_mode: 'points' | 'correct' | 'confidence'
           is_active: boolean
           created_at: string
         }
@@ -241,6 +266,7 @@ export type Database = {
           owner_user_id: string
           rule_mode?: 'all' | 'random_1' | 'random_5'
           league_keys?: string[]
+          ranking_mode?: 'points' | 'correct' | 'confidence'
           is_active?: boolean
           created_at?: string
         }
@@ -902,7 +928,7 @@ export type Database = {
         Returns: Record<string, unknown>
       }
       prediction_create_league: {
-        Args: { p_name: string; p_rule_mode: string; p_league_keys: string[] }
+        Args: { p_name: string; p_rule_mode: string; p_league_keys: string[]; p_ranking_mode?: string }
         Returns: Record<string, unknown>
       }
       prediction_join_league: {
@@ -923,11 +949,21 @@ export type Database = {
       }
       prediction_get_league_leaderboard: {
         Args: { p_league_id: string }
-        Returns: Array<{ user_id: string; username: string; points: number; picks_scored: number; correct_picks: number; rank: number }>
+        Returns: Array<{ user_id: string; username: string; points: number; picks_scored: number; correct_picks: number; confidence_won: number; ranking_mode: string; rank: number }>
       }
       prediction_set_location: {
         Args: { p_country_code: string; p_continent_code: string; p_share_location: boolean }
         Returns: Record<string, unknown>
+      }
+      quiz_create_friend_league: {
+        Args: { p_name:string; p_content_mode:string; p_scoring_mode:string; p_period:string; p_league_keys?:string[] }
+        Returns: Record<string, unknown>
+      }
+      quiz_join_friend_league: { Args:{ p_league_code:string }; Returns:Record<string,unknown> }
+      quiz_leave_friend_league: { Args:{ p_league_id:string }; Returns:Record<string,unknown> }
+      quiz_get_friend_league_leaderboard: {
+        Args:{ p_league_id:string }
+        Returns:Array<{ user_id:string; username:string; score_value:number; accuracy_percent:number; xp_earned:number; quizzes_completed:number; rank:number }>
       }
     }
     Enums: Record<string, never>

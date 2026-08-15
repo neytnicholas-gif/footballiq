@@ -163,6 +163,7 @@ export type MarketFriendLeague = {
   league_code: string
   name: string
   owner_user_id: string
+  score_mode: 'wealth' | 'weekly_gain' | 'realised_profit'
   is_active: boolean
   created_at: string
   updated_at: string
@@ -186,6 +187,8 @@ export type MarketFriendLeagueLeaderboardRow = {
   realized_profit_loss: number
   portfolio_value: number
   rank: number
+  score_mode: 'wealth' | 'weekly_gain' | 'realised_profit'
+  score_value: number
 }
 
 export type MarketMatchweekRun = {

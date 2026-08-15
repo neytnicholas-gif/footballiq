@@ -4,6 +4,7 @@ import { getDailySeedFromKey } from '@/lib/daily'
 import { calculateDuelXp } from '@/lib/progression'
 import type { QuizProof } from '@/lib/quiz-proof'
 import { expandedScoutScenarios } from '@/lib/scout-scenario-expansion'
+import { getLeagueWorldQuestions } from '@/lib/football-leagues'
 
 export type QuizCompletionClaim = {
   quizId: string
@@ -22,6 +23,7 @@ export type VerifiedQuizReward = QuizCompletionClaim & {
 }
 
 const DAILY_QUIZ_ID = /^daily-(\d{4}-\d{2}-\d{2})$/
+const LEAGUE_WORLD_QUIZ_ID = /^league-world-([a-z0-9-]+)$/
 
 function integer(value: unknown, label: string) {
   if (typeof value !== 'number' || !Number.isSafeInteger(value)) {
@@ -163,6 +165,16 @@ export function verifyQuizReward(claim: QuizCompletionClaim): VerifiedQuizReward
     if (proof.answers.length !== 10 || new Set(proof.answers.map((answer) => answer.scenarioId)).size !== 10) throw new Error('Quiz answer proof is incomplete.')
     const verifiedScore = assertClaimedScore(score, proof.answers.reduce((sum, answer) => sum + (scoutVisionAnswers.get(answer.scenarioId) === answer.decision ? 1 : 0), 0))
     return { ...claim, quizId, score: verifiedScore, total, xp: 30 + verifiedScore * 11 }
+  }
+
+  const leagueWorldMatch = LEAGUE_WORLD_QUIZ_ID.exec(quizId)
+  if (leagueWorldMatch) {
+    const questions = getLeagueWorldQuestions(leagueWorldMatch[1]!)
+    if (!questions.length) throw new Error('Unknown league room.')
+    const proof = requireProof(claim.proof, 'choice')
+    assertResult(score, total, questions.length)
+    const verifiedScore = assertClaimedScore(score, scoreChoiceAnswers(proof.answers, questions.map((question) => question.answer)))
+    return { ...claim, quizId, score: verifiedScore, total, xp: standardXp(verifiedScore, total) }
   }
 
   const duel = duelPacks.find((pack) => pack.id === quizId)

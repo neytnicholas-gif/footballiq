@@ -21,6 +21,7 @@ import {
   Users,
 } from 'lucide-react'
 import { useAuth } from '@/components/auth-provider'
+import { footballLeagues } from '@/lib/football-leagues'
 import { supabase } from '@/lib/supabase'
 
 type Pick = 'home' | 'draw' | 'away'
@@ -28,9 +29,10 @@ type Tab = 'picks' | 'leagues' | 'standings'
 type Period = 'daily' | 'weekly' | 'monthly' | 'season' | 'all'
 type Scope = 'global' | 'country' | 'continent'
 type RuleMode = 'all' | 'random_1' | 'random_5'
+type RankingMode = 'points' | 'correct' | 'confidence'
 type Fixture = {
   fixture_id: string
-  league_key: 'premier-league' | 'la-liga' | 'ligue-1'
+  league_key: string
   league_name: string
   gameweek_key: string
   home_team: string
@@ -55,6 +57,7 @@ type PredictionLeague = {
   owner_user_id: string
   rule_mode: RuleMode
   league_keys: string[]
+  ranking_mode: RankingMode
   is_active: boolean
   created_at: string
   role?: 'owner' | 'member'
@@ -69,11 +72,25 @@ type Standing = {
   confidence_won?: number
 }
 
-const leagueOptions = [
-  { key: 'premier-league', label: 'Premier League', colour: 'bg-violet-500' },
-  { key: 'la-liga', label: 'La Liga', colour: 'bg-rose-500' },
-  { key: 'ligue-1', label: 'Ligue 1', colour: 'bg-sky-500' },
-] as const
+type CompetitionOption = { key: string; label: string; country: string }
+
+const leagueColours = ['bg-violet-500','bg-rose-500','bg-sky-500','bg-amber-400','bg-emerald-400','bg-fuchsia-400','bg-orange-400','bg-cyan-400']
+function leagueColour(key: string) {
+  const total = [...key].reduce((sum, character) => sum + character.charCodeAt(0), 0)
+  return leagueColours[total % leagueColours.length]
+}
+
+const leagueOptions = footballLeagues.map((league) => ({
+  key: league.key,
+  label: league.shortName,
+  colour: leagueColour(league.key),
+}))
+
+const rankingLabels: Record<RankingMode,{title:string;copy:string}> = {
+  points:{title:'Total points',copy:'All match points and bonuses count.'},
+  correct:{title:'Most right',copy:'The most correct 1, X or 2 calls wins.'},
+  confidence:{title:'Brave calls',copy:'Correct high-confidence picks lead the table.'},
+}
 
 // Keep the established key so returning beta players do not lose their local record.
 const PREDICTION_HISTORY_KEY = 'footballiq-prediction-history'
@@ -131,7 +148,9 @@ export function PredictionsGame() {
   const [leagueName, setLeagueName] = useState('')
   const [joinCode, setJoinCode] = useState('')
   const [ruleMode, setRuleMode] = useState<RuleMode>('all')
-  const [leagueKeys, setLeagueKeys] = useState<string[]>(leagueOptions.map((league) => league.key))
+  const [rankingMode, setRankingMode] = useState<RankingMode>('points')
+  const [competitionOptions, setCompetitionOptions] = useState<CompetitionOption[]>([])
+  const [leagueKeys, setLeagueKeys] = useState<string[]>([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [working, setWorking] = useState(false)
@@ -180,6 +199,23 @@ export function PredictionsGame() {
     try {
       const now = new Date()
       const historyStart = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000).toISOString()
+      const { data: competitionRows, error: competitionError } = await supabase
+        .from('prediction_competitions')
+        .select('league_key,league_name,country_name')
+        .eq('is_active', true)
+        .order('league_name')
+      if (competitionError) throw competitionError
+      const nextCompetitionOptions = (competitionRows ?? []).map((competition) => ({
+        key: competition.league_key,
+        label: competition.league_name,
+        country: competition.country_name ?? 'International',
+      }))
+      setCompetitionOptions(nextCompetitionOptions)
+      setLeagueKeys((current) => {
+        const available = new Set(nextCompetitionOptions.map((competition) => competition.key))
+        const kept = current.filter((key) => available.has(key))
+        return kept.length ? kept : [...available]
+      })
       const { data: fixtureRows, error: fixtureError } = await supabase
         .from('prediction_fixtures')
         .select('fixture_id,league_key,league_name,gameweek_key,home_team,away_team,kickoff_at,status,home_score,away_score,is_derby')
@@ -188,7 +224,8 @@ export function PredictionsGame() {
         .order('kickoff_at', { ascending: true })
         .limit(120)
       if (fixtureError) throw fixtureError
-      setFixtures(fixtureRows ?? [])
+      const activeCompetitionKeys = new Set(nextCompetitionOptions.map((competition) => competition.key))
+      setFixtures((fixtureRows ?? []).filter((fixture) => activeCompetitionKeys.has(fixture.league_key)))
 
       if (user) {
         const { data: predictionRows, error: predictionError } = await supabase
@@ -301,6 +338,7 @@ export function PredictionsGame() {
       p_name: leagueName.trim(),
       p_rule_mode: ruleMode,
       p_league_keys: leagueKeys,
+      p_ranking_mode: rankingMode,
     })
     if (createError) setError('That league could not be made. Please check the name and try again.')
     else {
@@ -400,7 +438,7 @@ export function PredictionsGame() {
           <div className="max-w-2xl">
             <div className="inline-flex items-center gap-2 rounded-full border border-sky-200/20 bg-sky-200/10 px-3 py-1 text-xs font-black uppercase tracking-[.18em] text-sky-100"><Sparkles className="size-3.5" /> Predict. Score. Climb.</div>
             <h2 className="mt-4 text-3xl font-black tracking-tight text-white sm:text-4xl">Call the result before kickoff.</h2>
-            <p className="mt-2 max-w-xl text-sm leading-6 text-slate-300 sm:text-base">Pick 1, X or 2 across England, Spain and France. Correct calls earn points. Big calls and derbies can earn more.</p>
+            <p className="mt-2 max-w-xl text-sm leading-6 text-slate-300 sm:text-base">Pick 1, X or 2 across every live league enabled for Early Shout. Correct calls earn points. Big calls and derbies can earn more.</p>
           </div>
           <div className="grid grid-cols-3 gap-2 text-center">
             <HeroStat label="Correct" value="3 pts" />
@@ -462,7 +500,8 @@ export function PredictionsGame() {
               <label className="mt-4 block text-xs font-bold uppercase tracking-[.14em] text-slate-400" htmlFor="prediction-league-name">League name</label>
               <input id="prediction-league-name" value={leagueName} maxLength={40} onChange={(event) => setLeagueName(event.target.value)} placeholder="Sunday League Legends" className="mt-2 min-h-11 w-full rounded-xl border border-slate-600 bg-slate-950 px-3 text-sm text-white outline-none focus:border-sky-300 focus:ring-2 focus:ring-sky-300/20" />
               <fieldset className="mt-5"><legend className="text-xs font-bold uppercase tracking-[.14em] text-slate-400">How many matches?</legend><div className="mt-2 grid gap-2 sm:grid-cols-3">{(Object.entries(ruleLabels) as [RuleMode, { title: string; copy: string }][]).map(([key, rule]) => <button key={key} type="button" aria-pressed={ruleMode === key} onClick={() => setRuleMode(key)} className={`rounded-xl border p-3 text-left outline-none transition focus-visible:ring-2 focus-visible:ring-sky-300 ${ruleMode === key ? 'border-sky-300 bg-sky-300/10' : 'border-slate-700 bg-slate-950/55 hover:border-slate-500'}`}><span className="block text-sm font-bold text-white">{rule.title}</span><span className="mt-1 block text-xs leading-5 text-slate-400">{rule.copy}</span></button>)}</div></fieldset>
-              <fieldset className="mt-5"><legend className="text-xs font-bold uppercase tracking-[.14em] text-slate-400">Which leagues?</legend><div className="mt-2 flex flex-wrap gap-2">{leagueOptions.map((league) => { const active = leagueKeys.includes(league.key); return <button key={league.key} type="button" aria-pressed={active} onClick={() => setLeagueKeys((current) => active ? current.filter((key) => key !== league.key) : [...current, league.key])} className={`inline-flex min-h-10 items-center gap-2 rounded-full border px-3 py-2 text-sm font-bold outline-none focus-visible:ring-2 focus-visible:ring-sky-300 ${active ? 'border-slate-400 bg-white text-slate-950' : 'border-slate-700 text-slate-400'}`}><span className={`size-2.5 rounded-full ${league.colour}`} />{league.label}</button> })}</div></fieldset>
+              <fieldset className="mt-5"><legend className="text-xs font-bold uppercase tracking-[.14em] text-slate-400">What wins the table?</legend><div className="mt-2 grid gap-2 sm:grid-cols-3">{(Object.entries(rankingLabels) as [RankingMode,{title:string;copy:string}][]).map(([key,choice]) => <button key={key} type="button" aria-pressed={rankingMode === key} onClick={() => setRankingMode(key)} className={`rounded-xl border p-3 text-left outline-none transition focus-visible:ring-2 focus-visible:ring-fuchsia-300 ${rankingMode === key ? 'border-fuchsia-300 bg-fuchsia-300/10' : 'border-slate-700 bg-slate-950/55 hover:border-slate-500'}`}><span className="block text-sm font-bold text-white">{choice.title}</span><span className="mt-1 block text-xs leading-5 text-slate-400">{choice.copy}</span></button>)}</div></fieldset>
+              <fieldset className="mt-5"><legend className="text-xs font-bold uppercase tracking-[.14em] text-slate-400">Which live leagues?</legend><p className="mt-1 text-xs leading-5 text-slate-500">Only leagues currently licensed and synced from Sportmonks appear here.</p><div className="mt-2 flex flex-wrap gap-2">{competitionOptions.map((league) => { const active = leagueKeys.includes(league.key); return <button key={league.key} type="button" aria-pressed={active} onClick={() => setLeagueKeys((current) => active ? current.filter((key) => key !== league.key) : [...current, league.key])} className={`inline-flex min-h-10 items-center gap-2 rounded-full border px-3 py-2 text-sm font-bold outline-none focus-visible:ring-2 focus-visible:ring-sky-300 ${active ? 'border-slate-400 bg-white text-slate-950' : 'border-slate-700 text-slate-400'}`}><span className={`size-2.5 rounded-full ${leagueColour(league.key)}`} />{league.label}</button> })}</div></fieldset>
               <button type="button" onClick={() => void createLeague()} disabled={working} className="mt-5 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-fuchsia-400 px-4 text-sm font-black text-slate-950 outline-none hover:bg-fuchsia-300 focus-visible:ring-2 focus-visible:ring-white disabled:opacity-50"><Plus className="size-4" />Create league</button>
             </section>
 

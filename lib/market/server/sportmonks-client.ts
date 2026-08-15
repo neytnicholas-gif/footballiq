@@ -1,4 +1,5 @@
 import { toMarketSlug } from '@/lib/market/provider'
+import { footballLeagues, predictionLeagueKey } from '@/lib/football-leagues'
 import type { ValidatedPerformance } from '@/lib/market/performance-ingestion'
 import { calculateOpeningGameplayValue, calculatePerformanceValueUpdate } from '@/lib/market/real-valuation'
 import type { MarketPlayer, MarketPosition } from '@/lib/market/types'
@@ -290,8 +291,8 @@ export type SportmonksCompletedGameweek = {
 
 export type SportmonksPredictionFixture = {
   fixture_id: string
-  league_key: 'premier-league' | 'la-liga' | 'ligue-1'
-  league_name: 'Premier League' | 'La Liga' | 'Ligue 1'
+  league_key: string
+  league_name: string
   gameweek_key: string
   home_team: string
   away_team: string
@@ -301,6 +302,21 @@ export type SportmonksPredictionFixture = {
   away_score: number | null
   is_derby: boolean
   source_updated_at: string
+}
+
+export type SportmonksPredictionCompetition = {
+  league_key: string
+  provider_league_id: number
+  league_name: string
+  country_name: string
+  country_code: string
+  is_active: true
+  last_seen_at: string
+}
+
+export type SportmonksPredictionSync = {
+  fixtures: SportmonksPredictionFixture[]
+  competitions: SportmonksPredictionCompetition[]
 }
 
 export type SportmonksRequestTelemetry = {
@@ -914,19 +930,37 @@ function currentFixtureScore(row: JsonRecord) {
 export async function fetchSportmonksPredictionFixtures(
   apiToken = process.env.SPORTMONKS_API_TOKEN,
   observeTelemetry?: (telemetry: SportmonksRequestTelemetry) => void,
-): Promise<SportmonksPredictionFixture[]> {
+): Promise<SportmonksPredictionSync> {
   const client=createSportmonksClient(apiToken)
   try{
+    // Sportmonks licenses leagues per subscription. Discover the token's real
+    // coverage instead of presenting unavailable competitions or hard-coding a
+    // paid tier. The curated order keeps the most recognisable rooms first.
+    const providerLeagues=await client.getAllPages('/leagues?include=country',{fresh:true,maxPages:10})
+    const matchedByKey=new Map<string,{providerId:number;name:string;country:string;countryCode:string}>()
+    for(const row of providerLeagues){
+      const providerId=Number(row.id)
+      const providerName=textValue(row.name)
+      const country=relation(row,'country')
+      const countryName=textValue(country?.name) ?? ''
+      if(!Number.isSafeInteger(providerId)||!providerName)continue
+      const curated=predictionLeagueKey(providerName,countryName)
+      if(!curated||matchedByKey.has(curated.key))continue
+      matchedByKey.set(curated.key,{providerId,name:curated.name,country:curated.country,countryCode:curated.countryCode})
+    }
+    const selected=footballLeagues.flatMap((league)=>{
+      const match=matchedByKey.get(league.key)
+      return match ? [{league,...match}] : []
+    }).slice(0,30)
+    if(selected.length===0)throw new Error('No supported prediction leagues are available on this Sportmonks subscription.')
+
     const start=new Date(Date.now()-2*86_400_000).toISOString().slice(0,10)
     const end=new Date(Date.now()+16*86_400_000).toISOString().slice(0,10)
-    const rows=await client.getAllPages(`/fixtures/between/${start}/${end}?include=participants;state;scores&filters=fixtureLeagues:${PREMIER_LEAGUE_ID},${LA_LIGA_ID},${LIGUE_1_ID}`,{fresh:true,maxPages:10})
-    const configs=new Map<number,{key:SportmonksPredictionFixture['league_key'];name:SportmonksPredictionFixture['league_name']}>([
-      [PREMIER_LEAGUE_ID,{key:'premier-league',name:'Premier League'}],
-      [LA_LIGA_ID,{key:'la-liga',name:'La Liga'}],
-      [LIGUE_1_ID,{key:'ligue-1',name:'Ligue 1'}],
-    ])
+    const providerIds=selected.map((entry)=>entry.providerId)
+    const rows=await client.getAllPages(`/fixtures/between/${start}/${end}?include=participants;state;scores&filters=fixtureLeagues:${providerIds.join(',')}`,{fresh:true,maxPages:30})
+    const configs=new Map(selected.map((entry)=>[entry.providerId,{key:entry.league.key,name:entry.league.name}]))
     const now=new Date().toISOString()
-    return rows.flatMap((row)=>{
+    const fixtures=rows.flatMap((row)=>{
       const config=configs.get(Number(row.league_id));const kickoff=fixtureDate(row);const fixtureId=String(row.id ?? '')
       const participants=relationRows(row,'participants')
       const home=participants.find((team)=>String(record(team.meta)?.location ?? '').toLowerCase()==='home')
@@ -936,6 +970,11 @@ export async function fetchSportmonksPredictionFixtures(
       const date=new Date(kickoff);const {year,week}=isoWeek(date);const score=currentFixtureScore(row);const status=predictionFixtureStatus(row)
       return [{fixture_id:fixtureId,league_key:config.key,league_name:config.name,gameweek_key:`${year}-${String(week).padStart(2,'0')}`,home_team:homeTeam,away_team:awayTeam,kickoff_at:kickoff,status,home_score:status==='completed'?score.home:null,away_score:status==='completed'?score.away:null,is_derby:isKnownDerby(homeTeam,awayTeam),source_updated_at:now}]
     })
+    const competitions=selected.map(({league,providerId,country,countryCode})=>({
+      league_key:league.key,provider_league_id:providerId,league_name:league.name,
+      country_name:country,country_code:countryCode,is_active:true as const,last_seen_at:now,
+    }))
+    return {fixtures,competitions}
   }finally{observeTelemetry?.(client.getTelemetry())}
 }
 

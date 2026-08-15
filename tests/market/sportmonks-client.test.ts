@@ -79,8 +79,14 @@ describe('Sportmonks coverage trial client', () => {
     expect(batches.flatMap((batch) => batch.updates).map((update) => update.provider_fixture_id).sort()).toEqual(['101', '102'])
   })
 
-  it('normalizes real fixture cards, scores and derby flags across the three licensed leagues', async () => {
-    vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(response([
+  it('discovers licensed leagues before normalizing fixture cards, scores and derby flags', async () => {
+    vi.spyOn(globalThis, 'fetch')
+      .mockResolvedValueOnce(response([
+        { id: 8, name: 'Premier League', country: { name: 'England' } },
+        { id: 564, name: 'La Liga', country: { name: 'Spain' } },
+        { id: 301, name: 'Ligue 1', country: { name: 'France' } },
+      ]))
+      .mockResolvedValueOnce(response([
       {
         id: 9001, league_id: 8, starting_at: '2026-08-16 15:30:00',
         state: { short_name: 'NS' },
@@ -111,11 +117,13 @@ describe('Sportmonks coverage trial client', () => {
         ],
         scores: [],
       },
-    ]))
+      ]))
 
-    const fixtures = await fetchSportmonksPredictionFixtures('private-token')
+    const sync = await fetchSportmonksPredictionFixtures('private-token')
+    const fixtures = sync.fixtures
 
     expect(fixtures).toHaveLength(3)
+    expect(sync.competitions.map((competition) => competition.league_key)).toEqual(['premier-league', 'la-liga', 'ligue-1'])
     expect(fixtures.map((fixture) => fixture.league_key)).toEqual(['premier-league', 'la-liga', 'ligue-1'])
     expect(fixtures[0]).toMatchObject({ fixture_id: '9001', is_derby: true, status: 'scheduled' })
     expect(fixtures[1]).toMatchObject({ fixture_id: '9002', is_derby: true, status: 'completed', home_score: 2, away_score: 1 })

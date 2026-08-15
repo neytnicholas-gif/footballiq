@@ -52,10 +52,18 @@ export async function processLatestVerifiedGameweek() {
   if (heartbeatError) throw new Error(`Gameweek heartbeat could not start: ${heartbeatError.message}`)
 
   try {
-    const predictionFixtures = await fetchSportmonksPredictionFixtures(
+    const predictionSync = await fetchSportmonksPredictionFixtures(
       process.env.SPORTMONKS_API_TOKEN,
       (telemetry) => { predictionTelemetry = telemetry },
     )
+    const { fixtures: predictionFixtures, competitions: predictionCompetitions } = predictionSync
+    if (predictionCompetitions.length) {
+      const activeKeys = predictionCompetitions.map((competition) => competition.league_key)
+      const { error: deactivateError } = await admin.from('prediction_competitions').update({ is_active: false }).not('league_key', 'in', `(${activeKeys.join(',')})`)
+      if (deactivateError) throw new Error(`Prediction competition retirement failed: ${deactivateError.message}`)
+      const { error: competitionError } = await admin.from('prediction_competitions').upsert(predictionCompetitions, { onConflict: 'league_key' })
+      if (competitionError) throw new Error(`Prediction competition sync failed: ${competitionError.message}`)
+    }
     if (predictionFixtures.length) {
       const { error: fixtureError } = await admin.from('prediction_fixtures').upsert(predictionFixtures, { onConflict: 'fixture_id' })
       if (fixtureError) throw new Error(`Prediction fixture sync failed: ${fixtureError.message}`)
@@ -98,7 +106,7 @@ export async function processLatestVerifiedGameweek() {
     }
     const batches = []
     for (const gameweek of gameweeks) batches.push(await processBatch(admin, gameweek))
-    const report = { batchCount: batches.length, durationMs: Date.now() - startedAt, providerTelemetry, predictionTelemetry, predictionFixtureCount: predictionFixtures.length, leagueFixturesAssigned, predictionScoring, batches }
+    const report = { batchCount: batches.length, durationMs: Date.now() - startedAt, providerTelemetry, predictionTelemetry, predictionCompetitionCount: predictionCompetitions.length, predictionFixtureCount: predictionFixtures.length, leagueFixturesAssigned, predictionScoring, batches }
     await admin.from('market_processing_runs').update({
       status: 'completed', finished_at: new Date().toISOString(), report, error_message: null,
     }).eq('run_key', heartbeatRunKey)

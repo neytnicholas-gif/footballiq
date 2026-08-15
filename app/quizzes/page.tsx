@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { ArrowRight, Brain, Flag, Gamepad2, GitBranch, Search, Sparkles, TrendingUp, Trophy, Workflow } from 'lucide-react'
+import { ArrowRight, Brain, Flag, Gamepad2, GitBranch, Globe2, Search, Sparkles, TrendingUp, Trophy, Users, Workflow } from 'lucide-react'
 import { SiteHeader } from '@/components/site-header'
 import { duelPacks } from '@/lib/duel-packs'
 import { careerQuestions, higherLowerItems, whoAmIQuestions } from '@/lib/game-data'
@@ -16,6 +16,7 @@ const modes = [
   { kind: 'quiz', title: 'Referee Arena', description: 'Choose the foul, card or restart. Then learn the rule.', href: '/quizzes/referee-decisions', icon: Flag, accent: 'amber', count: `${refereeQuestions.length} scenarios`, duration: '8–12 min', skill: 'Laws' },
   { kind: 'game', title: 'Football Duels', description: 'Pick winners in fast stat battles across leagues, trophies and records.', href: '/quizzes/football-duels', icon: Trophy, accent: 'blue', count: `${duelPacks.length} packs`, duration: '5–10 min', skill: 'Knowledge' },
   { kind: 'quiz', title: 'Daily Challenge', description: 'Answer today’s five questions and keep your streak going.', href: '/daily', icon: Sparkles, accent: 'amber', count: '5 questions', duration: 'Daily', skill: 'Mixed' },
+  { kind: 'quiz', title: 'League World', description: 'Travel through 24 leagues, including all four nationwide English divisions.', href: '/quizzes/league-world', icon: Globe2, accent: 'blue', count: '24 league rooms', duration: '5 questions each', skill: 'World football' },
   { kind: 'game', title: 'Higher or Lower', description: 'Keep a streak alive by comparing one player record with the next.', href: '/quizzes/higher-or-lower', icon: TrendingUp, accent: 'rose', count: `${higherLowerItems.length} players`, duration: 'Quick run', skill: 'Stats' },
   { kind: 'game', title: 'Who Am I?', description: 'Open clues and guess the hidden player before your points run out.', href: '/quizzes/who-am-i', icon: Search, accent: 'violet', count: `${whoAmIQuestions.length} players`, duration: '5–10 min', skill: 'Deduction' },
   { kind: 'game', title: 'Career Path', description: 'Look at the clubs and guess which player had that career.', href: '/quizzes/career-path', icon: GitBranch, accent: 'sky', count: `${careerQuestions.length} careers`, duration: '5–10 min', skill: 'Recall' },
@@ -53,6 +54,7 @@ export default function QuizzesPage() {
       </section>
 
       <section className="mx-auto max-w-7xl px-4 py-7 sm:px-6 sm:py-9">
+        <div className="mb-7 flex flex-col gap-4 rounded-[1.5rem] border border-cyan-300/20 bg-[linear-gradient(120deg,rgba(34,211,238,.1),rgba(168,85,247,.08))] p-5 sm:flex-row sm:items-center sm:justify-between"><div><p className="text-xs font-black uppercase tracking-[.18em] text-cyan-300">Play together</p><h2 className="mt-1 text-xl font-black text-white">Build a quiz mini league.</h2><p className="mt-1 text-sm text-slate-400">Pick the quiz types, scoring rule, time window and League World rooms.</p></div><Link href="/quizzes/leagues" className="inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-xl bg-cyan-300 px-4 text-sm font-black text-slate-950"><Users className="size-4"/>Make a quiz league</Link></div>
         <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
           <div><h2 className="text-xl font-bold">Quizzes</h2><p className="mt-1 text-sm text-slate-400">Make a decision, see the answer and learn why.</p></div>
           <span className="rounded-lg border border-emerald-300/20 bg-emerald-300/10 px-3 py-1.5 text-xs font-semibold text-emerald-200">All systems ready</span>
