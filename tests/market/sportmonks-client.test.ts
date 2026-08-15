@@ -21,6 +21,23 @@ describe('Sportmonks coverage trial client', () => {
     }
   })
 
+  it('blocks Production requests until the licensed Early Shout domain is active', () => {
+    const previousEnvironment = process.env.VERCEL_ENV
+    const previousProductionUrl = process.env.VERCEL_PROJECT_PRODUCTION_URL
+    process.env.VERCEL_ENV = 'production'
+    process.env.VERCEL_PROJECT_PRODUCTION_URL = 'footballiq-tau.vercel.app'
+    try {
+      expect(() => createSportmonksClient('private-token')).toThrow('disabled until earlyshout.com is the Vercel Production domain')
+      process.env.VERCEL_PROJECT_PRODUCTION_URL = 'earlyshout.com'
+      expect(() => createSportmonksClient('private-token')).not.toThrow()
+    } finally {
+      if (previousEnvironment === undefined) delete process.env.VERCEL_ENV
+      else process.env.VERCEL_ENV = previousEnvironment
+      if (previousProductionUrl === undefined) delete process.env.VERCEL_PROJECT_PRODUCTION_URL
+      else process.env.VERCEL_PROJECT_PRODUCTION_URL = previousProductionUrl
+    }
+  })
+
   it('records the lowest remaining allowance reported for each API entity', async () => {
     const client = createSportmonksClient('private-token')
     vi.spyOn(globalThis, 'fetch')

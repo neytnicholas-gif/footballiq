@@ -1,4 +1,4 @@
--- FootballIQ real-performance persistence boundary.
+-- Historical FootballIQ real-performance persistence proposal.
 -- REVIEW ONLY: do not apply until provider licensing, staging tests, backups,
 -- security advisors and an explicit production change window are approved.
 

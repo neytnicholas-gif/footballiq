@@ -82,7 +82,7 @@ Opening values are independent FootballIQ game prices, not copied external price
 
 ## Persistence boundary still required
 
-The proposed, unapplied migration is `supabase/migrations/20260806125316_market_real_performance_persistence.sql`. It creates a non-exposed `market_ingestion` schema containing:
+The proposed, unapplied migration is `docs/proposed-migrations/20260806125316_market_real_performance_persistence.sql`. It creates a non-exposed `market_ingestion` schema containing:
 
 - provider configuration with disabled-by-default and licence-verification constraints;
 - immutable methodology versions and checksums;

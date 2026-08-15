@@ -19,7 +19,7 @@ for (const path of routes) {
     const response = await fetch(new URL(path, baseUrl), {
       redirect: 'follow',
       signal: AbortSignal.timeout(timeoutMs),
-      headers: { Accept: 'text/html', 'User-Agent': 'FootballIQ-public-smoke/1.0' },
+      headers: { Accept: 'text/html', 'User-Agent': 'Early-Shout-public-smoke/1.0' },
     })
     const body = await response.text()
     const validHtml = response.headers.get('content-type')?.includes('text/html')
@@ -38,12 +38,12 @@ const apiStarted = performance.now()
 try {
   const response = await fetch(new URL('/api/market/catalogue', baseUrl), {
     signal: AbortSignal.timeout(timeoutMs),
-    headers: { Accept: 'application/json', 'User-Agent': 'FootballIQ-public-smoke/1.0' },
+    headers: { Accept: 'application/json', 'User-Agent': 'Early-Shout-public-smoke/1.0' },
   })
   const payload = await response.json()
   const competitionKeys = new Set((payload.competitions ?? []).map((competition) => competition.key))
   const valid = response.ok
-    && payload.source === 'footballiq-game-price-book'
+    && payload.source === 'early-shout-game-price-book'
     && Array.isArray(payload.players)
     && payload.players.length === payload.playerCount
     && payload.playerCount >= 500

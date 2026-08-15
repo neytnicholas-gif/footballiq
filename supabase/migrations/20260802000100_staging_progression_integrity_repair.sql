@@ -1,11 +1,98 @@
 -- Repair progression integrity for idempotent, replay-safe quiz completion.
 -- This migration is additive and intended for local review before any remote apply.
 
+create table if not exists public.mode_stats (
+  user_id uuid not null references auth.users(id) on delete cascade,
+  mode text not null,
+  rating integer not null default 1000,
+  xp integer not null default 0,
+  quizzes_completed integer not null default 0,
+  correct_answers integer not null default 0,
+  total_answers integer not null default 0,
+  perfect_quizzes integer not null default 0,
+  best_score integer not null default 0,
+  updated_at timestamptz not null default now(),
+  primary key (user_id, mode)
+);
+
+create table if not exists public.season_stats (
+  user_id uuid not null references auth.users(id) on delete cascade,
+  season_id text not null,
+  rating integer not null default 1000,
+  xp integer not null default 0,
+  quizzes_completed integer not null default 0,
+  correct_answers integer not null default 0,
+  total_answers integer not null default 0,
+  perfect_quizzes integer not null default 0,
+  updated_at timestamptz not null default now(),
+  primary key (user_id, season_id)
+);
+
+alter table public.mode_stats enable row level security;
+alter table public.season_stats enable row level security;
+
+drop policy if exists "Mode stats are publicly readable" on public.mode_stats;
+create policy "Mode stats are publicly readable"
+  on public.mode_stats for select to anon, authenticated using (true);
+drop policy if exists "Season stats are publicly readable" on public.season_stats;
+create policy "Season stats are publicly readable"
+  on public.season_stats for select to anon, authenticated using (true);
+
+revoke all on table public.mode_stats, public.season_stats from public, anon, authenticated;
+grant select on table public.mode_stats, public.season_stats to anon, authenticated;
+grant all on table public.mode_stats, public.season_stats to service_role;
+
+create index if not exists mode_stats_mode_rating_idx
+  on public.mode_stats(mode, rating desc);
+create index if not exists season_stats_season_rating_idx
+  on public.season_stats(season_id, rating desc);
+
+alter table if exists public.quiz_results
+  add column if not exists activity_date date;
+update public.quiz_results
+set activity_date = (completed_at at time zone 'Europe/Brussels')::date
+where activity_date is null;
+alter table if exists public.quiz_results
+  alter column activity_date set default ((now() at time zone 'Europe/Brussels')::date);
+
+create or replace view public.public_leaderboard_profiles as
+select
+  id,
+  username,
+  rating,
+  xp,
+  quizzes_completed,
+  correct_answers,
+  total_answers,
+  perfect_quizzes,
+  current_streak,
+  longest_streak,
+  created_at
+from public.profiles
+where username is not null;
+
+create or replace view public.public_leaderboard_quiz_results as
+select
+  user_id,
+  quiz_id,
+  score,
+  total,
+  xp_earned,
+  activity_date,
+  completed_at
+from public.quiz_results;
+
+revoke all on table public.public_leaderboard_profiles, public.public_leaderboard_quiz_results
+  from public, anon, authenticated;
+grant select on table public.public_leaderboard_profiles, public.public_leaderboard_quiz_results
+  to anon, authenticated;
+
+
 alter table if exists public.quiz_results
   add column if not exists completion_key text;
 
 update public.quiz_results
-set completion_key = concat('legacy:', id::text)
+set completion_key = concat('legacy:', md5(concat_ws(':', id::text, user_id::text, completed_at::text)))
 where completion_key is null;
 
 alter table if exists public.quiz_results

@@ -348,6 +348,12 @@ function assertLicensedRuntime() {
   if (vercelEnvironment && vercelEnvironment !== 'production') {
     throw new Error('Sportmonks API calls are disabled outside the licensed Production environment.')
   }
+  if (vercelEnvironment === 'production') {
+    const productionHostname = process.env.VERCEL_PROJECT_PRODUCTION_URL?.trim().toLowerCase()
+    if (productionHostname !== 'earlyshout.com') {
+      throw new Error('Sportmonks API calls are disabled until earlyshout.com is the Vercel Production domain.')
+    }
+  }
 }
 
 export function createSportmonksClient(apiToken = process.env.SPORTMONKS_API_TOKEN) {

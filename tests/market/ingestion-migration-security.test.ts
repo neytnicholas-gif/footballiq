@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 
-const migrationPath = 'supabase/migrations/20260806125316_market_real_performance_persistence.sql'
+const migrationPath = 'docs/proposed-migrations/20260806125316_market_real_performance_persistence.sql'
 const sql = readFileSync(migrationPath, 'utf8')
 
 describe('real-performance migration security contract', () => {
