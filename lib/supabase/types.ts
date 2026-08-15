@@ -794,38 +794,6 @@ export type Database = {
       }
     }
     Views: {
-      public_leaderboard_profiles: {
-        Row: {
-          id: string
-          username: string
-          rating: number
-          xp: number
-          quizzes_completed: number
-          correct_answers: number
-          total_answers: number
-          perfect_quizzes: number
-          current_streak: number
-          longest_streak: number
-          created_at: string
-        }
-        Insert: never
-        Update: never
-        Relationships: []
-      }
-      public_leaderboard_quiz_results: {
-        Row: {
-          user_id: string
-          quiz_id: string
-          score: number
-          total: number
-          xp_earned: number
-          activity_date: string | null
-          completed_at: string
-        }
-        Insert: never
-        Update: never
-        Relationships: []
-      }
       market_public_leaderboard: {
         Row: {
           user_id: string
@@ -848,6 +816,40 @@ export type Database = {
       }
     }
     Functions: {
+      get_public_profiles: {
+        Args: {
+          p_user_ids?: string[] | null
+          p_username?: string | null
+        }
+        Returns: Array<{
+          id: string
+          username: string
+          rating: number
+          xp: number
+          quizzes_completed: number
+          correct_answers: number
+          total_answers: number
+          perfect_quizzes: number
+          current_streak: number
+          longest_streak: number
+          created_at: string
+        }>
+      }
+      get_public_quiz_results: {
+        Args: {
+          p_start_date: string
+          p_end_date: string
+        }
+        Returns: Array<{
+          user_id: string
+          quiz_id: string
+          score: number
+          total: number
+          xp_earned: number
+          activity_date: string | null
+          completed_at: string
+        }>
+      }
       beta_join: {
         Args: {
           p_source?: string

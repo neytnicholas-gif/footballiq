@@ -11,7 +11,7 @@ import { SectionHeader, StatCard, SurfaceCard, StatusBadge } from '@/components/
 import { ClubColourDot } from '@/components/market/club-colour-dot'
 import type { Database } from '@/lib/supabase/types'
 
-type PublicProfile = Database['public']['Views']['public_leaderboard_profiles']['Row']
+type PublicProfile = Database['public']['Functions']['get_public_profiles']['Returns'][number]
 type MarketPublicProfile = {
   preferences?: { show_badges: boolean; show_market_stats: boolean; show_roster: boolean; active_background: string | null; active_avatar: string | null; active_frame: string | null; active_title: string | null; active_formation: string }
   market_stats?: { total_account_value: number; realised_profit: number; trades: number } | null
@@ -28,7 +28,6 @@ export default function PublicPlayerPage() {
   const username = decodeURIComponent(params.username)
   const [profile, setProfile] = useState<Profile | null>(null)
   const [loading, setLoading] = useState(true)
-  const [accuracy, setAccuracy] = useState<number | null>(null)
   const [marketProfile, setMarketProfile] = useState<MarketPublicProfile | null>(null)
 
   useEffect(() => {
@@ -37,47 +36,20 @@ export default function PublicPlayerPage() {
     async function load() {
       let resolved: PublicProfile | null = null
 
-      const { data, error } = await supabase
-        .from('public_leaderboard_profiles')
-        .select('id,username,rating,xp,quizzes_completed,correct_answers,total_answers,perfect_quizzes,current_streak,longest_streak,created_at')
-        .eq('username', username)
-        .maybeSingle()
+      const { data } = await supabase.rpc('get_public_profiles', {
+        p_user_ids: null,
+        p_username: username,
+      })
 
-      resolved = (data as PublicProfile | null) ?? null
+      resolved = ((data as PublicProfile[] | null) ?? [])[0] ?? null
 
       // Generated database types are updated after this migration reaches staging.
       // @ts-expect-error market_public_profile is introduced by the progression migration.
       const marketResult = await supabase.rpc('market_public_profile', { p_username: username })
       if (!marketResult.error && active) setMarketProfile(marketResult.data as MarketPublicProfile | null)
 
-      if (error) {
-        const fallback = await supabase
-          .from('profiles')
-          .select('id,username,rating,xp,quizzes_completed,correct_answers,total_answers,perfect_quizzes,current_streak,longest_streak,created_at')
-          .eq('username', username)
-          .maybeSingle()
-
-        const fallbackData = fallback.data as (PublicProfile & { username: string | null }) | null
-        resolved = fallbackData?.username ? (fallbackData as PublicProfile) : null
-      }
-
       if (!active) return
       setProfile((resolved as PublicProfile | null) as Profile | null)
-
-      if (resolved?.id) {
-        const { data: results } = await supabase
-          .from('quiz_results')
-          .select('score,total')
-          .eq('user_id', resolved.id)
-
-        if (!active) return
-        const totals = (results ?? []).reduce((accumulator, row) => {
-          accumulator.correct += row.score
-          accumulator.total += row.total
-          return accumulator
-        }, { correct: 0, total: 0 })
-        setAccuracy(totals.total > 0 ? Math.round((totals.correct / totals.total) * 100) : null)
-      }
 
       setLoading(false)
     }
@@ -86,7 +58,7 @@ export default function PublicPlayerPage() {
   }, [username])
 
   const rank = getRankProgress(profile?.xp ?? 0)
-  const resolvedAccuracy = accuracy ?? (profile?.total_answers ? Math.round(profile.correct_answers / profile.total_answers * 100) : null)
+  const resolvedAccuracy = profile?.total_answers ? Math.round(profile.correct_answers / profile.total_answers * 100) : null
   const backgroundClass = marketProfile?.preferences?.active_background === 'bg_floodlights'
     ? 'bg-[radial-gradient(circle_at_20%_0%,rgba(52,211,153,.28),transparent_32%),linear-gradient(135deg,#10231d,#174b3a)] text-white'
     : marketProfile?.preferences?.active_background === 'bg_tactical_grid'

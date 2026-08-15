@@ -13,7 +13,7 @@ type Board = 'overall' | 'daily' | 'weekly' | 'monthly' | 'season' | string
 type ModeStat = { user_id: string; mode: string; rating: number; xp: number; quizzes_completed: number; correct_answers: number; total_answers: number }
 type QuizResult = { user_id: string; score: number; total: number; xp_earned: number; activity_date: string | null; completed_at: string }
 type SeasonStat = { user_id: string; season_id: string; rating: number; xp: number; quizzes_completed: number; correct_answers: number; total_answers: number }
-type PublicProfile = Database['public']['Views']['public_leaderboard_profiles']['Row']
+type PublicProfile = Database['public']['Functions']['get_public_profiles']['Returns'][number]
 
 const periodBoards = [
   { id: 'daily', label: 'Today', emoji: '☀️' },
@@ -91,35 +91,13 @@ export function CompetitiveLeaderboard({ initialBoard = 'overall' }: { initialBo
   }, [board, pathname, router])
 
   async function getPublicProfiles(ids?: string[]) {
-    let query = supabase
-      .from('public_leaderboard_profiles')
-      .select('id,username,rating,xp,quizzes_completed,correct_answers,total_answers,perfect_quizzes,current_streak,longest_streak,created_at')
+    const { data, error: queryError } = await supabase.rpc('get_public_profiles', {
+      p_user_ids: ids?.length ? ids : null,
+      p_username: null,
+    })
 
-    if (ids && ids.length > 0) {
-      query = query.in('id', ids)
-    }
-
-    const publicResult = await query
-    if (!publicResult.error) {
-      return (publicResult.data as PublicProfile[] | null) ?? []
-    }
-
-    // Fallback for environments where the hardened SQL view has not been applied yet.
-    let fallbackQuery = supabase
-      .from('profiles')
-      .select('id,username,rating,xp,quizzes_completed,correct_answers,total_answers,perfect_quizzes,current_streak,longest_streak,created_at')
-      .not('username', 'is', null)
-
-    if (ids && ids.length > 0) {
-      fallbackQuery = fallbackQuery.in('id', ids)
-    }
-
-    const fallbackResult = await fallbackQuery
-    if (fallbackResult.error) {
-      throw fallbackResult.error
-    }
-
-    return (fallbackResult.data as PublicProfile[] | null) ?? []
+    if (queryError) throw queryError
+    return (data as PublicProfile[] | null) ?? []
   }
 
   async function usernamesFor(ids: string[]) {
@@ -145,37 +123,10 @@ export function CompetitiveLeaderboard({ initialBoard = 'overall' }: { initialBo
         })))
       } else if (selected === 'daily' || selected === 'weekly' || selected === 'monthly') {
         const { startKey, endKey } = periodRangeBrussels(selected)
-        let { data, error: queryError } = await supabase
-          .from('public_leaderboard_quiz_results')
-          .select('user_id,score,total,xp_earned,activity_date,completed_at')
-          .gte('activity_date', startKey)
-          .lt('activity_date', endKey)
-          .order('completed_at', { ascending: false })
-          .limit(2000)
-
-        if (queryError) {
-          const fallback = await supabase
-            .from('quiz_results')
-            .select('user_id,score,total,xp_earned,activity_date,completed_at')
-            .gte('activity_date', startKey)
-            .lt('activity_date', endKey)
-            .order('completed_at', { ascending: false })
-            .limit(2000)
-          data = fallback.data
-          queryError = fallback.error
-        }
-
-        if (queryError && queryError.message.toLowerCase().includes('activity_date')) {
-          const fallbackUtc = await supabase
-            .from('quiz_results')
-            .select('user_id,score,total,xp_earned,completed_at')
-            .gte('completed_at', `${startKey}T00:00:00.000Z`)
-            .lt('completed_at', `${endKey}T00:00:00.000Z`)
-            .order('completed_at', { ascending: false })
-            .limit(2000)
-          data = fallbackUtc.data as QuizResult[] | null
-          queryError = fallbackUtc.error
-        }
+        const { data, error: queryError } = await supabase.rpc('get_public_quiz_results', {
+          p_start_date: startKey,
+          p_end_date: endKey,
+        })
 
         if (queryError) throw queryError
         const totals = new Map<string, { xp: number; correct: number; total: number; quizzes: number }>()
