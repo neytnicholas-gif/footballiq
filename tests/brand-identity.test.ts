@@ -37,8 +37,11 @@ describe('Early Shout identity', () => {
       'components/site-footer.tsx',
       'components/market/player-market-home.tsx',
       'components/market/player-market-browser.tsx',
+      'components/market/player-market-portfolio.tsx',
+      'components/market/player-market-detail.tsx',
+      'app/api/market/catalogue/route.ts',
     ].map(read).join('\n')
 
-    expect(publicSource).not.toMatch(/Back Your Eye|backyoureye|B\/Y/)
+    expect(publicSource).not.toMatch(/FootballIQ|Verdict XI|Back Your Eye|backyoureye|B\/Y/)
   })
 })

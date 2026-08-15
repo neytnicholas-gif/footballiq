@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { useMemo } from 'react'
 import type { ReactNode } from 'react'
-import { ArrowUpRight, Award, Minus, TrendingDown, TrendingUp, Wallet } from 'lucide-react'
+import { ArrowUpRight, Award, CircleDollarSign, Minus, ShieldCheck, Sparkles, TrendingDown, TrendingUp, Users, Wallet } from 'lucide-react'
 import { MarketPlayerChip } from '@/components/market/market-player-chip'
 import { ClubColourDot } from '@/components/market/club-colour-dot'
 import { useMarketFormation } from '@/components/market/use-market-formation'
@@ -62,6 +62,7 @@ export function PlayerMarketPortfolio({
     return ((portfolio.total_account_value - portfolio.starting_balance) / portfolio.starting_balance) * 100
   }, [portfolio])
   const movementLabel = (value: number) => value === 0 ? 'No movement' : `${value > 0 ? '+' : '-'}${formatFiqCompact(Math.abs(value))}`
+  const rosterProgress = Math.round((holdings.length / MARKET_MAX_PORTFOLIO_SIZE) * 100)
 
   if (!portfolio) {
     return (
@@ -75,52 +76,62 @@ export function PlayerMarketPortfolio({
 
   return (
     <div className="space-y-5">
-      <section className="rounded-[2rem] border border-border bg-card p-6 sm:p-8">
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <h1 className="text-3xl font-black">Your full roster</h1>
-            <p className="mt-2 text-sm text-muted-foreground">Your {activeFormation} plan: {limits.GK} GK, {limits.DEF} DEF, {limits.MID} MID, {limits.FWD} FWD.</p>
+      <section className="relative overflow-hidden rounded-[2rem] border border-emerald-800/20 bg-[#07352f] text-white shadow-[0_28px_80px_-48px_rgba(6,78,59,.95)]">
+        <div aria-hidden="true" className="absolute -right-20 -top-24 size-72 rounded-full bg-emerald-300/10 blur-3xl" />
+        <div aria-hidden="true" className="absolute -bottom-28 left-1/3 size-64 rounded-full bg-cyan-300/10 blur-3xl" />
+        <div className="relative p-6 sm:p-8">
+          <div className="flex flex-wrap items-start justify-between gap-5">
+            <div className="max-w-2xl">
+              <p className="inline-flex items-center gap-2 rounded-full border border-emerald-200/20 bg-white/10 px-3 py-1 text-[11px] font-black uppercase tracking-[.18em] text-emerald-100"><Sparkles className="size-3.5" />Squad room</p>
+              <h1 className="mt-4 text-3xl font-black tracking-tight sm:text-5xl">Your {activeFormation} starting XI</h1>
+              <p className="mt-2 max-w-xl text-sm leading-6 text-emerald-50/75">Build all 11 places, watch each game price move, then decide who earns a place next week.</p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <Link href="/market/players#live-roster" className="rounded-xl bg-white px-4 py-2.5 text-sm font-black text-emerald-950 shadow-sm transition hover:-translate-y-0.5 hover:bg-emerald-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white">Change your team</Link>
+              <Link href="/market/rewards" className="inline-flex items-center gap-2 rounded-xl border border-white/20 bg-white/10 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-white/15 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"><Award className="size-4"/>Rewards</Link>
+            </div>
           </div>
-          <Link href="/market/players#live-roster" className="rounded-xl border border-border px-4 py-2 text-sm font-semibold transition hover:bg-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">Back to market</Link>
-          <Link href="/market/rewards" className="inline-flex items-center gap-2 rounded-xl border border-primary/30 bg-primary/10 px-4 py-2 text-sm font-semibold text-primary"><Award className="size-4"/>Challenges & rewards</Link>
-        </div>
 
-        <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-          <Metric label="Total account value" value={formatFiqCompact(portfolio.total_account_value)} />
-          <Metric label="Budget remaining" value={formatFiqCompact(portfolio.available_balance)} />
-          <Metric label="Total spent" value={formatFiqCompact(totalSpent)} />
-          <Metric label="Current squad value" value={formatFiqCompact(portfolio.portfolio_value)} />
-          <Metric label="Realised game gain/loss" value={movementLabel(portfolio.realized_profit_loss)} tone={portfolio.realized_profit_loss > 0 ? 'positive' : portfolio.realized_profit_loss < 0 ? 'negative' : 'default'} />
-        </div>
+          <div className="mt-7 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <HeroMetric icon={<Users className="size-4" />} label="Players signed" value={`${holdings.length} / ${MARKET_MAX_PORTFOLIO_SIZE}`} />
+            <HeroMetric icon={<Wallet className="size-4" />} label="Cash to spend" value={formatFiqCompact(portfolio.available_balance)} />
+            <HeroMetric icon={<ShieldCheck className="size-4" />} label="Squad value" value={formatFiqCompact(portfolio.portfolio_value)} />
+            <HeroMetric icon={<CircleDollarSign className="size-4" />} label="Total account" value={formatFiqCompact(portfolio.total_account_value)} />
+          </div>
 
-        <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          <Metric label="Today movement" value={movementLabel(todayMovement)} tone={todayMovement > 0 ? 'positive' : todayMovement < 0 ? 'negative' : 'default'} />
-          <Metric label="Season movement" value={movementLabel(seasonMovement)} tone={seasonMovement > 0 ? 'positive' : seasonMovement < 0 ? 'negative' : 'default'} />
-          <Metric
-            label="Best performer"
-            value={bestHolding ? movementLabel(bestHolding.unrealized_profit_loss) : 'N/A'}
-            tone={bestHolding && bestHolding.unrealized_profit_loss > 0 ? 'positive' : 'default'}
-          />
-          <Metric
-            label="Weakest performer"
-            value={worstHolding ? movementLabel(worstHolding.unrealized_profit_loss) : 'N/A'}
-            tone={worstHolding && worstHolding.unrealized_profit_loss < 0 ? 'negative' : 'default'}
-          />
-        </div>
-
-        <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          <Metric label="Total game gain/loss" value={movementLabel(totalProfitLoss)} tone={totalProfitLoss > 0 ? 'positive' : totalProfitLoss < 0 ? 'negative' : 'default'} />
-          <Metric label="Overall game return" value={totalRoi === 0 ? 'No movement' : `${totalRoi > 0 ? '+' : ''}${totalRoi.toFixed(2)}%`} tone={totalRoi > 0 ? 'positive' : totalRoi < 0 ? 'negative' : 'default'} />
-          <Metric label="Legacy update records" value={String(runs.length)} />
-        </div>
-
-        <div className="mt-4 rounded-xl border border-border bg-background/60 px-4 py-3 text-sm text-muted-foreground">
-          Transfers this gameweek: {buysRemaining} of 11 signings left · sell players whenever you like
-          <span className="ml-2">· {activeFormation}: GK {formation.GK}/{limits.GK}, DEF {formation.DEF}/{limits.DEF}, MID {formation.MID}/{limits.MID}, FWD {formation.FWD}/{limits.FWD}</span>
+          <div className="mt-5 grid gap-4 border-t border-white/10 pt-5 lg:grid-cols-[1fr_auto] lg:items-end">
+            <div>
+              <div className="flex items-center justify-between gap-4 text-xs font-bold text-emerald-50/75"><span>Roster complete</span><span>{rosterProgress}%</span></div>
+              <div className="mt-2 h-2 overflow-hidden rounded-full bg-black/25"><span className="block h-full rounded-full bg-gradient-to-r from-emerald-300 to-cyan-300 transition-[width]" style={{ width: `${rosterProgress}%` }} /></div>
+            </div>
+            <p className="text-xs leading-5 text-emerald-50/75"><strong className="text-white">{buysRemaining} signings left</strong> this gameweek · GK {formation.GK}/{limits.GK} · DEF {formation.DEF}/{limits.DEF} · MID {formation.MID}/{limits.MID} · FWD {formation.FWD}/{limits.FWD}</p>
+          </div>
         </div>
       </section>
 
       <RosterPitch holdings={holdings} playersById={playersById} limits={limits} activeFormation={activeFormation} />
+
+      <section aria-labelledby="roster-performance-title" className="rounded-[2rem] border border-emerald-950/10 bg-white/80 p-5 shadow-sm sm:p-6">
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <div><p className="text-[11px] font-black uppercase tracking-[.18em] text-emerald-700">Your numbers</p><h2 id="roster-performance-title" className="mt-1 text-2xl font-black">Squad performance</h2></div>
+          <p className="text-xs text-muted-foreground">Simple game totals · no real money</p>
+        </div>
+        <div className="mt-5 grid gap-x-5 gap-y-4 sm:grid-cols-2 lg:grid-cols-4">
+          <Metric label="Total game gain/loss" value={movementLabel(totalProfitLoss)} tone={totalProfitLoss > 0 ? 'positive' : totalProfitLoss < 0 ? 'negative' : 'default'} />
+          <Metric label="This squad's movement" value={movementLabel(todayMovement)} tone={todayMovement > 0 ? 'positive' : todayMovement < 0 ? 'negative' : 'default'} />
+          <Metric label="Cash already spent" value={formatFiqCompact(totalSpent)} />
+          <Metric label="Overall game return" value={totalRoi === 0 ? 'No movement' : `${totalRoi > 0 ? '+' : ''}${totalRoi.toFixed(2)}%`} tone={totalRoi > 0 ? 'positive' : totalRoi < 0 ? 'negative' : 'default'} />
+        </div>
+        <details className="group mt-5 border-t border-emerald-950/10 pt-4">
+          <summary className="cursor-pointer list-none text-sm font-bold text-emerald-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">More performance details <span aria-hidden="true" className="ml-1 inline-block transition group-open:rotate-180">⌄</span></summary>
+          <div className="mt-4 grid gap-x-5 gap-y-4 sm:grid-cols-2 lg:grid-cols-4">
+            <Metric label="Season movement" value={movementLabel(seasonMovement)} tone={seasonMovement > 0 ? 'positive' : seasonMovement < 0 ? 'negative' : 'default'} />
+            <Metric label="Realised gain/loss" value={movementLabel(portfolio.realized_profit_loss)} tone={portfolio.realized_profit_loss > 0 ? 'positive' : portfolio.realized_profit_loss < 0 ? 'negative' : 'default'} />
+            <Metric label="Best player" value={bestHolding ? movementLabel(bestHolding.unrealized_profit_loss) : 'Not yet'} tone={bestHolding && bestHolding.unrealized_profit_loss > 0 ? 'positive' : 'default'} />
+            <Metric label="Biggest drop" value={worstHolding ? movementLabel(worstHolding.unrealized_profit_loss) : 'Not yet'} tone={worstHolding && worstHolding.unrealized_profit_loss < 0 ? 'negative' : 'default'} />
+          </div>
+        </details>
+      </section>
 
       <section className="rounded-[2rem] border border-border bg-card p-6">
         <div className="mb-4 flex items-center justify-between">
@@ -267,13 +278,13 @@ function RosterPitch({
 }) {
   const holdingByPlayerId = new Map(holdings.map((holding) => [holding.player_id, holding]))
   return (
-    <section aria-labelledby="formation-board-title" className="overflow-hidden rounded-[2rem] border border-emerald-950/20 bg-emerald-950 text-white shadow-[0_28px_80px_-45px_rgba(6,78,59,.9)]">
-      <div className="flex flex-wrap items-start justify-between gap-3 border-b border-white/10 px-5 py-4 sm:px-7">
-        <div><p className="text-[10px] font-bold uppercase tracking-[.2em] text-emerald-200">Full-screen roster</p><h2 id="formation-board-title" className="mt-1 text-2xl font-black">Your {activeFormation} team</h2><p className="mt-1 text-xs text-emerald-100/70">Tap any player to open their full stats, form and price details.</p></div>
-        <Link href="/market/players" className="rounded-xl border border-white/20 bg-white/10 px-4 py-2 text-sm font-bold transition hover:bg-white/20 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white">Change your team</Link>
+    <section aria-labelledby="formation-board-title" className="overflow-hidden rounded-[2rem] border border-emerald-950/20 bg-[#052e29] text-white shadow-[0_28px_80px_-45px_rgba(6,78,59,.9)]">
+      <div className="flex flex-wrap items-start justify-between gap-3 border-b border-white/10 bg-black/10 px-5 py-5 sm:px-7">
+        <div><p className="text-[10px] font-black uppercase tracking-[.2em] text-emerald-300">Matchday board</p><h2 id="formation-board-title" className="mt-1 text-2xl font-black">Your {activeFormation} team</h2><p className="mt-1 text-xs text-emerald-50/70">Select a player for their price, form and match details.</p></div>
+        <div className="flex items-center gap-2"><span className="rounded-full border border-emerald-200/20 bg-emerald-300/10 px-3 py-1.5 text-xs font-black text-emerald-100">{holdings.length}/{MARKET_MAX_PORTFOLIO_SIZE} selected</span><Link href="/market/players" className="rounded-xl bg-white px-4 py-2 text-sm font-black text-emerald-950 transition hover:bg-emerald-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white">Find players</Link></div>
       </div>
-      <div className="relative bg-[linear-gradient(90deg,rgba(255,255,255,.025)_50%,transparent_50%),linear-gradient(rgba(255,255,255,.035)_50%,transparent_50%)] bg-[size:48px_48px] px-3 py-6 sm:px-6 sm:py-8">
-        <div aria-hidden="true" className="pointer-events-none absolute inset-4 rounded-[1.5rem] border-2 border-white/12"><span className="absolute left-1/2 top-1/2 size-24 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white/10" /><span className="absolute left-1/2 top-0 h-full border-l-2 border-white/10" /></div>
+      <div className="relative bg-[radial-gradient(circle_at_50%_0%,rgba(52,211,153,.16),transparent_35%),linear-gradient(90deg,rgba(255,255,255,.028)_50%,transparent_50%),linear-gradient(rgba(255,255,255,.04)_50%,transparent_50%)] bg-[size:auto,48px_48px,48px_48px] px-3 py-7 sm:px-6 sm:py-9">
+        <div aria-hidden="true" className="pointer-events-none absolute inset-4 rounded-[1.5rem] border-2 border-white/15"><span className="absolute left-1/2 top-1/2 size-24 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white/12" /><span className="absolute left-1/2 top-0 h-full border-l-2 border-white/12" /><span className="absolute left-1/2 top-0 h-12 w-36 -translate-x-1/2 rounded-b-[3rem] border-x-2 border-b-2 border-white/10" /><span className="absolute bottom-0 left-1/2 h-12 w-36 -translate-x-1/2 rounded-t-[3rem] border-x-2 border-t-2 border-white/10" /></div>
         <div className="relative space-y-6 sm:space-y-7">
           {positionRows.map(({ position, label }) => {
             const players = holdings.map((holding) => playersById.get(holding.player_id)).filter((player): player is MarketPlayer => player?.position === position)
@@ -290,7 +301,8 @@ function RosterPlayerCard({ player, holding }: { player: MarketPlayer; holding?:
   const movement = holding?.unrealized_profit_loss ?? player.current_value - player.previous_value
   const MovementIcon = movement > 0 ? TrendingUp : movement < 0 ? TrendingDown : Minus
   return (
-    <div role="listitem" className="w-28 shrink-0 snap-center sm:w-32"><Link href={`/market/player/${encodeURIComponent(player.slug)}`} aria-label={`Open ${player.display_name} details`} className="group block rounded-2xl border border-white/20 bg-white/95 p-2 text-center text-slate-950 shadow-lg outline-none transition hover:-translate-y-1 hover:border-emerald-200 focus-visible:ring-2 focus-visible:ring-white">
+    <div role="listitem" className="w-28 shrink-0 snap-center sm:w-32"><Link href={`/market/player/${encodeURIComponent(player.slug)}`} aria-label={`Open ${player.display_name} details`} className="group block rounded-2xl border border-white/20 bg-white/95 p-2 text-center text-slate-950 shadow-[0_16px_35px_-22px_rgba(0,0,0,.9)] outline-none transition hover:-translate-y-1 hover:border-emerald-200 hover:shadow-xl focus-visible:ring-2 focus-visible:ring-white">
+      <span className="mb-1 inline-flex rounded-full bg-emerald-950 px-2 py-0.5 text-[8px] font-black tracking-wide text-emerald-100">{player.position}</span>
       <span className="mx-auto block w-fit"><MarketPlayerChip player={player} /></span>
       <span className="mt-2 flex min-w-0 items-center justify-center gap-1.5 text-xs font-black" title={player.display_name}><ClubColourDot clubName={player.club_name} className="size-2.5 shadow-[0_0_0_1px_rgba(255,255,255,.8)]" /><span className="truncate">{player.short_name || player.display_name}</span></span>
       <span className="mt-0.5 block truncate text-[9px] text-slate-500">{player.club_name}</span>
@@ -302,16 +314,20 @@ function RosterPlayerCard({ player, holding }: { player: MarketPlayer; holding?:
 }
 
 function EmptyRosterSlot({ position }: { position: 'GK' | 'DEF' | 'MID' | 'FWD' }) {
-  return <div role="listitem" className="w-28 shrink-0 snap-center sm:w-32"><Link href={`/market/players?position=${position}`} aria-label={`Add a ${position} player`} className="flex h-[150px] flex-col items-center justify-center rounded-2xl border border-dashed border-white/30 bg-white/5 p-2 text-center text-emerald-100 transition hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"><span className="text-2xl font-black">+</span><span className="mt-1 text-[10px] font-bold">Add {position}</span></Link></div>
+  const label = position === 'GK' ? 'goalkeeper' : position === 'DEF' ? 'defender' : position === 'MID' ? 'midfielder' : 'forward'
+  const tone = position === 'GK' ? 'from-amber-300/20' : position === 'DEF' ? 'from-cyan-300/15' : position === 'MID' ? 'from-emerald-300/15' : 'from-rose-300/15'
+  return <div role="listitem" className="w-28 shrink-0 snap-center sm:w-32"><Link href={`/market/players?position=${position}`} aria-label={`Choose a ${label}`} className={`group flex h-[158px] flex-col items-center justify-center rounded-2xl border border-dashed border-white/30 bg-gradient-to-b ${tone} to-white/5 p-2 text-center text-white transition hover:-translate-y-0.5 hover:border-white/55 hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white`}><span className="grid size-10 place-items-center rounded-full border border-white/25 bg-white/10 text-2xl font-light transition group-hover:scale-110 group-hover:bg-white/20">+</span><span className="mt-3 text-[10px] font-black uppercase tracking-wide">Choose {position}</span><span className="mt-1 text-[9px] text-emerald-50/60">Open market</span></Link></div>
 }
 
 function Metric({ label, value, tone = 'default' }: { label: string; value: string; tone?: 'default' | 'positive' | 'negative' }) {
-  const icon = label === 'Available balance' ? <Wallet className="size-4" /> : null
   return (
-    <div className="rounded-xl border border-border bg-background/60 p-3">
-      <p className="text-xs text-muted-foreground">{label}</p>
-      <p className={`mt-1 text-xl font-semibold ${tone === 'positive' ? 'text-primary' : tone === 'negative' ? 'text-destructive' : 'text-foreground'}`}>{value}</p>
-      {icon ? <div className="mt-1 text-muted-foreground">{icon as ReactNode}</div> : null}
+    <div className="border-l-2 border-emerald-900/10 pl-3 first:border-l-0 first:pl-0 sm:first:border-l-2 sm:first:pl-3">
+      <p className="text-[11px] font-semibold text-muted-foreground">{label}</p>
+      <p className={`mt-1 text-lg font-black ${tone === 'positive' ? 'text-emerald-700' : tone === 'negative' ? 'text-rose-700' : 'text-foreground'}`}>{value}</p>
     </div>
   )
+}
+
+function HeroMetric({ icon, label, value }: { icon: ReactNode; label: string; value: string }) {
+  return <div className="rounded-2xl border border-white/10 bg-white/[.08] p-4 backdrop-blur-sm"><p className="flex items-center gap-2 text-xs font-bold text-emerald-50/70">{icon}{label}</p><p className="mt-2 text-2xl font-black tracking-tight text-white">{value}</p></div>
 }

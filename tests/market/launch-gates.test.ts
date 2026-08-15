@@ -47,6 +47,8 @@ describe('Player Market launch gates', () => {
     expect(route).toContain('stale-while-revalidate=60')
     expect(route).toContain("event: 'market.catalogue.failed'")
     expect(route).toContain("'Retry-After': '30'")
+    expect(route).toContain("source: 'early-shout-game-price-book'")
+    expect(route).toContain("'X-Early-Shout-Request-Id'")
   })
 
   it('invalidates public catalogue caches after catalogue and gameweek writes', () => {
@@ -95,6 +97,8 @@ describe('Player Market launch gates', () => {
     expect(privacy).toContain('show_roster boolean not null default true')
     expect(privacy).toContain("'roster', case when (select show_roster from prefs)")
     expect(privacy).toContain('market_update_profile_preferences(boolean, boolean, boolean, boolean)')
+    const cleanup = read('supabase/migrations/20260815091001_cleanup_legacy_market_branding.sql')
+    expect(cleanup).toContain('drop function if exists public.market_update_profile_preferences(boolean, boolean, boolean)')
     expect(progression).toContain('show_roster: boolean')
     expect(profile).toContain('chosen to keep their roster private')
   })
@@ -276,14 +280,17 @@ describe('Player Market launch gates', () => {
     const detail = read('components/market/player-market-detail.tsx')
     expect(detail).toContain('href="/market/roster"')
     expect(detail).toContain('Back to full roster')
+    expect(detail).toContain("`${trend > 0 ? '+' : '-'}${formatFiqCompact(Math.abs(trend))}`")
+    expect(detail).toContain('Waiting for the first price update')
   })
 
   it('shows player prices and budget totals on the full roster page', () => {
     const portfolio = read('components/market/player-market-portfolio.tsx')
-    expect(portfolio).toContain('Your full roster')
-    expect(portfolio).toContain('Budget remaining')
-    expect(portfolio).toContain('Total spent')
-    expect(portfolio).toContain('Current squad value')
+    expect(portfolio).toContain('Your {activeFormation} starting XI')
+    expect(portfolio).toContain('Cash to spend')
+    expect(portfolio).toContain('Cash already spent')
+    expect(portfolio).toContain('Squad value')
+    expect(portfolio).toContain('Roster complete')
     expect(portfolio).toContain('formatFiqCompact(player.current_value)')
   })
 
@@ -312,9 +319,10 @@ describe('Player Market launch gates', () => {
     expect(route).toContain("from '../portfolio/page'")
     expect(navigation).toContain("href: '/market/roster'")
     expect(navigation).toContain("label: 'Roster'")
-    expect(roster).toContain('Full-screen roster')
+    expect(roster).toContain('Matchday board')
     expect(roster).toContain('Your {activeFormation} team')
-    expect(roster).toContain('Tap any player to open their full stats')
+    expect(roster).toContain('Select a player for their price, form and match details')
+    expect(roster).toContain('{holdings.length}/{MARKET_MAX_PORTFOLIO_SIZE} selected')
     expect(roster).toContain('href={`/market/player/${encodeURIComponent(player.slug)}`}')
     expect(roster).toContain('ownership_percentage')
     expect(roster).not.toContain('<Link role="listitem"')
@@ -349,13 +357,14 @@ describe('Player Market launch gates', () => {
     }
   })
 
-  it('rebrands database-backed Market challenge copy', () => {
-    const sql = read('supabase/migrations/20260811204945_rebrand_market_reward_copy.sql')
-    expect(sql).toContain('all three Verdict XI leagues')
-    expect(sql).toContain('1.0m VX')
-    expect(sql).toContain('10.0m VX')
-    expect(sql).not.toContain('FootballIQ')
-    expect(sql).not.toContain('FIQ')
+  it('keeps database-backed Market challenge copy on the current identity', () => {
+    const historical = read('supabase/migrations/20260811204945_rebrand_market_reward_copy.sql')
+    const current = read('supabase/migrations/20260815091001_cleanup_legacy_market_branding.sql')
+    expect(historical).toContain('1.0m VX')
+    expect(historical).toContain('10.0m VX')
+    expect(current).toContain('all three Early Shout leagues')
+    expect(current).not.toContain('FootballIQ')
+    expect(current).not.toContain('Verdict XI')
   })
 
   it('guides a first-time player with saved, evidence-backed mission progress', () => {

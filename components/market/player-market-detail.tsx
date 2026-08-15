@@ -3,10 +3,10 @@
 import Link from 'next/link'
 import { useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
-import { AlertCircle, CheckCircle2, Clock3, Star } from 'lucide-react'
+import { Activity, AlertCircle, ArrowLeft, BarChart3, CheckCircle2, Clock3, Sparkles, Star, Users } from 'lucide-react'
 import { useAuth } from '@/components/auth-provider'
 import { MarketPlayerChip } from '@/components/market/market-player-chip'
-import { ClubColourDot } from '@/components/market/club-colour-dot'
+import { ClubColourDot, getClubHomeColour } from '@/components/market/club-colour-dot'
 import { MarketTradeDialog } from '@/components/market/market-trade-dialog'
 import { useMarketFormation } from '@/components/market/use-market-formation'
 import { buyMarketPlayer, sellMarketPlayer, toggleMarketWatchlist } from '@/lib/market/client'
@@ -41,6 +41,7 @@ export function PlayerMarketDetail({
   const [tradeIntent, setTradeIntent] = useState<{ action: 'buy' | 'sell'; requestKey: string } | null>(null)
   const [renderedAt] = useState(() => Date.now())
   const activeFormation = useMarketFormation()
+  const clubColour = getClubHomeColour(player.club_name)
 
   const holding = useMemo(() => holdings.find((item) => item.player_id === player.id) ?? null, [holdings, player.id])
   const owned = Boolean(holding)
@@ -106,8 +107,9 @@ export function PlayerMarketDetail({
 
   return (
     <div className="space-y-5">
-      <section className="rounded-[2rem] border border-emerald-950/10 bg-gradient-to-br from-white via-white to-emerald-50/70 p-6 shadow-[0_24px_70px_-55px_rgba(6,78,59,.65)] sm:p-8">
-        <div className="flex flex-wrap items-start justify-between gap-5">
+      <section className="relative overflow-hidden rounded-[2rem] border border-emerald-950/10 bg-gradient-to-br from-white via-white to-emerald-50/70 p-6 shadow-[0_24px_70px_-55px_rgba(6,78,59,.65)] sm:p-8">
+        <span aria-hidden="true" className="absolute -right-20 -top-28 size-80 rounded-full opacity-[.12] blur-3xl" style={{ background: clubColour }} />
+        <div className="relative flex flex-wrap items-start justify-between gap-5">
           <div className="flex items-start gap-4">
             <MarketPlayerChip player={player} />
             <div>
@@ -117,54 +119,55 @@ export function PlayerMarketDetail({
               {player.availability_status ? <p className={`mt-2 inline-flex rounded-full border px-2.5 py-1 text-xs font-bold ${player.availability_status === 'available' ? 'border-emerald-700/20 bg-emerald-50 text-emerald-800' : player.availability_status === 'limited' ? 'border-amber-700/20 bg-amber-50 text-amber-800' : 'border-red-700/20 bg-red-50 text-red-800'}`}>{player.availability_status === 'available' ? 'Available' : player.availability_status === 'limited' ? 'Limited availability' : 'Unavailable'}</p> : null}
             </div>
           </div>
-          <Link href="/market/roster" className="rounded-xl border border-emerald-800 bg-emerald-950 px-4 py-2 text-sm font-bold text-white shadow-sm transition hover:bg-emerald-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-700">Back to full roster</Link>
+          <Link href="/market/roster" className="inline-flex items-center gap-2 rounded-xl border border-emerald-800 bg-emerald-950 px-4 py-2.5 text-sm font-bold text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-emerald-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-700"><ArrowLeft className="size-4" />Back to full roster</Link>
         </div>
 
-        <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-          <Metric label="Current value" value={formatFiqCompact(player.current_value)} />
-          <Metric label="Picked by" value={`${(player.ownership_percentage ?? 0).toFixed(1)}% of teams`} />
-          <Metric label="Previous value" value={formatFiqCompact(player.previous_value)} />
-          <Metric label="Opening value" value={formatFiqCompact(player.opening_season_value)} />
-          <Metric label="Movement" value={`${trend >= 0 ? '+' : ''}${formatFiqCompact(Math.abs(trend))}`} tone={trend >= 0 ? 'positive' : 'negative'} />
+        <div className="relative mt-6 grid overflow-hidden rounded-2xl bg-[#082f2a] text-white shadow-lg sm:grid-cols-2 lg:grid-cols-5">
+          <Metric label="Current value" value={formatFiqCompact(player.current_value)} icon={<Sparkles className="size-4" />} featured />
+          <Metric label="Picked by" value={`${(player.ownership_percentage ?? 0).toFixed(1)}% of teams`} icon={<Users className="size-4" />} />
+          <Metric label="Previous value" value={formatFiqCompact(player.previous_value)} icon={<Clock3 className="size-4" />} />
+          <Metric label="Opening value" value={formatFiqCompact(player.opening_season_value)} icon={<BarChart3 className="size-4" />} />
+          <Metric label="Movement" value={trend === 0 ? 'No change' : `${trend > 0 ? '+' : '-'}${formatFiqCompact(Math.abs(trend))}`} tone={trend > 0 ? 'positive' : trend < 0 ? 'negative' : 'default'} icon={<Activity className="size-4" />} />
         </div>
 
-        <div className="mt-5 grid gap-4 lg:grid-cols-[1.3fr_.7fr]">
-          <div className="rounded-2xl border border-emerald-950/10 bg-white/70 p-4">
-            <p className="text-xs font-semibold uppercase tracking-[.2em] text-muted-foreground">Value history</p>
-            <div className="mt-3 h-40 overflow-hidden rounded-xl border border-border bg-card p-3">
+        <div className="relative mt-5 grid gap-4 lg:grid-cols-[1.3fr_.7fr]">
+          <div className="rounded-2xl bg-white/75 p-5 shadow-[inset_0_0_0_1px_rgba(6,78,59,.10)]">
+            <div className="flex items-center justify-between gap-3"><div><p className="text-[11px] font-black uppercase tracking-[.2em] text-emerald-700">Value journey</p><h2 className="mt-1 text-lg font-black">Game-price history</h2></div><span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-800">{history.length} updates</span></div>
+            <div className="mt-4">
               <ValueHistoryChart points={history} currentValue={player.current_value} />
             </div>
           </div>
 
-          <div className="rounded-2xl border border-emerald-950/10 bg-white/70 p-4">
-            <p className="text-xs font-semibold uppercase tracking-[.2em] text-muted-foreground">Trade controls</p>
+          <div className="rounded-2xl bg-emerald-950 p-5 text-white shadow-lg">
+            <p className="text-[11px] font-black uppercase tracking-[.2em] text-emerald-300">Make your move</p>
+            <h2 className="mt-1 text-lg font-black">Trade controls</h2>
             <div className="mt-3 space-y-2">
               <button
                 onClick={() => setTradeIntent({ action: 'buy', requestKey: createMarketRequestKey(`buy-${player.slug}`) })}
                 disabled={!canBuy}
-                className="min-h-11 w-full rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-700 disabled:opacity-50"
+                className="min-h-11 w-full rounded-xl bg-emerald-300 px-4 py-2.5 text-sm font-black text-emerald-950 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white disabled:opacity-50"
               >
                 {busy === 'buy' ? 'Buying…' : lockActive ? 'Temporarily locked' : owned ? 'Already held' : !hasPositionSlot ? `${player.position} slot full` : availableCash < player.current_value ? 'Not enough cash' : holdings.length >= MARKET_MAX_PORTFOLIO_SIZE ? 'Portfolio full (11/11)' : 'Buy'}
               </button>
               <button
                 onClick={() => setTradeIntent({ action: 'sell', requestKey: createMarketRequestKey(`sell-${player.slug}`) })}
                 disabled={!owned || busy !== null || lockActive}
-                className="min-h-11 w-full rounded-xl border border-border px-4 py-2.5 text-sm font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-700 disabled:opacity-50"
+                className="min-h-11 w-full rounded-xl border border-white/20 bg-white/10 px-4 py-2.5 text-sm font-semibold text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white disabled:opacity-50"
               >
                 {busy === 'sell' ? 'Selling…' : lockActive ? 'Temporarily locked' : 'Sell'}
               </button>
               <button
                 onClick={() => void handleWatchlist()}
                 disabled={busy !== null}
-                className="min-h-11 w-full rounded-xl border border-border px-4 py-2.5 text-sm font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-700 disabled:opacity-50"
+                className="min-h-11 w-full rounded-xl border border-white/20 bg-transparent px-4 py-2.5 text-sm font-semibold text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white disabled:opacity-50"
               >
                 {busy === 'watch' ? 'Updating…' : watchlisted ? 'Remove from watchlist' : 'Add to watchlist'}
               </button>
             </div>
-            <p className="mt-3 text-xs text-muted-foreground">
+            <p className="mt-3 text-xs leading-5 text-emerald-50/70">
               You can buy {buysRemaining} more players this gameweek. Selling opens a place in your team and does not use a signing. Your team can have {MARKET_MAX_PORTFOLIO_SIZE} players.
             </p>
-            <p className="mt-2 text-xs text-muted-foreground">Your team: GK {formation.GK}/1 · DEF {formation.DEF}/4 · MID {formation.MID}/3 · FWD {formation.FWD}/3</p>
+            <p className="mt-2 text-xs text-emerald-50/70">Your team: GK {formation.GK}/1 · DEF {formation.DEF}/4 · MID {formation.MID}/3 · FWD {formation.FWD}/3</p>
             {!owned && !hasPositionSlot ? <p className="mt-2 text-xs text-amber-200">No {player.position} slots left. Sell an existing {player.position} first to replace.</p> : null}
             {!owned && availableCash < player.current_value ? <p className="mt-2 text-xs text-amber-200">Insufficient cash for this purchase.</p> : null}
             {!owned && holdings.length >= MARKET_MAX_PORTFOLIO_SIZE ? <p className="mt-2 text-xs text-amber-200">Portfolio is full. Sell one player before buying another.</p> : null}
@@ -180,13 +183,14 @@ export function PlayerMarketDetail({
       </section>
 
       <section className="grid gap-5 lg:grid-cols-2">
-        <div className="rounded-[2rem] border border-border bg-card p-6">
-          <h2 className="text-xl font-bold">Season statistics</h2>
+        <div className="rounded-[2rem] border border-emerald-950/10 bg-white/80 p-6 shadow-sm">
+          <p className="text-[11px] font-black uppercase tracking-[.18em] text-emerald-700">On the pitch</p>
+          <h2 className="mt-1 text-xl font-black">Season statistics</h2>
           <p className="mt-1 text-xs text-muted-foreground">We only show stats received from our data provider. Missing stats are labelled “Not available”.</p>
-          {stats.length === 0 ? <p className="mt-4 text-sm text-muted-foreground">No season stats available for this player yet.</p> : (
+          {stats.length === 0 ? <div className="mt-5 flex items-center gap-3 rounded-2xl bg-slate-100/80 p-4"><span className="grid size-10 shrink-0 place-items-center rounded-full bg-white text-slate-500 shadow-sm"><BarChart3 className="size-5" /></span><div><p className="text-sm font-bold text-slate-800">Match stats are on their way</p><p className="mt-0.5 text-xs leading-5 text-slate-600">We will show verified season numbers here after they arrive.</p></div></div> : (
             <div className="mt-4 space-y-4">
               {stats.slice(0, 2).map((row) => (
-                <div key={row.id} className="rounded-2xl border border-border bg-background/60 p-4">
+                <div key={row.id} className="rounded-2xl bg-slate-50 p-4 shadow-[inset_0_0_0_1px_rgba(15,23,42,.06)]">
                   <p className="font-semibold">{row.season} · {row.competition_label}</p>
                   <div className="mt-3 grid grid-cols-2 gap-2 text-sm sm:grid-cols-3">
                     <Stat label="Appearances" value={row.appearances} />
@@ -208,21 +212,16 @@ export function PlayerMarketDetail({
           )}
         </div>
 
-        <div className="rounded-[2rem] border border-border bg-card p-6">
-          <h2 className="text-xl font-bold">How this game value works</h2>
-          <div className="mt-4 space-y-3 text-sm">
-            <p className="rounded-xl border border-border bg-background/60 p-3">
-              This is an Early Shout game price, not a real transfer value.
-            </p>
-            <p className="rounded-xl border border-border bg-background/60 p-3">
-              Player and match data comes from licensed Sportmonks data. Early Shout creates the game price.
-            </p>
-            <p className="rounded-xl border border-border bg-background/60 p-3">
-              No valid rating or minutes? The price stays the same. We never guess a result.
-            </p>
-            <p className="rounded-xl border border-border bg-background/60 p-3">
-              Last value update: {formatMarketDateTime(player.value_updated_at)}
-            </p>
+        <div className="rounded-[2rem] border border-emerald-950/10 bg-[#f1f8f5] p-6 shadow-sm">
+          <p className="text-[11px] font-black uppercase tracking-[.18em] text-emerald-700">Clear and simple</p>
+          <h2 className="mt-1 text-xl font-black">How this game value works</h2>
+          <ol className="mt-5 space-y-4 text-sm">
+            <ValueStep number="1" title="A real match finishes">Licensed Sportmonks data gives us the player’s rating and minutes.</ValueStep>
+            <ValueStep number="2" title="Early Shout makes the game price">The rating can push the fictional value up, down or leave it where it is.</ValueStep>
+            <ValueStep number="3" title="Missing data means no movement">If the verified rating or minutes are missing, we do not guess.</ValueStep>
+          </ol>
+          <div className="mt-5 flex items-center gap-2 border-t border-emerald-950/10 pt-4 text-xs text-emerald-950/65">
+            <Clock3 className="size-4" /><span>Last value update: <strong className="text-emerald-950">{formatMarketDateTime(player.value_updated_at)}</strong></span>
           </div>
         </div>
       </section>
@@ -255,12 +254,12 @@ export function PlayerMarketDetail({
   )
 }
 
-function Metric({ label, value, tone = 'default' }: { label: string; value: string; tone?: 'default' | 'positive' | 'negative' }) {
-  const color = tone === 'positive' ? 'text-primary' : tone === 'negative' ? 'text-destructive' : 'text-foreground'
+function Metric({ label, value, tone = 'default', icon, featured = false }: { label: string; value: string; tone?: 'default' | 'positive' | 'negative'; icon: ReactNode; featured?: boolean }) {
+  const color = tone === 'positive' ? 'text-emerald-300' : tone === 'negative' ? 'text-rose-300' : 'text-white'
   return (
-    <div className="rounded-xl border border-border bg-background/60 p-3">
-      <p className="text-xs text-muted-foreground">{label}</p>
-      <p className={`mt-1 font-semibold ${color}`}>{value}</p>
+    <div className={`border-b border-white/10 p-4 last:border-b-0 sm:border-b-0 sm:border-r sm:last:border-r-0 ${featured ? 'bg-emerald-300/[.08]' : ''}`}>
+      <p className="flex items-center gap-2 text-[11px] font-bold text-emerald-50/60">{icon}{label}</p>
+      <p className={`mt-2 ${featured ? 'text-2xl' : 'text-lg'} font-black ${color}`}>{value}</p>
     </div>
   )
 }
@@ -282,7 +281,7 @@ function Notice({ kind, message }: { kind: 'success' | 'error' | 'info'; message
 
 function Stat({ label, value }: { label: string; value: number | null }) {
   return (
-    <div className="rounded-xl border border-border bg-card px-3 py-2">
+    <div className="border-l-2 border-emerald-700/15 px-3 py-2">
       <p className="text-xs text-muted-foreground">{label}</p>
       <p className="mt-1 font-semibold">{value ?? 'N/A'}</p>
     </div>
@@ -291,7 +290,7 @@ function Stat({ label, value }: { label: string; value: number | null }) {
 
 function ValueHistoryChart({ points, currentValue }: { points: MarketValueHistoryPoint[]; currentValue: number }) {
   if (points.length === 0) {
-    return <p className="text-sm text-muted-foreground">No history points yet.</p>
+    return <div className="flex min-h-24 items-center gap-4 rounded-2xl bg-gradient-to-r from-emerald-50 to-cyan-50/60 p-4"><span className="grid size-11 shrink-0 place-items-center rounded-full bg-white text-emerald-700 shadow-sm"><Activity className="size-5" /></span><div><p className="text-sm font-black text-emerald-950">Waiting for the first price update</p><p className="mt-1 text-xs leading-5 text-emerald-950/65">After a verified league match is processed, the first movement appears here.</p></div></div>
   }
 
   const values = points.map((point) => point.value)
@@ -302,7 +301,7 @@ function ValueHistoryChart({ points, currentValue }: { points: MarketValueHistor
   const direction = currentValue > start ? 'rising' : currentValue < start ? 'falling' : 'unchanged'
 
   return (
-    <div role="img" aria-label={`Value history: ${direction} from ${formatFiqCompact(start)} to ${formatFiqCompact(currentValue)} across ${points.length} recorded updates.`} className="flex h-full items-end gap-1">
+    <div role="img" aria-label={`Value history: ${direction} from ${formatFiqCompact(start)} to ${formatFiqCompact(currentValue)} across ${points.length} recorded updates.`} className="flex h-40 items-end gap-1 rounded-2xl bg-gradient-to-t from-emerald-50/80 to-transparent p-3">
       {points.slice(-24).map((point) => {
         const pct = ((point.value - min) / range) * 100
         return (
@@ -316,4 +315,8 @@ function ValueHistoryChart({ points, currentValue }: { points: MarketValueHistor
       <div className="ml-2 flex items-center gap-1 text-xs text-primary"><Star className="size-3" />Now {formatFiqCompact(currentValue)}</div>
     </div>
   )
+}
+
+function ValueStep({ number, title, children }: { number: string; title: string; children: ReactNode }) {
+  return <li className="flex gap-3"><span className="grid size-8 shrink-0 place-items-center rounded-full bg-emerald-950 text-xs font-black text-white">{number}</span><div><p className="font-black text-emerald-950">{title}</p><p className="mt-1 text-xs leading-5 text-emerald-950/65">{children}</p></div></li>
 }

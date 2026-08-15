@@ -103,7 +103,7 @@ export async function GET(request: Request) {
       })
     }
     return NextResponse.json({
-      source: 'footballiq-game-price-book',
+      source: 'early-shout-game-price-book',
       generatedAt: new Date().toISOString(),
       players,
       playerCount: players.length,
@@ -113,7 +113,7 @@ export async function GET(request: Request) {
         'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=60',
         'CDN-Cache-Control': 'public, s-maxage=60, stale-while-revalidate=60',
         'Vercel-CDN-Cache-Control': 'public, s-maxage=60, stale-while-revalidate=60',
-        'X-Verdict-XI-Request-Id': requestId,
+        'X-Early-Shout-Request-Id': requestId,
       },
     })
   } catch (error) {
@@ -132,7 +132,7 @@ export async function GET(request: Request) {
       headers: {
         'Cache-Control': 'private, no-store',
         'Retry-After': '30',
-        'X-Verdict-XI-Request-Id': requestId,
+        'X-Early-Shout-Request-Id': requestId,
       },
     })
   }
