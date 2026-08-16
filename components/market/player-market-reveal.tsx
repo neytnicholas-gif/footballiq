@@ -32,8 +32,8 @@ export function PlayerMarketReveal({ latest, history, players }: { latest: Marke
         <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
           <Metric label="Previous portfolio value" value={formatFiqCompact(latest.previous_portfolio_value)} />
           <Metric label="New portfolio value" value={formatFiqCompact(latest.new_portfolio_value)} />
-          <Metric label="Weekly change" value={`${latest.weekly_change >= 0 ? '+' : '-'}${formatFiqCompact(Math.abs(latest.weekly_change))}`} tone={latest.weekly_change >= 0 ? 'up' : 'down'} />
-          <Metric label="Weekly return" value={`${latest.weekly_return_pct >= 0 ? '+' : ''}${latest.weekly_return_pct.toFixed(2)}%`} tone={latest.weekly_return_pct >= 0 ? 'up' : 'down'} />
+          <Metric label="Weekly change" value={formatSignedFiq(latest.weekly_change)} tone={movementTone(latest.weekly_change)} />
+          <Metric label="Weekly return" value={formatSignedPercent(latest.weekly_return_pct)} tone={movementTone(latest.weekly_return_pct)} />
           <Metric label="Cash after repricing" value={formatFiqCompact(latest.cash_after)} />
         </div>
 
@@ -81,11 +81,11 @@ export function PlayerMarketReveal({ latest, history, players }: { latest: Marke
             <article key={`${latest.week_number}-${holding.player_id}`} className="rounded-xl border border-border bg-background/60 p-3">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <p className="flex items-center gap-2 font-semibold">{playersById.get(holding.player_id)?.club_name ? <ClubColourDot clubName={playersById.get(holding.player_id)!.club_name} /> : null}<span>{holding.player_name} · {holding.position}</span></p>
-                <p className={holding.delta >= 0 ? 'text-sm font-semibold text-primary' : 'text-sm font-semibold text-destructive'}>
-                  {holding.delta >= 0 ? '+' : '-'}{formatFiqCompact(Math.abs(holding.delta))}
+                <p className={`text-sm font-semibold ${holding.delta > 0 ? 'text-primary' : holding.delta < 0 ? 'text-destructive' : 'text-muted-foreground'}`}>
+                  {formatSignedFiq(holding.delta)}
                 </p>
               </div>
-              <p className="mt-1 text-xs text-muted-foreground">Purchase {formatFiqCompact(holding.purchase_price)} · Previous {formatFiqCompact(holding.previous_value)} · Current {formatFiqCompact(holding.current_value)} · Return {holding.return_pct >= 0 ? '+' : ''}{holding.return_pct.toFixed(2)}%</p>
+              <p className="mt-1 text-xs text-muted-foreground">Purchase {formatFiqCompact(holding.purchase_price)} · Previous {formatFiqCompact(holding.previous_value)} · Current {formatFiqCompact(holding.current_value)} · Return {formatSignedPercent(holding.return_pct)}</p>
               <p className="mt-1 text-xs text-muted-foreground">{holding.delta === 0 ? 'No full price step was reached this gameweek. If a small verified movement was calculated, it stays banked and carries into the next update.' : holding.explanation}</p>
             </article>
           ))}
@@ -98,13 +98,26 @@ export function PlayerMarketReveal({ latest, history, players }: { latest: Marke
           {history.map((run) => (
             <div key={`${run.scope_key}-${run.week_number}`} className="rounded-xl border border-border bg-background/60 px-3 py-2 text-sm">
               <p className="font-semibold">{run.week_label}</p>
-              <p className="text-xs text-muted-foreground">Change {run.weekly_change >= 0 ? '+' : '-'}{formatFiqCompact(Math.abs(run.weekly_change))} · Return {run.weekly_return_pct >= 0 ? '+' : ''}{run.weekly_return_pct.toFixed(2)}%</p>
+              <p className="text-xs text-muted-foreground">Change {formatSignedFiq(run.weekly_change)} · Return {formatSignedPercent(run.weekly_return_pct)}</p>
             </div>
           ))}
         </div>
       </section>
     </div>
   )
+}
+
+function movementTone(value: number): 'default' | 'up' | 'down' {
+  return value > 0 ? 'up' : value < 0 ? 'down' : 'default'
+}
+
+function formatSignedFiq(value: number) {
+  if (value === 0) return formatFiqCompact(0)
+  return `${value > 0 ? '+' : '-'}${formatFiqCompact(Math.abs(value))}`
+}
+
+function formatSignedPercent(value: number) {
+  return `${value > 0 ? '+' : ''}${value.toFixed(2)}%`
 }
 
 function Metric({ label, value, tone = 'default' }: { label: string; value: string; tone?: 'default' | 'up' | 'down' }) {
