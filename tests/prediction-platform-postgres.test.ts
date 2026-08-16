@@ -7,6 +7,8 @@ const migration = readFileSync('supabase/migrations/20260815123000_build_predict
 const geographyMigration = readFileSync('supabase/migrations/20260815133000_prediction_geography_and_immediate_leagues.sql', 'utf8')
 const marketLeagueMigration = readFileSync('supabase/migrations/20260809152000_create_market_friend_leagues.sql', 'utf8')
 const expansionMigration = readFileSync('supabase/migrations/20260815150000_expand_competition_worlds.sql', 'utf8')
+const licensedCompetitionMigration = readFileSync('supabase/migrations/20260816000100_allow_licensed_prediction_competitions.sql', 'utf8')
+const queryHardeningMigration = readFileSync('supabase/migrations/20260816000200_finish_prediction_and_quiz_query_hardening.sql', 'utf8')
 const db = new PGlite()
 const owner = '10000000-0000-4000-8000-000000000001'
 const friend = '10000000-0000-4000-8000-000000000002'
@@ -45,11 +47,21 @@ beforeAll(async () => {
   await db.exec(geographyMigration)
   await db.exec(marketLeagueMigration)
   await db.exec(expansionMigration)
+  await db.exec(licensedCompetitionMigration)
+  await db.exec(queryHardeningMigration)
 })
 
 afterAll(async () => db.close())
 
 describe('prediction competition database boundary', () => {
+  it('indexes licensed fixture lookups by competition', async () => {
+    const indexes = await db.query<{ indexname: string }>(`
+      select indexname from pg_indexes
+      where schemaname='public' and tablename='prediction_fixtures'
+    `)
+    expect(indexes.rows.map((row) => row.indexname)).toContain('prediction_fixtures_league_key_idx')
+  })
+
   it('repairs human-facing reward copy and installs protected competition tables', async () => {
     const title = await db.query<{ description: string }>(`select description from public.market_store_items where item_key='title_early_adopter'`)
     expect(title.rows[0]?.description).toBe('Show "Founder Beta" beneath your username.')
@@ -70,6 +82,23 @@ describe('prediction competition database boundary', () => {
 
     await db.exec(`select set_config('request.jwt.claim.sub','${owner}',false)`)
     await expect(db.query(`select public.prediction_leave_league($1)`, [league.id])).rejects.toThrow('OWNER_CANNOT_LEAVE')
+  })
+
+  it('accepts every licensed prediction competition instead of the old three-league prototype', async () => {
+    await db.exec(`
+      insert into public.prediction_competitions(league_key,provider_league_id,league_name,country_name,country_code)
+      values ('bundesliga',82,'Bundesliga','Germany','DEU'),('serie-a',384,'Serie A','Italy','ITA');
+      insert into public.prediction_fixtures(fixture_id,league_key,league_name,gameweek_key,home_team,away_team,kickoff_at)
+      values ('bundesliga-future','bundesliga','Bundesliga','2026-34','Bayern Munich','RB Leipzig',now()+interval '1 day');
+      select set_config('request.jwt.claim.sub','${owner}',false);
+    `)
+    const created = await db.query<{ result: { league_keys: string[] } }>(`
+      select public.prediction_create_league(
+        'Five League Crew','all',
+        array['premier-league','la-liga','ligue-1','bundesliga','serie-a']
+      ) result
+    `)
+    expect(created.rows[0]?.result.league_keys).toHaveLength(5)
   })
 
   it('installs 24 quiz rooms and supports configurable quiz and market friend tables', async () => {

@@ -36,7 +36,7 @@ async function worker() {
     const started = performance.now()
     try {
       const response = await fetch(target, {
-        headers: { Accept: 'application/json', 'User-Agent': 'FootballIQ-capacity-check/1.0' },
+        headers: { Accept: 'application/json', 'User-Agent': 'EarlyShout-capacity-check/1.0' },
       })
       const body = await response.arrayBuffer()
       latencies.push(performance.now() - started)
@@ -48,7 +48,7 @@ async function worker() {
         try {
           const payload = JSON.parse(new TextDecoder().decode(body))
           const playerCount = Number(payload.playerCount)
-          const valid = payload.source === 'footballiq-game-price-book'
+          const valid = payload.source === 'early-shout-game-price-book'
             && Array.isArray(payload.players)
             && payload.players.length === playerCount
             && playerCount >= minimumPlayerCount

@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 
 const migration = readFileSync('supabase/migrations/20260815130101_secure_public_leaderboards.sql', 'utf8')
+const cleanupMigration = readFileSync('supabase/migrations/20260816000200_finish_prediction_and_quiz_query_hardening.sql', 'utf8')
 const leaderboard = readFileSync('components/competitive-leaderboard.tsx', 'utf8')
 const playerProfile = readFileSync('app/player/[username]/page.tsx', 'utf8')
 
@@ -15,12 +16,18 @@ describe('public leaderboard privacy contract', () => {
     expect(migration).toMatch(/limit 2000/i)
   })
 
+  it('derives activity dates from the live completed_at column in Brussels time', () => {
+    expect(migration).toMatch(/\(result\.completed_at at time zone 'Europe\/Brussels'\)::date as activity_date/i)
+    expect(migration).not.toMatch(/result\.activity_date/i)
+  })
+
   it('removes public views and protects their source tables with owner-only reads', () => {
     expect(migration).toMatch(/create policy profiles_owner_read[\s\S]*for select to authenticated using \(\(select auth\.uid\(\)\)=id\)/i)
     expect(migration).toMatch(/create policy quiz_results_owner_read[\s\S]*for select to authenticated using \(\(select auth\.uid\(\)\)=user_id\)/i)
     expect(migration).toMatch(/revoke select on table public\.profiles,public\.quiz_results from public,anon,authenticated/i)
     expect(migration).toMatch(/drop view if exists public\.public_leaderboard_profiles/i)
     expect(migration).toMatch(/drop view if exists public\.public_leaderboard_quiz_results/i)
+    expect(cleanupMigration).toMatch(/drop policy if exists "Quiz results are publicly readable" on public\.quiz_results/i)
   })
 
   it('loads public pages through the narrow functions without table fallbacks', () => {

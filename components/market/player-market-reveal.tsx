@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { ArrowRight, TrendingDown, TrendingUp } from 'lucide-react'
+import { ArrowRight, Minus, TrendingDown, TrendingUp } from 'lucide-react'
 import { ClubColourDot } from '@/components/market/club-colour-dot'
 import { formatFiqCompact } from '@/lib/market/format'
 import type { MarketPlayer, MarketRevealSummary } from '@/lib/market/types'
@@ -40,31 +40,27 @@ export function PlayerMarketReveal({ latest, history, players }: { latest: Marke
         <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <MovementCard
             title="Biggest winner"
-            name={latest.biggest_winner.player_name ?? 'N/A'}
-            clubName={latest.biggest_winner.player_id ? playersById.get(latest.biggest_winner.player_id)?.club_name : undefined}
-            delta={latest.biggest_winner.delta}
-            positive
+            name={latest.biggest_winner.delta > 0 ? latest.biggest_winner.player_name ?? 'N/A' : 'No holding rose this week'}
+            clubName={latest.biggest_winner.delta > 0 && latest.biggest_winner.player_id ? playersById.get(latest.biggest_winner.player_id)?.club_name : undefined}
+            delta={latest.biggest_winner.delta > 0 ? latest.biggest_winner.delta : 0}
           />
           <MovementCard
             title="Biggest loser"
-            name={latest.biggest_loser.player_name ?? 'N/A'}
-            clubName={latest.biggest_loser.player_id ? playersById.get(latest.biggest_loser.player_id)?.club_name : undefined}
-            delta={latest.biggest_loser.delta}
-            positive={false}
+            name={latest.biggest_loser.delta < 0 ? latest.biggest_loser.player_name ?? 'N/A' : 'No holding fell this week'}
+            clubName={latest.biggest_loser.delta < 0 && latest.biggest_loser.player_id ? playersById.get(latest.biggest_loser.player_id)?.club_name : undefined}
+            delta={latest.biggest_loser.delta < 0 ? latest.biggest_loser.delta : 0}
           />
           <MovementCard
             title="Best held player"
-            name={latest.best_held_player.player_name ?? 'N/A'}
-            clubName={latest.best_held_player.player_id ? playersById.get(latest.best_held_player.player_id)?.club_name : undefined}
+            name={latest.best_held_player.delta !== 0 ? latest.best_held_player.player_name ?? 'N/A' : 'Your holdings stayed level'}
+            clubName={latest.best_held_player.delta !== 0 && latest.best_held_player.player_id ? playersById.get(latest.best_held_player.player_id)?.club_name : undefined}
             delta={latest.best_held_player.delta}
-            positive
           />
           <MovementCard
             title="Weakest held player"
-            name={latest.weakest_held_player.player_name ?? 'N/A'}
-            clubName={latest.weakest_held_player.player_id ? playersById.get(latest.weakest_held_player.player_id)?.club_name : undefined}
+            name={latest.weakest_held_player.delta !== 0 ? latest.weakest_held_player.player_name ?? 'N/A' : 'Your holdings stayed level'}
+            clubName={latest.weakest_held_player.delta !== 0 && latest.weakest_held_player.player_id ? playersById.get(latest.weakest_held_player.player_id)?.club_name : undefined}
             delta={latest.weakest_held_player.delta}
-            positive={false}
           />
         </div>
 
@@ -90,7 +86,7 @@ export function PlayerMarketReveal({ latest, history, players }: { latest: Marke
                 </p>
               </div>
               <p className="mt-1 text-xs text-muted-foreground">Purchase {formatFiqCompact(holding.purchase_price)} · Previous {formatFiqCompact(holding.previous_value)} · Current {formatFiqCompact(holding.current_value)} · Return {holding.return_pct >= 0 ? '+' : ''}{holding.return_pct.toFixed(2)}%</p>
-              <p className="mt-1 text-xs text-muted-foreground">{holding.explanation}</p>
+              <p className="mt-1 text-xs text-muted-foreground">{holding.delta === 0 ? 'No full price step was reached this gameweek. If a small verified movement was calculated, it stays banked and carries into the next update.' : holding.explanation}</p>
             </article>
           ))}
         </div>
@@ -121,14 +117,15 @@ function Metric({ label, value, tone = 'default' }: { label: string; value: stri
   )
 }
 
-function MovementCard({ title, name, clubName, delta, positive }: { title: string; name: string; clubName?: string; delta: number; positive: boolean }) {
-  const icon = positive ? <TrendingUp className="size-4" /> : <TrendingDown className="size-4" />
-  const color = positive ? 'text-primary' : 'text-destructive'
+function MovementCard({ title, name, clubName, delta }: { title: string; name: string; clubName?: string; delta: number }) {
+  const direction = delta > 0 ? 'up' : delta < 0 ? 'down' : 'neutral'
+  const icon = direction === 'neutral' ? <Minus className="size-4" /> : direction === 'up' ? <TrendingUp className="size-4" /> : <TrendingDown className="size-4" />
+  const color = direction === 'neutral' ? 'text-muted-foreground' : direction === 'up' ? 'text-primary' : 'text-destructive'
   return (
     <div className="rounded-xl border border-border bg-background/60 p-3">
       <p className="text-xs text-muted-foreground">{title}</p>
       <p className="mt-1 flex items-center gap-2 font-semibold">{clubName ? <ClubColourDot clubName={clubName} /> : null}<span>{name}</span></p>
-      <p className={`mt-1 inline-flex items-center gap-1 text-sm font-semibold ${color}`}>{icon}{delta >= 0 ? '+' : '-'}{formatFiqCompact(Math.abs(delta))}</p>
+      <p className={`mt-1 inline-flex items-center gap-1 text-sm font-semibold ${color}`}>{icon}{delta === 0 ? formatFiqCompact(0) : `${delta > 0 ? '+' : '-'}${formatFiqCompact(Math.abs(delta))}`}</p>
     </div>
   )
 }

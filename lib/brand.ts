@@ -11,6 +11,6 @@ export const BRAND = {
   themeColor: '#07111f',
   socialImage: '/images/hero-pitch.png',
   get siteUrl() {
-    return process.env.NEXT_PUBLIC_SITE_URL ?? 'https://footballiq-git-fix-clean-auth-04c2fd-neytnicholas-gifs-projects.vercel.app'
+    return process.env.NEXT_PUBLIC_SITE_URL ?? 'https://earlyshout.com'
   },
 }

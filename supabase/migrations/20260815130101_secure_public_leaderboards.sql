@@ -64,12 +64,12 @@ as $$
     result.score,
     result.total,
     result.xp_earned,
-    result.activity_date,
+    (result.completed_at at time zone 'Europe/Brussels')::date as activity_date,
     result.completed_at
   from public.quiz_results result
   where p_end_date>p_start_date
-    and result.activity_date>=p_start_date
-    and result.activity_date<p_end_date
+    and (result.completed_at at time zone 'Europe/Brussels')::date>=p_start_date
+    and (result.completed_at at time zone 'Europe/Brussels')::date<p_end_date
   order by result.completed_at desc
   limit 2000
 $$;

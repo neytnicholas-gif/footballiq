@@ -94,6 +94,8 @@ const rankingLabels: Record<RankingMode,{title:string;copy:string}> = {
 
 // Keep the established key so returning beta players do not lose their local record.
 const PREDICTION_HISTORY_KEY = 'footballiq-prediction-history'
+const INITIAL_FIXTURE_COUNT = 12
+const FIXTURE_PAGE_SIZE = 12
 
 const ruleLabels: Record<RuleMode, { title: string; copy: string }> = {
   all: { title: 'Every match', copy: 'Your table counts every match from the leagues you choose.' },
@@ -157,6 +159,8 @@ export function PredictionsGame() {
   const [error, setError] = useState('')
   const [notice, setNotice] = useState('')
   const [currentTime, setCurrentTime] = useState(0)
+  const [fixtureLeague, setFixtureLeague] = useState('all')
+  const [visibleFixtureCount, setVisibleFixtureCount] = useState(INITIAL_FIXTURE_COUNT)
 
   const loadLeagues = useCallback(async () => {
     if (!user) {
@@ -276,6 +280,25 @@ export function PredictionsGame() {
 
   const upcoming = useMemo(() => fixtures.filter((fixture) => fixture.status === 'scheduled' && (currentTime === 0 || new Date(fixture.kickoff_at).getTime() > currentTime)), [currentTime, fixtures])
   const recent = useMemo(() => fixtures.filter((fixture) => fixture.status === 'completed').slice(-12).reverse(), [fixtures])
+  const upcomingLeagueOptions = useMemo(() => {
+    const counts = new Map<string, { label: string; count: number }>()
+    for (const fixture of upcoming) {
+      const current = counts.get(fixture.league_key)
+      counts.set(fixture.league_key, {
+        label: fixture.league_name,
+        count: (current?.count ?? 0) + 1,
+      })
+    }
+    return [...counts.entries()]
+      .map(([key, value]) => ({ key, ...value }))
+      .sort((a, b) => a.label.localeCompare(b.label))
+  }, [upcoming])
+  const activeFixtureLeague = fixtureLeague === 'all' || upcoming.some((fixture) => fixture.league_key === fixtureLeague) ? fixtureLeague : 'all'
+  const filteredUpcoming = useMemo(
+    () => activeFixtureLeague === 'all' ? upcoming : upcoming.filter((fixture) => fixture.league_key === activeFixtureLeague),
+    [activeFixtureLeague, upcoming],
+  )
+  const visibleUpcoming = filteredUpcoming.slice(0, visibleFixtureCount)
   const unsavedCount = upcoming.filter((fixture) => picks[fixture.fixture_id] && (
     picks[fixture.fixture_id] !== saved[fixture.fixture_id]?.pick
     || (confidence[fixture.fixture_id] ?? 3) !== saved[fixture.fixture_id]?.confidence
@@ -471,11 +494,46 @@ export function PredictionsGame() {
                 <div><p className="text-xs font-black uppercase tracking-[.18em] text-sky-300">Open now</p><h3 className="mt-1 text-2xl font-black text-white">Upcoming matches</h3></div>
                 <p className="text-sm text-slate-400">{upcoming.length} matches · picks lock one by one at kickoff</p>
               </div>
+              <div className="rounded-2xl border border-slate-700 bg-slate-900/55 p-3">
+                <p className="text-xs font-bold uppercase tracking-[.14em] text-slate-400">Choose a league</p>
+                <div className="mt-2 flex gap-2 overflow-x-auto pb-1" aria-label="Filter prediction fixtures by league">
+                  <button
+                    type="button"
+                    aria-pressed={activeFixtureLeague === 'all'}
+                    onClick={() => { setFixtureLeague('all'); setVisibleFixtureCount(INITIAL_FIXTURE_COUNT) }}
+                    className={`inline-flex min-h-10 shrink-0 items-center gap-2 rounded-full border px-3 text-sm font-bold outline-none transition focus-visible:ring-2 focus-visible:ring-sky-300 ${activeFixtureLeague === 'all' ? 'border-sky-300 bg-sky-300 text-slate-950' : 'border-slate-700 bg-slate-950/45 text-slate-300 hover:border-slate-500'}`}
+                  >
+                    All leagues <span className="opacity-70">{upcoming.length}</span>
+                  </button>
+                  {upcomingLeagueOptions.map((league) => (
+                    <button
+                      key={league.key}
+                      type="button"
+                      aria-pressed={activeFixtureLeague === league.key}
+                      onClick={() => { setFixtureLeague(league.key); setVisibleFixtureCount(INITIAL_FIXTURE_COUNT) }}
+                      className={`inline-flex min-h-10 shrink-0 items-center gap-2 rounded-full border px-3 text-sm font-bold outline-none transition focus-visible:ring-2 focus-visible:ring-sky-300 ${activeFixtureLeague === league.key ? 'border-sky-300 bg-sky-300 text-slate-950' : 'border-slate-700 bg-slate-950/45 text-slate-300 hover:border-slate-500'}`}
+                    >
+                      <span className={`size-2.5 rounded-full ${leagueColour(league.key)}`} />
+                      {league.label} <span className="opacity-70">{league.count}</span>
+                    </button>
+                  ))}
+                </div>
+                <p className="mt-2 text-xs text-slate-500">Showing {Math.min(visibleFixtureCount, filteredUpcoming.length)} of {filteredUpcoming.length}. Your saved picks stay safe when you switch leagues.</p>
+              </div>
               <div className="grid gap-3 xl:grid-cols-2">
-                {upcoming.map((fixture) => (
+                {visibleUpcoming.map((fixture) => (
                   <FixtureCard key={fixture.fixture_id} fixture={fixture} pick={picks[fixture.fixture_id]} confidence={confidence[fixture.fixture_id] ?? 3} saved={saved[fixture.fixture_id]} onPick={(pick) => setPicks((current) => ({ ...current, [fixture.fixture_id]: pick }))} onConfidence={(value) => setConfidence((current) => ({ ...current, [fixture.fixture_id]: value }))} />
                 ))}
               </div>
+              {visibleFixtureCount < filteredUpcoming.length ? (
+                <button
+                  type="button"
+                  onClick={() => setVisibleFixtureCount((count) => count + FIXTURE_PAGE_SIZE)}
+                  className="inline-flex min-h-11 w-full items-center justify-center rounded-xl border border-sky-300/35 bg-sky-300/10 px-4 text-sm font-black text-sky-100 outline-none transition hover:bg-sky-300/15 focus-visible:ring-2 focus-visible:ring-sky-300"
+                >
+                  Show {Math.min(FIXTURE_PAGE_SIZE, filteredUpcoming.length - visibleFixtureCount)} more matches
+                </button>
+              ) : null}
               <div className="sticky bottom-3 z-10 rounded-2xl border border-sky-200/20 bg-slate-950/95 p-4 shadow-2xl backdrop-blur-xl">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <div><p className="font-bold text-white">{Object.keys(picks).length} picks chosen</p><p className="text-xs text-slate-400">Save any number now. Come back before kickoff to add or change more.</p></div>
