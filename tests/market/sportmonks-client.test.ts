@@ -210,9 +210,10 @@ describe('Sportmonks coverage trial client', () => {
     const catalogue = await buildSportmonksPremierLeagueCatalogue('private-token')
 
     expect(catalogue).toMatchObject({ competition: 'Premier League', seasonId: '99', playerCount: 2, marketPhase: 'opening', completedFixturesApplied: 0 })
-    expect(catalogue.players.map((player) => player.display_name)).toEqual(['Sam Striker', 'Alex Keeper'])
+    expect(catalogue.players.map((player) => player.display_name).sort()).toEqual(['Alex Keeper', 'Sam Striker'])
     expect(catalogue.players.every((player) => player.active && player.provenance_status === 'verified')).toBe(true)
     expect(catalogue.players.every((player) => player.current_value === player.previous_value)).toBe(true)
+    expect(Object.values(catalogue.openingPriceEvidenceByPlayerId).every((evidence) => evidence.confidence === 'fallback')).toBe(true)
     expect(fetchMock).toHaveBeenCalledTimes(5)
   })
 

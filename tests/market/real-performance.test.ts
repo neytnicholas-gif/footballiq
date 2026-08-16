@@ -1,7 +1,16 @@
 import { describe, expect, it } from 'vitest'
 import { auditMarketCoverage, type CoveragePlayer } from '@/lib/market/dataset-coverage'
 import { validatePerformanceImport, type PerformanceImport, type ValidatedPerformance } from '@/lib/market/performance-ingestion'
-import { calculateBankedPerformanceMovement, calculateOpeningGameplayValue, calculatePerformanceValueUpdate, calculateRollingRating, VALUE_CEILING, VALUE_FLOOR } from '@/lib/market/real-valuation'
+import {
+  calculateBankedPerformanceMovement,
+  calculateOpeningGameplayValue,
+  calculateOpeningPlayerPrice,
+  calculatePerformanceValueUpdate,
+  calculateRollingRating,
+  OPENING_PRICE_METHOD_VERSION,
+  VALUE_CEILING,
+  VALUE_FLOOR,
+} from '@/lib/market/real-valuation'
 
 function importFixture(overrides: Partial<PerformanceImport['fixture']> = {}, appearanceOverrides: Partial<PerformanceImport['appearances'][number]> = {}): PerformanceImport {
   return {
@@ -98,6 +107,54 @@ describe('rolling performance and value controls', () => {
     expect(value % 100_000).toBe(0)
     expect(value).toBeGreaterThanOrEqual(VALUE_FLOOR)
     expect(value).toBeLessThanOrEqual(VALUE_CEILING)
+  })
+
+  it('keeps an unproven young forward below an established first-team player', () => {
+    const prospect = calculateOpeningPlayerPrice({
+      position: 'FWD', age: 20, competitionKey: 'premier-league', appearances: 0, starts: 0,
+      minutes: 0, averageRating: null, goals: 0, assists: 0, cleanSheets: 0, clubStrengthScore: 95,
+    })
+    const starter = calculateOpeningPlayerPrice({
+      position: 'FWD', age: 28, competitionKey: 'premier-league', appearances: 31, starts: 28,
+      minutes: 2_430, averageRating: 7.05, goals: 13, assists: 7, cleanSheets: 0, clubStrengthScore: 75,
+    })
+    expect(prospect.value).toBeLessThanOrEqual(5_200_000)
+    expect(prospect.confidence).toBe('fallback')
+    expect(starter.value).toBeGreaterThan(prospect.value)
+  })
+
+  it('reserves elite price bands for elite evidence', () => {
+    const elite = calculateOpeningPlayerPrice({
+      position: 'FWD', age: 24, competitionKey: 'premier-league', appearances: 35, starts: 34,
+      minutes: 2_950, averageRating: 7.65, goals: 24, assists: 13, cleanSheets: 0, clubStrengthScore: 100,
+    })
+    const regular = calculateOpeningPlayerPrice({
+      position: 'FWD', age: 24, competitionKey: 'premier-league', appearances: 28, starts: 19,
+      minutes: 1_820, averageRating: 6.72, goals: 6, assists: 3, cleanSheets: 0, clubStrengthScore: 55,
+    })
+    expect(elite.value).toBeGreaterThanOrEqual(12_000_000)
+    expect(elite.value).toBeGreaterThan(regular.value)
+    expect(elite.evidence.method_version).toBe(OPENING_PRICE_METHOD_VERSION)
+  })
+
+  it('does not let age dominate identical verified performance', () => {
+    const input = {
+      position: 'MID' as const, competitionKey: 'la-liga', appearances: 30, starts: 27,
+      minutes: 2_400, averageRating: 7.1, goals: 7, assists: 9, cleanSheets: 0, clubStrengthScore: 78,
+    }
+    const young = calculateOpeningPlayerPrice({ ...input, age: 21 })
+    const prime = calculateOpeningPlayerPrice({ ...input, age: 28 })
+    expect(Math.abs(young.value - prime.value)).toBeLessThanOrEqual(300_000)
+  })
+
+  it('caps brilliant but tiny samples instead of extrapolating them into elite prices', () => {
+    const tinySample = calculateOpeningPlayerPrice({
+      position: 'MID', age: 19, competitionKey: 'ligue-1', appearances: 6, starts: 3,
+      minutes: 320, averageRating: 8.8, goals: 3, assists: 4, cleanSheets: 0, clubStrengthScore: 100,
+    })
+    expect(tinySample.value).toBeLessThanOrEqual(6_500_000)
+    expect(tinySample.confidence).toBe('limited')
+    expect(tinySample.evidence.guardrail).toContain('450 minutes')
   })
 })
 

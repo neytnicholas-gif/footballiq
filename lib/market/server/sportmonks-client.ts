@@ -1,7 +1,13 @@
 import { toMarketSlug } from '@/lib/market/provider'
 import { footballLeagues, predictionLeagueKey } from '@/lib/football-leagues'
 import type { ValidatedPerformance } from '@/lib/market/performance-ingestion'
-import { calculateOpeningGameplayValue, calculatePerformanceValueUpdate } from '@/lib/market/real-valuation'
+import {
+  calculateOpeningPlayerPrice,
+  calculateOpeningQualityIndex,
+  calculatePerformanceValueUpdate,
+  type OpeningPriceInput,
+  type OpeningPriceResult,
+} from '@/lib/market/real-valuation'
 import type { MarketPlayer, MarketPosition } from '@/lib/market/types'
 
 const BASE_URL = 'https://api.sportmonks.com/v3/football'
@@ -121,8 +127,6 @@ type PlayerSeasonQuality = {
   cleanSheets: number
 }
 
-const clampScore = (value: number) => Math.max(0, Math.min(100, value))
-
 function statisticValue(detail: JsonRecord) {
   const value = record(detail.value) ?? record(relation(detail, 'data')?.value)
   for (const key of ['average', 'total', 'value', 'count']) {
@@ -133,39 +137,26 @@ function statisticValue(detail: JsonRecord) {
   return Number.isFinite(direct) ? direct : null
 }
 
-function qualityOpeningGameValue(position: MarketPosition, age: number | null, quality?: PlayerSeasonQuality) {
-  if (!quality || (quality.appearances === 0 && quality.minutes === 0 && quality.averageRating === null)) {
-    return calculateOpeningGameplayValue({
-      position, establishedPerformanceScore: 15, recentMinutesScore: 0,
-      squadRoleScore: 10, availabilityScore: 80,
-      agePotentialScore: age !== null && age <= 23 ? 65 : 35,
-    })
+function openingPriceInput(
+  position: MarketPosition,
+  age: number | null,
+  competitionKey: string,
+  quality: PlayerSeasonQuality | undefined,
+  clubStrengthScore: number | null,
+): OpeningPriceInput {
+  return {
+    position,
+    age,
+    competitionKey,
+    appearances: quality?.appearances ?? 0,
+    starts: quality?.starts ?? 0,
+    minutes: quality?.minutes ?? 0,
+    averageRating: quality?.averageRating ?? null,
+    goals: quality?.goals ?? 0,
+    assists: quality?.assists ?? 0,
+    cleanSheets: quality?.cleanSheets ?? 0,
+    clubStrengthScore,
   }
-  const sampleConfidence = clampScore((quality.minutes / 900) * 100) / 100
-  const stabilizedRating = quality.averageRating === null
-    ? null
-    : 6.6 + ((quality.averageRating - 6.6) * sampleConfidence)
-  const ratingScore = stabilizedRating === null ? 45 : clampScore(((stabilizedRating - 5.8) / 2.2) * 100)
-  const per90 = quality.minutes > 0 ? 90 / quality.minutes : 0
-  const outputRate = position === 'FWD'
-    ? (quality.goals * 1.2 + quality.assists * 0.75) * per90
-    : position === 'MID'
-      ? (quality.goals * 0.65 + quality.assists) * per90
-      : position === 'DEF'
-        ? (quality.cleanSheets * 0.8 + quality.goals * 0.35 + quality.assists * 0.4) * per90
-        : quality.cleanSheets * per90
-  const outputTarget: Record<MarketPosition, number> = { GK: 0.38, DEF: 0.42, MID: 0.52, FWD: 0.8 }
-  const outputScore = clampScore(((outputRate * sampleConfidence) / outputTarget[position]) * 100)
-  const establishedPerformanceScore = ratingScore * 0.82 + outputScore * 0.18
-  const recentMinutesScore = clampScore((quality.minutes / 2_700) * 100)
-  const squadRoleScore = quality.appearances > 0
-    ? clampScore((quality.starts / quality.appearances) * 75 + Math.min(25, quality.appearances))
-    : 10
-  const agePotentialScore = age === null ? 45 : age <= 21 ? 90 : age <= 24 ? 80 : age <= 28 ? 65 : age <= 31 ? 45 : age <= 34 ? 25 : 10
-  return calculateOpeningGameplayValue({
-    position, establishedPerformanceScore, recentMinutesScore,
-    squadRoleScore, availabilityScore: 100, agePotentialScore,
-  })
 }
 
 function isEstablishedQuality(quality: PlayerSeasonQuality | undefined) {
@@ -268,6 +259,7 @@ export type SportmonksMarketCatalogue = {
   qualityCoveragePercent: number
   latestCompletedAt: string | null
   players: MarketPlayer[]
+  openingPriceEvidenceByPlayerId: Record<string, OpeningPriceResult['evidence']>
 }
 
 export type SportmonksGameweekUpdate = {
@@ -613,6 +605,48 @@ async function buildSportmonksLeagueCatalogue(
       // Coverage below decides whether this price book is safe to publish.
     }
   })
+  const selectedQuality = (playerId: number) => {
+    const current = currentQualityByPlayer.get(playerId)
+    if (isEstablishedQuality(current)) return current
+    const previous = previousQualityByPlayer.get(playerId)
+    if (isEstablishedQuality(previous)) return previous
+    return historicalQualityByPlayer.get(playerId)
+  }
+  const clubQualitySamples = new Map<string, number[]>()
+  const sampledMemberships = new Set<string>()
+  for (const row of squads) {
+    const player = relation(row, 'player')
+    const team = relation(row, 'team')
+    const playerId = Number(row.player_id ?? player?.id)
+    const clubName = textValue(team?.name)
+    const position = mapPosition(row)
+    if (!Number.isSafeInteger(playerId) || !clubName || !position) continue
+    const membershipKey = `${clubName}:${playerId}`
+    if (sampledMemberships.has(membershipKey)) continue
+    sampledMemberships.add(membershipKey)
+    const quality = selectedQuality(playerId)
+    if (!quality) continue
+    const qualityIndex = calculateOpeningQualityIndex(openingPriceInput(
+      position,
+      playerAge(player ?? {}),
+      leagueConfig.competitionKey,
+      quality,
+      null,
+    ))
+    if (qualityIndex === null) continue
+    const samples = clubQualitySamples.get(clubName) ?? []
+    samples.push(qualityIndex)
+    clubQualitySamples.set(clubName, samples)
+  }
+  const clubRawStrength = [...clubQualitySamples.entries()].map(([clubName, samples]) => {
+    const strongest = [...samples].sort((a, b) => b - a).slice(0, 14)
+    const average = strongest.reduce((sum, score) => sum + score, 0) / strongest.length
+    return { clubName, average }
+  }).sort((a, b) => a.average - b.average)
+  const clubStrengthByName = new Map(clubRawStrength.map((club, index) => [
+    club.clubName,
+    clubRawStrength.length <= 1 ? 60 : 20 + (index / (clubRawStrength.length - 1)) * 80,
+  ]))
   const completedFixtures = relationRows(seasonSchedule ?? {}, 'fixtures')
     .filter((fixture) => isFinishedFixture(fixture) && fixtureDate(fixture))
     .sort((a, b) => Date.parse(fixtureDate(b)!) - Date.parse(fixtureDate(a)!))
@@ -625,6 +659,7 @@ async function buildSportmonksLeagueCatalogue(
   const seen = new Set<number>()
   const slugs = new Set<string>()
   const players: MarketPlayer[] = []
+  const openingPriceEvidenceByPlayerId: Record<string, OpeningPriceResult['evidence']> = {}
   const performancesByPlayer = new Map<number, ValidatedPerformance[]>()
   let qualityPricedPlayerCount = 0
 
@@ -661,14 +696,17 @@ async function buildSportmonksLeagueCatalogue(
     if (!Number.isSafeInteger(id) || id <= 0 || seen.has(id) || !position || !name || !clubName) continue
     seen.add(id)
     const age = playerAge(player ?? {})
-    const currentQuality = currentQualityByPlayer.get(id)
-    const establishedQuality = isEstablishedQuality(currentQuality)
-      ? currentQuality
-      : isEstablishedQuality(previousQualityByPlayer.get(id))
-        ? previousQualityByPlayer.get(id)
-        : historicalQualityByPlayer.get(id)
+    const establishedQuality = selectedQuality(id)
     if (establishedQuality) qualityPricedPlayerCount += 1
-    const openingValue = qualityOpeningGameValue(position, age, establishedQuality)
+    const openingPrice = calculateOpeningPlayerPrice(openingPriceInput(
+      position,
+      age,
+      leagueConfig.competitionKey,
+      establishedQuality,
+      clubStrengthByName.get(clubName) ?? null,
+    ))
+    const openingValue = openingPrice.value
+    openingPriceEvidenceByPlayerId[String(id)] = openingPrice.evidence
     const performances = (performancesByPlayer.get(id) ?? []).sort((a, b) => Date.parse(b.matchDate) - Date.parse(a.matchDate))
     const currentUpdate = calculatePerformanceValueUpdate({ position, currentValue: openingValue, rollingWeekMovement: 0, performances })
     const previousUpdate = calculatePerformanceValueUpdate({ position, currentValue: openingValue, rollingWeekMovement: 0, performances: performances.slice(1) })
@@ -683,7 +721,7 @@ async function buildSportmonksLeagueCatalogue(
       position, age, nationality: textValue(player?.nationality_name ?? player?.nationality), active: true,
       current_value: value, previous_value: previousValue, opening_season_value: openingValue,
       value_updated_at: now, data_updated_at: now,
-      data_source_label: 'Sportmonks-sourced squad data · Early Shout opening game price',
+      data_source_label: 'Sportmonks-sourced squad data · Early Shout evidence-based game price',
       source_reference: `sportmonks-player-${id}`, provenance_status: 'verified', owner_verified: true,
       is_trade_locked: false, trade_lock_reason: null, trade_lock_started_at: null, trade_lock_ends_at: null,
       value_trend: value > previousValue ? 'rising' : value < previousValue ? 'falling' : 'flat',
@@ -691,7 +729,9 @@ async function buildSportmonksLeagueCatalogue(
       role_security_indicator: performances[0]?.minutesPlayed && performances[0].minutesPlayed >= 75 ? 'secure' : 'rotation', availability_status: 'available',
       decision_support_note: currentUpdate
         ? `Verified ${currentUpdate.appearancesUsed}-appearance rolling rating: ${currentUpdate.rollingRating.toFixed(2)}. Latest movement follows Early Shout v2 controls.`
-        : 'Opening game price. This value remains frozen until verified ratings and minutes are available.',
+        : openingPrice.confidence === 'fallback'
+          ? 'Conservative opening price. More verified minutes and ratings are needed before higher price bands unlock.'
+          : `Opening game price based on verified rating, minutes, role and output (${openingPrice.confidence} confidence).`,
       matchweek_performance_history: performances.slice(0, 5).reverse().map((event, index) => ({ week: event.gameweek ?? index + 1, rating: event.rating!, minutes: event.minutesPlayed })),
       created_at: now, updated_at: now,
     })
@@ -710,7 +750,7 @@ async function buildSportmonksLeagueCatalogue(
     completedFixturesApplied: completedFixtures.length, ratedPlayerCount: performancesByPlayer.size,
     qualityPricedPlayerCount, fallbackPricedPlayerCount, qualityCoveragePercent,
     latestCompletedAt: completedFixtures[0] ? fixtureDate(completedFixtures[0]) : null,
-    players,
+    players, openingPriceEvidenceByPlayerId,
   }
 }
 

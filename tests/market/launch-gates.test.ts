@@ -113,13 +113,18 @@ describe('Player Market launch gates', () => {
 
   it('refuses to publish a fallback-heavy Sportmonks opening price book', () => {
     const client = read('lib/market/server/sportmonks-client.ts')
+    const valuation = read('lib/market/real-valuation.ts')
+    const sync = read('lib/market/server/catalogue-sync.ts')
     expect(client).toContain('qualityCoveragePercent >= 65')
     expect(client).toContain('latestEstablishedPlayerQuality')
     expect(client).toContain('statistics.details.type;statistics.season')
     expect(client).toContain("values.get('CLEAN_SHEET')")
     expect(client).toContain('unsafeRequiredCatalogue')
     expect(client).toContain('quality.minutes >= 450 && quality.appearances >= 5')
-    expect(client).toContain('sampleConfidence')
+    expect(valuation).toContain('sampleConfidence')
+    expect(valuation).toContain("maximumValue = 5_200_000")
+    expect(sync).toContain('validateOpeningPriceBook')
+    expect(sync).toContain('fallback players exceed the conservative cap')
   })
 
   it('runs server work close to the database with Fluid Compute enabled', () => {

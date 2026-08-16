@@ -5,6 +5,7 @@ import { createClient } from '@supabase/supabase-js'
 import { buildSportmonksCombinedCatalogue } from '@/lib/market/server/sportmonks-client'
 import type { SportmonksMarketCatalogue } from '@/lib/market/server/sportmonks-client'
 import type { MarketPosition } from '@/lib/market/types'
+import { OPENING_PRICE_METHOD_VERSION } from '@/lib/market/real-valuation'
 
 const BATCH_SIZE = 100
 const VALUE_FLOOR = 4_000_000
@@ -16,6 +17,50 @@ function legacyOpeningValue(position: MarketPosition, age: number | null) {
     : age <= 21 ? 700_000 : age <= 24 ? 1_000_000 : age <= 28 ? 800_000
       : age <= 31 ? 300_000 : age <= 34 ? -300_000 : -700_000
   return Math.max(VALUE_FLOOR, Math.min(VALUE_CEILING, positionBase[position] + ageAdjustment))
+}
+
+function percentile(sorted: number[], fraction: number) {
+  if (sorted.length === 0) return 0
+  const index = Math.min(sorted.length - 1, Math.max(0, Math.floor((sorted.length - 1) * fraction)))
+  return sorted[index]!
+}
+
+function validateOpeningPriceBook(catalogues: SportmonksMarketCatalogue[]) {
+  const players = catalogues.flatMap((catalogue) => catalogue.players.map((player) => ({
+    ...player,
+    evidence: catalogue.openingPriceEvidenceByPlayerId[String(player.id)],
+  })))
+  if (players.length < 900) throw new Error(`Opening price book rejected: only ${players.length} players were available.`)
+  const missingEvidence = players.filter((player) => !player.evidence)
+  if (missingEvidence.length) throw new Error(`Opening price book rejected: ${missingEvidence.length} players have no pricing evidence.`)
+  const invalid = players.filter((player) => (
+    player.opening_season_value < VALUE_FLOOR
+    || player.opening_season_value > VALUE_CEILING
+    || player.opening_season_value % 100_000 !== 0
+  ))
+  if (invalid.length) throw new Error(`Opening price book rejected: ${invalid.length} values break floor, ceiling or increment rules.`)
+  const unsafeFallbacks = players.filter((player) => player.evidence?.confidence === 'fallback' && player.opening_season_value > 5_200_000)
+  if (unsafeFallbacks.length) throw new Error(`Opening price book rejected: ${unsafeFallbacks.length} fallback players exceed the conservative cap.`)
+  const values = players.map((player) => player.opening_season_value).sort((a, b) => a - b)
+  const spread = percentile(values, 0.9) - percentile(values, 0.1)
+  const distinctValues = new Set(values).size
+  if (spread < 2_000_000 || distinctValues < 25) {
+    throw new Error(`Opening price book rejected as too compressed (${distinctValues} prices; p90-p10 ${spread}).`)
+  }
+  const eliteBand = [...players].sort((a, b) => b.opening_season_value - a.opening_season_value).slice(0, 25)
+  if (eliteBand.some((player) => player.evidence?.confidence === 'fallback')) {
+    throw new Error('Opening price book rejected: a fallback-priced player entered the elite band.')
+  }
+  return {
+    players: players.length,
+    distinctValues,
+    minimum: values[0]!,
+    p10: percentile(values, 0.1),
+    median: percentile(values, 0.5),
+    p90: percentile(values, 0.9),
+    maximum: values.at(-1)!,
+    fallbackPlayers: players.filter((player) => player.evidence?.confidence === 'fallback').length,
+  }
 }
 
 function createAdminClient() {
@@ -104,21 +149,27 @@ async function syncLeagueCatalogue(admin: ReturnType<typeof createAdminClient>, 
   const clubIds = new Map((persistedClubs ?? []).map((club) => [club.name, club.id]))
 
   const { data: existingPlayers, error: existingPlayersError } = await admin.from('market_players')
-    .select('provider_player_id,initial_price_minor,current_price_minor')
+    .select('provider_player_id,initial_price_minor,current_price_minor,opening_price_method_version')
     .eq('season_id', seasonId)
   if (existingPlayersError) throw new Error(`Existing player price lookup failed: ${existingPlayersError.message}`)
   const existingPrices = new Map((existingPlayers ?? []).map((player) => [String(player.provider_player_id), {
     initial: Number(player.initial_price_minor), current: Number(player.current_price_minor),
+    methodVersion: String(player.opening_price_method_version ?? 'legacy-age-position-v1'),
   }]))
 
   let synced = 0
+  let repriced = 0
   for (let offset = 0; offset < catalogue.players.length; offset += BATCH_SIZE) {
     const rows = catalogue.players.slice(offset, offset + BATCH_SIZE).map((player) => {
       const existing = existingPrices.get(String(player.id))
       const stillOnLegacyBaseline = existing?.initial === legacyOpeningValue(player.position, player.age ?? null)
-      const openingPrice = !existing || stillOnLegacyBaseline ? player.opening_season_value : existing.initial
+      const needsCurrentModel = !existing || stillOnLegacyBaseline || existing.methodVersion !== OPENING_PRICE_METHOD_VERSION
+      const openingPrice = needsCurrentModel ? player.opening_season_value : existing.initial
+      if (existing && needsCurrentModel && openingPrice !== existing.initial) repriced += 1
       const preservedMovement = existing ? existing.current - existing.initial : player.current_value - player.opening_season_value
       const currentPrice = Math.max(VALUE_FLOOR, Math.min(VALUE_CEILING, openingPrice + preservedMovement))
+      const evidence = catalogue.openingPriceEvidenceByPlayerId[String(player.id)]
+      if (!evidence) throw new Error(`Pricing evidence is missing for provider player ${player.id}.`)
       return ({
       season_id: seasonId,
       club_id: clubIds.get(player.club_name),
@@ -140,6 +191,9 @@ async function syncLeagueCatalogue(admin: ReturnType<typeof createAdminClient>, 
       internal_player_id: `fiq_player_${player.id}`,
       app_player_id: player.id,
       age: player.age,
+      opening_price_method_version: OPENING_PRICE_METHOD_VERSION,
+      opening_price_confidence: evidence.confidence,
+      opening_price_evidence: evidence,
       updated_at: now,
     })})
     if (rows.some((row) => !row.club_id)) throw new Error('Catalogue contains a player whose club was not synchronized.')
@@ -152,6 +206,36 @@ async function syncLeagueCatalogue(admin: ReturnType<typeof createAdminClient>, 
   const { data: persistedPlayers, error: persistedPlayersError } = await admin.from('market_players')
     .select('id,provider_player_id').eq('season_id', seasonId)
   if (persistedPlayersError) throw new Error(`Player reconciliation failed: ${persistedPlayersError.message}`)
+  const persistedPlayerIds = new Map((persistedPlayers ?? []).map((player) => [String(player.provider_player_id), player.id]))
+  const seasonStatsRows = catalogue.players.flatMap((player) => {
+    const playerId = persistedPlayerIds.get(String(player.id))
+    const evidence = catalogue.openingPriceEvidenceByPlayerId[String(player.id)]
+    if (!playerId || !evidence) return []
+    const input = evidence.source_inputs
+    const ratedMatches = input.average_rating === null ? 0 : input.appearances
+    return [{
+      player_id: playerId,
+      season_id: seasonId,
+      rated_matches: ratedMatches,
+      appearances: input.appearances,
+      starts: input.starts,
+      minutes_played: input.minutes,
+      rating_sum_milli: input.average_rating === null ? 0 : Math.round(input.average_rating * 1_000 * ratedMatches),
+      average_rating_milli: input.average_rating === null ? null : Math.round(input.average_rating * 1_000),
+      goals: input.goals,
+      assists: input.assists,
+      clean_sheets: input.clean_sheets,
+      yellow_cards: 0,
+      red_cards: 0,
+      source_through_at: now,
+      updated_at: now,
+    }]
+  })
+  for (let offset = 0; offset < seasonStatsRows.length; offset += BATCH_SIZE) {
+    const { error } = await admin.from('player_season_stats')
+      .upsert(seasonStatsRows.slice(offset, offset + BATCH_SIZE), { onConflict: 'player_id' })
+    if (error) throw new Error(`Player evidence synchronization failed: ${error.message}`)
+  }
   const currentProviderIds = new Set(catalogue.players.map((player) => String(player.id)))
   const stalePlayerIds = (persistedPlayers ?? [])
     .filter((player) => !currentProviderIds.has(String(player.provider_player_id)))
@@ -173,18 +257,24 @@ async function syncLeagueCatalogue(admin: ReturnType<typeof createAdminClient>, 
   }, { onConflict: 'catalogue_id' })
   if (activationError) throw new Error(`Catalogue activation failed: ${activationError.message}`)
 
-  return { synced, deactivated: stalePlayerIds.length, competition: catalogue.competition, seasonId, seasonName, source: catalogue.provider, generatedAt: catalogue.generatedAt }
+  return { synced, repriced, deactivated: stalePlayerIds.length, competition: catalogue.competition, seasonId, seasonName, source: catalogue.provider, generatedAt: catalogue.generatedAt }
 }
 
 export async function syncSportmonksCatalogueToSupabase() {
   const combined = await buildSportmonksCombinedCatalogue()
+  const pricingAudit = validateOpeningPriceBook(combined.competitions)
   const admin = createAdminClient()
   const results = []
   for (const catalogue of combined.competitions) results.push(await syncLeagueCatalogue(admin, catalogue))
+  const { data: portfolioRefresh, error: refreshError } = await admin.rpc('market_refresh_all_portfolios_after_catalogue_sync')
+  if (refreshError) throw new Error(`Portfolio refresh after catalogue sync failed: ${refreshError.message}`)
   return {
     synced: results.reduce((total, result) => total + result.synced, 0),
+    repriced: results.reduce((total, result) => total + result.repriced, 0),
     competition: combined.competition,
     generatedAt: combined.generatedAt,
+    pricingAudit,
+    portfolioRefresh,
     competitions: results,
   }
 }
