@@ -33,13 +33,15 @@ Promote the verified Early Shout deployment only after the Production secrets ar
 
 ## Witness the first real gameweek
 
-1. Confirm a supported fixture is finished and Sportmonks exposes minutes and player ratings.
-2. Run the protected gameweek endpoint once or wait for the Production cron.
-3. Confirm `market_processing_runs`, `market_player_match_stats`, and `market_valuation_events` gained records.
-4. Confirm the gameweek shows fixture and processed-player counts without an error.
-5. Confirm the affected player prices changed at most once.
-6. Confirm a holding's value and Reveal match the valuation event.
-7. Rerun the same job and confirm it is idempotent rather than applying a second movement.
-8. Capture the processing-run identifier and counts in the launch evidence record.
+1. Confirm a supported fixture is scheduled, has Sportmonks home/away participant IDs, and locks both clubs at kickoff.
+2. Confirm a buy and a sell for an affected player both fail with `PLAYER_TRADE_LOCKED` and commit no transaction.
+3. Confirm the fixture is finished and Sportmonks exposes minutes and player ratings.
+4. Run the protected gameweek endpoint once or wait for the Production cron.
+5. Confirm `market_processing_runs`, `market_player_match_stats`, `market_valuation_events`, and `market_fixture_settlements` gained the expected records.
+6. Confirm the processing report has no `failed_items`, and only then confirm the affected players unlocked.
+7. Confirm the affected player prices changed at most once.
+8. Confirm a holding's value and Reveal match the valuation event.
+9. Rerun the same job and confirm it is idempotent rather than applying a second movement.
+10. Capture the processing-run identifier, fixture settlement and counts in the launch evidence record.
 
 Do not describe the live automatic ratings loop as proven until this witnessed run succeeds.

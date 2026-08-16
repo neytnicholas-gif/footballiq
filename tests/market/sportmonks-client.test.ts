@@ -94,6 +94,48 @@ describe('Sportmonks coverage trial client', () => {
 
     expect(batches.map((batch) => batch.gameweekKey)).toEqual(['sportmonks-2026-31', 'sportmonks-2026-32'])
     expect(batches.flatMap((batch) => batch.updates).map((update) => update.provider_fixture_id).sort()).toEqual(['101', '102'])
+    expect(batches.flatMap((batch) => batch.checkedFixtures).map((fixture) => fixture.providerFixtureId).sort()).toEqual(['101', '102'])
+  })
+
+  it('excludes every completed fixture before the public valuation boundary', async () => {
+    const detail = (developer_name: string, value: number) => ({ data: { value }, type: { developer_name } })
+    const finished = (id: number, starting_at: string) => ({ id, starting_at, state: { short_name: 'FT' } })
+    const fetchMock = vi.spyOn(globalThis, 'fetch')
+      .mockResolvedValueOnce(response({ id: 8, currentSeason: { id: 1 } }))
+      .mockResolvedValueOnce(response({ id: 1, fixtures: [finished(101, '2026-08-16 14:00:00'), finished(102, '2026-08-17 14:00:00')] }))
+      .mockResolvedValueOnce(response({ id: 564, currentSeason: { id: 2 } }))
+      .mockResolvedValueOnce(response({ id: 2, fixtures: [] }))
+      .mockResolvedValueOnce(response({ id: 301, currentSeason: { id: 3 } }))
+      .mockResolvedValueOnce(response({ id: 3, fixtures: [] }))
+      .mockResolvedValueOnce(response({ id: 102, lineups: [{ player_id: 22, details: [detail('MINUTES_PLAYED', 90), detail('RATING', 7.2)] }] }))
+
+    const batches = await fetchSportmonksCompletedGameweeks('private-token', new Set(), undefined, '2026-08-17T00:00:00Z')
+
+    expect(batches.flatMap((batch) => batch.checkedFixtures)).toEqual([
+      { providerFixtureId: '102', kickoffAt: '2026-08-17T14:00:00.000Z' },
+    ])
+    expect(fetchMock.mock.calls.some(([url]) => String(url).includes('/fixtures/101?'))).toBe(false)
+  })
+
+  it('settles a successfully checked fixture even when no player row has a usable rating', async () => {
+    const fixture = { id: 101, starting_at: '2026-08-17 14:00:00', state: { short_name: 'FT' } }
+    vi.spyOn(globalThis, 'fetch')
+      .mockResolvedValueOnce(response({ id: 8, currentSeason: { id: 1 } }))
+      .mockResolvedValueOnce(response({ id: 1, fixtures: [fixture] }))
+      .mockResolvedValueOnce(response({ id: 564, currentSeason: { id: 2 } }))
+      .mockResolvedValueOnce(response({ id: 2, fixtures: [] }))
+      .mockResolvedValueOnce(response({ id: 301, currentSeason: { id: 3 } }))
+      .mockResolvedValueOnce(response({ id: 3, fixtures: [] }))
+      .mockResolvedValueOnce(response({ id: 101, lineups: [{ player_id: 22, details: [] }] }))
+
+    const batches = await fetchSportmonksCompletedGameweeks('private-token', new Set(), undefined, '2026-08-17T00:00:00Z')
+
+    expect(batches).toHaveLength(1)
+    expect(batches[0]).toMatchObject({
+      gameweekKey: 'sportmonks-2026-34',
+      updates: [],
+      checkedFixtures: [{ providerFixtureId: '101', kickoffAt: '2026-08-17T14:00:00.000Z' }],
+    })
   })
 
   it('discovers licensed leagues before normalizing fixture cards, scores and derby flags', async () => {
@@ -108,8 +150,8 @@ describe('Sportmonks coverage trial client', () => {
         id: 9001, league_id: 8, starting_at: '2026-08-16 15:30:00',
         state: { short_name: 'NS' },
         participants: [
-          { name: 'Arsenal', meta: { location: 'home' } },
-          { name: 'Tottenham Hotspur', meta: { location: 'away' } },
+          { id: 1, name: 'Arsenal', meta: { location: 'home' } },
+          { id: 2, name: 'Tottenham Hotspur', meta: { location: 'away' } },
         ],
         scores: [],
       },
@@ -117,8 +159,8 @@ describe('Sportmonks coverage trial client', () => {
         id: 9002, league_id: 564, starting_at: '2026-08-15 19:00:00',
         state: { short_name: 'FT' },
         participants: [
-          { name: 'Real Madrid', meta: { location: 'home' } },
-          { name: 'Barcelona', meta: { location: 'away' } },
+          { id: 3, name: 'Real Madrid', meta: { location: 'home' } },
+          { id: 4, name: 'Barcelona', meta: { location: 'away' } },
         ],
         scores: [
           { description: 'CURRENT', score: { participant: 'home', goals: 2 } },
@@ -129,8 +171,8 @@ describe('Sportmonks coverage trial client', () => {
         id: 9003, league_id: 301, starting_at: '2026-08-17 18:00:00',
         state: { short_name: 'NS' },
         participants: [
-          { name: 'Lyon', meta: { location: 'home' } },
-          { name: 'Marseille', meta: { location: 'away' } },
+          { id: 5, name: 'Lyon', meta: { location: 'home' } },
+          { id: 6, name: 'Marseille', meta: { location: 'away' } },
         ],
         scores: [],
       },
@@ -142,7 +184,7 @@ describe('Sportmonks coverage trial client', () => {
     expect(fixtures).toHaveLength(3)
     expect(sync.competitions.map((competition) => competition.league_key)).toEqual(['premier-league', 'la-liga', 'ligue-1'])
     expect(fixtures.map((fixture) => fixture.league_key)).toEqual(['premier-league', 'la-liga', 'ligue-1'])
-    expect(fixtures[0]).toMatchObject({ fixture_id: '9001', is_derby: true, status: 'scheduled' })
+    expect(fixtures[0]).toMatchObject({ fixture_id: '9001', home_provider_team_id: '1', away_provider_team_id: '2', is_derby: true, status: 'scheduled' })
     expect(fixtures[1]).toMatchObject({ fixture_id: '9002', is_derby: true, status: 'completed', home_score: 2, away_score: 1 })
     expect(fixtures[2]).toMatchObject({ fixture_id: '9003', is_derby: false, status: 'scheduled' })
   })

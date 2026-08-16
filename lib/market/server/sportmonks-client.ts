@@ -279,6 +279,10 @@ export type SportmonksCompletedGameweek = {
   opensAt: string
   closesAt: string
   updates: SportmonksGameweekUpdate[]
+  checkedFixtures: Array<{
+    providerFixtureId: string
+    kickoffAt: string
+  }>
 }
 
 export type SportmonksPredictionFixture = {
@@ -288,6 +292,8 @@ export type SportmonksPredictionFixture = {
   gameweek_key: string
   home_team: string
   away_team: string
+  home_provider_team_id: string
+  away_provider_team_id: string
   kickoff_at: string
   status: 'scheduled' | 'live' | 'completed' | 'postponed' | 'cancelled'
   home_score: number | null
@@ -850,6 +856,7 @@ export async function fetchSportmonksCompletedGameweeks(
   apiToken = process.env.SPORTMONKS_API_TOKEN,
   processedPerformanceKeys: ReadonlySet<string> = new Set(),
   observeTelemetry?: (telemetry: SportmonksRequestTelemetry) => void,
+  valuationEligibleFrom?: string,
 ): Promise<SportmonksCompletedGameweek[]> {
   const client = createSportmonksClient(apiToken)
   try {
@@ -869,15 +876,21 @@ export async function fetchSportmonksCompletedGameweeks(
     fixtures.push(...relationRows(schedule ?? {}, 'fixtures').filter(isFinishedFixture))
   }
 
-  const cutoff = Date.now() - 28 * 86_400_000
+  const configuredCutoff = valuationEligibleFrom ? Date.parse(valuationEligibleFrom) : Number.NaN
+  if (valuationEligibleFrom && !Number.isFinite(configuredCutoff)) {
+    throw new Error('The valuation eligibility boundary is invalid.')
+  }
+  const cutoff = Math.max(Date.now() - 28 * 86_400_000, Number.isFinite(configuredCutoff) ? configuredCutoff : 0)
   const finished = fixtures.filter((fixture) => {
     const date = fixtureDate(fixture)
     return date !== null && Date.parse(date) >= cutoff
   })
     .sort((a, b) => Date.parse(fixtureDate(b)!) - Date.parse(fixtureDate(a)!))
   if (finished.length === 0) return []
-  const updatesByWeek = new Map<string, SportmonksGameweekUpdate[]>()
-  let eligibleAppearanceCount = 0
+  const batchesByWeek = new Map<string, {
+    updates: SportmonksGameweekUpdate[]
+    checkedFixtures: SportmonksCompletedGameweek['checkedFixtures']
+  }>()
   let failedFixtureCount = 0
 
   for (let offset = 0; offset < finished.length; offset += 5) {
@@ -894,32 +907,30 @@ export async function fetchSportmonksCompletedGameweeks(
     })
     for (const { fixture, payload } of payloads) {
       const providerFixtureId = String(fixture.id)
+      const fixtureAt = new Date(fixtureDate(fixture)!)
+      const { year, week } = isoWeek(fixtureAt)
+      const key = `${year}-${String(week).padStart(2, '0')}`
+      const batch = batchesByWeek.get(key) ?? { updates: [], checkedFixtures: [] }
+      batch.checkedFixtures.push({ providerFixtureId, kickoffAt: fixtureDate(fixture)! })
       for (const lineup of payload ? relationRows(payload, 'lineups') : []) {
         const playerId = Number(lineup.player_id)
         const minutes = numericDetail(lineup, 'MINUTES_PLAYED')
         const rating = numericDetail(lineup, 'RATING')
         if (!Number.isSafeInteger(playerId) || !Number.isInteger(minutes) || minutes! <= 0 || minutes! > 130 || rating === null || rating < 0 || rating > 10) continue
-        eligibleAppearanceCount += 1
         if (processedPerformanceKeys.has(`${providerFixtureId}:${playerId}`)) continue
-        const fixtureAt = new Date(fixtureDate(fixture)!)
-        const { year, week } = isoWeek(fixtureAt)
-        const key = `${year}-${String(week).padStart(2, '0')}`
-        const updates = updatesByWeek.get(key) ?? []
-        updates.push({
+        batch.updates.push({
           provider_player_id: String(playerId), provider_fixture_id: providerFixtureId,
           fixture_date: fixtureDate(fixture)!, started: Boolean(lineup.type_id === 11 || lineup.formation_position),
           minutes_played: minutes!, rating, retrieved_at: retrievedAt,
         })
-        updatesByWeek.set(key, updates)
       }
+      batchesByWeek.set(key, batch)
     }
   }
-  if (updatesByWeek.size === 0 && failedFixtureCount > 0) throw new Error('One or more completed fixtures could not be checked; valuation will retry safely.')
-  if (updatesByWeek.size === 0 && eligibleAppearanceCount > 0) return []
-  if (updatesByWeek.size === 0) throw new Error('Completed fixtures did not contain eligible Sportmonks ratings and minutes.')
+  if (failedFixtureCount > 0) throw new Error('One or more completed fixtures could not be checked; valuation will retry safely.')
 
-  return [...updatesByWeek.entries()].map(([key, updates]) => {
-    const firstDate = new Date(updates.reduce((earliest, update) => update.fixture_date < earliest ? update.fixture_date : earliest, updates[0]!.fixture_date))
+  return [...batchesByWeek.entries()].map(([key, batch]) => {
+    const firstDate = new Date(batch.checkedFixtures.reduce((earliest, fixture) => fixture.kickoffAt < earliest ? fixture.kickoffAt : earliest, batch.checkedFixtures[0]!.kickoffAt))
     const opensAt = mondayFor(firstDate)
     const closesAt = new Date(opensAt)
     closesAt.setUTCDate(closesAt.getUTCDate() + 7)
@@ -927,8 +938,10 @@ export async function fetchSportmonksCompletedGameweeks(
     return {
       gameweekKey: `sportmonks-${key}`,
       weekNumber,
-      label: `Results · ${key}`,
-      opensAt: opensAt.toISOString(), closesAt: closesAt.toISOString(), updates,
+      label: `Results - ${key}`,
+      opensAt: opensAt.toISOString(), closesAt: closesAt.toISOString(),
+      updates: batch.updates,
+      checkedFixtures: batch.checkedFixtures,
     }
   }).sort((a, b) => a.opensAt.localeCompare(b.opensAt))
   } finally {
@@ -1013,9 +1026,10 @@ export async function fetchSportmonksPredictionFixtures(
       const home=participants.find((team)=>String(record(team.meta)?.location ?? '').toLowerCase()==='home')
       const away=participants.find((team)=>String(record(team.meta)?.location ?? '').toLowerCase()==='away')
       const homeTeam=textValue(home?.name);const awayTeam=textValue(away?.name)
-      if(!config||!kickoff||!fixtureId||!homeTeam||!awayTeam)return []
+      const homeTeamId=Number(home?.id);const awayTeamId=Number(away?.id)
+      if(!config||!kickoff||!fixtureId||!homeTeam||!awayTeam||!Number.isSafeInteger(homeTeamId)||!Number.isSafeInteger(awayTeamId))return []
       const date=new Date(kickoff);const {year,week}=isoWeek(date);const score=currentFixtureScore(row);const status=predictionFixtureStatus(row)
-      return [{fixture_id:fixtureId,league_key:config.key,league_name:config.name,gameweek_key:`${year}-${String(week).padStart(2,'0')}`,home_team:homeTeam,away_team:awayTeam,kickoff_at:kickoff,status,home_score:status==='completed'?score.home:null,away_score:status==='completed'?score.away:null,is_derby:isKnownDerby(homeTeam,awayTeam),source_updated_at:now}]
+      return [{fixture_id:fixtureId,league_key:config.key,league_name:config.name,gameweek_key:`${year}-${String(week).padStart(2,'0')}`,home_team:homeTeam,away_team:awayTeam,home_provider_team_id:String(homeTeamId),away_provider_team_id:String(awayTeamId),kickoff_at:kickoff,status,home_score:status==='completed'?score.home:null,away_score:status==='completed'?score.away:null,is_derby:isKnownDerby(homeTeam,awayTeam),source_updated_at:now}]
     })
     const competitions=selected.map(({league,providerId,country,countryCode})=>({
       league_key:league.key,provider_league_id:providerId,league_name:league.name,

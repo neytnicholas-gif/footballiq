@@ -3,8 +3,6 @@ import 'server-only'
 import { createClient } from '@supabase/supabase-js'
 import { fetchSportmonksCompletedGameweeks, fetchSportmonksPredictionFixtures, type SportmonksCompletedGameweek, type SportmonksRequestTelemetry } from '@/lib/market/server/sportmonks-client'
 
-const NO_ELIGIBLE_COMPLETED_RATINGS = 'Completed fixtures did not contain eligible Sportmonks ratings and minutes.'
-
 function adminClient() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -34,7 +32,37 @@ async function processBatch(admin: ReturnType<typeof adminClient>, gameweek: Spo
     await admin.from('market_processing_runs').update({ status: 'failed', finished_at: new Date().toISOString(), error_message: error.message }).eq('run_key', runKey)
     throw new Error(`Verified gameweek processing failed: ${error.message}`)
   }
-  const report = data as Record<string, unknown>
+  const report = (data ?? {}) as Record<string, unknown>
+  const failedItems = Array.isArray(report.failed_items) ? report.failed_items : []
+  if (failedItems.length > 0) {
+    const message = `${failedItems.length} player update(s) failed and will be retried.`
+    await admin.from('market_processing_runs').update({
+      status: 'failed', finished_at: new Date().toISOString(), report, error_message: message,
+    }).eq('run_key', runKey)
+    throw new Error(message)
+  }
+  if (gameweek.checkedFixtures.length > 0) {
+    const processedAt = new Date().toISOString()
+    const gameweekId = typeof report.gameweek_id === 'string' ? report.gameweek_id : null
+    const { error: settlementError } = await admin.from('market_fixture_settlements').upsert(
+      gameweek.checkedFixtures.map((fixture) => ({
+        provider_fixture_id: fixture.providerFixtureId,
+        kickoff_at: fixture.kickoffAt,
+        gameweek_id: gameweekId,
+        status: 'processed',
+        processed_at: processedAt,
+        updated_at: processedAt,
+      })),
+      { onConflict: 'provider_fixture_id' },
+    )
+    if (settlementError) {
+      await admin.from('market_processing_runs').update({
+        status: 'failed', finished_at: processedAt, report,
+        error_message: `Fixture settlement failed: ${settlementError.message}`,
+      }).eq('run_key', runKey)
+      throw new Error(`Fixture settlement failed: ${settlementError.message}`)
+    }
+  }
   await admin.from('market_processing_runs').update({ status: 'completed', finished_at: new Date().toISOString(), report }).eq('run_key', runKey)
   return { unchanged: false, ...report }
 }
@@ -52,6 +80,16 @@ export async function processLatestVerifiedGameweek() {
   if (heartbeatError) throw new Error(`Gameweek heartbeat could not start: ${heartbeatError.message}`)
 
   try {
+    const { data: marketSettings, error: settingsError } = await admin
+      .from('market_settings')
+      .select('valuation_eligible_from')
+      .eq('id', 1)
+      .single()
+    if (settingsError || !marketSettings?.valuation_eligible_from) {
+      throw new Error(`Valuation launch boundary is unavailable: ${settingsError?.message ?? 'missing value'}`)
+    }
+    const valuationEligibleFrom = String(marketSettings.valuation_eligible_from)
+
     const predictionSync = await fetchSportmonksPredictionFixtures(
       process.env.SPORTMONKS_API_TOKEN,
       (telemetry) => { predictionTelemetry = telemetry },
@@ -73,7 +111,7 @@ export async function processLatestVerifiedGameweek() {
     const { data: predictionScoring, error: predictionScoringError } = await admin.rpc('prediction_score_completed_fixtures')
     if (predictionScoringError) throw new Error(`Prediction scoring failed: ${predictionScoringError.message}`)
 
-    const cutoff = new Date(Date.now() - 28 * 86_400_000).toISOString()
+    const cutoff = new Date(Math.max(Date.now() - 28 * 86_400_000, Date.parse(valuationEligibleFrom))).toISOString()
     const processedPerformanceKeys = new Set<string>()
     for (let from = 0; ; from += 1_000) {
       const { data: processedRows, error: processedError } = await admin
@@ -92,18 +130,12 @@ export async function processLatestVerifiedGameweek() {
       }
       if ((processedRows ?? []).length < 1_000) break
     }
-    let gameweeks: SportmonksCompletedGameweek[] = []
-    try {
-      gameweeks = await fetchSportmonksCompletedGameweeks(
-        process.env.SPORTMONKS_API_TOKEN,
-        processedPerformanceKeys,
-        (telemetry) => { providerTelemetry = telemetry },
-      )
-    } catch (error) {
-      // A quiet week (or an off-season day) is a successful no-op. Provider,
-      // parsing, or partial-fixture failures still escape and mark the run failed.
-      if (!(error instanceof Error) || error.message !== NO_ELIGIBLE_COMPLETED_RATINGS) throw error
-    }
+    const gameweeks: SportmonksCompletedGameweek[] = await fetchSportmonksCompletedGameweeks(
+      process.env.SPORTMONKS_API_TOKEN,
+      processedPerformanceKeys,
+      (telemetry) => { providerTelemetry = telemetry },
+      valuationEligibleFrom,
+    )
     const batches = []
     for (const gameweek of gameweeks) batches.push(await processBatch(admin, gameweek))
     const report = { batchCount: batches.length, durationMs: Date.now() - startedAt, providerTelemetry, predictionTelemetry, predictionCompetitionCount: predictionCompetitions.length, predictionFixtureCount: predictionFixtures.length, leagueFixturesAssigned, predictionScoring, batches }

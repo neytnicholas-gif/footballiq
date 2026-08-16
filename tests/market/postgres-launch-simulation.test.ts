@@ -10,6 +10,8 @@ const progression = readFileSync('supabase/migrations/20260811120000_market_prog
 const unattended = readFileSync('supabase/migrations/20260810123000_harden_unattended_market_operations.sql', 'utf8')
 const residualBank = readFileSync('supabase/migrations/20260810170000_bank_subthreshold_market_performance.sql', 'utf8')
 const isolatedFailures = readFileSync('supabase/migrations/20260814180347_isolate_gameweek_player_failures.sql', 'utf8')
+const fixtureSafety = readFileSync('supabase/migrations/20260816210000_beta_fixture_trade_safety.sql', 'utf8')
+const valuationCutoff = readFileSync('supabase/migrations/20260816210500_enforce_valuation_cutoff.sql', 'utf8')
 
 function functionSql(source: string, signature: string) {
   const start = source.indexOf(`create or replace function ${signature}`)
@@ -32,12 +34,16 @@ $$ select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid $$;
 
 create table public.market_settings(
   id integer primary key, active_season_id uuid not null, maximum_holdings integer not null,
-  market_status text not null check(market_status in ('open','updating','paused'))
+  market_status text not null check(market_status in ('open','updating','paused')),
+  valuation_eligible_from timestamptz not null
 );
 create table public.market_catalogues(id uuid primary key,season_id uuid not null,status text not null);
 create table public.market_active_catalogues(catalogue_id uuid not null,season_id uuid not null,primary key(catalogue_id,season_id));
+create table public.market_clubs(
+  id uuid primary key default gen_random_uuid(),provider_club_id text not null unique,name text not null
+);
 create table public.market_players(
-  id uuid primary key default gen_random_uuid(),catalogue_id uuid not null,season_id uuid not null,
+  id uuid primary key default gen_random_uuid(),catalogue_id uuid not null,season_id uuid not null,club_id uuid references public.market_clubs(id),
   app_player_id integer not null unique,provider_player_id text not null,slug text not null,display_name text not null,
   position_group text not null check(position_group in ('GK','DEF','MID','FWD')),
   initial_price_minor integer not null,current_price_minor integer not null,is_available boolean not null default true,
@@ -96,6 +102,15 @@ create table public.market_gameweek_allowances(
   signings_used integer not null default 0 check(signings_used between 0 and 11),sales_count integer not null default 0,
   updated_at timestamptz not null default now(),primary key(portfolio_id,gameweek_id)
 );
+create table public.prediction_fixtures(
+  fixture_id text primary key,home_provider_team_id text,away_provider_team_id text,
+  kickoff_at timestamptz not null,status text not null
+);
+create table public.market_fixture_settlements(
+  provider_fixture_id text primary key,kickoff_at timestamptz not null,
+  gameweek_id uuid references public.market_gameweeks(id),status text not null,
+  processed_at timestamptz not null,created_at timestamptz not null default now(),updated_at timestamptz not null default now()
+);
 
 create function public.market_create_or_get_portfolio() returns public.market_portfolios language plpgsql security definer set search_path=pg_catalog,public as $$
 declare p public.market_portfolios;s public.market_settings;begin
@@ -130,25 +145,29 @@ async function count(table: string, where = 'true') {
 describe('executed PostgreSQL launch simulation', () => {
   beforeAll(async () => {
     await db.exec(schema)
+    await db.exec(valuationCutoff)
     await db.exec(functionSql(foundation, 'public.market_current_gameweek()'))
     await db.exec(functionSql(foundation, 'public.market_ensure_current_gameweek()'))
     await db.exec(functionSql(foundation, 'public.market_record_gameweek_trade(p_portfolio_id uuid,p_transaction_type text)'))
     await db.exec(functionSql(progression, 'public.market_position_limit(p_user_id uuid,p_position text)'))
-    await db.exec(functionSql(progression, 'public.market_buy_player(p_player_slug text,p_idempotency_key text)'))
-    await db.exec(functionSql(progression, 'public.market_sell_player(p_player_slug text,p_idempotency_key text)'))
+    await db.exec(functionSql(fixtureSafety, 'public.market_player_trade_lock('))
+    await db.exec(functionSql(fixtureSafety, 'public.market_buy_player(p_player_slug text,p_idempotency_key text)'))
+    await db.exec(functionSql(fixtureSafety, 'public.market_sell_player(p_player_slug text,p_idempotency_key text)'))
     await db.exec(functionSql(residualBank, 'public.market_apply_verified_gameweek('))
     await db.exec(functionSql(isolatedFailures, 'public.market_apply_verified_gameweek('))
     const triggerStart = unattended.indexOf('create or replace function public.market_enforce_trading_open()')
     const triggerEnd = unattended.indexOf('-- Keep hot user requests', triggerStart)
     await db.exec(unattended.slice(triggerStart, triggerEnd))
-    await db.query('insert into public.market_settings values(1,$1,11,$2)', [seasonId, 'open'])
+    await db.query('insert into public.market_settings values(1,$1,11,$2,$3)', [seasonId, 'open', '2026-01-01T00:00:00Z'])
     await db.query("insert into public.market_catalogues values($1,$2,'active')", [catalogueId, seasonId])
     await db.query('insert into public.market_active_catalogues values($1,$2)', [catalogueId, seasonId])
+    const clubId = '25000000-0000-0000-0000-000000000001'
+    await db.query("insert into public.market_clubs values($1,'provider-club-1','Test Club')", [clubId])
     const positions = ['GK', 'GK', 'DEF', 'DEF', 'DEF', 'DEF', 'DEF', 'MID', 'MID', 'MID', 'MID', 'FWD', 'FWD', 'FWD', 'FWD']
     for (let index = 0; index < positions.length; index += 1) {
-      await db.query(`insert into public.market_players(catalogue_id,season_id,app_player_id,provider_player_id,slug,display_name,position_group,initial_price_minor,current_price_minor)
-        values($1,$2,$3,$4,$5,$6,$7,5000000,5000000)`,
-      [catalogueId, seasonId, index + 1, `provider-${index + 1}`, `player-${index + 1}`, `Player ${index + 1}`, positions[index]])
+      await db.query(`insert into public.market_players(catalogue_id,season_id,club_id,app_player_id,provider_player_id,slug,display_name,position_group,initial_price_minor,current_price_minor)
+        values($1,$2,$3,$4,$5,$6,$7,$8,5000000,5000000)`,
+      [catalogueId, seasonId, clubId, index + 1, `provider-${index + 1}`, `player-${index + 1}`, `Player ${index + 1}`, positions[index]])
     }
     for (const userId of [userA, userB]) {
       await db.query(`insert into public.market_portfolios(user_id,season_id,starting_balance_minor,cash_balance_minor,total_portfolio_value_minor)
@@ -238,6 +257,55 @@ describe('executed PostgreSQL launch simulation', () => {
     await db.query('select public.market_sell_player($1,$2)', ['player-14', 'user-a-sell'])
     await expect(db.query('select public.market_buy_player($1,$2)', ['player-15', 'user-a-buy-12'])).rejects.toThrow('GAMEWEEK_TRANSFER_LIMIT')
     expect(await count('public.market_transactions', `idempotency_key='user-a-buy-12'`)).toBe(0)
+  })
+
+  it('locks both buying and selling at club kickoff until the fixture is settled', async () => {
+    const now = new Date()
+    const kickoff = new Date(now.getTime() - 60_000).toISOString()
+    const eligibleFrom = new Date(now.getTime() - 120_000).toISOString()
+    await db.query('update public.market_settings set valuation_eligible_from=$1 where id=1', [eligibleFrom])
+    await db.query(`insert into public.prediction_fixtures(
+      fixture_id,home_provider_team_id,away_provider_team_id,kickoff_at,status
+    ) values('fixture-live-lock','provider-club-1','provider-club-2',$1,'live')`, [kickoff])
+
+    await asUser(userB)
+    await expect(db.query('select public.market_sell_player($1,$2)', ['player-1', 'user-b-locked-sell']))
+      .rejects.toThrow('PLAYER_TRADE_LOCKED')
+    expect(await count('public.market_transactions', `idempotency_key='user-b-locked-sell'`)).toBe(0)
+
+    await asUser(userA)
+    const committedRetry = await db.query<{ result: { message: string } }>(
+      'select public.market_buy_player($1,$2) result', ['player-1', 'user-a-buy-0'],
+    )
+    expect(committedRetry.rows[0]!.result.message).toBe('Buy already executed')
+
+    await asUser('')
+    await db.query(`insert into public.market_fixture_settlements(
+      provider_fixture_id,kickoff_at,status,processed_at
+    ) values('fixture-live-lock',$1,'processed',now())`, [kickoff])
+    await asUser(userB)
+    await db.query('select public.market_sell_player($1,$2)', ['player-1', 'user-b-unlocked-sell'])
+    expect(await count('public.market_transactions', `idempotency_key='user-b-unlocked-sell'`)).toBe(1)
+
+    await db.query("update public.market_settings set valuation_eligible_from='2026-01-01T00:00:00Z' where id=1")
+  })
+
+  it('rejects match evidence before the database launch boundary without changing a price', async () => {
+    await asUser('')
+    const before = await db.query<{ price: number }>("select current_price_minor price from public.market_players where provider_player_id='provider-12'")
+    const result = await db.query<{ result: { processed_players: number; failed_items: Array<{ sqlstate: string; message: string }> } }>(
+      `select public.market_apply_verified_gameweek($1,$2,$3,$4,$5,$6::jsonb) result`,
+      ['sportmonks-2025-52', 'Pre-launch evidence', 52, '2025-12-22T00:00:00Z', '2025-12-29T00:00:00Z', JSON.stringify([{
+        provider_player_id: 'provider-12', provider_fixture_id: 'fixture-pre-launch',
+        fixture_date: '2025-12-28T16:00:00Z', started: true, minutes_played: 90,
+        rating: 9.0, retrieved_at: '2025-12-28T19:00:00Z',
+      }])],
+    )
+    expect(result.rows[0]!.result.processed_players).toBe(0)
+    expect(result.rows[0]!.result.failed_items).toEqual([
+      expect.objectContaining({ sqlstate: 'P0001', message: 'FIXTURE_BEFORE_VALUATION_BOUNDARY' }),
+    ])
+    expect((await db.query<{ price: number }>("select current_price_minor price from public.market_players where provider_player_id='provider-12'")).rows[0]).toEqual(before.rows[0])
   })
 
   it('executes ratings through prices, residual banks, holdings, portfolios and Reveals exactly once', async () => {

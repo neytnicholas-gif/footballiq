@@ -84,9 +84,10 @@ describe('verified gameweek engine', () => {
     expect(runtime).toContain('report: { durationMs: Date.now() - startedAt, providerTelemetry, predictionTelemetry }')
   })
 
-  it('treats a quiet ratings day as a successful no-op without hiding real importer failures', () => {
-    expect(runtime).toContain("const NO_ELIGIBLE_COMPLETED_RATINGS = 'Completed fixtures did not contain eligible Sportmonks ratings and minutes.'")
-    expect(runtime).toContain('error.message !== NO_ELIGIBLE_COMPLETED_RATINGS')
-    expect(runtime).toContain('throw error')
+  it('settles checked fixtures without ratings but fails closed on provider-row errors', () => {
+    expect(runtime).toContain("admin.from('market_fixture_settlements').upsert")
+    expect(runtime).toContain('gameweek.checkedFixtures.map')
+    expect(runtime).toContain('failedItems.length > 0')
+    expect(runtime).toContain('player update(s) failed and will be retried')
   })
 })

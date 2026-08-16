@@ -71,6 +71,7 @@ function normalizeMarketMutationError(error: unknown): Error | null {
     [/INSUFFICIENT_(BALANCE|FUNDS)/i, 'You do not have enough VX budget for that player.'],
     [/GAMEWEEK_TRANSFER_LIMIT/i, 'You have used all 11 signings for this gameweek.'],
     [/GAMEWEEK_LOCKED/i, 'Trading is closed while this gameweek is being processed. Nothing changed.'],
+    [/PLAYER_TRADE_LOCKED/i, 'This player is in a match or waiting for a verified price update. Nothing changed.'],
     [/WATCHLIST_FULL:20/i, 'Your 20-player watchlist is full. Remove one player or unlock Bigger Shortlist in Rewards.'],
     [/WATCHLIST_FULL:50/i, 'Your 50-player watchlist is full. Remove one player or unlock Scout Network in Rewards.'],
     [/WATCHLIST_FULL/i, 'Your watchlist is full. Remove one player before adding another.'],
@@ -93,7 +94,7 @@ export type GuestMarketImportResult = {
 
 let verifiedCatalogueRequest: Promise<MarketPlayer[]> | null = null
 let verifiedCatalogueFetchedAt = 0
-const VERIFIED_CATALOGUE_TTL_MS = 300_000
+const VERIFIED_CATALOGUE_TTL_MS = 60_000
 const CATALOGUE_RELEASE = process.env.NEXT_PUBLIC_VERCEL_GIT_COMMIT_SHA?.slice(0, 8) ?? 'local'
 
 type PublicCataloguePlayer = Pick<MarketPlayer,
@@ -101,6 +102,7 @@ type PublicCataloguePlayer = Pick<MarketPlayer,
   | 'competition_name' | 'position' | 'age' | 'nationality'
   | 'opening_season_value' | 'current_value' | 'previous_value'
   | 'ownership_percentage' | 'value_updated_at' | 'availability_status' | 'recent_form_indicator'
+  | 'is_trade_locked' | 'trade_lock_reason' | 'trade_lock_started_at' | 'trade_lock_ends_at'
 >
 
 function hydratePublicCataloguePlayer(player: PublicCataloguePlayer): MarketPlayer {
@@ -113,10 +115,6 @@ function hydratePublicCataloguePlayer(player: PublicCataloguePlayer): MarketPlay
     source_reference: null,
     provenance_status: 'verified',
     owner_verified: true,
-    is_trade_locked: false,
-    trade_lock_reason: null,
-    trade_lock_started_at: null,
-    trade_lock_ends_at: null,
     value_trend: player.current_value > player.previous_value
       ? 'rising'
       : player.current_value < player.previous_value ? 'falling' : 'flat',

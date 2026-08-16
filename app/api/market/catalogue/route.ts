@@ -25,6 +25,10 @@ type PublicCatalogueRow = {
   latest_rating_milli: number | null
   availability_status: MarketPlayer['availability_status']
   data_updated_at: string
+  is_trade_locked: boolean
+  trade_lock_reason: string | null
+  trade_lock_started_at: string | null
+  trade_lock_ends_at: string | null
 }
 
 type PublicCataloguePlayer = Pick<MarketPlayer,
@@ -32,6 +36,7 @@ type PublicCataloguePlayer = Pick<MarketPlayer,
   | 'competition_name' | 'position' | 'age' | 'nationality'
   | 'opening_season_value' | 'current_value' | 'previous_value'
   | 'ownership_percentage' | 'value_updated_at' | 'availability_status' | 'recent_form_indicator'
+  | 'is_trade_locked' | 'trade_lock_reason' | 'trade_lock_started_at' | 'trade_lock_ends_at'
 >
 
 const SUPPORTED_COMPETITIONS = ['premier-league', 'la-liga', 'ligue-1'] as const
@@ -73,6 +78,10 @@ async function loadAuthoritativeCatalogue(competition: string | null) {
       previous_value: previousValue,
       value_updated_at: row.data_updated_at,
       availability_status: row.availability_status ?? 'available',
+      is_trade_locked: Boolean(row.is_trade_locked),
+      trade_lock_reason: row.trade_lock_reason,
+      trade_lock_started_at: row.trade_lock_started_at,
+      trade_lock_ends_at: row.trade_lock_ends_at,
       recent_form_indicator: latestRating === null ? 'steady' : latestRating >= 7.5 ? 'hot' : latestRating < 6.5 ? 'cool' : 'steady',
     }
   })
@@ -83,7 +92,7 @@ async function loadAuthoritativeCatalogue(competition: string | null) {
 const loadCachedAuthoritativeCatalogue = unstable_cache(
   loadAuthoritativeCatalogue,
   ['market-public-catalogue-v2-canonical-slugs'],
-  { revalidate: 300, tags: [MARKET_CATALOGUE_CACHE_TAG] },
+  { revalidate: 60, tags: [MARKET_CATALOGUE_CACHE_TAG] },
 )
 
 export async function GET(request: Request) {
