@@ -19,6 +19,7 @@ async function synchronize(request: Request) {
     return NextResponse.json({ ok: true, ...result }, { headers: { 'Cache-Control': 'private, no-store' } })
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Catalogue synchronization failed.'
+    console.error('Market catalogue synchronization failed.', error)
     return NextResponse.json({ error: message }, { status: 500, headers: { 'Cache-Control': 'private, no-store' } })
   }
 }
