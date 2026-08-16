@@ -129,6 +129,8 @@ describe('Player Market launch gates', () => {
     expect(sync).toContain("status: 'failed'")
     expect(sync).toContain(".eq('season_id', seasonId).eq('status', 'active').maybeSingle()")
     expect(sync).toContain(".update(catalogueValues).eq('id', activeCatalogue.id)")
+    expect(sync).toContain('Transferred player reconciliation failed')
+    expect(sync).toContain(".in('provider_player_id', providerPlayerIds.slice")
   })
 
   it('runs server work close to the database with Fluid Compute enabled', () => {

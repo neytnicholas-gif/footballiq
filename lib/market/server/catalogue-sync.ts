@@ -155,11 +155,34 @@ async function syncLeagueCatalogue(admin: ReturnType<typeof createAdminClient>, 
   if (clubReadError) throw new Error(`Club lookup failed: ${clubReadError.message}`)
   const clubIds = new Map((persistedClubs ?? []).map((club) => [club.name, club.id]))
 
-  const { data: existingPlayers, error: existingPlayersError } = await admin.from('market_players')
-    .select('provider_player_id,initial_price_minor,current_price_minor,opening_price_method_version')
-    .eq('season_id', seasonId)
-  if (existingPlayersError) throw new Error(`Existing player price lookup failed: ${existingPlayersError.message}`)
-  const existingPrices = new Map((existingPlayers ?? []).map((player) => [String(player.provider_player_id), {
+  const providerPlayerIds = catalogue.players.map((player) => String(player.id))
+  const existingPlayers: Array<{
+    id: string
+    provider_player_id: string
+    season_id: string
+    initial_price_minor: number
+    current_price_minor: number
+    opening_price_method_version: string | null
+  }> = []
+  for (let offset = 0; offset < providerPlayerIds.length; offset += BATCH_SIZE) {
+    const { data, error } = await admin.from('market_players')
+      .select('id,provider_player_id,season_id,initial_price_minor,current_price_minor,opening_price_method_version')
+      .in('provider_player_id', providerPlayerIds.slice(offset, offset + BATCH_SIZE))
+    if (error) throw new Error(`Existing player price lookup failed: ${error.message}`)
+    existingPlayers.push(...(data ?? []))
+  }
+  const movedPlayerIds = existingPlayers.filter((player) => player.season_id !== seasonId).map((player) => player.id)
+  for (let offset = 0; offset < movedPlayerIds.length; offset += BATCH_SIZE) {
+    const { error } = await admin.from('market_players').update({
+      season_id: seasonId,
+      catalogue_id: catalogueRow.id,
+      is_available: false,
+      availability_status: 'inactive',
+      updated_at: now,
+    }).in('id', movedPlayerIds.slice(offset, offset + BATCH_SIZE))
+    if (error) throw new Error(`Transferred player reconciliation failed: ${error.message}`)
+  }
+  const existingPrices = new Map(existingPlayers.map((player) => [String(player.provider_player_id), {
     initial: Number(player.initial_price_minor), current: Number(player.current_price_minor),
     methodVersion: String(player.opening_price_method_version ?? 'legacy-age-position-v1'),
   }]))
