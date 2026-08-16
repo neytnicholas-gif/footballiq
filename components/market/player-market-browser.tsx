@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { useEffect, useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
-import { ArrowUpDown, CheckCircle2, Clock3, Search, Shield, Sparkles, Star, UserPlus, Users, WalletCards, X } from 'lucide-react'
+import { ArrowDownRight, ArrowUpDown, ArrowUpRight, CheckCircle2, Clock3, Minus, Search, Shield, Sparkles, Star, UserPlus, Users, WalletCards, X } from 'lucide-react'
 import { MarketPlayerChip } from '@/components/market/market-player-chip'
 import { ClubColourDot } from '@/components/market/club-colour-dot'
 import { MarketTradeDialog } from '@/components/market/market-trade-dialog'
@@ -17,6 +17,33 @@ type SortKey = 'value-desc' | 'value-asc' | 'change-desc' | 'change-asc' | 'form
 type CatalogueScope = 'all' | 'squad' | 'watchlist' | 'affordable'
 
 const PLAYER_PAGE_SIZE = 36
+
+const POSITION_CARD_STYLE: Record<MarketPlayer['position'], {
+  accent: string
+  badge: string
+  glow: string
+}> = {
+  GK: {
+    accent: 'from-amber-300 via-yellow-200 to-transparent',
+    badge: 'border-amber-200/35 bg-amber-300/15 text-amber-100',
+    glow: 'bg-amber-300/10',
+  },
+  DEF: {
+    accent: 'from-sky-300 via-cyan-200 to-transparent',
+    badge: 'border-sky-200/35 bg-sky-300/15 text-sky-100',
+    glow: 'bg-sky-300/10',
+  },
+  MID: {
+    accent: 'from-emerald-300 via-teal-200 to-transparent',
+    badge: 'border-emerald-200/35 bg-emerald-300/15 text-emerald-100',
+    glow: 'bg-emerald-300/10',
+  },
+  FWD: {
+    accent: 'from-rose-300 via-orange-200 to-transparent',
+    badge: 'border-rose-200/35 bg-rose-300/15 text-rose-100',
+    glow: 'bg-rose-300/10',
+  },
+}
 
 export function PlayerMarketBrowser({
   players,
@@ -312,80 +339,108 @@ export function PlayerMarketBrowser({
             const latestPerformance = player.matchweek_performance_history?.at(-1)
             const trendDelta = delta
             const trendPct = Number(pct)
+            const positionStyle = POSITION_CARD_STYLE[player.position]
+            const movementPrefix = trendDelta > 0 ? '+' : trendDelta < 0 ? '−' : ''
+            const movementTone = trendDelta > 0
+              ? 'border-emerald-300/30 bg-emerald-300/15 text-emerald-100'
+              : trendDelta < 0
+                ? 'border-rose-300/30 bg-rose-300/15 text-rose-100'
+                : 'border-white/15 bg-white/10 text-emerald-50/85'
+            const MovementIcon = trendDelta > 0 ? ArrowUpRight : trendDelta < 0 ? ArrowDownRight : Minus
 
             return (
-              <article key={player.id} className="group relative overflow-hidden rounded-2xl border border-emerald-950/10 bg-gradient-to-br from-white via-white to-emerald-50/70 p-4 [contain-intrinsic-size:0_420px] [content-visibility:auto] shadow-[0_12px_35px_-30px_rgba(6,78,59,.65)] transition duration-200 hover:-translate-y-0.5 hover:border-emerald-600/35 hover:shadow-[0_22px_55px_-34px_rgba(6,78,59,.6)]">
-                <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-emerald-400/80 via-teal-300/55 to-transparent" />
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex min-w-0 items-center gap-3">
-                    <MarketPlayerChip player={player} />
-                    <div className="min-w-0">
-                      <p className="flex min-w-0 items-center gap-2 text-base font-black tracking-tight text-slate-950"><ClubColourDot clubName={player.club_name} /><span className="truncate">{player.display_name}</span></p>
-                      <p className="truncate text-xs font-medium text-slate-500">{player.club_name} · {player.competition_name ?? 'Early Shout'} · {player.position}</p>
+              <article key={player.id} className="group relative overflow-hidden rounded-[1.4rem] border border-emerald-950/15 bg-[#f1f8f4] [contain-intrinsic-size:0_350px] [content-visibility:auto] shadow-[0_15px_38px_-30px_rgba(3,45,37,.8)] transition duration-200 hover:-translate-y-0.5 hover:border-emerald-700/40 hover:shadow-[0_24px_52px_-30px_rgba(3,45,37,.72)]">
+                <div className="relative overflow-hidden bg-gradient-to-br from-[#073c32] via-[#0a493c] to-[#0d5b4c] p-4 text-white">
+                  <div className={`absolute inset-x-0 top-0 h-1 bg-gradient-to-r ${positionStyle.accent}`} />
+                  <div className={`pointer-events-none absolute -right-8 -top-12 size-36 rounded-full blur-2xl ${positionStyle.glow}`} />
+                  <div className="relative flex items-start justify-between gap-3">
+                    <div className="flex min-w-0 items-center gap-3">
+                      <MarketPlayerChip player={player} />
+                      <div className="min-w-0">
+                        <p className="flex min-w-0 items-center gap-2 text-base font-black tracking-tight text-white"><ClubColourDot clubName={player.club_name} className="shadow-[0_0_0_2px_rgba(255,255,255,.65)]" /><span className="truncate">{player.display_name}</span></p>
+                        <p className="mt-0.5 truncate text-[11px] font-semibold text-emerald-50/70">{player.club_name} · {player.competition_name ?? 'Early Shout'}</p>
+                      </div>
+                    </div>
+                    <div className="flex shrink-0 flex-col items-end gap-1.5">
+                      <span className={`rounded-full border px-2.5 py-1 text-[10px] font-black uppercase tracking-[.12em] ${positionStyle.badge}`}>{player.position}</span>
+                      {player.availability_status ? <span className={`text-[9px] font-black uppercase tracking-wide ${player.availability_status === 'available' ? 'text-emerald-200' : player.availability_status === 'limited' ? 'text-amber-200' : 'text-rose-200'}`}>{player.availability_status === 'available' ? 'Available' : player.availability_status === 'limited' ? 'Limited' : 'Unavailable'}</span> : null}
                     </div>
                   </div>
-                  <div className="flex flex-col items-end gap-1"><span className="rounded-full border border-emerald-900/10 bg-emerald-950/[.055] px-2 py-1 text-[10px] font-black uppercase tracking-wide text-emerald-900">{player.position}</span>{player.availability_status ? <span className={`text-[10px] font-bold ${player.availability_status === 'available' ? 'text-emerald-700' : player.availability_status === 'limited' ? 'text-amber-700' : 'text-red-700'}`}>{player.availability_status === 'available' ? 'Available' : player.availability_status === 'limited' ? 'Limited availability' : 'Unavailable'}</span> : null}</div>
+
+                  <div className="relative mt-3 flex items-end justify-between gap-3 border-t border-white/10 pt-3">
+                    <div>
+                      <p className="text-[9px] font-black uppercase tracking-[.19em] text-emerald-100/60">Game value</p>
+                      <p className="mt-0.5 text-[1.65rem] font-black leading-none tracking-[-.035em] text-white">{formatFiqCompact(player.current_value)}</p>
+                    </div>
+                    <div className="text-right">
+                      <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-1 text-[10px] font-black ${movementTone}`}>
+                        <MovementIcon className="size-3" aria-hidden="true" />
+                        {movementPrefix}{formatFiqCompact(Math.abs(trendDelta))} · {movementPrefix}{Math.abs(trendPct).toFixed(2)}%
+                      </span>
+                      <p className="mt-1.5 text-[10px] font-semibold text-emerald-100/65">Picked by {(player.ownership_percentage ?? 0).toFixed(1)}% of teams</p>
+                    </div>
+                  </div>
                 </div>
 
-                <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
-                  <InfoCell label="Current value" value={formatFiqCompact(player.current_value)} strong />
-                  <InfoCell label="Picked by" value={`${(player.ownership_percentage ?? 0).toFixed(1)}% of teams`} />
-                  <InfoCell label="Value move" value={`${trendDelta >= 0 ? '+' : ''}${formatFiqCompact(Math.abs(trendDelta))} (${trendPct >= 0 ? '+' : ''}${trendPct.toFixed(2)}%)`} tone={trendDelta >= 0 ? 'up' : 'down'} />
-                  <InfoCell label="Age" value={player.age ? String(player.age) : 'N/A'} />
-                  <InfoCell label="Latest minutes" value={String(latestPerformance?.minutes ?? stat?.minutes ?? 'N/A')} />
-                  <InfoCell label="Rolling rating" value={latestPerformance?.rating ? latestPerformance.rating.toFixed(2) : stat?.average_rating ? stat.average_rating.toFixed(2) : 'N/A'} />
-                  <InfoCell label="Role security" value={player.role_security_indicator ?? (stat?.starts && stat.starts >= 24 ? 'Secure' : 'Rotation')} />
-                </div>
+                <div className="relative p-3.5">
+                  <div className="grid grid-cols-4 divide-x divide-emerald-950/10 overflow-hidden rounded-xl border border-emerald-950/10 bg-[#f9fcfa] shadow-[inset_0_1px_0_rgba(255,255,255,.9)]">
+                    <CompactStat label="Age" value={player.age ? String(player.age) : '—'} />
+                    <CompactStat label="Minutes" value={String(latestPerformance?.minutes ?? stat?.minutes ?? '—')} />
+                    <CompactStat label="Rating" value={latestPerformance?.rating ? latestPerformance.rating.toFixed(2) : stat?.average_rating ? stat.average_rating.toFixed(2) : '—'} />
+                    <CompactStat label="Role" value={player.role_security_indicator ?? (stat?.starts && stat.starts >= 24 ? 'Secure' : 'Rotation')} capitalize />
+                  </div>
 
-                <p className="mt-2 text-xs text-muted-foreground">
-                  {player.decision_support_note ?? 'Check the player’s recent price and minutes before you buy.'}
-                </p>
+                  <p className="mt-2.5 line-clamp-2 min-h-9 text-[11px] font-medium leading-[1.4] text-slate-600">
+                    {player.decision_support_note ?? 'Check the player’s recent price and minutes before you buy.'}
+                  </p>
 
-                <div className="mt-3 rounded-xl border border-emerald-900/10 bg-emerald-950/[.04] px-3 py-2">
-                  <p className="mb-2 text-[10px] uppercase tracking-[.18em] text-muted-foreground">Price change</p>
-                  <Sparkline points={[player.previous_value, player.current_value]} positive={trendDelta >= 0} label={`${player.display_name} value trend: ${trendDelta > 0 ? 'rising' : trendDelta < 0 ? 'falling' : 'unchanged'} from ${formatFiqCompact(player.previous_value)} to ${formatFiqCompact(player.current_value)}`} />
-                </div>
+                  <div className="mt-2.5 flex items-center justify-between gap-3 rounded-lg border border-emerald-950/[.08] bg-emerald-950/[.045] px-2.5 py-2 text-[10px]">
+                    <span className="font-semibold text-slate-500">Previous <strong className="ml-1 text-slate-800">{formatFiqCompact(player.previous_value)}</strong></span>
+                    <span className="h-px flex-1 bg-gradient-to-r from-emerald-900/10 via-emerald-700/40 to-emerald-900/10" />
+                    <span className="font-black text-emerald-800">Now {formatFiqCompact(player.current_value)}</span>
+                  </div>
 
-                <div className="mt-3 flex flex-wrap gap-2">
+                  <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
                   <button
                     onClick={() => setTradeIntent({ action: 'buy', player, requestKey: createMarketRequestKey(`buy-${player.slug}`) })}
                     disabled={!canBuy || busyId !== null}
-                    className="min-h-11 rounded-xl bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-700 disabled:opacity-45"
+                    className="min-h-10 rounded-xl bg-emerald-700 px-2.5 py-2 text-xs font-black text-white shadow-sm transition hover:bg-emerald-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-700 disabled:opacity-45"
                   >
                     {busyId === player.id ? 'Processing…' : owned ? 'Held' : !canBuyPosition(player.position, formation, activeFormation) ? `${player.position} slot full` : availableCash < player.current_value ? 'Not enough cash' : buysRemaining <= 0 ? 'Buy limit reached' : 'Buy'}
                   </button>
                   <button
                     onClick={() => setTradeIntent({ action: 'sell', player, requestKey: createMarketRequestKey(`sell-${player.slug}`) })}
                     disabled={!owned || lockActive || busyId !== null}
-                    className="min-h-11 rounded-xl border border-border px-3 py-2 text-xs font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-700 disabled:opacity-45"
+                    className="min-h-10 rounded-xl border border-emerald-950/15 bg-white/55 px-2.5 py-2 text-xs font-bold text-slate-800 transition hover:bg-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-700 disabled:opacity-45"
                   >
                     {busyId === player.id ? 'Processing…' : 'Sell'}
                   </button>
                   <button
                     onClick={() => void handleWatchlist(player)}
                     disabled={busyId !== null}
-                    className="min-h-11 rounded-xl border border-border px-3 py-2 text-xs font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-700 disabled:opacity-45"
+                    className="min-h-10 rounded-xl border border-emerald-950/15 bg-white/55 px-2.5 py-2 text-xs font-bold text-slate-800 transition hover:bg-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-700 disabled:opacity-45"
                   >
                     {watchlisted ? 'Unwatch' : 'Watch'}
                   </button>
-                  <Link aria-label={`Open ${player.display_name}'s player card`} href={`/market/player/${encodeURIComponent(player.slug)}`} className="inline-flex min-h-11 items-center rounded-xl border border-border px-3 py-2 text-xs font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-700">Open card</Link>
-                </div>
+                    <Link aria-label={`Open ${player.display_name}'s player card`} href={`/market/player/${encodeURIComponent(player.slug)}`} className="inline-flex min-h-10 items-center justify-center rounded-xl border border-emerald-950/15 bg-white/55 px-2.5 py-2 text-center text-xs font-bold text-slate-800 transition hover:bg-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-700">Open card</Link>
+                  </div>
 
-                {!canBuy && !owned ? (
-                  <p className="mt-2 text-xs text-muted-foreground">
-                    {lockActive
-                      ? 'Trading is temporarily locked for this player.'
-                      : holdings.length >= MARKET_MAX_PORTFOLIO_SIZE
-                        ? 'Your team is full. Sell a player before you buy another.'
-                        : !canBuyPosition(player.position, formation, activeFormation)
-                          ? `Formation slot limit reached for ${player.position}.`
-                          : availableCash < player.current_value
-                            ? 'Insufficient cash for this purchase.'
-                          : buysRemaining <= 0
-                            ? 'Gameweek signing limit reached.'
-                            : 'Not available for buy right now.'}
-                  </p>
-                ) : null}
+                  {!canBuy && !owned ? (
+                    <p className="mt-2 text-[10px] font-semibold text-slate-500">
+                      {lockActive
+                        ? 'Trading is temporarily locked for this player.'
+                        : holdings.length >= MARKET_MAX_PORTFOLIO_SIZE
+                          ? 'Your team is full. Sell a player before you buy another.'
+                          : !canBuyPosition(player.position, formation, activeFormation)
+                            ? `Formation slot limit reached for ${player.position}.`
+                            : availableCash < player.current_value
+                              ? 'Insufficient cash for this purchase.'
+                              : buysRemaining <= 0
+                                ? 'Gameweek signing limit reached.'
+                                : 'Not available for buy right now.'}
+                    </p>
+                  ) : null}
+                </div>
               </article>
             )
           })}
@@ -530,27 +585,11 @@ function RosterTotal({ label, value }: { label: string; value: number }) {
   )
 }
 
-function Sparkline({ points, positive, label }: { points: number[]; positive: boolean; label: string }) {
-  const min = Math.min(...points)
-  const max = Math.max(...points)
-  const spread = Math.max(1, max - min)
-
+function CompactStat({ label, value, capitalize = false }: { label: string; value: string; capitalize?: boolean }) {
   return (
-    <div role="img" aria-label={label} className="flex h-10 items-end gap-1">
-      {points.slice(-12).map((point, index) => {
-        const height = Math.max(5, ((point - min) / spread) * 100)
-        return <span key={`${point}-${index}`} className={`block w-full rounded-t ${positive ? 'bg-primary/75' : 'bg-destructive/65'}`} style={{ height: `${height}%` }} />
-      })}
-    </div>
-  )
-}
-
-function InfoCell({ label, value, strong = false, tone = 'default' }: { label: string; value: string; strong?: boolean; tone?: 'default' | 'up' | 'down' }) {
-  const color = tone === 'up' ? 'text-primary' : tone === 'down' ? 'text-destructive' : 'text-foreground'
-  return (
-    <div className="rounded-lg border border-emerald-950/[.08] bg-white/75 p-2 shadow-[inset_0_1px_0_rgba(255,255,255,.8)]">
-      <p className="text-[10px] uppercase tracking-wide text-muted-foreground">{label}</p>
-      <p className={`mt-1 ${strong ? 'font-semibold' : ''} ${color}`}>{value}</p>
+    <div className="min-w-0 px-1.5 py-2 text-center sm:px-2">
+      <p className="truncate text-[8px] font-black uppercase tracking-[.12em] text-slate-400">{label}</p>
+      <p className={`mt-0.5 truncate text-[11px] font-black text-slate-800 ${capitalize ? 'capitalize' : ''}`} title={value}>{value}</p>
     </div>
   )
 }
