@@ -5,6 +5,7 @@ import { createClient } from '@supabase/supabase-js'
 import { buildSportmonksCombinedCatalogue } from '@/lib/market/server/sportmonks-client'
 import type { SportmonksMarketCatalogue } from '@/lib/market/server/sportmonks-client'
 import { retryCatalogueOperation, shouldRecoverCatalogueSync } from '@/lib/market/catalogue-recovery'
+import { resolveCataloguePlayerSlugs } from '@/lib/market/catalogue-slugs'
 import { resolveOpeningPricePersistence } from '@/lib/market/opening-price-persistence'
 import { validateOpeningPriceBook } from '@/lib/market/opening-price-validation'
 import type { OpeningPriceConfidence } from '@/lib/market/real-valuation'
@@ -125,26 +126,39 @@ async function syncLeagueCatalogue(admin: ReturnType<typeof createAdminClient>, 
     season_id: string
     initial_price_minor: number
     current_price_minor: number
+    slug: string
     opening_price_method_version: string | null
     opening_price_confidence: OpeningPriceConfidence
     opening_price_evidence: unknown
   }> = []
   for (let offset = 0; offset < providerPlayerIds.length; offset += BATCH_SIZE) {
     const { data, error } = await admin.from('market_players')
-      .select('id,provider_player_id,season_id,initial_price_minor,current_price_minor,opening_price_method_version,opening_price_confidence,opening_price_evidence')
+      .select('id,provider_player_id,season_id,slug,initial_price_minor,current_price_minor,opening_price_method_version,opening_price_confidence,opening_price_evidence')
       .in('provider_player_id', providerPlayerIds.slice(offset, offset + BATCH_SIZE))
     if (error) throw new Error(`Existing player price lookup failed: ${error.message}`)
     existingPlayers.push(...(data ?? []))
   }
-  const movedPlayerIds = existingPlayers.filter((player) => player.season_id !== seasonId).map((player) => player.id)
-  for (let offset = 0; offset < movedPlayerIds.length; offset += BATCH_SIZE) {
+  const { data: targetSeasonPlayers, error: targetSeasonPlayersError } = await admin.from('market_players')
+    .select('provider_player_id,season_id,slug').eq('season_id', seasonId)
+  if (targetSeasonPlayersError) throw new Error(`Target-season slug lookup failed: ${targetSeasonPlayersError.message}`)
+  const resolvedSlugs = resolveCataloguePlayerSlugs(
+    seasonId,
+    catalogue.players.map((player) => ({ providerPlayerId: String(player.id), candidateSlug: player.slug })),
+    [...(targetSeasonPlayers ?? []), ...existingPlayers].map((player) => ({
+      providerPlayerId: String(player.provider_player_id), seasonId: player.season_id, slug: player.slug,
+    })),
+  )
+
+  const movedPlayers = existingPlayers.filter((player) => player.season_id !== seasonId)
+  for (const player of movedPlayers) {
     const { error } = await admin.from('market_players').update({
       season_id: seasonId,
       catalogue_id: catalogueRow.id,
+      slug: resolvedSlugs.get(String(player.provider_player_id)),
       is_available: false,
       availability_status: 'inactive',
       updated_at: now,
-    }).in('id', movedPlayerIds.slice(offset, offset + BATCH_SIZE))
+    }).eq('id', player.id)
     if (error) throw new Error(`Transferred player reconciliation failed: ${error.message}`)
   }
   const existingPrices = new Map(existingPlayers.map((player) => [String(player.provider_player_id), {
@@ -175,7 +189,7 @@ async function syncLeagueCatalogue(admin: ReturnType<typeof createAdminClient>, 
       provider_player_id: String(player.id),
       full_name: player.display_name,
       display_name: player.display_name,
-      slug: player.slug,
+      slug: resolvedSlugs.get(String(player.id)) ?? player.slug,
       position_group: player.position,
       nationality: player.nationality,
       initial_price_minor: resolved.openingPrice,
