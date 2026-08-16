@@ -27,6 +27,7 @@ import type {
   MarketLeaderboardRow,
   MarketMatchweekApplyResult,
   MarketMatchweekRun,
+  MarketOpeningPriceExplanation,
   MarketPlayer,
   MarketPortfolio,
   MarketRevealSummary,
@@ -777,6 +778,79 @@ export async function updateMarketProfilePreferences(preferences: Pick<MarketPro
 export async function setMarketShowcaseBadges(challengeKeys: string[]) {
   const { data, error } = await (supabase as any).rpc('market_set_showcase_badges', { p_challenge_keys: challengeKeys })
   return { data: data as Record<string, unknown> | null, error: normalizeMarketMutationError(error) }
+}
+
+type OpeningPriceRow = {
+  initial_price_minor: number
+  opening_price_method_version: string
+  opening_price_confidence: MarketOpeningPriceExplanation['confidence']
+  opening_price_evidence: unknown
+}
+
+function finiteNumber(value: unknown) {
+  return typeof value === 'number' && Number.isFinite(value) ? value : null
+}
+
+function parseOpeningPriceExplanation(row: OpeningPriceRow): MarketOpeningPriceExplanation | null {
+  if (!row.opening_price_evidence || typeof row.opening_price_evidence !== 'object' || Array.isArray(row.opening_price_evidence)) return null
+  const evidence = row.opening_price_evidence as Record<string, any>
+  const inputs = evidence.source_inputs
+  const scores = evidence.scores
+  if (!inputs || typeof inputs !== 'object' || !scores || typeof scores !== 'object') return null
+  if (
+    evidence.method_version !== row.opening_price_method_version
+    || evidence.confidence !== row.opening_price_confidence
+    || evidence.calculated_value !== row.initial_price_minor
+  ) return null
+
+  const inputValues = ['appearances', 'starts', 'minutes', 'goals', 'assists', 'clean_sheets'] as const
+  const scoreValues = ['rating', 'minutes', 'role', 'output', 'team_context', 'age', 'overall'] as const
+  if (inputValues.some((key) => finiteNumber(inputs[key]) === null)) return null
+  if (scoreValues.some((key) => finiteNumber(scores[key]) === null)) return null
+  if (inputs.average_rating !== null && finiteNumber(inputs.average_rating) === null) return null
+  if (scores.stabilized_rating !== null && finiteNumber(scores.stabilized_rating) === null) return null
+
+  return {
+    method_version: evidence.method_version,
+    confidence: evidence.confidence,
+    calculated_value: evidence.calculated_value,
+    source_inputs: {
+      appearances: inputs.appearances,
+      starts: inputs.starts,
+      minutes: inputs.minutes,
+      average_rating: inputs.average_rating,
+      goals: inputs.goals,
+      assists: inputs.assists,
+      clean_sheets: inputs.clean_sheets,
+    },
+    scores: {
+      stabilized_rating: scores.stabilized_rating,
+      rating: scores.rating,
+      minutes: scores.minutes,
+      role: scores.role,
+      output: scores.output,
+      team_context: scores.team_context,
+      age: scores.age,
+      overall: scores.overall,
+    },
+    guardrail: typeof evidence.guardrail === 'string' ? evidence.guardrail : null,
+  }
+}
+
+export async function loadPlayerOpeningPriceExplanation(playerId: number) {
+  const { data, error } = await supabase
+    .from('market_players')
+    .select('initial_price_minor,opening_price_method_version,opening_price_confidence,opening_price_evidence')
+    // @ts-expect-error app_player_id exists in the normalized production schema.
+    .eq('app_player_id', playerId)
+    .maybeSingle()
+  if (error || !data) return { data: null, error: error as Error | null }
+
+  const explanation = parseOpeningPriceExplanation(data as unknown as OpeningPriceRow)
+  return {
+    data: explanation,
+    error: explanation ? null : new Error('The opening-price explanation did not pass its integrity check.'),
+  }
 }
 
 export async function setMarketRewardCelebrations(enabled: boolean) {

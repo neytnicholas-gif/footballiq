@@ -118,6 +118,32 @@ export type MarketTransaction = {
   idempotency_key: string
 }
 
+export type MarketOpeningPriceExplanation = {
+  method_version: string
+  confidence: 'fallback' | 'limited' | 'established' | 'high'
+  calculated_value: number
+  source_inputs: {
+    appearances: number
+    starts: number
+    minutes: number
+    average_rating: number | null
+    goals: number
+    assists: number
+    clean_sheets: number
+  }
+  scores: {
+    stabilized_rating: number | null
+    rating: number
+    minutes: number
+    role: number
+    output: number
+    team_context: number
+    age: number
+    overall: number
+  }
+  guardrail: string | null
+}
+
 export type MarketGameweekStatus = {
   gameweek_id: string
   gameweek_key: string

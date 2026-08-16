@@ -4,64 +4,12 @@ import { createHash } from 'node:crypto'
 import { createClient } from '@supabase/supabase-js'
 import { buildSportmonksCombinedCatalogue } from '@/lib/market/server/sportmonks-client'
 import type { SportmonksMarketCatalogue } from '@/lib/market/server/sportmonks-client'
-import type { MarketPosition } from '@/lib/market/types'
-import { OPENING_PRICE_METHOD_VERSION } from '@/lib/market/real-valuation'
+import { retryCatalogueOperation, shouldRecoverCatalogueSync } from '@/lib/market/catalogue-recovery'
+import { resolveOpeningPricePersistence } from '@/lib/market/opening-price-persistence'
+import { validateOpeningPriceBook } from '@/lib/market/opening-price-validation'
+import type { OpeningPriceConfidence } from '@/lib/market/real-valuation'
 
 const BATCH_SIZE = 100
-const VALUE_FLOOR = 4_000_000
-const VALUE_CEILING = 15_000_000
-
-function legacyOpeningValue(position: MarketPosition, age: number | null) {
-  const positionBase: Record<MarketPosition, number> = { GK: 5_500_000, DEF: 6_200_000, MID: 6_800_000, FWD: 7_200_000 }
-  const ageAdjustment = age === null ? 0
-    : age <= 21 ? 700_000 : age <= 24 ? 1_000_000 : age <= 28 ? 800_000
-      : age <= 31 ? 300_000 : age <= 34 ? -300_000 : -700_000
-  return Math.max(VALUE_FLOOR, Math.min(VALUE_CEILING, positionBase[position] + ageAdjustment))
-}
-
-function percentile(sorted: number[], fraction: number) {
-  if (sorted.length === 0) return 0
-  const index = Math.min(sorted.length - 1, Math.max(0, Math.floor((sorted.length - 1) * fraction)))
-  return sorted[index]!
-}
-
-function validateOpeningPriceBook(catalogues: SportmonksMarketCatalogue[]) {
-  const players = catalogues.flatMap((catalogue) => catalogue.players.map((player) => ({
-    ...player,
-    evidence: catalogue.openingPriceEvidenceByPlayerId[String(player.id)],
-  })))
-  if (players.length < 900) throw new Error(`Opening price book rejected: only ${players.length} players were available.`)
-  const missingEvidence = players.filter((player) => !player.evidence)
-  if (missingEvidence.length) throw new Error(`Opening price book rejected: ${missingEvidence.length} players have no pricing evidence.`)
-  const invalid = players.filter((player) => (
-    player.opening_season_value < VALUE_FLOOR
-    || player.opening_season_value > VALUE_CEILING
-    || player.opening_season_value % 100_000 !== 0
-  ))
-  if (invalid.length) throw new Error(`Opening price book rejected: ${invalid.length} values break floor, ceiling or increment rules.`)
-  const unsafeFallbacks = players.filter((player) => player.evidence?.confidence === 'fallback' && player.opening_season_value > 5_200_000)
-  if (unsafeFallbacks.length) throw new Error(`Opening price book rejected: ${unsafeFallbacks.length} fallback players exceed the conservative cap.`)
-  const values = players.map((player) => player.opening_season_value).sort((a, b) => a - b)
-  const spread = percentile(values, 0.9) - percentile(values, 0.1)
-  const distinctValues = new Set(values).size
-  if (spread < 2_000_000 || distinctValues < 25) {
-    throw new Error(`Opening price book rejected as too compressed (${distinctValues} prices; p90-p10 ${spread}).`)
-  }
-  const eliteBand = [...players].sort((a, b) => b.opening_season_value - a.opening_season_value).slice(0, 25)
-  if (eliteBand.some((player) => player.evidence?.confidence === 'fallback')) {
-    throw new Error('Opening price book rejected: a fallback-priced player entered the elite band.')
-  }
-  return {
-    players: players.length,
-    distinctValues,
-    minimum: values[0]!,
-    p10: percentile(values, 0.1),
-    median: percentile(values, 0.5),
-    p90: percentile(values, 0.9),
-    maximum: values.at(-1)!,
-    fallbackPlayers: players.filter((player) => player.evidence?.confidence === 'fallback').length,
-  }
-}
 
 function createAdminClient() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -118,18 +66,33 @@ async function syncLeagueCatalogue(admin: ReturnType<typeof createAdminClient>, 
     rejected_count: 0,
     validated_at: now,
     approved_at: now,
-    approved_by: 'footballiq-automated-validation',
+    approved_by: 'early-shout-automated-validation',
     activated_at: now,
     updated_at: now,
   }
   const { data: activeCatalogue, error: activeCatalogueError } = await admin.from('market_catalogues')
-    .select('id').eq('season_id', seasonId).eq('status', 'active').maybeSingle()
+    .select('id,status,fingerprint').eq('season_id', seasonId).eq('status', 'active').maybeSingle()
   if (activeCatalogueError) throw new Error(`Active catalogue lookup failed: ${activeCatalogueError.message}`)
-  const catalogueWrite = activeCatalogue
-    ? admin.from('market_catalogues').update(catalogueValues).eq('id', activeCatalogue.id).select('id').single()
-    : admin.from('market_catalogues').insert(catalogueValues).select('id').single()
-  const { data: catalogueRow, error: catalogueError } = await catalogueWrite
-  if (catalogueError || !catalogueRow) throw new Error(`Catalogue synchronization failed: ${catalogueError?.message ?? 'missing catalogue id'}`)
+  let catalogueRow = activeCatalogue
+  if (!catalogueRow) {
+    const { data: stagedCatalogue, error: stagedLookupError } = await admin.from('market_catalogues')
+      .select('id,status,fingerprint').eq('season_id', seasonId).eq('fingerprint', fingerprint).maybeSingle()
+    if (stagedLookupError) throw new Error(`Staged catalogue lookup failed: ${stagedLookupError.message}`)
+    catalogueRow = stagedCatalogue
+  }
+  if (!catalogueRow) {
+    const { data: stagedCatalogue, error: stagedInsertError } = await admin.from('market_catalogues').insert({
+      ...catalogueValues,
+      status: 'validated',
+      approved_at: null,
+      approved_by: null,
+      activated_at: null,
+    }).select('id,status,fingerprint').single()
+    if (stagedInsertError || !stagedCatalogue) {
+      throw new Error(`Catalogue staging failed: ${stagedInsertError?.message ?? 'missing catalogue id'}`)
+    }
+    catalogueRow = stagedCatalogue
+  }
 
   const clubNames = [...new Set(catalogue.players.map((player) => player.club_name))]
   const clubRows = clubNames.map((name) => {
@@ -163,10 +126,12 @@ async function syncLeagueCatalogue(admin: ReturnType<typeof createAdminClient>, 
     initial_price_minor: number
     current_price_minor: number
     opening_price_method_version: string | null
+    opening_price_confidence: OpeningPriceConfidence
+    opening_price_evidence: unknown
   }> = []
   for (let offset = 0; offset < providerPlayerIds.length; offset += BATCH_SIZE) {
     const { data, error } = await admin.from('market_players')
-      .select('id,provider_player_id,season_id,initial_price_minor,current_price_minor,opening_price_method_version')
+      .select('id,provider_player_id,season_id,initial_price_minor,current_price_minor,opening_price_method_version,opening_price_confidence,opening_price_evidence')
       .in('provider_player_id', providerPlayerIds.slice(offset, offset + BATCH_SIZE))
     if (error) throw new Error(`Existing player price lookup failed: ${error.message}`)
     existingPlayers.push(...(data ?? []))
@@ -185,6 +150,8 @@ async function syncLeagueCatalogue(admin: ReturnType<typeof createAdminClient>, 
   const existingPrices = new Map(existingPlayers.map((player) => [String(player.provider_player_id), {
     initial: Number(player.initial_price_minor), current: Number(player.current_price_minor),
     methodVersion: String(player.opening_price_method_version ?? 'legacy-age-position-v1'),
+    confidence: player.opening_price_confidence,
+    evidence: player.opening_price_evidence,
   }]))
 
   let synced = 0
@@ -192,14 +159,16 @@ async function syncLeagueCatalogue(admin: ReturnType<typeof createAdminClient>, 
   for (let offset = 0; offset < catalogue.players.length; offset += BATCH_SIZE) {
     const rows = catalogue.players.slice(offset, offset + BATCH_SIZE).map((player) => {
       const existing = existingPrices.get(String(player.id))
-      const stillOnLegacyBaseline = existing?.initial === legacyOpeningValue(player.position, player.age ?? null)
-      const needsCurrentModel = !existing || stillOnLegacyBaseline || existing.methodVersion !== OPENING_PRICE_METHOD_VERSION
-      const openingPrice = needsCurrentModel ? player.opening_season_value : existing.initial
-      if (existing && needsCurrentModel && openingPrice !== existing.initial) repriced += 1
-      const preservedMovement = existing ? existing.current - existing.initial : player.current_value - player.opening_season_value
-      const currentPrice = Math.max(VALUE_FLOOR, Math.min(VALUE_CEILING, openingPrice + preservedMovement))
       const evidence = catalogue.openingPriceEvidenceByPlayerId[String(player.id)]
       if (!evidence) throw new Error(`Pricing evidence is missing for provider player ${player.id}.`)
+      const resolved = resolveOpeningPricePersistence({
+        existing,
+        candidate: { value: player.opening_season_value, confidence: evidence.confidence, evidence },
+        candidateCurrentPrice: player.current_value,
+        position: player.position,
+        age: player.age ?? null,
+      })
+      if (resolved.repriced) repriced += 1
       return ({
       season_id: seasonId,
       club_id: clubIds.get(player.club_name),
@@ -209,8 +178,8 @@ async function syncLeagueCatalogue(admin: ReturnType<typeof createAdminClient>, 
       slug: player.slug,
       position_group: player.position,
       nationality: player.nationality,
-      initial_price_minor: openingPrice,
-      current_price_minor: currentPrice,
+      initial_price_minor: resolved.openingPrice,
+      current_price_minor: resolved.currentPrice,
       is_available: player.active,
       availability_status: player.availability_status ?? 'available',
       data_updated_at: player.data_updated_at,
@@ -221,9 +190,9 @@ async function syncLeagueCatalogue(admin: ReturnType<typeof createAdminClient>, 
       internal_player_id: `fiq_player_${player.id}`,
       app_player_id: player.id,
       age: player.age,
-      opening_price_method_version: OPENING_PRICE_METHOD_VERSION,
-      opening_price_confidence: evidence.confidence,
-      opening_price_evidence: evidence,
+      opening_price_method_version: resolved.methodVersion,
+      opening_price_confidence: resolved.confidence,
+      opening_price_evidence: resolved.evidence,
       updated_at: now,
     })})
     if (rows.some((row) => !row.club_id)) throw new Error('Catalogue contains a player whose club was not synchronized.')
@@ -279,6 +248,10 @@ async function syncLeagueCatalogue(admin: ReturnType<typeof createAdminClient>, 
     if (error) throw new Error(`Stale player deactivation failed: ${error.message}`)
   }
 
+  const { error: catalogueCommitError } = await admin.from('market_catalogues')
+    .update(catalogueValues).eq('id', catalogueRow.id)
+  if (catalogueCommitError) throw new Error(`Catalogue commit failed: ${catalogueCommitError.message}`)
+
   const { error: activationError } = await admin.from('market_active_catalogues').upsert({
     catalogue_id: catalogueRow.id,
     season_id: seasonId,
@@ -293,6 +266,15 @@ async function syncLeagueCatalogue(admin: ReturnType<typeof createAdminClient>, 
 export async function syncSportmonksCatalogueToSupabase() {
   const admin = createAdminClient()
   const startedAt = new Date().toISOString()
+  const staleCutoff = new Date(Date.now() - 15 * 60 * 1_000).toISOString()
+  const { error: staleRunError } = await admin.from('market_processing_runs').update({
+    status: 'failed',
+    finished_at: startedAt,
+    error_message: 'Catalogue synchronization exceeded 15 minutes and was closed before automatic recovery.',
+    report: { recoverable: true, failure_stage: 'stale_run_recovery' },
+  }).eq('run_type', 'catalogue_sync').eq('status', 'running').lt('started_at', staleCutoff)
+  if (staleRunError) throw new Error(`Stale catalogue run recovery failed: ${staleRunError.message}`)
+
   const runKey = `catalogue-sync-${Date.now()}-${crypto.randomUUID()}`
   const { data: run, error: runError } = await admin.from('market_processing_runs').insert({
     run_key: runKey,
@@ -306,9 +288,25 @@ export async function syncSportmonksCatalogueToSupabase() {
 
   try {
     const combined = await buildSportmonksCombinedCatalogue()
-    const pricingAudit = validateOpeningPriceBook(combined.competitions)
+    const pricingPlayers = combined.competitions.flatMap((catalogue) => catalogue.players.map((player) => {
+      const evidence = catalogue.openingPriceEvidenceByPlayerId[String(player.id)]
+      if (!evidence) throw new Error(`Opening price book rejected: provider player ${player.id} has no pricing evidence.`)
+      return { position: player.position, openingValue: player.opening_season_value, confidence: evidence.confidence }
+    }))
+    const pricingAudit = validateOpeningPriceBook(pricingPlayers)
     const results = []
-    for (const catalogue of combined.competitions) results.push(await syncLeagueCatalogue(admin, catalogue))
+    for (const catalogue of combined.competitions) {
+      const attempted = await retryCatalogueOperation(() => syncLeagueCatalogue(admin, catalogue), 1, 750)
+      if (attempted.attempts > 1) {
+        console.warn(JSON.stringify({
+          event: 'market.catalogue_sync.recovered_after_retry',
+          competition: catalogue.competition,
+          attempts: attempted.attempts,
+          run_key: runKey,
+        }))
+      }
+      results.push({ ...attempted.value, attempts: attempted.attempts })
+    }
     const { data: portfolioRefresh, error: refreshError } = await admin.rpc('market_refresh_all_portfolios_after_catalogue_sync')
     if (refreshError) throw new Error(`Portfolio refresh after catalogue sync failed: ${refreshError.message}`)
     const result = {
@@ -329,11 +327,40 @@ export async function syncSportmonksCatalogueToSupabase() {
     return result
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Catalogue synchronization failed.'
-    await admin.from('market_processing_runs').update({
+    const { error: failureWriteError } = await admin.from('market_processing_runs').update({
       status: 'failed',
       finished_at: new Date().toISOString(),
       error_message: message,
+      report: {
+        recoverable: true,
+        failure_stage: 'catalogue_sync',
+        message,
+        recovery: 'The daily gameweek job retries the latest failed catalogue sync; a manual rerun is also safe because every write is idempotent.',
+      },
     }).eq('id', run.id)
+    console.error(JSON.stringify({
+      event: 'market.catalogue_sync.failed',
+      run_key: runKey,
+      run_id: run.id,
+      error: message,
+      recoverable: true,
+      audit_write_error: failureWriteError?.message ?? null,
+    }))
     throw error
   }
+}
+
+export async function recoverLatestFailedCatalogueSync() {
+  const admin = createAdminClient()
+  const { data: latest, error } = await admin.from('market_processing_runs')
+    .select('status,started_at')
+    .eq('run_type', 'catalogue_sync')
+    .order('started_at', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+  if (error) throw new Error(`Catalogue recovery check failed: ${error.message}`)
+  if (!shouldRecoverCatalogueSync(latest)) return { attempted: false, reason: 'latest_catalogue_sync_is_healthy' }
+
+  const result = await syncSportmonksCatalogueToSupabase()
+  return { attempted: true, result }
 }

@@ -201,7 +201,7 @@ describe('Sportmonks coverage trial client', () => {
       .mockResolvedValueOnce(response({ id: 8, currentSeason: { id: 99, name: '2026/2027' } }))
       .mockResolvedValueOnce(response([{ id: 1, name: 'North FC' }]))
       .mockResolvedValueOnce(response([
-        { player_id: 10, player: { id: 10, display_name: 'Alex Keeper', date_of_birth: '2000-01-01' }, team: { id: 1, name: 'North FC' }, position: { developer_name: 'GOALKEEPER' } },
+        { player_id: 10, player: { id: 10, display_name: 'Alex Keeper', date_of_birth: '2000-01-01', nationality: { name: 'England' } }, team: { id: 1, name: 'North FC' }, position: { developer_name: 'GOALKEEPER' } },
         { player_id: 20, player: { id: 20, display_name: 'Sam Striker', date_of_birth: '2002-01-01' }, team: { id: 1, name: 'North FC' }, position: { developer_name: 'FORWARD' } },
       ]))
       .mockResolvedValueOnce(response({ id: 99, fixtures: [] }))
@@ -211,6 +211,7 @@ describe('Sportmonks coverage trial client', () => {
 
     expect(catalogue).toMatchObject({ competition: 'Premier League', seasonId: '99', playerCount: 2, marketPhase: 'opening', completedFixturesApplied: 0 })
     expect(catalogue.players.map((player) => player.display_name).sort()).toEqual(['Alex Keeper', 'Sam Striker'])
+    expect(catalogue.players.find((player) => player.id === 10)?.nationality).toBe('England')
     expect(catalogue.players.every((player) => player.active && player.provenance_status === 'verified')).toBe(true)
     expect(catalogue.players.every((player) => player.current_value === player.previous_value)).toBe(true)
     expect(Object.values(catalogue.openingPriceEvidenceByPlayerId).every((evidence) => evidence.confidence === 'fallback')).toBe(true)

@@ -11,13 +11,14 @@ import { MarketTradeDialog } from '@/components/market/market-trade-dialog'
 import { useMarketFormation } from '@/components/market/use-market-formation'
 import { buyMarketPlayer, sellMarketPlayer, toggleMarketWatchlist } from '@/lib/market/client'
 import { canBuyPosition, countFormation } from '@/lib/market/formation'
-import { createMarketRequestKey, formatFiqCompact, formatMarketDateTime, MARKET_MAX_PORTFOLIO_SIZE } from '@/lib/market/format'
-import type { MarketHolding, MarketPlayer, MarketSeasonStats, MarketValueHistoryPoint } from '@/lib/market/types'
+import { createMarketRequestKey, formatFiqCompact, formatMarketDateTime, formatMarketInteger, MARKET_MAX_PORTFOLIO_SIZE } from '@/lib/market/format'
+import type { MarketHolding, MarketOpeningPriceExplanation, MarketPlayer, MarketSeasonStats, MarketValueHistoryPoint } from '@/lib/market/types'
 
 export function PlayerMarketDetail({
   players,
   player,
   stats,
+  openingExplanation,
   history,
   holdings,
   watchlist,
@@ -28,6 +29,7 @@ export function PlayerMarketDetail({
   players: MarketPlayer[]
   player: MarketPlayer
   stats: MarketSeasonStats[]
+  openingExplanation: MarketOpeningPriceExplanation | null
   history: MarketValueHistoryPoint[]
   holdings: MarketHolding[]
   watchlist: number[]
@@ -196,6 +198,7 @@ export function PlayerMarketDetail({
                     <Stat label="Appearances" value={row.appearances} />
                     <Stat label="Starts" value={row.starts} />
                     <Stat label="Minutes" value={row.minutes} />
+                    <Stat label="Average rating" value={row.average_rating === null ? null : row.average_rating.toFixed(2)} />
                     <Stat label="Goals" value={row.goals} />
                     <Stat label="Assists" value={row.assists} />
                     <Stat label="Clean sheets" value={row.clean_sheets} />
@@ -224,6 +227,8 @@ export function PlayerMarketDetail({
             <Clock3 className="size-4" /><span>Last value update: <strong className="text-emerald-950">{formatMarketDateTime(player.value_updated_at)}</strong></span>
           </div>
         </div>
+
+        <OpeningPriceBreakdown explanation={openingExplanation} openingValue={player.opening_season_value} />
       </section>
       {tradeIntent ? (
         <MarketTradeDialog
@@ -279,7 +284,7 @@ function Notice({ kind, message }: { kind: 'success' | 'error' | 'info'; message
   return <p role={kind === 'error' ? 'alert' : 'status'} aria-live={kind === 'error' ? 'assertive' : 'polite'} className={`mt-4 inline-flex items-center gap-2 rounded-xl border px-3 py-2 text-sm ${className}`}>{icon}{message}</p>
 }
 
-function Stat({ label, value }: { label: string; value: number | null }) {
+function Stat({ label, value }: { label: string; value: number | string | null }) {
   return (
     <div className="border-l-2 border-emerald-700/15 px-3 py-2">
       <p className="text-xs text-muted-foreground">{label}</p>
@@ -313,6 +318,80 @@ function ValueHistoryChart({ points, currentValue }: { points: MarketValueHistor
         )
       })}
       <div className="ml-2 flex items-center gap-1 text-xs text-primary"><Star className="size-3" />Now {formatFiqCompact(currentValue)}</div>
+    </div>
+  )
+}
+
+const OPENING_FACTORS = [
+  { key: 'rating', label: 'Match rating', weight: '46%', help: 'How well the player performed.' },
+  { key: 'minutes', label: 'Minutes played', weight: '17%', help: 'How much trusted playing time we have.' },
+  { key: 'role', label: 'Team role', weight: '13%', help: 'How often the player starts and appears.' },
+  { key: 'output', label: 'Position output', weight: '12%', help: 'Goals, assists or clean sheets for their role.' },
+  { key: 'team_context', label: 'Club and league', weight: '8%', help: 'The level around the player.' },
+  { key: 'age', label: 'Age profile', weight: '4%', help: 'A small age and potential adjustment.' },
+] as const
+
+function OpeningPriceBreakdown({ explanation, openingValue }: { explanation: MarketOpeningPriceExplanation | null; openingValue: number }) {
+  if (!explanation) {
+    return (
+      <div className="rounded-[2rem] border border-amber-900/15 bg-amber-50/80 p-6 lg:col-span-2">
+        <p className="text-sm font-black text-amber-950">Opening-price breakdown is being checked</p>
+        <p className="mt-1 text-xs leading-5 text-amber-950/70">The player card still works, but we will not show an explanation unless it matches the frozen opening value exactly.</p>
+      </div>
+    )
+  }
+
+  const confidence = explanation.confidence === 'high' ? 'Strong evidence'
+    : explanation.confidence === 'established' ? 'Good evidence'
+      : explanation.confidence === 'limited' ? 'Limited evidence' : 'Safe fallback price'
+
+  return (
+    <div className="overflow-hidden rounded-[2rem] border border-cyan-950/10 bg-gradient-to-br from-cyan-50 via-white to-emerald-50 p-6 shadow-sm lg:col-span-2">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <p className="text-[11px] font-black uppercase tracking-[.18em] text-cyan-800">The starting-price receipt</p>
+          <h2 className="mt-1 text-xl font-black text-emerald-950">Why this player started at {formatFiqCompact(openingValue)}</h2>
+          <p className="mt-2 max-w-3xl text-sm leading-6 text-emerald-950/65">These frozen numbers set the opening game price once. New matches move the current value; they never rewrite this receipt.</p>
+        </div>
+        <span className="rounded-full border border-emerald-700/15 bg-white px-3 py-1.5 text-xs font-black text-emerald-800">{confidence}</span>
+      </div>
+
+      <div className="mt-5 grid gap-4 lg:grid-cols-[.72fr_1.28fr]">
+        <div className="rounded-2xl bg-emerald-950 p-5 text-white">
+          <p className="text-[11px] font-black uppercase tracking-[.16em] text-emerald-300">Evidence used</p>
+          <dl className="mt-4 grid grid-cols-2 gap-x-4 gap-y-3 text-sm">
+            <EvidenceStat label="Average rating" value={explanation.source_inputs.average_rating === null ? 'Not available' : explanation.source_inputs.average_rating.toFixed(2)} />
+            <EvidenceStat label="Stable rating" value={explanation.scores.stabilized_rating === null ? 'Not available' : explanation.scores.stabilized_rating.toFixed(2)} />
+            <EvidenceStat label="Appearances" value={String(explanation.source_inputs.appearances)} />
+            <EvidenceStat label="Starts" value={String(explanation.source_inputs.starts)} />
+            <EvidenceStat label="Minutes" value={formatMarketInteger(explanation.source_inputs.minutes)} />
+            <EvidenceStat label="Goals + assists" value={String(explanation.source_inputs.goals + explanation.source_inputs.assists)} />
+          </dl>
+          {explanation.guardrail ? <p className="mt-4 rounded-xl border border-amber-200/20 bg-amber-100/10 px-3 py-2 text-xs leading-5 text-amber-100">Safety rule: {explanation.guardrail}</p> : null}
+        </div>
+
+        <div className="grid gap-3 sm:grid-cols-2">
+          {OPENING_FACTORS.map((factor) => (
+            <PriceFactor key={factor.key} label={factor.label} weight={factor.weight} help={factor.help} score={explanation.scores[factor.key]} />
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function EvidenceStat({ label, value }: { label: string; value: string }) {
+  return <div><dt className="text-xs text-emerald-50/60">{label}</dt><dd className="mt-0.5 font-black">{value}</dd></div>
+}
+
+function PriceFactor({ label, weight, help, score }: { label: string; weight: string; help: string; score: number }) {
+  const bounded = Math.max(0, Math.min(100, score))
+  return (
+    <div className="rounded-2xl border border-emerald-950/10 bg-white/85 p-4">
+      <div className="flex items-baseline justify-between gap-3"><p className="text-sm font-black text-emerald-950">{label}</p><span className="text-xs font-bold text-emerald-700">{weight}</span></div>
+      <p className="mt-1 text-xs leading-5 text-emerald-950/55">{help}</p>
+      <div className="mt-3 h-2 overflow-hidden rounded-full bg-emerald-950/8"><div className="h-full rounded-full bg-gradient-to-r from-cyan-500 to-emerald-500" style={{ width: `${bounded}%` }} /></div>
+      <p className="mt-1.5 text-right text-xs font-black text-emerald-800">{Math.round(bounded)} / 100</p>
     </div>
   )
 }

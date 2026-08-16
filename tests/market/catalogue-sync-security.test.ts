@@ -5,6 +5,7 @@ import { describe, expect, it } from 'vitest'
 const route = readFileSync(resolve(process.cwd(), 'app/api/market/sync-catalogue/route.ts'), 'utf8')
 const catalogueRoute = readFileSync(resolve(process.cwd(), 'app/api/market/catalogue/route.ts'), 'utf8')
 const service = readFileSync(resolve(process.cwd(), 'lib/market/server/catalogue-sync.ts'), 'utf8')
+const persistence = readFileSync(resolve(process.cwd(), 'lib/market/opening-price-persistence.ts'), 'utf8')
 const adminAuth = readFileSync(resolve(process.cwd(), 'lib/market/server/admin-auth.ts'), 'utf8')
 
 describe('server-only Market catalogue synchronization', () => {
@@ -33,9 +34,11 @@ describe('server-only Market catalogue synchronization', () => {
     expect(service).toMatch(/synced \+= rows\.length/)
     expect(service).toMatch(/stalePlayerIds/)
     expect(service).toMatch(/availability_status: 'inactive'/)
-    expect(service).toMatch(/stillOnLegacyBaseline/)
-    expect(service).toMatch(/existing\.current - existing\.initial/)
-    expect(service).toMatch(/openingPrice \+ preservedMovement/)
+    expect(service).toMatch(/resolveOpeningPricePersistence/)
+    expect(persistence).toMatch(/alreadyOnCurrentModel/)
+    expect(persistence).toMatch(/existing\.current - existing\.initial/)
+    expect(persistence).toMatch(/openingPrice \+ preservedMovement/)
+    expect(persistence).toMatch(/assertFrozenEvidence/)
   })
 
   it('keeps league-specific catalogue requests dynamic while provider calls remain cached', () => {

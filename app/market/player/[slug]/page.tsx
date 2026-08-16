@@ -11,9 +11,10 @@ import {
   loadMyGameweekStatus,
   loadMyPortfolioData,
   loadPlayerSeasonStats,
+  loadPlayerOpeningPriceExplanation,
   loadPlayerValueHistory,
 } from '@/lib/market/client'
-import type { MarketHolding, MarketPlayer, MarketSeasonStats, MarketValueHistoryPoint } from '@/lib/market/types'
+import type { MarketHolding, MarketOpeningPriceExplanation, MarketPlayer, MarketSeasonStats, MarketValueHistoryPoint } from '@/lib/market/types'
 import { friendlyMarketLoadError } from '@/lib/market/user-errors'
 
 export default function PlayerMarketDetailPage() {
@@ -22,6 +23,7 @@ export default function PlayerMarketDetailPage() {
 
   const [players, setPlayers] = useState<MarketPlayer[]>([])
   const [stats, setStats] = useState<MarketSeasonStats[]>([])
+  const [openingExplanation, setOpeningExplanation] = useState<MarketOpeningPriceExplanation | null>(null)
   const [history, setHistory] = useState<MarketValueHistoryPoint[]>([])
   const [holdings, setHoldings] = useState<MarketHolding[]>([])
   const [watchlist, setWatchlist] = useState<number[]>([])
@@ -50,8 +52,9 @@ export default function PlayerMarketDetailPage() {
       return
     }
 
-    const [statsResult, historyResult, portfolioResult, gameweekStatus] = await Promise.all([
+    const [statsResult, openingResult, historyResult, portfolioResult, gameweekStatus] = await Promise.all([
       loadPlayerSeasonStats(currentPlayer.id),
+      loadPlayerOpeningPriceExplanation(currentPlayer.id),
       loadPlayerValueHistory(currentPlayer.id),
       loadMyPortfolioData(),
       loadMyGameweekStatus(),
@@ -62,6 +65,7 @@ export default function PlayerMarketDetailPage() {
     if (portfolioResult.error) setError(friendlyMarketLoadError(portfolioResult.error))
 
     setStats(statsResult.data)
+    setOpeningExplanation(openingResult.data)
     setHistory(historyResult.data)
     setHoldings(portfolioResult.holdings)
     setWatchlist(portfolioResult.watchlist)
@@ -89,6 +93,7 @@ export default function PlayerMarketDetailPage() {
             players={players}
             player={player}
             stats={stats}
+            openingExplanation={openingExplanation}
             history={history}
             holdings={holdings}
             watchlist={watchlist}

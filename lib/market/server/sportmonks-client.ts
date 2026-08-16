@@ -453,15 +453,15 @@ export async function runSportmonksCoverageTrial(apiToken = process.env.SPORTMON
   const squads = (await Promise.all(teamIds.map(async (teamId) => {
     const team = teams.find((candidate) => String(candidate.id) === String(teamId))
     const seasonSquad = records(await client.get(
-      `/squads/seasons/${encodeURIComponent(seasonId)}/teams/${encodeURIComponent(String(teamId))}?include=player;team;position`,
+      `/squads/seasons/${encodeURIComponent(seasonId)}/teams/${encodeURIComponent(String(teamId))}?include=player.nationality;team;position`,
     ))
     if (seasonSquad.length) return seasonSquad
     const currentSquad = records(await client.get(
-      `/squads/teams/${encodeURIComponent(String(teamId))}?include=player;team;position`,
+      `/squads/teams/${encodeURIComponent(String(teamId))}?include=player.nationality;team;position`,
     ))
     if (currentSquad.length) return currentSquad
     const extendedSquad = records(await client.get(
-      `/squads/teams/${encodeURIComponent(String(teamId))}/extended?include=position`,
+      `/squads/teams/${encodeURIComponent(String(teamId))}/extended?include=nationality;position`,
     ))
     if (extendedSquad.length) {
       return extendedSquad.map((player) => ({
@@ -472,7 +472,7 @@ export async function runSportmonksCoverageTrial(apiToken = process.env.SPORTMON
       }))
     }
     const teamWithPlayers = record(await client.get(
-      `/teams/${encodeURIComponent(String(teamId))}?include=players.player;players.position`,
+      `/teams/${encodeURIComponent(String(teamId))}?include=players.player.nationality;players.position`,
     ))
     return relationRows(teamWithPlayers ?? {}, 'players').map((membership) => ({
       ...membership,
@@ -545,15 +545,15 @@ async function buildSportmonksLeagueCatalogue(
   const squads = (await Promise.all(teamIds.map(async (teamId) => {
     const team = teams.find((candidate) => String(candidate.id) === String(teamId))
     const seasonSquad = records(await client.get(
-      `/squads/seasons/${encodeURIComponent(seasonId)}/teams/${encodeURIComponent(String(teamId))}?include=player;team;position`,
+      `/squads/seasons/${encodeURIComponent(seasonId)}/teams/${encodeURIComponent(String(teamId))}?include=player.nationality;team;position`,
     ))
     if (seasonSquad.length) return seasonSquad
     const currentSquad = records(await client.get(
-      `/squads/teams/${encodeURIComponent(String(teamId))}?include=player;team;position`,
+      `/squads/teams/${encodeURIComponent(String(teamId))}?include=player.nationality;team;position`,
     ))
     if (currentSquad.length) return currentSquad
     const extendedSquad = records(await client.get(
-      `/squads/teams/${encodeURIComponent(String(teamId))}/extended?include=position`,
+      `/squads/teams/${encodeURIComponent(String(teamId))}/extended?include=nationality;position`,
     ))
     if (extendedSquad.length) {
       return extendedSquad.map((player) => ({
@@ -564,7 +564,7 @@ async function buildSportmonksLeagueCatalogue(
       }))
     }
     const teamWithPlayers = record(await client.get(
-      `/teams/${encodeURIComponent(String(teamId))}?include=players.player;players.position`,
+      `/teams/${encodeURIComponent(String(teamId))}?include=players.player.nationality;players.position`,
     ))
     return relationRows(teamWithPlayers ?? {}, 'players').map((membership) => ({
       ...membership,
@@ -689,6 +689,7 @@ async function buildSportmonksLeagueCatalogue(
   for (const row of squads) {
     const player = relation(row, 'player')
     const team = relation(row, 'team')
+    const nationality = relation(player ?? {}, 'nationality')
     const id = Number(row.player_id ?? player?.id)
     const position = mapPosition(row)
     const name = textValue(player?.display_name ?? player?.common_name ?? player?.name)
@@ -718,7 +719,7 @@ async function buildSportmonksLeagueCatalogue(
     players.push({
       id, slug, display_name: name, short_name: textValue(player?.short_name ?? player?.common_name), club_name: clubName,
       competition_key: leagueConfig.competitionKey, competition_name: leagueConfig.competition,
-      position, age, nationality: textValue(player?.nationality_name ?? player?.nationality), active: true,
+      position, age, nationality: textValue(nationality?.name ?? player?.nationality_name ?? player?.nationality), active: true,
       current_value: value, previous_value: previousValue, opening_season_value: openingValue,
       value_updated_at: now, data_updated_at: now,
       data_source_label: 'Sportmonks-sourced squad data · Early Shout evidence-based game price',

@@ -107,7 +107,7 @@ The migration deliberately makes no provider active and inserts no players, fixt
 6. Rolling inputs and new values are calculated in chronological order while the affected player rows are locked. Floors, ceilings, 0.1m increments, per-match caps and rolling-week caps must be checked both in application code and database constraints.
 7. Only after all appearances and value histories succeed is the batch marked `applied`. Any exception rolls back the entire transaction.
 
-The application service models this unit of work in `lib/market/server/ingestion-service.ts`. Its repository implementation remains intentionally absent until the migration has been applied to a disposable Supabase branch and generated database types are available. Public trading must not depend on this unapplied schema.
+The live implementation is `lib/market/server/gameweek-engine.ts` backed by the transactional `market_process_verified_gameweek` database RPC. The earlier repository sketch was removed so no future caller can accidentally select a second, obsolete valuation path.
 
 ## Correction workflow
 

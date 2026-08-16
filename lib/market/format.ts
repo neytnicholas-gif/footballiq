@@ -2,6 +2,12 @@ export const MARKET_CREDITS_STARTING_BALANCE = 100_000_000
 export const MARKET_MAX_PORTFOLIO_SIZE = 11
 export const MARKET_WEEKLY_SIGNING_LIMIT = 11
 
+const marketIntegerFormatter = new Intl.NumberFormat('en-GB', { maximumFractionDigits: 0 })
+
+export function formatMarketInteger(value: number) {
+  return marketIntegerFormatter.format(Number.isFinite(value) ? Math.round(value) : 0)
+}
+
 export function formatFiqCompact(value: number) {
   const safe = Number.isFinite(value) ? value : 0
   const millions = safe / 1_000_000
