@@ -261,20 +261,49 @@ async function syncLeagueCatalogue(admin: ReturnType<typeof createAdminClient>, 
 }
 
 export async function syncSportmonksCatalogueToSupabase() {
-  const combined = await buildSportmonksCombinedCatalogue()
-  const pricingAudit = validateOpeningPriceBook(combined.competitions)
   const admin = createAdminClient()
-  const results = []
-  for (const catalogue of combined.competitions) results.push(await syncLeagueCatalogue(admin, catalogue))
-  const { data: portfolioRefresh, error: refreshError } = await admin.rpc('market_refresh_all_portfolios_after_catalogue_sync')
-  if (refreshError) throw new Error(`Portfolio refresh after catalogue sync failed: ${refreshError.message}`)
-  return {
-    synced: results.reduce((total, result) => total + result.synced, 0),
-    repriced: results.reduce((total, result) => total + result.repriced, 0),
-    competition: combined.competition,
-    generatedAt: combined.generatedAt,
-    pricingAudit,
-    portfolioRefresh,
-    competitions: results,
+  const startedAt = new Date().toISOString()
+  const runKey = `catalogue-sync-${Date.now()}-${crypto.randomUUID()}`
+  const { data: run, error: runError } = await admin.from('market_processing_runs').insert({
+    run_key: runKey,
+    run_type: 'catalogue_sync',
+    status: 'running',
+    dry_run: false,
+    started_at: startedAt,
+    report: {},
+  }).select('id').single()
+  if (runError) throw new Error(`Catalogue audit run could not start: ${runError.message}`)
+
+  try {
+    const combined = await buildSportmonksCombinedCatalogue()
+    const pricingAudit = validateOpeningPriceBook(combined.competitions)
+    const results = []
+    for (const catalogue of combined.competitions) results.push(await syncLeagueCatalogue(admin, catalogue))
+    const { data: portfolioRefresh, error: refreshError } = await admin.rpc('market_refresh_all_portfolios_after_catalogue_sync')
+    if (refreshError) throw new Error(`Portfolio refresh after catalogue sync failed: ${refreshError.message}`)
+    const result = {
+      synced: results.reduce((total, item) => total + item.synced, 0),
+      repriced: results.reduce((total, item) => total + item.repriced, 0),
+      competition: combined.competition,
+      generatedAt: combined.generatedAt,
+      pricingAudit,
+      portfolioRefresh,
+      competitions: results,
+    }
+    await admin.from('market_processing_runs').update({
+      status: 'completed',
+      finished_at: new Date().toISOString(),
+      report: result,
+      error_message: null,
+    }).eq('id', run.id)
+    return result
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Catalogue synchronization failed.'
+    await admin.from('market_processing_runs').update({
+      status: 'failed',
+      finished_at: new Date().toISOString(),
+      error_message: message,
+    }).eq('id', run.id)
+    throw error
   }
 }

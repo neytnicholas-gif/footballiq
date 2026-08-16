@@ -125,6 +125,8 @@ describe('Player Market launch gates', () => {
     expect(valuation).toContain("maximumValue = 5_200_000")
     expect(sync).toContain('validateOpeningPriceBook')
     expect(sync).toContain('fallback players exceed the conservative cap')
+    expect(sync).toContain("run_type: 'catalogue_sync'")
+    expect(sync).toContain("status: 'failed'")
   })
 
   it('runs server work close to the database with Fluid Compute enabled', () => {
