@@ -127,6 +127,8 @@ describe('Player Market launch gates', () => {
     expect(sync).toContain('fallback players exceed the conservative cap')
     expect(sync).toContain("run_type: 'catalogue_sync'")
     expect(sync).toContain("status: 'failed'")
+    expect(sync).toContain(".eq('season_id', seasonId).eq('status', 'active').maybeSingle()")
+    expect(sync).toContain(".update(catalogueValues).eq('id', activeCatalogue.id)")
   })
 
   it('runs server work close to the database with Fluid Compute enabled', () => {

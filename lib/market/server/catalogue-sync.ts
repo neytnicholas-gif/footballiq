@@ -108,7 +108,7 @@ async function syncLeagueCatalogue(admin: ReturnType<typeof createAdminClient>, 
   })
   if (seasonError) throw new Error(`Season synchronization failed: ${seasonError.message}`)
 
-  const { data: catalogueRow, error: catalogueError } = await admin.from('market_catalogues').upsert({
+  const catalogueValues = {
     season_id: seasonId,
     fingerprint,
     status: 'active',
@@ -121,7 +121,14 @@ async function syncLeagueCatalogue(admin: ReturnType<typeof createAdminClient>, 
     approved_by: 'footballiq-automated-validation',
     activated_at: now,
     updated_at: now,
-  }, { onConflict: 'fingerprint' }).select('id').single()
+  }
+  const { data: activeCatalogue, error: activeCatalogueError } = await admin.from('market_catalogues')
+    .select('id').eq('season_id', seasonId).eq('status', 'active').maybeSingle()
+  if (activeCatalogueError) throw new Error(`Active catalogue lookup failed: ${activeCatalogueError.message}`)
+  const catalogueWrite = activeCatalogue
+    ? admin.from('market_catalogues').update(catalogueValues).eq('id', activeCatalogue.id).select('id').single()
+    : admin.from('market_catalogues').insert(catalogueValues).select('id').single()
+  const { data: catalogueRow, error: catalogueError } = await catalogueWrite
   if (catalogueError || !catalogueRow) throw new Error(`Catalogue synchronization failed: ${catalogueError?.message ?? 'missing catalogue id'}`)
 
   const clubNames = [...new Set(catalogue.players.map((player) => player.club_name))]
