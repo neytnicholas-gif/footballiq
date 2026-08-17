@@ -7,6 +7,7 @@ import { expandedScoutScenarios } from '@/lib/scout-scenario-expansion'
 import { getLeagueWorldQuestions } from '@/lib/football-leagues'
 import { getQuizLabRound, quizLabCorrectAnswer, type QuizLabFormat } from '@/lib/quiz-lab'
 import { getCareerRound, getWhoAmIRound, playerGuessMatches } from '@/lib/player-knowledge-bank'
+import { tacticalScenarios } from '@/lib/tactical-scenarios'
 
 export type QuizCompletionClaim = {
   quizId: string
@@ -111,6 +112,21 @@ export function verifyQuizReward(claim: QuizCompletionClaim): VerifiedQuizReward
     const proof = requireProof(claim.proof, 'choice')
     assertResult(score, total, refereeQuestions.length)
     const verifiedScore = assertClaimedScore(score, scoreChoiceAnswers(proof.answers, refereeQuestions.map((question) => question.answer)))
+    return { ...claim, quizId, score: verifiedScore, total, xp: standardXp(verifiedScore, total) }
+  }
+
+  if (quizId === 'tactical-lab-1') {
+    const proof = requireProof(claim.proof, 'tactical-choice')
+    if (proof.scenarioIds.length !== 10 || new Set(proof.scenarioIds).size !== proof.scenarioIds.length) {
+      throw new Error('Tactical session proof is invalid.')
+    }
+    assertResult(score, total, proof.scenarioIds.length)
+    const correct = proof.scenarioIds.map((scenarioId) => {
+      const scenario = tacticalScenarios.find((item) => item.id === scenarioId)
+      if (!scenario) throw new Error('Tactical session contains an unknown scenario.')
+      return scenario.answer
+    })
+    const verifiedScore = assertClaimedScore(score, scoreChoiceAnswers(proof.answers, correct))
     return { ...claim, quizId, score: verifiedScore, total, xp: standardXp(verifiedScore, total) }
   }
 

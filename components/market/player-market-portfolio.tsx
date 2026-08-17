@@ -111,10 +111,10 @@ export function PlayerMarketPortfolio({
 
       <RosterPitch holdings={holdings} playersById={playersById} limits={limits} activeFormation={activeFormation} />
 
-      <section aria-labelledby="roster-performance-title" className="rounded-[2rem] border border-emerald-950/10 bg-white/80 p-5 shadow-sm sm:p-6">
+      <section aria-labelledby="roster-performance-title" className="rounded-[2rem] border border-emerald-200/10 bg-[#0a3c36] p-5 text-emerald-50 shadow-sm sm:p-6">
         <div className="flex flex-wrap items-end justify-between gap-3">
-          <div><p className="text-[11px] font-black uppercase tracking-[.18em] text-emerald-700">Your numbers</p><h2 id="roster-performance-title" className="mt-1 text-2xl font-black">Squad performance</h2></div>
-          <p className="text-xs text-muted-foreground">Simple game totals · no real money</p>
+          <div><p className="text-[11px] font-black uppercase tracking-[.18em] text-emerald-300">Your numbers</p><h2 id="roster-performance-title" className="mt-1 text-2xl font-black text-white">Squad performance</h2></div>
+          <p className="text-xs text-emerald-50/55">Simple game totals · no real money</p>
         </div>
         <div className="mt-5 grid gap-x-5 gap-y-4 sm:grid-cols-2 lg:grid-cols-4">
           <Metric label="Total game gain/loss" value={movementLabel(totalProfitLoss)} tone={totalProfitLoss > 0 ? 'positive' : totalProfitLoss < 0 ? 'negative' : 'default'} />
@@ -122,8 +122,8 @@ export function PlayerMarketPortfolio({
           <Metric label="Cash already spent" value={formatFiqCompact(totalSpent)} />
           <Metric label="Overall game return" value={totalRoi === 0 ? 'No movement' : `${totalRoi > 0 ? '+' : ''}${totalRoi.toFixed(2)}%`} tone={totalRoi > 0 ? 'positive' : totalRoi < 0 ? 'negative' : 'default'} />
         </div>
-        <details className="group mt-5 border-t border-emerald-950/10 pt-4">
-          <summary className="cursor-pointer list-none text-sm font-bold text-emerald-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">More performance details <span aria-hidden="true" className="ml-1 inline-block transition group-open:rotate-180">⌄</span></summary>
+        <details className="group mt-5 border-t border-white/10 pt-4">
+          <summary className="cursor-pointer list-none text-sm font-bold text-emerald-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">More performance details <span aria-hidden="true" className="ml-1 inline-block transition group-open:rotate-180">⌄</span></summary>
           <div className="mt-4 grid gap-x-5 gap-y-4 sm:grid-cols-2 lg:grid-cols-4">
             <Metric label="Season movement" value={movementLabel(seasonMovement)} tone={seasonMovement > 0 ? 'positive' : seasonMovement < 0 ? 'negative' : 'default'} />
             <Metric label="Realised gain/loss" value={movementLabel(portfolio.realized_profit_loss)} tone={portfolio.realized_profit_loss > 0 ? 'positive' : portfolio.realized_profit_loss < 0 ? 'negative' : 'default'} />
@@ -281,7 +281,7 @@ function RosterPitch({
     <section aria-labelledby="formation-board-title" className="overflow-hidden rounded-[2rem] border border-emerald-950/20 bg-[#052e29] text-white shadow-[0_28px_80px_-45px_rgba(6,78,59,.9)]">
       <div className="flex flex-wrap items-start justify-between gap-3 border-b border-white/10 bg-black/10 px-5 py-5 sm:px-7">
         <div><p className="text-[10px] font-black uppercase tracking-[.2em] text-emerald-300">Matchday board</p><h2 id="formation-board-title" className="mt-1 text-2xl font-black">Your {activeFormation} team</h2><p className="mt-1 text-xs text-emerald-50/70">Select a player for their price, form and match details.</p></div>
-        <div className="flex items-center gap-2"><span className="rounded-full border border-emerald-200/20 bg-emerald-300/10 px-3 py-1.5 text-xs font-black text-emerald-100">{holdings.length}/{MARKET_MAX_PORTFOLIO_SIZE} selected</span><Link href="/market/players" className="rounded-xl bg-white px-4 py-2 text-sm font-black text-emerald-950 transition hover:bg-emerald-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white">Find players</Link></div>
+        <div className="flex items-center gap-2"><span className="rounded-full border border-emerald-200/20 bg-emerald-300/10 px-3 py-1.5 text-xs font-black text-emerald-100">{holdings.length}/{MARKET_MAX_PORTFOLIO_SIZE} selected</span><Link href="/market/players" className="rounded-xl bg-emerald-300 px-4 py-2 text-sm font-black text-emerald-950 transition hover:bg-emerald-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white">Find players</Link></div>
       </div>
       <div className="relative bg-[radial-gradient(circle_at_50%_0%,rgba(52,211,153,.16),transparent_35%),linear-gradient(90deg,rgba(255,255,255,.028)_50%,transparent_50%),linear-gradient(rgba(255,255,255,.04)_50%,transparent_50%)] bg-[size:auto,48px_48px,48px_48px] px-3 py-7 sm:px-6 sm:py-9">
         <div aria-hidden="true" className="pointer-events-none absolute inset-4 rounded-[1.5rem] border-2 border-white/15"><span className="absolute left-1/2 top-1/2 size-24 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white/12" /><span className="absolute left-1/2 top-0 h-full border-l-2 border-white/12" /><span className="absolute left-1/2 top-0 h-12 w-36 -translate-x-1/2 rounded-b-[3rem] border-x-2 border-b-2 border-white/10" /><span className="absolute bottom-0 left-1/2 h-12 w-36 -translate-x-1/2 rounded-t-[3rem] border-x-2 border-t-2 border-white/10" /></div>
@@ -301,14 +301,14 @@ function RosterPlayerCard({ player, holding }: { player: MarketPlayer; holding?:
   const movement = holding?.unrealized_profit_loss ?? player.current_value - player.previous_value
   const MovementIcon = movement > 0 ? TrendingUp : movement < 0 ? TrendingDown : Minus
   return (
-    <div role="listitem" className="w-28 shrink-0 snap-center sm:w-32"><Link href={`/market/player/${encodeURIComponent(player.slug)}`} aria-label={`Open ${player.display_name} details`} className="group block rounded-2xl border border-white/20 bg-white/95 p-2 text-center text-slate-950 shadow-[0_16px_35px_-22px_rgba(0,0,0,.9)] outline-none transition hover:-translate-y-1 hover:border-emerald-200 hover:shadow-xl focus-visible:ring-2 focus-visible:ring-white">
-      <span className="mb-1 inline-flex rounded-full bg-emerald-950 px-2 py-0.5 text-[8px] font-black tracking-wide text-emerald-100">{player.position}</span>
+    <div role="listitem" className="w-28 shrink-0 snap-center sm:w-32"><Link href={`/market/player/${encodeURIComponent(player.slug)}`} aria-label={`Open ${player.display_name} details`} className="group block rounded-2xl border border-emerald-200/20 bg-[#0b463e]/95 p-2 text-center text-white shadow-[0_16px_35px_-22px_rgba(0,0,0,.9)] outline-none transition hover:-translate-y-1 hover:border-emerald-200/60 hover:bg-[#0d5147] hover:shadow-xl focus-visible:ring-2 focus-visible:ring-white">
+      <span className="mb-1 inline-flex rounded-full bg-black/25 px-2 py-0.5 text-[8px] font-black tracking-wide text-emerald-200">{player.position}</span>
       <span className="mx-auto block w-fit"><MarketPlayerChip player={player} /></span>
       <span className="mt-2 flex min-w-0 items-center justify-center gap-1.5 text-xs font-black" title={player.display_name}><ClubColourDot clubName={player.club_name} className="size-2.5 shadow-[0_0_0_1px_rgba(255,255,255,.8)]" /><span className="truncate">{player.short_name || player.display_name}</span></span>
-      <span className="mt-0.5 block truncate text-[9px] text-slate-500">{player.club_name}</span>
-      <span className="mt-1.5 block text-[11px] font-black text-emerald-800">{formatFiqCompact(player.current_value)}</span>
-      <span className={`mt-0.5 flex items-center justify-center gap-1 text-[9px] font-bold ${movement > 0 ? 'text-emerald-700' : movement < 0 ? 'text-rose-700' : 'text-slate-500'}`}><MovementIcon className="size-3" aria-hidden="true" />{movement === 0 ? 'No change' : `${movement > 0 ? '+' : '-'}${formatFiqCompact(Math.abs(movement))}`}</span>
-      <span className="mt-1 block text-[9px] text-slate-500">Owned by {(player.ownership_percentage ?? 0).toFixed(1)}%</span>
+      <span className="mt-0.5 block truncate text-[9px] text-emerald-50/55">{player.club_name}</span>
+      <span className="mt-1.5 block text-[11px] font-black text-emerald-200">{formatFiqCompact(player.current_value)}</span>
+      <span className={`mt-0.5 flex items-center justify-center gap-1 text-[9px] font-bold ${movement > 0 ? 'text-emerald-300' : movement < 0 ? 'text-rose-300' : 'text-emerald-50/55'}`}><MovementIcon className="size-3" aria-hidden="true" />{movement === 0 ? 'No change' : `${movement > 0 ? '+' : '-'}${formatFiqCompact(Math.abs(movement))}`}</span>
+      <span className="mt-1 block text-[9px] text-emerald-50/50">Owned by {(player.ownership_percentage ?? 0).toFixed(1)}%</span>
     </Link></div>
   )
 }
@@ -321,9 +321,9 @@ function EmptyRosterSlot({ position }: { position: 'GK' | 'DEF' | 'MID' | 'FWD' 
 
 function Metric({ label, value, tone = 'default' }: { label: string; value: string; tone?: 'default' | 'positive' | 'negative' }) {
   return (
-    <div className="border-l-2 border-emerald-900/10 pl-3 first:border-l-0 first:pl-0 sm:first:border-l-2 sm:first:pl-3">
-      <p className="text-[11px] font-semibold text-muted-foreground">{label}</p>
-      <p className={`mt-1 text-lg font-black ${tone === 'positive' ? 'text-emerald-700' : tone === 'negative' ? 'text-rose-700' : 'text-foreground'}`}>{value}</p>
+    <div className="border-l-2 border-emerald-300/20 pl-3 first:border-l-0 first:pl-0 sm:first:border-l-2 sm:first:pl-3">
+      <p className="text-[11px] font-semibold text-emerald-50/55">{label}</p>
+      <p className={`mt-1 text-lg font-black ${tone === 'positive' ? 'text-emerald-300' : tone === 'negative' ? 'text-rose-300' : 'text-white'}`}>{value}</p>
     </div>
   )
 }

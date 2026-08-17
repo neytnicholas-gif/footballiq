@@ -70,10 +70,6 @@ function periodRangeBrussels(period: 'daily' | 'weekly' | 'monthly', now = new D
   return { startKey: formatUtcDateKey(start), endKey: formatUtcDateKey(end) }
 }
 
-function formatDaysRemaining(days: number) {
-  return `${days} day${days === 1 ? '' : 's'} remaining`
-}
-
 export function CompetitiveLeaderboard({ initialBoard = 'overall' }: { initialBoard?: string }) {
   const [board, setBoard] = useState<Board>(validBoards.has(initialBoard) ? initialBoard : 'overall')
   const [players, setPlayers] = useState<RankedPlayer[]>([])
@@ -83,7 +79,13 @@ export function CompetitiveLeaderboard({ initialBoard = 'overall' }: { initialBo
   const router = useRouter()
   const pathname = usePathname()
 
-  useEffect(() => { void loadBoard(board) }, [board])
+  useEffect(() => {
+    const frame = window.requestAnimationFrame(() => void loadBoard(board))
+    return () => window.cancelAnimationFrame(frame)
+    // loadBoard deliberately reads the selected board passed above; changing
+    // unrelated render-time helpers must not restart an in-flight request.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [board])
 
   useEffect(() => {
     const nextUrl = board === 'overall' ? pathname : `${pathname}?board=${encodeURIComponent(board)}`
@@ -113,7 +115,7 @@ export function CompetitiveLeaderboard({ initialBoard = 'overall' }: { initialBo
       if (selected === 'overall') {
         const rows = await getPublicProfiles()
         rows.sort((a, b) => b.xp - a.xp)
-        setPlayers(rows.slice(0, 100).map((profile) => ({
+        setPlayers(rows.filter((profile) => profile.quizzes_completed > 0).slice(0, 100).map((profile) => ({
           id: profile.id,
           username: profile.username ?? 'Anonymous',
           value: profile.xp,
@@ -148,7 +150,7 @@ export function CompetitiveLeaderboard({ initialBoard = 'overall' }: { initialBo
           quizzes: stat.quizzes,
         })).sort((a, b) => b.value - a.value || (b.accuracy ?? 0) - (a.accuracy ?? 0)).slice(0, 100))
       } else if (selected === 'season') {
-        const { data, error: queryError } = await supabase.from('season_stats').select('*').eq('season_id', season.id).order('rating', { ascending: false }).limit(100)
+        const { data, error: queryError } = await supabase.from('season_stats').select('*').eq('season_id', season.id).gt('quizzes_completed', 0).order('rating', { ascending: false }).limit(100)
         if (queryError) throw queryError
         const rows = (data as SeasonStat[]) ?? []
         const names = await usernamesFor(rows.map((row) => row.user_id))
@@ -161,7 +163,7 @@ export function CompetitiveLeaderboard({ initialBoard = 'overall' }: { initialBo
           quizzes: row.quizzes_completed,
         })))
       } else {
-        const { data, error: queryError } = await supabase.from('mode_stats').select('*').eq('mode', selected).order('rating', { ascending: false }).limit(100)
+        const { data, error: queryError } = await supabase.from('mode_stats').select('*').eq('mode', selected).gt('quizzes_completed', 0).order('rating', { ascending: false }).limit(100)
         if (queryError) throw queryError
         const rows = (data as ModeStat[]) ?? []
         const names = await usernamesFor(rows.map((row) => row.user_id))
@@ -187,20 +189,20 @@ export function CompetitiveLeaderboard({ initialBoard = 'overall' }: { initialBo
   return <div>
     <div className="rounded-[2rem] border border-border bg-card p-6 sm:p-8">
       <div className="flex flex-wrap items-center justify-between gap-5">
-        <div><p className="text-xs font-semibold uppercase tracking-[.25em] text-primary">Competitive hub</p><h1 className="mt-3 text-4xl font-bold tracking-tight sm:text-5xl">More ways to become #1</h1><p className="mt-3 max-w-2xl text-muted-foreground">Every football brain has a speciality. Climb overall, dominate one game mode, or win a fresh weekly race.</p></div>
-        <div className="rounded-2xl border border-primary/25 bg-primary/10 px-5 py-4"><p className="text-xs uppercase tracking-wider text-muted-foreground">{season.label}</p><p className="mt-1 font-bold text-primary">{formatDaysRemaining(season.daysLeft)}</p></div>
+        <div><p className="text-xs font-semibold uppercase tracking-[.25em] text-primary">Beta leaderboards</p><h1 className="mt-3 text-4xl font-bold tracking-tight sm:text-5xl">Find your best game.</h1><p className="mt-3 max-w-2xl text-muted-foreground">Only players who have completed a game appear. Pick a table and see who has set the early score.</p></div>
+        <div className="rounded-2xl border border-primary/25 bg-primary/10 px-5 py-4"><p className="text-xs uppercase tracking-wider text-muted-foreground">{season.label}</p><p className="mt-1 font-bold text-primary">Beta scores build as people play</p></div>
       </div>
     </div>
 
     <section className="mt-6">
-      <div className="mb-3 flex items-center gap-2"><Trophy className="size-5 text-primary"/><h2 className="text-xl font-bold">Career leaderboards</h2></div>
+      <div className="mb-3 flex items-center gap-2"><Trophy className="size-5 text-primary"/><h2 className="text-xl font-bold">Choose a game</h2></div>
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {leaderboardModes.map((mode) => <button key={mode.id} onClick={() => setBoard(mode.id)} className={`rounded-2xl border p-5 text-left transition ${board === mode.id ? 'border-primary bg-primary/10 shadow-[0_14px_28px_-24px_rgba(34,197,94,.5)]' : 'border-border bg-card hover:border-primary/40 hover:bg-secondary/30'}`}><div className="flex items-start justify-between gap-3"><span className="text-2xl">{mode.emoji}</span><ChevronRight className="size-4 text-muted-foreground"/></div><p className="mt-4 font-bold">{mode.label}</p><p className="mt-1 text-sm text-muted-foreground">{mode.description}</p></button>)}
       </div>
     </section>
 
     <section className="mt-6">
-      <div className="mb-3 flex items-center gap-2"><CalendarDays className="size-5 text-primary"/><h2 className="text-xl font-bold">Fresh-start leaderboards</h2></div>
+      <div className="mb-3 flex items-center gap-2"><CalendarDays className="size-5 text-primary"/><h2 className="text-xl font-bold">Choose a time</h2></div>
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">{periodBoards.map((item) => <button key={item.id} onClick={() => setBoard(item.id)} className={`rounded-2xl border p-4 text-left transition ${board === item.id ? 'border-primary bg-primary/10 shadow-[0_14px_28px_-24px_rgba(34,197,94,.5)]' : 'border-border bg-card hover:border-primary/40 hover:bg-secondary/30'}`}><span className="text-xl">{item.emoji}</span><p className="mt-2 font-semibold">{item.label}</p></button>)}</div>
     </section>
 

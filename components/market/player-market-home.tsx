@@ -173,9 +173,9 @@ export function PlayerMarketHome() {
         ) : null}
 
         <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          <SummaryCard icon={<Wallet className="size-5" />} label="Total account value" value={portfolio ? formatFiqCompact(portfolio.total_account_value) : '100.0m VX'} sub={portfolio ? formatFiqLong(portfolio.total_account_value) : 'Create an account to track your market account'} />
-          <SummaryCard icon={<Coins className="size-5" />} label="Available balance" value={portfolio ? formatFiqCompact(portfolio.available_balance) : '100.0m VX'} sub={portfolio ? `Starting balance ${formatFiqCompact(portfolio.starting_balance)}` : 'No cash purchases. No withdrawals.'} />
-          <SummaryCard icon={<BarChart3 className="size-5" />} label="Portfolio value" value={portfolio ? formatFiqCompact(portfolio.portfolio_value) : '0.0m VX'} sub={portfolio ? `${holdings.length}/${MARKET_MAX_PORTFOLIO_SIZE} slots used` : '11-player portfolio target'} />
+          <SummaryCard icon={<Wallet className="size-5" />} label="Total account value" value={portfolio ? formatFiqCompact(portfolio.total_account_value) : '100.0m credits'} sub={portfolio ? formatFiqLong(portfolio.total_account_value) : 'Create an account to track your market account'} />
+          <SummaryCard icon={<Coins className="size-5" />} label="Available balance" value={portfolio ? formatFiqCompact(portfolio.available_balance) : '100.0m credits'} sub={portfolio ? `Starting balance ${formatFiqCompact(portfolio.starting_balance)}` : 'No cash purchases. No withdrawals.'} />
+          <SummaryCard icon={<BarChart3 className="size-5" />} label="Portfolio value" value={portfolio ? formatFiqCompact(portfolio.portfolio_value) : '0.0m credits'} sub={portfolio ? `${holdings.length}/${MARKET_MAX_PORTFOLIO_SIZE} slots used` : '11-player portfolio target'} />
           <SummaryCard icon={<TrendingUp className="size-5" />} label="Realised game gain/loss" value={portfolio ? formatChange(portfolio.realized_profit_loss) : '0'} sub={tradesMessage || '11 new signings available each gameweek'} />
         </div>
 
@@ -202,8 +202,8 @@ export function PlayerMarketHome() {
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[.2em] text-emerald-800">Price update status</p>
-              <h2 className="mt-1 text-2xl font-black">{previewExperimentActive ? '11-player price test is live' : players.some((player) => player.current_value !== player.opening_season_value) ? 'Gameweek price changes are live' : 'The opening market is live'}</h2>
-              <p className="mt-2 max-w-3xl text-sm text-muted-foreground">{previewExperimentActive ? 'We are testing 11 players with the same rules the full game uses. Test results stay clearly marked and never pretend to be a real match.' : 'After each gameweek, real ratings and minutes update game prices. If a player has no trusted match data, their price stays the same.'}</p>
+              <h2 className="mt-1 text-2xl font-black">{previewExperimentActive ? '11-player price test is live' : latestRevealWeek ? `The ${latestRevealWeek} update is ready` : 'Opening prices are set'}</h2>
+              <p className="mt-2 max-w-3xl text-sm text-muted-foreground">{previewExperimentActive ? 'We are testing 11 players with the same rules the full game uses. Test results stay clearly marked and never pretend to be a real match.' : latestRevealWeek ? 'Finished-match ratings and minutes have been processed. Open The Reveal to see what changed in your team.' : 'Build your team now. Prices stay at their opening value until finished matches provide trusted player ratings and minutes.'}</p>
             </div>
             <div className="flex flex-wrap gap-2">
               <span className="inline-flex items-center gap-2 rounded-xl border border-emerald-700/20 bg-emerald-700/10 px-4 py-2.5 text-sm font-semibold text-emerald-900"><DatabaseZap className="size-4" /> {previewExperimentActive ? 'Clearly marked test data' : 'Live squad data'}</span>
@@ -215,22 +215,22 @@ export function PlayerMarketHome() {
           {!isValidSquad ? <p className="mt-3 text-xs text-emerald-800">Finish your {activeFormation} team before the next price update.</p> : null}
           {latestRevealWeek ? <p className="mt-2 text-xs text-muted-foreground">Latest Reveal available: {latestRevealWeek}</p> : null}
 
-          {lastRun ? (
+          {lastRun && previewExperimentActive ? (
             <div className="mt-4 rounded-xl border border-border bg-background/60 px-4 py-3 text-sm text-muted-foreground">
               Preview history: {lastRun.week_label} · Weekly {lastRun.weekly_portfolio_gain >= 0 ? '+' : ''}{formatFiqCompact(Math.abs(lastRun.weekly_portfolio_gain))} · game return {lastRun.current_roi_pct.toFixed(2)}%. This is not a verified real-performance update.
             </div>
-          ) : (
+          ) : !latestRevealWeek ? (
             <div className="mt-4 rounded-xl border border-border bg-background/60 px-4 py-3 text-sm text-muted-foreground">The season has not produced a price update yet. Prices will start moving after finished matches give us player ratings and minutes.</div>
-          )}
+          ) : null}
       </section>
 
       {previewExperimentActive ? (
-        <section className="rounded-[2rem] border border-amber-500/30 bg-gradient-to-br from-amber-50 via-white to-emerald-50 p-6 text-slate-950 shadow-sm sm:p-8">
+        <section className="rounded-[2rem] border border-amber-300/25 bg-[radial-gradient(circle_at_top_right,rgba(251,191,36,.14),transparent_38%),linear-gradient(145deg,rgba(15,34,39,.98),rgba(9,24,31,.98))] p-6 text-slate-100 shadow-xl shadow-black/15 sm:p-8">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
               <p className="text-xs font-black uppercase tracking-[.2em] text-amber-800">Isolated engine proof · not your account</p>
               <h2 className="mt-1 text-2xl font-black">Complete 1-4-3-3 valuation trial</h2>
-              <p className="mt-2 max-w-3xl text-sm text-slate-600">Eleven controlled ratings have been processed by the production valuation formula. Test players are trade-locked, so this proof cannot alter your cash, holdings, leaderboard rank, or transaction history.</p>
+              <p className="mt-2 max-w-3xl text-sm text-slate-300">Eleven controlled ratings have been processed by the production valuation formula. Test players are trade-locked, so this proof cannot alter your balance, holdings, leaderboard rank or transaction history.</p>
             </div>
             <span className="rounded-xl border border-emerald-700/20 bg-emerald-700/10 px-4 py-2 text-sm font-bold text-emerald-900">{previewPlayers.length}/11 players processed</span>
           </div>
@@ -243,9 +243,9 @@ export function PlayerMarketHome() {
             {previewPlayers.map((player) => {
               const delta = player.current_value - player.previous_value
               return (
-                <Link key={player.id} href={`/market/player/${encodeURIComponent(player.slug)}`} className="flex items-center justify-between rounded-xl border border-slate-200 bg-white/80 px-3 py-2 text-sm text-slate-900 transition hover:border-emerald-500">
-                  <span className="flex min-w-0 items-center gap-2"><ClubColourDot clubName={player.club_name} /><strong className="truncate">{player.display_name}</strong><span className="text-xs text-slate-500">{player.position}</span></span>
-                  <span className={delta > 0 ? 'font-bold text-emerald-700' : delta < 0 ? 'font-bold text-red-700' : 'font-bold text-slate-600'}>{delta > 0 ? '+' : delta < 0 ? '−' : ''}{formatFiqCompact(Math.abs(delta))}</span>
+                <Link key={player.id} href={`/market/player/${encodeURIComponent(player.slug)}`} className="flex items-center justify-between rounded-xl border border-white/10 bg-white/[.055] px-3 py-2 text-sm text-slate-100 transition hover:border-emerald-300/45 hover:bg-white/[.08]">
+                  <span className="flex min-w-0 items-center gap-2"><ClubColourDot clubName={player.club_name} /><strong className="truncate">{player.display_name}</strong><span className="text-xs text-slate-400">{player.position}</span></span>
+                  <span className={delta > 0 ? 'font-bold text-emerald-300' : delta < 0 ? 'font-bold text-rose-300' : 'font-bold text-slate-400'}>{delta > 0 ? '+' : delta < 0 ? '−' : ''}{formatFiqCompact(Math.abs(delta))}</span>
                 </Link>
               )
             })}
@@ -413,7 +413,7 @@ function MoverRow({ player, positive }: { player: MarketPlayer; positive: boolea
       <span className="flex min-w-0 items-center gap-2 pr-3"><ClubColourDot clubName={player.club_name} /><span className="truncate">{player.display_name}</span></span>
       <span className={`inline-flex items-center gap-1 ${delta >= 0 ? 'text-primary' : 'text-destructive'}`}>
         {icon}
-        {delta >= 0 ? '+' : ''}{formatFiqCompact(Math.abs(delta))}
+        {delta > 0 ? '+' : delta < 0 ? '−' : ''}{formatFiqCompact(Math.abs(delta))}
       </span>
     </Link>
   )

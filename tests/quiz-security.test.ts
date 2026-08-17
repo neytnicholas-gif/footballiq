@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest'
 import { duelPacks } from '@/lib/duel-packs'
 import { refereeQuestions } from '@/lib/game-data'
 import { verifyQuizReward } from '@/lib/quiz-rules'
+import { tacticalScenarios } from '@/lib/tactical-scenarios'
+import { sampleQuizSession } from '@/lib/quiz-session'
 
 const completionKey = 'cqk:security-test:run-123456789012345678901234'
 
@@ -76,5 +78,49 @@ describe('server-owned quiz rewards', () => {
       metrics: { bestCombo: 999, points: 999_999 },
       proof: { kind: 'duel', packId: pack.id, answers },
     })).toThrow('time proof')
+  })
+
+  it('recalculates Tactical Lab rewards from ten unique server-known scenarios', () => {
+    const session = tacticalScenarios.slice(0, 10)
+    const result = verifyQuizReward({
+      quizId: 'tactical-lab-1',
+      score: 10,
+      total: 10,
+      completionKey,
+      proof: {
+        kind: 'tactical-choice',
+        scenarioIds: session.map((scenario) => scenario.id),
+        answers: session.map((scenario) => scenario.answer),
+      },
+    })
+
+    expect(result.score).toBe(10)
+    expect(result.xp).toBe(160)
+  })
+
+  it('rejects a forged Tactical Lab score', () => {
+    const session = tacticalScenarios.slice(0, 10)
+    expect(() => verifyQuizReward({
+      quizId: 'tactical-lab-1',
+      score: 10,
+      total: 10,
+      completionKey,
+      proof: {
+        kind: 'tactical-choice',
+        scenarioIds: session.map((scenario) => scenario.id),
+        answers: session.map((scenario) => (scenario.answer + 1) % scenario.options.length),
+      },
+    })).toThrow('Claimed score')
+  })
+
+  it('samples deterministic, unique quiz sessions without repeating a fixed stride', () => {
+    const items = Array.from({ length: 50 }, (_, index) => index)
+    const first = sampleQuizSession(items, 10, 12345)
+    const repeat = sampleQuizSession(items, 10, 12345)
+    const fresh = sampleQuizSession(items, 10, 54321)
+
+    expect(first).toEqual(repeat)
+    expect(new Set(first).size).toBe(10)
+    expect(fresh).not.toEqual(first)
   })
 })

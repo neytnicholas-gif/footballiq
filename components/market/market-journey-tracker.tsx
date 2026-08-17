@@ -3,10 +3,10 @@
 import { useEffect } from 'react'
 import { usePathname } from 'next/navigation'
 
-export const MARKET_JOURNEY_EVENT = 'verdict-xi:market-journey'
+export const MARKET_JOURNEY_EVENT = 'early-shout:market-journey'
 
 export function marketJourneyKey(userId: string | undefined, step: 'market' | 'roster') {
-  return `verdict-xi:journey:${userId ?? 'guest'}:${step}`
+  return `early-shout:journey:${userId ?? 'guest'}:${step}`
 }
 
 export function MarketJourneyTracker({ userId }: { userId?: string }) {

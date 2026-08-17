@@ -1,3 +1,4 @@
+import type { Metadata } from 'next'
 import Link from 'next/link'
 import { ArrowRight, Brain, CircleDotDashed, Flag, Gamepad2, GitBranch, Globe2, Link2, ListOrdered, Search, ShieldQuestion, Sparkles, Target, TrendingUp, Trophy, Users, Workflow } from 'lucide-react'
 import { SiteHeader } from '@/components/site-header'
@@ -7,6 +8,11 @@ import { tacticalScenarios } from '@/lib/tactical-scenarios'
 import { refereeScenarios } from '@/lib/referee-scenarios'
 import { scoutScenarioCount } from '@/lib/scout-scenario-expansion'
 import { quizLabQuestionBank } from '@/lib/quiz-lab'
+
+export const metadata: Metadata = {
+  title: 'Football Games & Quizzes',
+  description: 'Play referee, tactical, scouting and football-knowledge games on Early Shout.',
+}
 
 const refereeQuestions = refereeScenarios
 const scoutQuestions = { length: scoutScenarioCount }

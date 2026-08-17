@@ -11,12 +11,12 @@ export function formatMarketInteger(value: number) {
 export function formatFiqCompact(value: number) {
   const safe = Number.isFinite(value) ? value : 0
   const millions = safe / 1_000_000
-  return `${millions.toFixed(1)}m VX`
+  return `${millions.toFixed(1)}m credits`
 }
 
 export function formatFiqLong(value: number) {
   const safe = Number.isFinite(value) ? value : 0
-  return `${safe.toLocaleString()} Market Credits`
+  return `${safe.toLocaleString('en-GB')} Market Credits`
 }
 
 export function formatChange(value: number) {

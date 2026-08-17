@@ -1,0 +1,70 @@
+import { NextResponse } from 'next/server'
+
+export const runtime = 'nodejs'
+export const dynamic = 'force-dynamic'
+
+const requests = new Map<string, number[]>()
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+
+function clean(value: unknown, max: number) {
+  return typeof value === 'string' ? value.trim().slice(0, max) : ''
+}
+
+function escapeHtml(value: string) {
+  return value.replace(/[&<>"']/g, (character) => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;',
+  })[character]!)
+}
+
+function clientAddress(request: Request) {
+  return request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown'
+}
+
+function isRateLimited(address: string) {
+  const now = Date.now()
+  const recent = (requests.get(address) ?? []).filter((time) => now - time < 60 * 60_000)
+  if (recent.length >= 5) return true
+  recent.push(now)
+  requests.set(address, recent)
+  return false
+}
+
+export async function POST(request: Request) {
+  const apiKey = process.env.RESEND_API_KEY?.trim()
+  if (!apiKey) return NextResponse.json({ error: 'Messages are not available yet. Please try again shortly.' }, { status: 503 })
+  if (isRateLimited(clientAddress(request))) return NextResponse.json({ error: 'Too many messages from this connection. Please try again later.' }, { status: 429 })
+
+  const body = await request.json().catch(() => ({})) as Record<string, unknown>
+  const name = clean(body.name, 80)
+  const email = clean(body.email, 160).toLowerCase()
+  const topic = clean(body.topic, 40) || 'General question'
+  const subject = clean(body.subject, 120)
+  const message = clean(body.message, 4_000)
+  const website = clean(body.website, 200)
+
+  if (website) return NextResponse.json({ ok: true })
+  if (name.length < 2 || !EMAIL_PATTERN.test(email) || subject.length < 3 || message.length < 10) {
+    return NextResponse.json({ error: 'Please complete your name, email, subject and message.' }, { status: 400 })
+  }
+
+  const response = await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      from: process.env.CONTACT_FROM_EMAIL?.trim() || 'Early Shout <onboarding@resend.dev>',
+      to: [process.env.CONTACT_TO_EMAIL?.trim() || 'earlyshout@gmail.com'],
+      reply_to: email,
+      subject: `[Early Shout · ${topic}] ${subject}`,
+      text: `From: ${name} <${email}>\nTopic: ${topic}\n\n${message}`,
+      html: `<h2>${escapeHtml(subject)}</h2><p><strong>From:</strong> ${escapeHtml(name)} &lt;${escapeHtml(email)}&gt;</p><p><strong>Topic:</strong> ${escapeHtml(topic)}</p><p>${escapeHtml(message).replace(/\n/g, '<br>')}</p>`,
+    }),
+  })
+
+  if (!response.ok) {
+    const detail = await response.text()
+    console.error('Contact email failed', { status: response.status, detail: detail.slice(0, 400) })
+    return NextResponse.json({ error: 'Your message could not be sent. Please try again.' }, { status: 502 })
+  }
+
+  return NextResponse.json({ ok: true })
+}

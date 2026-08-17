@@ -1,7 +1,6 @@
 import { Mail } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Logo } from '@/components/logo'
-import { BRAND } from '@/lib/brand'
 
 const navLinks = [
   { label: 'Home', href: '/' },
@@ -18,7 +17,7 @@ const navLinks = [
   { label: 'Privacy', href: '/privacy' },
   { label: 'Player Market rules', href: '/game-rules' },
   { label: 'How to play', href: '/how-to-play' },
-  { label: 'Report content', href: `mailto:${BRAND.supportEmail}?subject=${encodeURIComponent('Early Shout content or safety report')}` },
+  { label: 'Report content', href: '/contact?topic=content' },
 ]
 
 export function SiteFooter() {
@@ -34,7 +33,7 @@ export function SiteFooter() {
             <Button
               variant="outline"
               nativeButton={false}
-              render={<a href={`mailto:${BRAND.supportEmail}`} />}
+              render={<a href="/contact" />}
               className="mt-5 min-h-11 rounded-lg border-border bg-secondary/30 px-4 text-sm font-semibold text-foreground hover:bg-secondary/60"
             >
               <Mail className="size-4" />

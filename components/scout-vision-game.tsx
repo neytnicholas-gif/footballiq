@@ -1,11 +1,12 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { ArrowRight, Check, Eye, RotateCcw, TriangleAlert, X } from 'lucide-react'
 import { useAuth } from '@/components/auth-provider'
 import { buildCompletionKey, createCompletionRunId, saveQuizResult } from '@/lib/quiz-save'
 import { cn } from '@/lib/utils'
 import { expandedScoutScenarios, type ExpandedScoutScenario } from '@/lib/scout-scenario-expansion'
+import { createQuizSessionSeed, sampleQuizSession } from '@/lib/quiz-session'
 
 type ScoutDecision = 'strong-follow' | 'follow' | 'monitor' | 'do-not-pursue'
 
@@ -209,6 +210,8 @@ const allScenarios: ExpandedScoutScenario[] = [
   ...expandedScoutScenarios,
 ]
 
+const SCOUT_SESSION_STORAGE_KEY = 'early-shout:scout-vision-session-seed'
+
 export function ScoutVisionGame() {
   const { user, refreshProfile } = useAuth()
   const [index, setIndex] = useState(0)
@@ -217,8 +220,8 @@ export function ScoutVisionGame() {
   const [answers, setAnswers] = useState<Array<{ scenarioId: string; decision: ScoutDecision }>>([])
   const [saved, setSaved] = useState(false)
   const [runKey, setRunKey] = useState(() => createCompletionRunId())
-  const [sessionOffset, setSessionOffset] = useState(0)
-  const scenarios = useMemo(() => Array.from({ length: 10 }, (_, item) => allScenarios[(sessionOffset + item * 7) % allScenarios.length]), [sessionOffset])
+  const [sessionSeed, setSessionSeed] = useState<number | null>(null)
+  const scenarios = useMemo(() => sessionSeed === null ? [] : sampleQuizSession(allScenarios, 10, sessionSeed), [sessionSeed])
   const scenario = scenarios[index]
   const complete = index === scenarios.length - 1 && selected !== null
 
@@ -226,6 +229,16 @@ export function ScoutVisionGame() {
     () => ['strong-follow', 'follow', 'monitor', 'do-not-pursue'] as ScoutDecision[],
     [],
   )
+
+  useEffect(() => {
+    const frame = window.requestAnimationFrame(() => {
+      const stored = Number(window.sessionStorage.getItem(SCOUT_SESSION_STORAGE_KEY))
+      const nextSeed = Number.isSafeInteger(stored) && stored > 0 ? stored : createQuizSessionSeed()
+      window.sessionStorage.setItem(SCOUT_SESSION_STORAGE_KEY, String(nextSeed))
+      setSessionSeed(nextSeed)
+    })
+    return () => window.cancelAnimationFrame(frame)
+  }, [])
 
   function choose(decision: ScoutDecision) {
     if (selected) return
@@ -243,13 +256,19 @@ export function ScoutVisionGame() {
   }
 
   function restart() {
-    setSessionOffset((current) => (current + 10) % allScenarios.length)
+    const nextSeed = createQuizSessionSeed()
+    window.sessionStorage.setItem(SCOUT_SESSION_STORAGE_KEY, String(nextSeed))
+    setSessionSeed(nextSeed)
     setIndex(0)
     setSelected(null)
     setScore(0)
     setAnswers([])
     setSaved(false)
     setRunKey(createCompletionRunId())
+  }
+
+  if (!scenario) {
+    return <div className="flex min-h-64 items-center justify-center rounded-3xl border border-border bg-card p-6 text-sm text-muted-foreground">Building a fresh Scout Vision round…</div>
   }
 
   async function save() {

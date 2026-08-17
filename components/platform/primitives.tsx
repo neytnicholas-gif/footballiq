@@ -192,7 +192,7 @@ export function CallToAction({
       <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/40 to-transparent" />
       <div className="relative flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
         <div className="max-w-2xl">
-          <p className="text-xs font-semibold uppercase tracking-[0.24em] text-primary">Call to action</p>
+          <p className="text-xs font-semibold uppercase tracking-[0.24em] text-primary">Your next move</p>
           <h3 className="mt-2 text-2xl font-black tracking-tight text-foreground sm:text-3xl">{title}</h3>
           <p className="mt-2 text-sm leading-relaxed text-muted-foreground sm:text-base">{copy}</p>
         </div>

@@ -1,8 +1,14 @@
+import type { Metadata } from 'next'
 import Link from 'next/link'
 import { SiteHeader } from '@/components/site-header'
 import { CompetitiveLeaderboard } from '@/components/competitive-leaderboard'
 import { CallToAction, SurfaceCard, StatusBadge } from '@/components/platform/primitives'
 import { ArrowRight, Globe2, Users } from 'lucide-react'
+
+export const metadata: Metadata = {
+  title: 'Leaderboards',
+  description: 'Compare Early Shout quiz, prediction and Player Market scores.',
+}
 
 export default async function LeaderboardPage({ searchParams }: { searchParams: Promise<{ board?: string }> }) {
   const params = await searchParams

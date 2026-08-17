@@ -5,6 +5,7 @@ import type { ScoutRecommendation } from '@/lib/scout-scenario-expansion'
 export type QuizProof =
   | { kind: 'choice'; answers: number[] }
   | { kind: 'scenario-choice'; scenarioIds: string[]; answers: number[] }
+  | { kind: 'tactical-choice'; scenarioIds: string[]; answers: number[] }
   | { kind: 'daily'; dateKey: string; answers: number[] }
   | { kind: 'career'; round: number; answers: string[] }
   | { kind: 'who-am-i'; round: number; answers: Array<{ guess: string; clues: number }> }

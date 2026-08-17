@@ -109,7 +109,7 @@ export function PlayerMarketDetail({
 
   return (
     <div className="space-y-5">
-      <section className="relative overflow-hidden rounded-[2rem] border border-emerald-950/10 bg-gradient-to-br from-white via-white to-emerald-50/70 p-6 shadow-[0_24px_70px_-55px_rgba(6,78,59,.65)] sm:p-8">
+      <section className="relative overflow-hidden rounded-[2rem] border border-emerald-200/10 bg-[radial-gradient(circle_at_85%_5%,rgba(45,212,191,.16),transparent_30%),linear-gradient(145deg,#062f2b,#0a4940_60%,#062f2b)] p-6 text-emerald-50 shadow-[0_28px_75px_-48px_rgba(2,44,34,.95)] sm:p-8">
         <span aria-hidden="true" className="absolute -right-20 -top-28 size-80 rounded-full opacity-[.12] blur-3xl" style={{ background: clubColour }} />
         <div className="relative flex flex-wrap items-start justify-between gap-5">
           <div className="flex items-start gap-4">
@@ -117,8 +117,8 @@ export function PlayerMarketDetail({
             <div>
               <p className="text-xs font-semibold uppercase tracking-[.2em] text-primary">Player card</p>
               <h1 className="mt-2 flex items-center gap-3 text-3xl font-black sm:text-4xl"><ClubColourDot clubName={player.club_name} className="size-4 sm:size-5" /><span>{player.display_name}</span></h1>
-              <p className="mt-1 text-sm text-muted-foreground">{player.club_name} · {player.position}{player.nationality ? ` · ${player.nationality}` : ''}</p>
-              {player.availability_status ? <p className={`mt-2 inline-flex rounded-full border px-2.5 py-1 text-xs font-bold ${player.availability_status === 'available' ? 'border-emerald-700/20 bg-emerald-50 text-emerald-800' : player.availability_status === 'limited' ? 'border-amber-700/20 bg-amber-50 text-amber-800' : 'border-red-700/20 bg-red-50 text-red-800'}`}>{player.availability_status === 'available' ? 'Available' : player.availability_status === 'limited' ? 'Limited availability' : 'Unavailable'}</p> : null}
+              <p className="mt-1 text-sm text-emerald-50/65">{player.club_name} · {player.position}{player.nationality ? ` · ${player.nationality}` : ''}</p>
+              {player.availability_status ? <p className={`mt-2 inline-flex rounded-full border px-2.5 py-1 text-xs font-bold ${player.availability_status === 'available' ? 'border-emerald-300/25 bg-emerald-300/10 text-emerald-200' : player.availability_status === 'limited' ? 'border-amber-300/25 bg-amber-300/10 text-amber-200' : 'border-rose-300/25 bg-rose-300/10 text-rose-200'}`}>{player.availability_status === 'available' ? 'Available' : player.availability_status === 'limited' ? 'Limited availability' : 'Unavailable'}</p> : null}
             </div>
           </div>
           <Link href="/market/roster" className="inline-flex items-center gap-2 rounded-xl border border-emerald-800 bg-emerald-950 px-4 py-2.5 text-sm font-bold text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-emerald-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-700"><ArrowLeft className="size-4" />Back to full roster</Link>
@@ -133,8 +133,8 @@ export function PlayerMarketDetail({
         </div>
 
         <div className="relative mt-5 grid gap-4 lg:grid-cols-[1.3fr_.7fr]">
-          <div className="rounded-2xl bg-white/75 p-5 shadow-[inset_0_0_0_1px_rgba(6,78,59,.10)]">
-            <div className="flex items-center justify-between gap-3"><div><p className="text-[11px] font-black uppercase tracking-[.2em] text-emerald-700">Value journey</p><h2 className="mt-1 text-lg font-black">Game-price history</h2></div><span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-800">{history.length} updates</span></div>
+          <div className="rounded-2xl border border-white/10 bg-black/15 p-5 shadow-inner">
+            <div className="flex items-center justify-between gap-3"><div><p className="text-[11px] font-black uppercase tracking-[.2em] text-emerald-300">Value journey</p><h2 className="mt-1 text-lg font-black text-white">Game-price history</h2></div><span className="rounded-full border border-emerald-300/20 bg-emerald-300/10 px-3 py-1 text-xs font-bold text-emerald-200">{history.length} updates</span></div>
             <div className="mt-4">
               <ValueHistoryChart points={history} currentValue={player.current_value} />
             </div>
@@ -185,14 +185,14 @@ export function PlayerMarketDetail({
       </section>
 
       <section className="grid gap-5 lg:grid-cols-2">
-        <div className="rounded-[2rem] border border-emerald-950/10 bg-white/80 p-6 shadow-sm">
-          <p className="text-[11px] font-black uppercase tracking-[.18em] text-emerald-700">On the pitch</p>
-          <h2 className="mt-1 text-xl font-black">Season statistics</h2>
-          <p className="mt-1 text-xs text-muted-foreground">We only show stats received from our data provider. Missing stats are labelled “Not available”.</p>
-          {stats.length === 0 ? <div className="mt-5 flex items-center gap-3 rounded-2xl bg-slate-100/80 p-4"><span className="grid size-10 shrink-0 place-items-center rounded-full bg-white text-slate-500 shadow-sm"><BarChart3 className="size-5" /></span><div><p className="text-sm font-bold text-slate-800">Match stats are on their way</p><p className="mt-0.5 text-xs leading-5 text-slate-600">We will show verified season numbers here after they arrive.</p></div></div> : (
+        <div className="rounded-[2rem] border border-emerald-200/10 bg-[#082f2a] p-6 text-emerald-50 shadow-sm">
+          <p className="text-[11px] font-black uppercase tracking-[.18em] text-emerald-300">On the pitch</p>
+          <h2 className="mt-1 text-xl font-black text-white">Season statistics</h2>
+          <p className="mt-1 text-xs text-emerald-50/60">We only show stats received from our data provider. Missing stats are labelled “Not available”.</p>
+          {stats.length === 0 ? <div className="mt-5 flex items-center gap-3 rounded-2xl border border-white/10 bg-black/15 p-4"><span className="grid size-10 shrink-0 place-items-center rounded-full bg-emerald-300/10 text-emerald-200"><BarChart3 className="size-5" /></span><div><p className="text-sm font-bold text-white">Match stats are on their way</p><p className="mt-0.5 text-xs leading-5 text-emerald-50/60">We will show verified season numbers here after they arrive.</p></div></div> : (
             <div className="mt-4 space-y-4">
               {stats.slice(0, 2).map((row) => (
-                <div key={row.id} className="rounded-2xl bg-slate-50 p-4 shadow-[inset_0_0_0_1px_rgba(15,23,42,.06)]">
+                <div key={row.id} className="rounded-2xl border border-white/10 bg-black/15 p-4">
                   <p className="font-semibold">{row.season} · {row.competition_label}</p>
                   <div className="mt-3 grid grid-cols-2 gap-2 text-sm sm:grid-cols-3">
                     <Stat label="Appearances" value={row.appearances} />
@@ -215,16 +215,16 @@ export function PlayerMarketDetail({
           )}
         </div>
 
-        <div className="rounded-[2rem] border border-emerald-950/10 bg-[#f1f8f5] p-6 shadow-sm">
-          <p className="text-[11px] font-black uppercase tracking-[.18em] text-emerald-700">Clear and simple</p>
-          <h2 className="mt-1 text-xl font-black">How this game value works</h2>
+        <div className="rounded-[2rem] border border-cyan-200/10 bg-[#0a3b3b] p-6 text-emerald-50 shadow-sm">
+          <p className="text-[11px] font-black uppercase tracking-[.18em] text-cyan-300">Clear and simple</p>
+          <h2 className="mt-1 text-xl font-black text-white">How this game value works</h2>
           <ol className="mt-5 space-y-4 text-sm">
             <ValueStep number="1" title="A real match finishes">Licensed Sportmonks data gives us the player’s rating and minutes.</ValueStep>
             <ValueStep number="2" title="Early Shout makes the game price">The rating can push the fictional value up, down or leave it where it is.</ValueStep>
             <ValueStep number="3" title="Missing data means no movement">If the verified rating or minutes are missing, we do not guess.</ValueStep>
           </ol>
-          <div className="mt-5 flex items-center gap-2 border-t border-emerald-950/10 pt-4 text-xs text-emerald-950/65">
-            <Clock3 className="size-4" /><span>Last value update: <strong className="text-emerald-950">{formatMarketDateTime(player.value_updated_at)}</strong></span>
+          <div className="mt-5 flex items-center gap-2 border-t border-white/10 pt-4 text-xs text-emerald-50/60">
+            <Clock3 className="size-4" /><span>Last value update: <strong className="text-white">{formatMarketDateTime(player.value_updated_at)}</strong></span>
           </div>
         </div>
 
@@ -286,16 +286,16 @@ function Notice({ kind, message }: { kind: 'success' | 'error' | 'info'; message
 
 function Stat({ label, value }: { label: string; value: number | string | null }) {
   return (
-    <div className="border-l-2 border-emerald-700/15 px-3 py-2">
-      <p className="text-xs text-muted-foreground">{label}</p>
-      <p className="mt-1 font-semibold">{value ?? 'N/A'}</p>
+    <div className="border-l-2 border-emerald-300/20 px-3 py-2">
+      <p className="text-xs text-emerald-50/55">{label}</p>
+      <p className="mt-1 font-semibold text-white">{value ?? 'N/A'}</p>
     </div>
   )
 }
 
 function ValueHistoryChart({ points, currentValue }: { points: MarketValueHistoryPoint[]; currentValue: number }) {
   if (points.length === 0) {
-    return <div className="flex min-h-24 items-center gap-4 rounded-2xl bg-gradient-to-r from-emerald-50 to-cyan-50/60 p-4"><span className="grid size-11 shrink-0 place-items-center rounded-full bg-white text-emerald-700 shadow-sm"><Activity className="size-5" /></span><div><p className="text-sm font-black text-emerald-950">Waiting for the first price update</p><p className="mt-1 text-xs leading-5 text-emerald-950/65">After a verified league match is processed, the first movement appears here.</p></div></div>
+    return <div className="flex min-h-24 items-center gap-4 rounded-2xl border border-white/10 bg-white/[.055] p-4"><span className="grid size-11 shrink-0 place-items-center rounded-full bg-emerald-300/10 text-emerald-200"><Activity className="size-5" /></span><div><p className="text-sm font-black text-white">Waiting for the first price update</p><p className="mt-1 text-xs leading-5 text-emerald-50/60">After a verified league match is processed, the first movement appears here.</p></div></div>
   }
 
   const values = points.map((point) => point.value)
@@ -306,12 +306,12 @@ function ValueHistoryChart({ points, currentValue }: { points: MarketValueHistor
   const direction = currentValue > start ? 'rising' : currentValue < start ? 'falling' : 'unchanged'
 
   return (
-    <div role="img" aria-label={`Value history: ${direction} from ${formatFiqCompact(start)} to ${formatFiqCompact(currentValue)} across ${points.length} recorded updates.`} className="flex h-40 items-end gap-1 rounded-2xl bg-gradient-to-t from-emerald-50/80 to-transparent p-3">
+    <div role="img" aria-label={`Value history: ${direction} from ${formatFiqCompact(start)} to ${formatFiqCompact(currentValue)} across ${points.length} recorded updates.`} className="flex h-40 items-end gap-1 rounded-2xl border border-white/10 bg-black/15 p-3">
       {points.slice(-24).map((point) => {
         const pct = ((point.value - min) / range) * 100
         return (
           <div key={point.id} tabIndex={0} aria-label={formatFiqCompact(point.value)} className="group relative flex-1 rounded-t bg-primary/35 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary" style={{ height: `${Math.max(8, pct)}%` }}>
-            <span className="pointer-events-none absolute -top-7 left-1/2 hidden -translate-x-1/2 whitespace-nowrap rounded bg-background px-2 py-1 text-[10px] group-hover:block group-focus:block">
+            <span className="pointer-events-none absolute -top-7 left-1/2 hidden -translate-x-1/2 whitespace-nowrap rounded bg-slate-950 px-2 py-1 text-[10px] text-white group-hover:block group-focus:block">
               {formatFiqCompact(point.value)}
             </span>
           </div>
@@ -334,9 +334,9 @@ const OPENING_FACTORS = [
 function OpeningPriceBreakdown({ explanation, openingValue }: { explanation: MarketOpeningPriceExplanation | null; openingValue: number }) {
   if (!explanation) {
     return (
-      <div className="rounded-[2rem] border border-amber-900/15 bg-amber-50/80 p-6 lg:col-span-2">
-        <p className="text-sm font-black text-amber-950">Opening-price breakdown is being checked</p>
-        <p className="mt-1 text-xs leading-5 text-amber-950/70">The player card still works, but we will not show an explanation unless it matches the frozen opening value exactly.</p>
+      <div className="rounded-[2rem] border border-amber-300/15 bg-[#3a3016] p-6 text-amber-50 lg:col-span-2">
+        <p className="text-sm font-black text-amber-100">Opening-price breakdown is being checked</p>
+        <p className="mt-1 text-xs leading-5 text-amber-50/65">The player card still works, but we will not show an explanation unless it matches the frozen opening value exactly.</p>
       </div>
     )
   }
@@ -346,14 +346,14 @@ function OpeningPriceBreakdown({ explanation, openingValue }: { explanation: Mar
       : explanation.confidence === 'limited' ? 'Limited evidence' : 'Safe fallback price'
 
   return (
-    <div className="overflow-hidden rounded-[2rem] border border-cyan-950/10 bg-gradient-to-br from-cyan-50 via-white to-emerald-50 p-6 shadow-sm lg:col-span-2">
+    <div className="overflow-hidden rounded-[2rem] border border-cyan-200/10 bg-[radial-gradient(circle_at_90%_0%,rgba(34,211,238,.14),transparent_28%),linear-gradient(145deg,#072f36,#083f38)] p-6 text-emerald-50 shadow-sm lg:col-span-2">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <p className="text-[11px] font-black uppercase tracking-[.18em] text-cyan-800">The starting-price receipt</p>
-          <h2 className="mt-1 text-xl font-black text-emerald-950">Why this player started at {formatFiqCompact(openingValue)}</h2>
-          <p className="mt-2 max-w-3xl text-sm leading-6 text-emerald-950/65">These frozen numbers set the opening game price once. New matches move the current value; they never rewrite this receipt.</p>
+          <p className="text-[11px] font-black uppercase tracking-[.18em] text-cyan-300">The starting-price receipt</p>
+          <h2 className="mt-1 text-xl font-black text-white">Why this player started at {formatFiqCompact(openingValue)}</h2>
+          <p className="mt-2 max-w-3xl text-sm leading-6 text-emerald-50/65">These frozen numbers set the opening game price once. New matches move the current value; they never rewrite this receipt.</p>
         </div>
-        <span className="rounded-full border border-emerald-700/15 bg-white px-3 py-1.5 text-xs font-black text-emerald-800">{confidence}</span>
+        <span className="rounded-full border border-emerald-300/20 bg-emerald-300/10 px-3 py-1.5 text-xs font-black text-emerald-200">{confidence}</span>
       </div>
 
       <div className="mt-5 grid gap-4 lg:grid-cols-[.72fr_1.28fr]">
@@ -387,15 +387,15 @@ function EvidenceStat({ label, value }: { label: string; value: string }) {
 function PriceFactor({ label, weight, help, score }: { label: string; weight: string; help: string; score: number }) {
   const bounded = Math.max(0, Math.min(100, score))
   return (
-    <div className="rounded-2xl border border-emerald-950/10 bg-white/85 p-4">
-      <div className="flex items-baseline justify-between gap-3"><p className="text-sm font-black text-emerald-950">{label}</p><span className="text-xs font-bold text-emerald-700">{weight}</span></div>
-      <p className="mt-1 text-xs leading-5 text-emerald-950/55">{help}</p>
-      <div className="mt-3 h-2 overflow-hidden rounded-full bg-emerald-950/8"><div className="h-full rounded-full bg-gradient-to-r from-cyan-500 to-emerald-500" style={{ width: `${bounded}%` }} /></div>
-      <p className="mt-1.5 text-right text-xs font-black text-emerald-800">{Math.round(bounded)} / 100</p>
+    <div className="rounded-2xl border border-white/10 bg-black/15 p-4">
+      <div className="flex items-baseline justify-between gap-3"><p className="text-sm font-black text-white">{label}</p><span className="text-xs font-bold text-emerald-300">{weight}</span></div>
+      <p className="mt-1 text-xs leading-5 text-emerald-50/55">{help}</p>
+      <div className="mt-3 h-2 overflow-hidden rounded-full bg-black/25"><div className="h-full rounded-full bg-gradient-to-r from-cyan-400 to-emerald-300" style={{ width: `${bounded}%` }} /></div>
+      <p className="mt-1.5 text-right text-xs font-black text-emerald-200">{Math.round(bounded)} / 100</p>
     </div>
   )
 }
 
 function ValueStep({ number, title, children }: { number: string; title: string; children: ReactNode }) {
-  return <li className="flex gap-3"><span className="grid size-8 shrink-0 place-items-center rounded-full bg-emerald-950 text-xs font-black text-white">{number}</span><div><p className="font-black text-emerald-950">{title}</p><p className="mt-1 text-xs leading-5 text-emerald-950/65">{children}</p></div></li>
+  return <li className="flex gap-3"><span className="grid size-8 shrink-0 place-items-center rounded-full bg-cyan-300/15 text-xs font-black text-cyan-200">{number}</span><div><p className="font-black text-white">{title}</p><p className="mt-1 text-xs leading-5 text-emerald-50/60">{children}</p></div></li>
 }

@@ -124,7 +124,9 @@ const generatedScenarios = families.flatMap((family, familyIndex) => family.case
   options: rotateOptions(answer, family.distractors, familyIndex + caseIndex),
   answer,
   explanation,
-  principle: family.principle,
+  principle: family.id === 'handball' && caseIndex === 2
+    ? 'A goal cannot be awarded when the scorer scores directly from, or immediately after, accidental hand or arm contact.'
+    : family.principle,
   sourceUrl: family.sourceUrl,
 })))
 

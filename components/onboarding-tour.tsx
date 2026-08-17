@@ -28,7 +28,7 @@ const steps = [
     eyebrow: 'Player Market',
     title: 'Build an 11-player team with game credits.',
     copy: 'Choose players you think will perform well. Their Early Shout price can move after eligible match ratings arrive.',
-    tip: 'VX is only for the game. It is not real money.',
+    tip: 'Market Credits are only for the game. They are not real money.',
     icon: LineChart,
     colours: 'from-emerald-400 to-teal-600',
   },

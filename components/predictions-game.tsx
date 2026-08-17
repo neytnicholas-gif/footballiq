@@ -257,8 +257,21 @@ export function PredictionsGame() {
   }, [loadLeagues, loadStandings, user])
 
   useEffect(() => {
-    const frame = window.requestAnimationFrame(() => { void load() })
-    return () => window.cancelAnimationFrame(frame)
+    let active = true
+    const timeout = window.setTimeout(() => {
+      if (!active) return
+      setLoading(false)
+      setError('Fixtures are taking longer than expected. Please refresh once. If no matches are ready yet, check back before the next gameweek.')
+    }, 10_000)
+
+    const frame = window.requestAnimationFrame(() => {
+      void load().finally(() => window.clearTimeout(timeout))
+    })
+    return () => {
+      active = false
+      window.cancelAnimationFrame(frame)
+      window.clearTimeout(timeout)
+    }
   }, [load])
 
   useEffect(() => {

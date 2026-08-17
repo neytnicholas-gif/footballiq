@@ -23,6 +23,7 @@ export async function POST(request: Request) {
   const token = bearerToken(request)
   if (!token) return NextResponse.json({ error: 'Sign in before saving a result.' }, { status: 401 })
 
+  let stage = 'configuration'
   try {
     const url = env('NEXT_PUBLIC_SUPABASE_URL')
     const anonKey = env('NEXT_PUBLIC_SUPABASE_ANON_KEY')
@@ -30,16 +31,19 @@ export async function POST(request: Request) {
     const auth = createClient(url, anonKey, {
       auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
     })
+    stage = 'authentication'
     const { data: authData, error: authError } = await auth.auth.getUser(token)
     if (authError || !authData.user) {
       return NextResponse.json({ error: 'Your session has expired. Please sign in again.' }, { status: 401 })
     }
 
+    stage = 'request-validation'
     const body = await request.json() as Partial<QuizCompletionClaim>
     if (typeof body.completionKey !== 'string' || !isValidCompletionKey(body.completionKey)) {
       return NextResponse.json({ error: 'Invalid completion key.' }, { status: 400 })
     }
 
+    stage = 'reward-verification'
     const verified = verifyQuizReward({
       quizId: typeof body.quizId === 'string' ? body.quizId : '',
       score: body.score as number,
@@ -53,6 +57,7 @@ export async function POST(request: Request) {
       auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
     })
     const expiresAt = new Date(Date.now() + 5 * 60_000).toISOString()
+    stage = 'ticket-authorisation'
     const { error: ticketError } = await admin.from('quiz_completion_tickets').upsert({
       user_id: authData.user.id,
       completion_key: verified.completionKey,
@@ -61,13 +66,14 @@ export async function POST(request: Request) {
       total: verified.total,
       xp_earned: verified.xp,
       expires_at: expiresAt,
-    }, { onConflict: 'user_id,completion_key', ignoreDuplicates: true })
+    }, { onConflict: 'user_id,completion_key' })
     if (ticketError) throw new Error(`Could not secure quiz completion: ${ticketError.message}`)
 
     const userClient = createClient(url, anonKey, {
       global: { headers: { Authorization: `Bearer ${token}` } },
       auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
     })
+    stage = 'database-completion'
     const { data, error } = await userClient.rpc('complete_quiz', {
       p_quiz_id: verified.quizId,
       p_score: verified.score,
@@ -80,7 +86,8 @@ export async function POST(request: Request) {
     return NextResponse.json(data, { headers: { 'Cache-Control': 'private, no-store' } })
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Quiz completion failed.'
-    const clientError = /unknown quiz|allowed range|whole number|quiz length|invalid/i.test(message)
+    console.error('Quiz completion failed', { stage, message })
+    const clientError = /unknown quiz|unknown scenario|allowed range|whole number|quiz length|invalid|proof|claimed score/i.test(message)
     return NextResponse.json({ error: clientError ? message : 'Result could not be saved safely. Please retry.' }, { status: clientError ? 400 : 500 })
   }
 }

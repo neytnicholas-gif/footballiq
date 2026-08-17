@@ -206,24 +206,24 @@ export function PlayerMarketBrowser({
 
   return (
     <div className="space-y-5">
-      <section className="relative overflow-hidden rounded-[2rem] border border-emerald-900/10 bg-gradient-to-br from-white via-emerald-50/80 to-slate-100/90 p-5 shadow-[0_24px_70px_-55px_rgba(6,78,59,.65)] sm:p-7">
+      <section className="relative overflow-hidden rounded-[2rem] border border-emerald-300/15 bg-[radial-gradient(circle_at_top_right,rgba(52,211,153,.14),transparent_34%),linear-gradient(145deg,rgba(13,40,43,.98),rgba(8,27,35,.98))] p-5 text-slate-100 shadow-[0_28px_80px_-48px_rgba(0,0,0,.9)] sm:p-7">
         <div className="pointer-events-none absolute -right-20 -top-24 size-72 rounded-full border-[38px] border-emerald-500/[.06]" />
         <div className="relative flex flex-wrap items-start justify-between gap-4">
           <div>
-            <p className="mb-2 inline-flex items-center gap-2 rounded-full border border-emerald-700/15 bg-emerald-900/[.06] px-3 py-1 text-[10px] font-black uppercase tracking-[.2em] text-emerald-900"><Sparkles className="size-3" /> Early Shout Exchange</p>
-            <h1 className="text-3xl font-black tracking-tight text-slate-950 sm:text-4xl">Player market</h1>
-            <p className="mt-2 max-w-2xl text-sm text-slate-600">Pick 11 players: 1 goalkeeper, 4 defenders, 3 midfielders and 3 forwards. Their game prices can change after they play.</p>
+            <p className="mb-2 inline-flex items-center gap-2 rounded-full border border-emerald-300/20 bg-emerald-300/10 px-3 py-1 text-[10px] font-black uppercase tracking-[.2em] text-emerald-200"><Sparkles className="size-3" /> Early Shout Exchange</p>
+            <h1 className="text-3xl font-black tracking-tight text-white sm:text-4xl">Player market</h1>
+            <p className="mt-2 max-w-2xl text-sm text-slate-300">Pick 11 players: 1 goalkeeper, 4 defenders, 3 midfielders and 3 forwards. Their game prices can change after they play.</p>
           </div>
-          <div className="rounded-2xl border border-emerald-900/10 bg-white/80 px-4 py-3 shadow-sm backdrop-blur">
-            <p className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[.16em] text-slate-500"><WalletCards className="size-3.5 text-emerald-700" /> Available cash</p>
-            <p className="mt-1 text-xl font-black text-slate-950">{formatFiqCompact(availableCash)}</p>
-            <p className="text-[10px] text-slate-500">{userSignedIn ? 'Saved to your account' : 'Saved on this device'}</p>
+          <div className="rounded-2xl border border-white/10 bg-white/[.07] px-4 py-3 shadow-sm backdrop-blur">
+            <p className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[.16em] text-slate-400"><WalletCards className="size-3.5 text-emerald-300" /> Available cash</p>
+            <p className="mt-1 text-xl font-black text-white">{formatFiqCompact(availableCash)}</p>
+            <p className="text-[10px] text-slate-400">{userSignedIn ? 'Saved to your account' : 'Saved on this device'}</p>
           </div>
         </div>
         {players[0]?.data_source_label?.includes('Sportmonks') || previewExperimentActive ? (
-          <div className="relative mt-4 rounded-2xl border border-emerald-700/20 bg-emerald-950/[.055] px-4 py-3 text-sm">
-            <p className="font-bold text-emerald-900">{previewExperimentActive ? 'Controlled preview valuation experiment' : `Verified ${liveCompetitionLabel} market · ${players.length} players live`}</p>
-            <p className="mt-1 text-xs text-slate-600">Player identities and current squads come from Sportmonks. These are Early Shout game prices—not real transfer values. {previewExperimentActive ? 'Eleven selected players use clearly labelled test ratings and minutes to prove the value engine before completed 2026/27 fixtures arrive.' : marketHasMoved ? 'Price movement is calculated from verified completed-fixture ratings and minutes.' : 'Opening prices stay fixed until verified ratings and minutes trigger transparent movement.'}</p>
+          <div className="relative mt-4 rounded-2xl border border-emerald-300/15 bg-emerald-300/[.07] px-4 py-3 text-sm">
+            <p className="font-bold text-emerald-200">{previewExperimentActive ? 'Controlled preview valuation experiment' : `Verified ${liveCompetitionLabel} market · ${players.length} players live`}</p>
+            <p className="mt-1 text-xs text-slate-300">Player identities and current squads come from Sportmonks. These are Early Shout game prices—not real transfer values. {previewExperimentActive ? 'Eleven selected players use clearly labelled test ratings and minutes to prove the value engine before completed 2026/27 fixtures arrive.' : marketHasMoved ? 'Price movement is calculated from verified completed-fixture ratings and minutes.' : 'Opening prices stay fixed until verified ratings and minutes trigger transparent movement.'}</p>
           </div>
         ) : null}
 
@@ -233,7 +233,7 @@ export function PlayerMarketBrowser({
           <MarketStatus label="Missing match data" value="Price stays the same" note="We never guess a player’s result" />
         </div>
 
-        <div className="relative mt-4 grid gap-3 rounded-2xl border border-emerald-900/10 bg-white/65 p-3 text-sm backdrop-blur sm:grid-cols-2 lg:grid-cols-6">
+        <div className="relative mt-4 grid gap-3 rounded-2xl border border-white/10 bg-black/15 p-3 text-sm backdrop-blur sm:grid-cols-2 lg:grid-cols-6">
           <FormationPill label="GK" value={`${formation.GK}/1`} />
           <FormationPill label="DEF" value={`${formation.DEF}/4`} />
           <FormationPill label="MID" value={`${formation.MID}/3`} />
@@ -249,18 +249,18 @@ export function PlayerMarketBrowser({
           availableCash={availableCash}
         />
 
-        <div className="relative mt-3 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-emerald-900/10 bg-white/75 px-4 py-3 shadow-sm">
+        <div className="relative mt-3 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-white/10 bg-white/[.06] px-4 py-3 shadow-sm">
           <div className="flex items-start gap-2">
             {openSlots === 0 ? <CheckCircle2 className="mt-0.5 size-4 text-emerald-700" aria-hidden="true" /> : <Sparkles className="mt-0.5 size-4 text-amber-600" aria-hidden="true" />}
             <div>
-              <p className="text-xs font-black text-slate-900">{openSlots === 0 ? 'Squad complete' : `Next move: add a ${nextPosition}`}</p>
-              <p className="mt-0.5 text-[11px] text-slate-600">{openSlots === 0 ? 'Review value movement or replace a holding.' : `${openSlots} places open · ${formatFiqCompact(Math.floor(availableCash / openSlots))} average budget per open place.`}</p>
+              <p className="text-xs font-black text-white">{openSlots === 0 ? 'Squad complete' : `Next move: add a ${nextPosition}`}</p>
+              <p className="mt-0.5 text-[11px] text-slate-400">{openSlots === 0 ? 'Review value movement or replace a holding.' : `${openSlots} places open · ${formatFiqCompact(Math.floor(availableCash / openSlots))} average budget per open place.`}</p>
             </div>
           </div>
-          <Link href="/market/roster" className="text-xs font-black text-emerald-800 underline decoration-emerald-300 underline-offset-4">Open full roster</Link>
+          <Link href="/market/roster" className="text-xs font-black text-emerald-300 underline decoration-emerald-300/40 underline-offset-4">Open full roster</Link>
         </div>
 
-        <div className="mt-5 flex flex-wrap gap-2" aria-label="Catalogue views">
+        <div className="mt-5 flex flex-wrap gap-2" role="group" aria-label="Catalogue views">
           <ScopeButton active={scope === 'all'} onClick={() => { setScope('all'); resetCatalogueWindow() }}>All players</ScopeButton>
           <ScopeButton active={scope === 'squad'} onClick={() => { setScope('squad'); resetCatalogueWindow() }}>My squad · {holdings.length}</ScopeButton>
           <ScopeButton active={scope === 'watchlist'} onClick={() => { setScope('watchlist'); resetCatalogueWindow() }}>Watchlist · {watchlist.length}</ScopeButton>
@@ -287,7 +287,7 @@ export function PlayerMarketBrowser({
           <p className="text-sm text-muted-foreground">Showing {Math.min(visibleCount, filtered.length)} of {filtered.length} players</p>
           <label className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-border bg-background px-3 py-2 text-sm">
             <ArrowUpDown className="size-4 text-muted-foreground" />
-            <select value={sortKey} onChange={(event) => { setSortKey(event.target.value as SortKey); resetCatalogueWindow() }} className="bg-transparent outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-offset-2">
+            <select aria-label="Sort players" value={sortKey} onChange={(event) => { setSortKey(event.target.value as SortKey); resetCatalogueWindow() }} className="bg-transparent outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-offset-2">
               <option value="value-desc">Highest value</option>
               <option value="value-asc">Lowest value</option>
               <option value="change-desc">Biggest risers</option>
@@ -316,7 +316,7 @@ export function PlayerMarketBrowser({
         <p className="mt-2 text-xs text-muted-foreground">Your team has {holdings.length} of {MARKET_MAX_PORTFOLIO_SIZE} players.</p>
       </section>
 
-      <section className="rounded-[2rem] border border-emerald-900/10 bg-emerald-950/[.035] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,.85)] sm:p-6">
+      <section className="rounded-[2rem] border border-emerald-300/15 bg-black/15 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,.05)] sm:p-6">
         {filtered.length === 0 ? (
           <div className="rounded-2xl border border-border bg-background/60 p-5 text-sm text-muted-foreground">
             No players match these filters. Clear filters or adjust your search to find other squad options.
@@ -349,7 +349,7 @@ export function PlayerMarketBrowser({
             const MovementIcon = trendDelta > 0 ? ArrowUpRight : trendDelta < 0 ? ArrowDownRight : Minus
 
             return (
-              <article key={player.id} className="group relative overflow-hidden rounded-[1.4rem] border border-emerald-950/15 bg-[#f1f8f4] [contain-intrinsic-size:0_350px] [content-visibility:auto] shadow-[0_15px_38px_-30px_rgba(3,45,37,.8)] transition duration-200 hover:-translate-y-0.5 hover:border-emerald-700/40 hover:shadow-[0_24px_52px_-30px_rgba(3,45,37,.72)]">
+              <article key={player.id} className="group relative overflow-hidden rounded-[1.4rem] border border-emerald-300/15 bg-[#0c262b] [contain-intrinsic-size:0_350px] [content-visibility:auto] shadow-[0_18px_44px_-30px_rgba(0,0,0,.95)] transition duration-200 hover:-translate-y-0.5 hover:border-emerald-300/40 hover:shadow-[0_24px_56px_-30px_rgba(0,0,0,.95)]">
                 <div className="relative overflow-hidden bg-gradient-to-br from-[#073c32] via-[#0a493c] to-[#0d5b4c] p-4 text-white">
                   <div className={`absolute inset-x-0 top-0 h-1 bg-gradient-to-r ${positionStyle.accent}`} />
                   <div className={`pointer-events-none absolute -right-8 -top-12 size-36 rounded-full blur-2xl ${positionStyle.glow}`} />
@@ -383,21 +383,21 @@ export function PlayerMarketBrowser({
                 </div>
 
                 <div className="relative p-3.5">
-                  <div className="grid grid-cols-4 divide-x divide-emerald-950/10 overflow-hidden rounded-xl border border-emerald-950/10 bg-[#f9fcfa] shadow-[inset_0_1px_0_rgba(255,255,255,.9)]">
+                  <div className="grid grid-cols-4 divide-x divide-white/10 overflow-hidden rounded-xl border border-white/10 bg-black/15 shadow-[inset_0_1px_0_rgba(255,255,255,.04)]">
                     <CompactStat label="Age" value={player.age ? String(player.age) : '—'} />
                     <CompactStat label="Minutes" value={String(latestPerformance?.minutes ?? stat?.minutes ?? '—')} />
                     <CompactStat label="Rating" value={latestPerformance?.rating ? latestPerformance.rating.toFixed(2) : stat?.average_rating ? stat.average_rating.toFixed(2) : '—'} />
                     <CompactStat label="Role" value={player.role_security_indicator ?? (stat?.starts && stat.starts >= 24 ? 'Secure' : 'Rotation')} capitalize />
                   </div>
 
-                  <p className="mt-2.5 line-clamp-2 min-h-9 text-[11px] font-medium leading-[1.4] text-slate-600">
+                  <p className="mt-2.5 line-clamp-2 min-h-9 text-[11px] font-medium leading-[1.4] text-slate-300">
                     {player.decision_support_note ?? 'Check the player’s recent price and minutes before you buy.'}
                   </p>
 
-                  <div className="mt-2.5 flex items-center justify-between gap-3 rounded-lg border border-emerald-950/[.08] bg-emerald-950/[.045] px-2.5 py-2 text-[10px]">
-                    <span className="font-semibold text-slate-500">Previous <strong className="ml-1 text-slate-800">{formatFiqCompact(player.previous_value)}</strong></span>
-                    <span className="h-px flex-1 bg-gradient-to-r from-emerald-900/10 via-emerald-700/40 to-emerald-900/10" />
-                    <span className="font-black text-emerald-800">Now {formatFiqCompact(player.current_value)}</span>
+                  <div className="mt-2.5 flex items-center justify-between gap-3 rounded-lg border border-white/10 bg-black/15 px-2.5 py-2 text-[10px]">
+                    <span className="font-semibold text-slate-400">Previous <strong className="ml-1 text-slate-200">{formatFiqCompact(player.previous_value)}</strong></span>
+                    <span className="h-px flex-1 bg-gradient-to-r from-emerald-300/5 via-emerald-300/35 to-emerald-300/5" />
+                    <span className="font-black text-emerald-300">Now {formatFiqCompact(player.current_value)}</span>
                   </div>
 
                   <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
@@ -411,22 +411,22 @@ export function PlayerMarketBrowser({
                   <button
                     onClick={() => setTradeIntent({ action: 'sell', player, requestKey: createMarketRequestKey(`sell-${player.slug}`) })}
                     disabled={!owned || lockActive || busyId !== null}
-                    className="min-h-10 rounded-xl border border-emerald-950/15 bg-white/55 px-2.5 py-2 text-xs font-bold text-slate-800 transition hover:bg-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-700 disabled:opacity-45"
+                    className="min-h-10 rounded-xl border border-white/15 bg-white/[.06] px-2.5 py-2 text-xs font-bold text-slate-100 transition hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-300 disabled:opacity-45"
                   >
                     {busyId === player.id ? 'Processing…' : 'Sell'}
                   </button>
                   <button
                     onClick={() => void handleWatchlist(player)}
                     disabled={busyId !== null}
-                    className="min-h-10 rounded-xl border border-emerald-950/15 bg-white/55 px-2.5 py-2 text-xs font-bold text-slate-800 transition hover:bg-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-700 disabled:opacity-45"
+                    className="min-h-10 rounded-xl border border-white/15 bg-white/[.06] px-2.5 py-2 text-xs font-bold text-slate-100 transition hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-300 disabled:opacity-45"
                   >
                     {watchlisted ? 'Unwatch' : 'Watch'}
                   </button>
-                    <Link aria-label={`Open ${player.display_name}'s player card`} href={`/market/player/${encodeURIComponent(player.slug)}`} className="inline-flex min-h-10 items-center justify-center rounded-xl border border-emerald-950/15 bg-white/55 px-2.5 py-2 text-center text-xs font-bold text-slate-800 transition hover:bg-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-700">Open card</Link>
+                    <Link aria-label={`Open ${player.display_name}'s player card`} href={`/market/player/${encodeURIComponent(player.slug)}`} className="inline-flex min-h-10 items-center justify-center rounded-xl border border-white/15 bg-white/[.06] px-2.5 py-2 text-center text-xs font-bold text-slate-100 transition hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-300">Open card</Link>
                   </div>
 
                   {!canBuy && !owned ? (
-                    <p className="mt-2 text-[10px] font-semibold text-slate-500">
+                    <p className="mt-2 text-[10px] font-semibold text-slate-400">
                       {lockActive
                         ? 'Trading is temporarily locked for this player.'
                         : holdings.length >= MARKET_MAX_PORTFOLIO_SIZE
@@ -549,7 +549,12 @@ function MarketRosterBoard({
         <p className="px-1 pb-2 text-[10px] text-emerald-100/70">Sign in to save this roster.</p>
       ) : null}
 
-      <div className="overflow-x-auto pb-1 [scrollbar-color:rgba(167,243,208,.35)_transparent]">
+      <div
+        className="overflow-x-auto pb-1 [scrollbar-color:rgba(167,243,208,.35)_transparent]"
+        tabIndex={0}
+        role="region"
+        aria-label="Current roster players"
+      >
         <div className="grid min-w-[880px] grid-cols-11 gap-1.5">
           {orderedSlots.map(({ position, player }, index) => player ? (
             <Link
@@ -589,14 +594,14 @@ function CompactStat({ label, value, capitalize = false }: { label: string; valu
   return (
     <div className="min-w-0 px-1.5 py-2 text-center sm:px-2">
       <p className="truncate text-[8px] font-black uppercase tracking-[.12em] text-slate-400">{label}</p>
-      <p className={`mt-0.5 truncate text-[11px] font-black text-slate-800 ${capitalize ? 'capitalize' : ''}`} title={value}>{value}</p>
+      <p className={`mt-0.5 truncate text-[11px] font-black text-slate-100 ${capitalize ? 'capitalize' : ''}`} title={value}>{value}</p>
     </div>
   )
 }
 
 function FormationPill({ label, value, subtle }: { label: string; value: string; subtle?: string }) {
   return (
-    <div className="rounded-xl border border-emerald-950/10 bg-white/75 px-3 py-2 shadow-sm">
+    <div className="rounded-xl border border-white/10 bg-white/[.055] px-3 py-2 shadow-sm">
       <p className="text-[10px] uppercase tracking-[.15em] text-muted-foreground">{label}</p>
       <p className="mt-1 text-sm font-semibold text-primary">{value}{subtle ? <>{' '}<span className="ml-1 text-[10px] font-medium text-muted-foreground">{subtle}</span></> : null}</p>
     </div>
@@ -605,10 +610,10 @@ function FormationPill({ label, value, subtle }: { label: string; value: string;
 
 function MarketStatus({ label, value, note }: { label: string; value: string; note: string }) {
   return (
-    <div className="rounded-xl border border-emerald-950/[.08] bg-white/55 px-3 py-2.5 backdrop-blur">
-      <p className="text-[9px] font-bold uppercase tracking-[.16em] text-slate-500">{label}</p>
-      <p className="mt-0.5 text-sm font-black text-slate-900">{value}</p>
-      <p className="mt-0.5 text-[10px] leading-snug text-slate-500">{note}</p>
+    <div className="rounded-xl border border-white/10 bg-white/[.055] px-3 py-2.5 backdrop-blur">
+      <p className="text-[9px] font-bold uppercase tracking-[.16em] text-slate-400">{label}</p>
+      <p className="mt-0.5 text-sm font-black text-white">{value}</p>
+      <p className="mt-0.5 text-[10px] leading-snug text-slate-400">{note}</p>
     </div>
   )
 }
@@ -633,7 +638,7 @@ function Notice({ kind, message, onDismiss }: { kind: 'success' | 'error' | 'inf
 }
 
 function ScopeButton({ active, onClick, children }: { active: boolean; onClick: () => void; children: ReactNode }) {
-  return <button type="button" aria-pressed={active} onClick={onClick} className={`min-h-11 rounded-full border px-3 py-2 text-xs font-black transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-700 ${active ? 'border-emerald-800 bg-emerald-900 text-white shadow-sm' : 'border-emerald-900/15 bg-white/70 text-emerald-950 hover:bg-emerald-50'}`}>{children}</button>
+  return <button type="button" aria-pressed={active} onClick={onClick} className={`min-h-11 rounded-full border px-3 py-2 text-xs font-black transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-300 ${active ? 'border-emerald-300/50 bg-emerald-300 text-emerald-950 shadow-sm' : 'border-white/15 bg-white/[.055] text-slate-200 hover:bg-white/10'}`}>{children}</button>
 }
 
 function FilterSelect({ label, value, onChange, options }: { label: string; value: string; onChange: (value: string) => void; options: string[] }) {

@@ -21,7 +21,7 @@ export default function ProfilePage() {
   const { user, profile, membership, loading, signOut } = useAuth()
   const [academyLoading, setAcademyLoading] = useState(true)
   const [completions, setCompletions] = useState<AcademyCompletion[]>([])
-  const [derivedAccuracy, setDerivedAccuracy] = useState<number | null>(null)
+  const [derivedQuizStats, setDerivedQuizStats] = useState<{ accuracy: number | null; quizzes: number; perfect: number } | null>(null)
 
   useEffect(() => {
     if (!loading && !user) router.replace('/login')
@@ -50,8 +50,6 @@ export default function ProfilePage() {
 
     if (!user) return
 
-    if (profile?.total_answers && profile.total_answers > 0) return
-
     void (async () => {
       const { data, error } = await supabase
         .from('quiz_results')
@@ -64,16 +62,22 @@ export default function ProfilePage() {
         accumulator.total += row.total
         return accumulator
       }, { correct: 0, total: 0 })
-      setDerivedAccuracy(totals.total > 0 ? Math.round((totals.correct / totals.total) * 100) : null)
+      setDerivedQuizStats({
+        accuracy: totals.total > 0 ? Math.round((totals.correct / totals.total) * 100) : null,
+        quizzes: data?.length ?? 0,
+        perfect: (data ?? []).filter((row) => row.total > 0 && row.score === row.total).length,
+      })
     })()
 
     return () => {
       active = false
     }
-  }, [profile?.correct_answers, profile?.total_answers, user])
+  }, [user])
 
   const rank = getRankProgress(profile?.xp ?? 0)
-  const accuracy = derivedAccuracy ?? (profile?.total_answers ? Math.round((profile.correct_answers / profile.total_answers) * 100) : null)
+  const accuracy = derivedQuizStats?.accuracy ?? (profile?.total_answers ? Math.round((profile.correct_answers / profile.total_answers) * 100) : null)
+  const quizCount = derivedQuizStats?.quizzes ?? profile?.quizzes_completed ?? 0
+  const perfectCount = derivedQuizStats?.perfect ?? profile?.perfect_quizzes ?? 0
   const academy = computeAcademyProgress(completions)
   const advancedCompleted = completions.filter((item) => item.experience_key.includes('scout-room') || item.experience_key.includes('referee-debrief')).length
 
@@ -121,8 +125,8 @@ export default function ProfilePage() {
               <StatCard label="Accuracy" value={accuracy === null ? '—' : `${accuracy}%`} hint={accuracy === null ? 'No completed answers yet' : 'Based on completed quiz results'} />
               <StatCard label="Current streak" value={formatDays(profile.current_streak)} />
               <StatCard label="Longest streak" value={formatDays(profile.longest_streak)} />
-              <StatCard label="Quizzes completed" value={profile.quizzes_completed.toLocaleString()} />
-              <StatCard label="Perfect quizzes" value={profile.perfect_quizzes.toLocaleString()} />
+              <StatCard label="Quizzes completed" value={quizCount.toLocaleString()} />
+              <StatCard label="Perfect quizzes" value={perfectCount.toLocaleString()} />
             </div>
 
             <div className="mt-6 grid gap-4 lg:grid-cols-2">

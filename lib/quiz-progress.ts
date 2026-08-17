@@ -28,12 +28,12 @@ type SaveQuizProgressInput = {
 }
 
 export async function loadQuizProgress(quizId: string) {
-  const { data: userData, error: userError } = await supabase.auth.getUser()
+  const { data: userData, error: userError } = await supabase.auth.getSession()
   if (userError) {
     console.error('Quiz progress auth error:', userError.message)
     return null
   }
-  const user = userData.user
+  const user = userData.session?.user
   if (!user) return null
 
   const { data, error } = await supabase
@@ -52,11 +52,11 @@ export async function loadQuizProgress(quizId: string) {
 }
 
 export async function saveQuizProgress({ quizId, currentIndex, score, total, progress, status = 'in_progress' }: SaveQuizProgressInput) {
-  const { data: userData, error: userError } = await supabase.auth.getUser()
+  const { data: userData, error: userError } = await supabase.auth.getSession()
   if (userError) {
     return { error: userError }
   }
-  const user = userData.user
+  const user = userData.session?.user
   if (!user) {
     return { error: null }
   }
@@ -78,11 +78,11 @@ export async function saveQuizProgress({ quizId, currentIndex, score, total, pro
 }
 
 export async function clearQuizProgress(quizId: string) {
-  const { data: userData, error: userError } = await supabase.auth.getUser()
+  const { data: userData, error: userError } = await supabase.auth.getSession()
   if (userError) {
     return { error: userError }
   }
-  const user = userData.user
+  const user = userData.session?.user
   if (!user) return { error: null }
 
   const { error } = await supabase.from('quiz_progress').delete().eq('user_id', user.id).eq('quiz_id', quizId)

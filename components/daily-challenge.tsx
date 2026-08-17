@@ -337,7 +337,7 @@ export function DailyChallenge() {
         <div className="mt-7 space-y-4">
           <div className="rounded-2xl border border-emerald-300/20 bg-emerald-300/10 p-5">
             <div className="flex items-center gap-2 text-emerald-200"><Trophy className="size-5" /><p className="font-bold">Daily complete · {score}/{items.length}</p></div>
-            <p className="mt-2 text-sm leading-relaxed text-slate-300">Practice remains available. Account XP can only be credited once for today’s key.</p>
+            <p className="mt-2 text-sm leading-relaxed text-slate-300">You can practise again, but your account can earn today’s XP only once.</p>
           </div>
 
           <div className="flex flex-wrap gap-3">
@@ -352,7 +352,7 @@ export function DailyChallenge() {
                 disabled={savingReward || savedReward}
                 className="inline-flex min-h-11 items-center rounded-xl bg-amber-300 px-5 py-2.5 text-sm font-bold text-slate-950 transition hover:bg-amber-200 disabled:cursor-not-allowed disabled:opacity-50"
               >
-                {savingReward ? 'Saving reward...' : savedReward ? 'Reward saved' : 'Save today reward'}
+                {savingReward ? 'Saving reward…' : savedReward ? 'Reward saved' : 'Save today’s reward'}
               </button>
             )}
             <button onClick={() => void shareResult()} className="inline-flex min-h-11 items-center rounded-xl border border-slate-600 bg-slate-900 px-5 py-2.5 text-sm font-semibold text-slate-100 transition hover:border-slate-400">
@@ -370,7 +370,7 @@ export function DailyChallenge() {
                 .sort((a, b) => b.key.localeCompare(a.key))
                 .slice(0, 5)
                 .map((entry) => (
-                  <p key={entry.key}>{entry.key}: {entry.score}/{entry.total}</p>
+                  <p key={entry.key}>{new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'Europe/Brussels' }).format(new Date(`${entry.key}T12:00:00Z`))}: {entry.score}/{entry.total}</p>
                 ))}
             </div>
           </div>
@@ -378,7 +378,7 @@ export function DailyChallenge() {
       ) : (
         <>
           <div className="mt-6">
-            <div className="flex items-center justify-between gap-3 text-xs font-semibold text-slate-400"><span>Question {index + 1} of {items.length}</span><span className="font-mono">Key {dailyKey}</span></div>
+            <div className="flex items-center justify-between gap-3 text-xs font-semibold text-slate-400"><span>Question {index + 1} of {items.length}</span><span>Today’s round</span></div>
             <div className="mt-3 grid grid-cols-5 gap-1.5" aria-label={`${index + 1} of ${items.length} questions`}>
               {items.map((_, step) => <span key={step} className={`h-1.5 rounded-full ${step <= index ? 'bg-amber-300' : 'bg-slate-700'}`} />)}
             </div>

@@ -7,7 +7,6 @@ import { SiteHeader } from '@/components/site-header'
 import { SurfaceCard } from '@/components/platform/primitives'
 import { useAuth } from '@/components/auth-provider'
 import { supabase } from '@/lib/supabase'
-import { BRAND } from '@/lib/brand'
 
 type BetaStatus = {
   joined: boolean
@@ -60,7 +59,7 @@ export default function BetaPage() {
     setJoining(false)
   }
 
-  const feedbackHref = `mailto:${BRAND.supportEmail}?subject=${encodeURIComponent('Early Shout beta feedback')}&body=${encodeURIComponent('Page or feature:\n\nWhat happened:\n\nWhat did you expect:\n\nDevice/browser:\n\nAnything you especially liked:')}`
+  const feedbackHref = `/contact?topic=beta&subject=${encodeURIComponent('Early Shout beta feedback')}&message=${encodeURIComponent('Page or feature:\n\nWhat happened:\n\nWhat did you expect:\n\nDevice/browser:\n\nAnything you especially liked:')}`
 
   return (
     <main className="min-h-screen bg-background">
@@ -108,7 +107,7 @@ export default function BetaPage() {
               <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-primary"><MessageSquareText className="size-4" /> Your role</p>
               <h2 className="mt-2 text-2xl font-black tracking-tight">Play honestly. Tell us everything.</h2>
               <p className="mt-3 text-sm leading-relaxed text-muted-foreground">Build an 11-player team, play the free games and come back after prices change. Tell us if anything is confusing, slow or unfair.</p>
-              <a href={feedbackHref} className="mt-5 inline-flex min-h-11 items-center rounded-xl border border-border bg-background px-4 py-2.5 text-sm font-semibold transition hover:border-primary/40">Send beta feedback</a>
+              <Link href={feedbackHref} className="mt-5 inline-flex min-h-11 items-center rounded-xl border border-border bg-background px-4 py-2.5 text-sm font-semibold transition hover:border-primary/40">Send beta feedback</Link>
             </SurfaceCard>
 
             <SurfaceCard className="p-6">

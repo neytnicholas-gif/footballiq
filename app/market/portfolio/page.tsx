@@ -97,24 +97,24 @@ export default function PlayerMarketPortfolioPage() {
   }, [user])
 
   return (
-    <main className="market-theme min-h-screen bg-[radial-gradient(circle_at_top_left,rgba(16,185,129,.10),transparent_34%),linear-gradient(180deg,#f7fbf9_0%,#eef6f2_48%,#f8faf9_100%)]">
+    <main className="market-theme market-shell min-h-screen">
       <SiteHeader />
       <section className="mx-auto max-w-7xl px-4 py-10 sm:px-6 sm:py-14">
         <MarketNavigation />
         {importResult?.imported ? (
-          <div className="mb-4 flex items-start justify-between gap-3 rounded-2xl border border-emerald-700/25 bg-emerald-50 px-4 py-3 text-sm text-emerald-950 shadow-sm">
+          <div className="mb-4 flex items-start justify-between gap-3 rounded-2xl border border-emerald-300/20 bg-[#0b463e] px-4 py-3 text-sm text-emerald-50 shadow-sm">
             <div>
               <p className="font-bold">Your guest portfolio is now saved to your account.</p>
-              <p className="mt-1 text-xs text-emerald-900/75">Preserved {importResult.holdings ?? 0} player selections and {importResult.watchlist ?? 0} watchlist picks at current Early Shout prices.</p>
+              <p className="mt-1 text-xs text-emerald-50/65">Preserved {importResult.holdings ?? 0} player selections and {importResult.watchlist ?? 0} watchlist picks at current Early Shout prices.</p>
             </div>
             <button type="button" onClick={() => setImportResult(null)} className="rounded-lg border border-emerald-800/15 px-2 py-1 text-xs font-semibold">Dismiss</button>
           </div>
         ) : null}
         {error ? <p role="alert" className="mb-4 rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">{error}</p> : null}
         {loading ? (
-          <div role="status" aria-live="polite" className="rounded-[2rem] border border-emerald-900/10 bg-white/75 p-6 shadow-sm sm:p-8">
-            <p className="font-black text-slate-900">Opening your roster…</p>
-            <p className="mt-1 text-sm text-slate-600">Loading your players and budget.</p>
+          <div role="status" aria-live="polite" className="rounded-[2rem] border border-emerald-200/10 bg-[#082f2a] p-6 text-emerald-50 shadow-sm sm:p-8">
+            <p className="font-black text-white">Opening your roster…</p>
+            <p className="mt-1 text-sm text-emerald-50/60">Loading your players and budget.</p>
             <div aria-hidden="true" className="mt-5 grid animate-pulse gap-3 sm:grid-cols-4">
               {Array.from({ length: 4 }).map((_, index) => <span key={index} className="h-20 rounded-2xl bg-emerald-950/10" />)}
             </div>

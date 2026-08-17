@@ -24,8 +24,8 @@ export function MarketRewardCelebration() {
   const [allCompleted,setAllCompleted]=useState(0)
   const [saving,setSaving]=useState(false)
   const checking=useRef(false)
-  const seenKey=user?`verdict-xi-seen-market-badges:${user.id}`:''
-  const skipKey=user?`verdict-xi-skip-reward-celebrations:${user.id}`:''
+  const seenKey=user?`early-shout:seen-market-badges:${user.id}`:''
+  const skipKey=user?`early-shout:skip-reward-celebrations:${user.id}`:''
 
   useEffect(()=>{
     if(!user||!pathname.startsWith('/market')||checking.current)return

@@ -11,7 +11,7 @@ export const metadata: Metadata = {
 
 const waysToPlay = [
   { number: '1', title: 'Play a football game', copy: 'Open Games. Pick a challenge. Choose your answers and learn as you go.', href: '/quizzes', cta: 'Choose a game', icon: Gamepad2, colour: 'from-sky-400 to-indigo-500' },
-  { number: '2', title: 'Build your Market team', copy: 'Use your free VX game credits to choose 11 players. Sell and change your team when you want.', href: '/market', cta: 'Open the Market', icon: LineChart, colour: 'from-emerald-400 to-teal-600' },
+  { number: '2', title: 'Build your Market team', copy: 'Use your free Market Credits to choose 11 players. Sell and change your team when you want.', href: '/market', cta: 'Open the Market', icon: LineChart, colour: 'from-emerald-400 to-teal-600' },
   { number: '3', title: 'Predict the matches', copy: 'Choose what you think will happen before kick-off. Correct picks score points.', href: '/predictions', cta: 'Make a prediction', icon: BarChart3, colour: 'from-amber-400 to-orange-500' },
   { number: '4', title: 'Grow your profile', copy: 'Earn XP, raise your level, reach new ranks and collect badges as you play.', href: '/profile', cta: 'See my profile', icon: Trophy, colour: 'from-violet-500 to-fuchsia-500' },
 ]
@@ -61,12 +61,12 @@ export default function HowToPlayPage() {
             <SimpleTerm title="XP" copy="Points that grow your level and rank." />
             <SimpleTerm title="Level" copy="Your regular progress number. It keeps going." />
             <SimpleTerm title="Rank" copy="A bigger title earned at XP milestones." />
-            <SimpleTerm title="VX" copy="Free Market game credits. Never real money." />
+            <SimpleTerm title="Market Credits" copy="Free points used to choose players. Never real money." />
           </div>
         </section>
 
         <div className="mt-10 grid gap-4 lg:grid-cols-3">
-          <InfoCard icon={<ShieldCheck className="size-5" />} title="Can I lose real money?" copy="No. There are no deposits, cash prizes or withdrawals. VX only works inside the game." />
+          <InfoCard icon={<ShieldCheck className="size-5" />} title="Can I lose real money?" copy="No. There are no deposits, cash prizes or withdrawals. Market Credits only work inside the game." />
           <InfoCard icon={<Users className="size-5" />} title="Can I play with friends?" copy="Yes. Market, quiz and prediction friend leagues let you compare with people you know." />
           <InfoCard icon={<Sparkles className="size-5" />} title="What should I try first?" copy="Try one quick Game. It is the easiest way to earn your first XP and see how feedback works." />
         </div>

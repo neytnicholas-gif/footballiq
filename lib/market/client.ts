@@ -68,7 +68,7 @@ function normalizeMarketMutationError(error: unknown): Error | null {
     [/ALREADY_OWNED/i, 'That player is already in your roster.'],
     [/MAX_HOLDINGS|PORTFOLIO_LIMIT/i, 'Your 11-player roster is full. Sell a player before adding another.'],
     [/FORMATION_LIMIT/i, 'That position is full in your current formation.'],
-    [/INSUFFICIENT_(BALANCE|FUNDS)/i, 'You do not have enough VX budget for that player.'],
+    [/INSUFFICIENT_(BALANCE|FUNDS)/i, 'You do not have enough Market Credits for that player.'],
     [/GAMEWEEK_TRANSFER_LIMIT/i, 'You have used all 11 signings for this gameweek.'],
     [/GAMEWEEK_LOCKED/i, 'Trading is closed while this gameweek is being processed. Nothing changed.'],
     [/PLAYER_TRADE_LOCKED/i, 'This player is in a match or waiting for a verified price update. Nothing changed.'],
