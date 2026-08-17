@@ -144,38 +144,41 @@ export function ScoutGame() {
   }
 
   return (
-    <div className="overflow-hidden rounded-3xl border border-border bg-card">
-      <div className="border-b border-border bg-[linear-gradient(135deg,rgba(50,230,170,.12),rgba(45,135,255,.1))] p-6 sm:p-8">
+    <div className="overflow-hidden rounded-[1.75rem] border border-slate-700/80 bg-[#0a1625] text-slate-100 shadow-[0_30px_90px_-60px_rgba(16,185,129,.65)]">
+      <div className="border-b border-white/10 bg-[linear-gradient(135deg,rgba(16,185,129,.16),rgba(14,36,58,.96)_50%,rgba(56,189,248,.12))] p-5 sm:p-7">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[.24em] text-primary">Scout Vision dossier</p>
-            <h2 className="mt-2 text-3xl font-bold tracking-tight">{dossier.title}</h2>
-            <p className="mt-2 text-sm text-muted-foreground">Dossier {index + 1} of {scoutQuestions.length} · Think like a scout.</p>
+            <p className="text-xs font-black uppercase tracking-[.24em] text-emerald-300">Scout Vision dossier</p>
+            <h2 className="mt-2 text-2xl font-black tracking-tight text-white sm:text-3xl">{dossier.title}</h2>
+            <p className="mt-2 text-sm text-slate-300">Dossier <strong className="text-white">{index + 1}</strong> of <strong className="text-white">{scoutQuestions.length}</strong> · Think like a scout.</p>
           </div>
-          <div className="rounded-2xl border border-border bg-background/70 px-4 py-3 text-right">
-            <p className="text-xs uppercase tracking-wider text-muted-foreground">Judgement score</p>
-            <p className="text-2xl font-bold text-primary">{score}</p>
+          <div className="rounded-2xl border border-emerald-300/20 bg-[#081421]/80 px-4 py-3 text-right">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Judgement score</p>
+            <p className="text-2xl font-black text-emerald-300">{score}</p>
           </div>
         </div>
-        <div className="mt-5 h-2 overflow-hidden rounded-full bg-secondary/70">
-          <div className="h-full rounded-full bg-primary transition-all duration-300" style={{ width: `${percent}%` }} />
+        <div className="mt-5 flex items-center gap-3">
+          <div className="h-2 flex-1 overflow-hidden rounded-full bg-slate-800">
+            <div className="h-full rounded-full bg-[linear-gradient(90deg,#34d399,#22d3ee)] transition-all duration-300" style={{ width: `${percent}%` }} />
+          </div>
+          <span className="w-10 text-right text-xs font-bold text-slate-300">{percent}%</span>
         </div>
       </div>
 
-      <div className="grid gap-5 p-5 sm:p-7 lg:grid-cols-[1.15fr_.85fr]">
+      <div className="grid gap-4 p-4 sm:p-6 lg:grid-cols-[1.05fr_.95fr]">
         <section className="space-y-4">
-          <div className="rounded-2xl border border-border bg-background/70 p-5">
-            <p className="text-xs font-semibold uppercase tracking-[.2em] text-primary">Evidence file</p>
-            <p className="mt-3 text-sm text-muted-foreground">{dossier.summary}</p>
+          <div className="rounded-2xl border border-sky-300/15 bg-[#0d1c2c] p-5">
+            <p className="text-xs font-black uppercase tracking-[.2em] text-sky-300">Evidence file</p>
+            <p className="mt-3 text-sm leading-6 text-slate-300">{dossier.summary}</p>
             <ul className="mt-4 space-y-2">
               {dossier.profile.map((line) => (
-                <li key={line} className="rounded-xl border border-border bg-card px-3 py-2 text-sm">{line}</li>
+                <li key={line} className="rounded-xl border border-white/10 bg-white/[.035] px-3 py-2.5 text-sm text-slate-200">{line}</li>
               ))}
             </ul>
           </div>
 
-          <div className="rounded-2xl border border-border bg-background/60 p-5">
-            <p className="text-xs font-semibold uppercase tracking-[.2em] text-primary">What should the club do?</p>
+          <div className="rounded-2xl border border-emerald-300/15 bg-[#0d1c2c] p-5">
+            <p className="text-xs font-black uppercase tracking-[.2em] text-emerald-300">What should the club do?</p>
             <div className="mt-3 grid gap-2 sm:grid-cols-2">
               {decisionOptions.map((option) => {
                 const active = selected === option
@@ -185,7 +188,7 @@ export function ScoutGame() {
                     key={option}
                     onClick={() => choose(option)}
                     disabled={checkingProgress || Boolean(resumeState) || Boolean(selected)}
-                    className={`rounded-xl border px-4 py-3 text-left text-sm font-semibold transition ${isBest ? 'border-primary bg-primary/10 text-primary' : active ? 'border-border bg-secondary' : 'border-border bg-card hover:border-primary/45'}`}
+                    className={`min-h-12 rounded-xl border px-4 py-3 text-left text-sm font-bold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300 disabled:cursor-not-allowed ${isBest ? 'border-emerald-300/60 bg-emerald-400/15 text-emerald-200' : active ? 'border-sky-300/40 bg-sky-400/10 text-sky-100' : 'border-white/12 bg-white/[.035] text-slate-100 hover:border-emerald-300/45 hover:bg-white/[.06]'}`}
                   >
                     {option}
                   </button>
@@ -195,11 +198,12 @@ export function ScoutGame() {
           </div>
         </section>
 
-        <section className="rounded-2xl border border-border bg-[linear-gradient(180deg,rgba(54,206,163,.09),rgba(8,14,24,.92))] p-5">
-          {checkingProgress ? <div className="rounded-xl border border-border bg-background/70 p-4 text-sm text-muted-foreground">Checking saved progress…</div> : resumeState && !saved ? <div className="mb-4"><QuizProgressBanner title="Resume your quiz?" copy={`You left off at dossier ${resumeState.index + 1} of ${scoutQuestions.length}.`} onContinue={continueProgress} onStartAgain={restart} /></div> : null}
+        <section className="rounded-2xl border border-emerald-300/15 bg-[linear-gradient(180deg,rgba(11,36,42,.96),rgba(8,20,33,.98))] p-5">
+          {checkingProgress ? <div className="rounded-xl border border-white/10 bg-white/5 p-4 text-sm text-slate-300">Checking saved progress…</div> : resumeState && !saved ? <div className="mb-4"><QuizProgressBanner tone="dark" title="Resume your quiz?" copy={`You left off at dossier ${resumeState.index + 1} of ${scoutQuestions.length}.`} onContinue={continueProgress} onStartAgain={restart} /></div> : null}
           {!selected ? (
-            <div className="h-full rounded-xl border border-dashed border-border p-4 text-sm text-muted-foreground">
-              Choose what the club should do. Then we show what was good, what was risky and what the scout still needs to learn.
+            <div className="min-h-44 rounded-xl border border-dashed border-emerald-300/25 bg-black/10 p-5 text-sm leading-6 text-slate-300">
+              <p className="font-black text-emerald-200">Your report appears here.</p>
+              <p className="mt-2">Choose what the club should do. Then we show what was good, what was risky and what the scout still needs to learn.</p>
             </div>
           ) : (
             <div className="space-y-4 text-sm">
@@ -207,33 +211,33 @@ export function ScoutGame() {
                 {verdict?.label}
               </p>
               {!isLast ? (
-                <button onClick={nextDossier} className="w-full rounded-xl bg-primary px-5 py-2.5 font-semibold text-primary-foreground">
+                <button onClick={nextDossier} className="w-full rounded-xl bg-emerald-400 px-5 py-2.5 font-black text-slate-950 transition hover:bg-emerald-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-200">
                   Next dossier
                 </button>
               ) : (
                 <div className="space-y-4">
-                  <div className="rounded-2xl border border-border bg-background/70 p-4">
+                  <div className="rounded-2xl border border-white/10 bg-black/10 p-4">
                     <div className="grid gap-3 sm:grid-cols-3">
                       <MiniStat label="Score" value={`${score}/${maxScore}`} />
                       <MiniStat label="Accuracy" value={`${accuracy}%`} />
                       <MiniStat label="XP credited" value={user ? `+${creditedXp}` : `+${xp}`} />
                     </div>
                     {user ? (
-                      <div className="mt-4 rounded-xl border border-border bg-card px-4 py-3 text-sm">
+                      <div className="mt-4 rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm">
                         <p className="font-semibold">{rank.current.emoji} {rank.current.title}</p>
-                        <p className="mt-1 text-muted-foreground">{rank.next ? `${rank.remaining} XP to ${rank.next.title}` : 'Maximum rank reached'}</p>
+                        <p className="mt-1 text-slate-400">{rank.next ? `${rank.remaining} XP to ${rank.next.title}` : 'Maximum rank reached'}</p>
                       </div>
                     ) : (
-                      <p className="mt-4 text-sm text-muted-foreground">Create an account to save this progress, earn XP and build your Early Shout profile.</p>
+                      <p className="mt-4 text-sm text-slate-400">Create an account to save this progress, earn XP and build your Early Shout profile.</p>
                     )}
                   </div>
                   <div className="flex flex-wrap gap-3">
-                    <button onClick={() => void saveResult()} disabled={!user || saved || saving} className="rounded-xl bg-primary px-5 py-2.5 font-semibold text-primary-foreground disabled:opacity-50">
+                    <button onClick={() => void saveResult()} disabled={!user || saved || saving} className="rounded-xl bg-emerald-400 px-5 py-2.5 font-black text-slate-950 transition hover:bg-emerald-300 disabled:opacity-50">
                       {!user ? 'Sign in to save progress' : saving ? 'Saving...' : saved ? 'Saved' : 'Finish and save Scout XP'}
                     </button>
-                    <button onClick={restart} className="rounded-xl border border-border px-5 py-2.5 font-semibold">Run dossiers again</button>
+                    <button onClick={restart} className="rounded-xl border border-white/15 bg-white/5 px-5 py-2.5 font-bold text-slate-100 transition hover:bg-white/10">Run dossiers again</button>
                   </div>
-                  {user ? <p className="text-xs text-muted-foreground">{saving ? 'Saving your result…' : saved && !alreadyCredited ? 'XP, rating and streak updates saved to your profile.' : saved && alreadyCredited ? 'This Scout Vision reward was already credited for your account.' : ''}</p> : null}
+                  {user ? <p className="text-xs text-slate-400">{saving ? 'Saving your result…' : saved && !alreadyCredited ? 'XP, rating and streak updates saved to your profile.' : saved && alreadyCredited ? 'This Scout Vision reward was already credited for your account.' : ''}</p> : null}
                 </div>
               )}
 
@@ -259,18 +263,18 @@ export function ScoutGame() {
 
 function MiniStat({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-xl border border-border bg-card px-3 py-2">
-      <p className="text-xs text-muted-foreground">{label}</p>
-      <p className="mt-1 font-semibold">{value}</p>
+    <div className="rounded-xl border border-white/10 bg-white/5 px-3 py-2">
+      <p className="text-xs text-slate-400">{label}</p>
+      <p className="mt-1 font-semibold text-white">{value}</p>
     </div>
   )
 }
 
 function ReportItem({ label, text }: { label: string; text: string }) {
   return (
-    <div className="rounded-xl border border-border bg-card/75 p-3">
-      <p className="text-[11px] font-semibold uppercase tracking-[.16em] text-primary">{label}</p>
-      <p className="mt-1 text-muted-foreground">{text}</p>
+    <div className="rounded-xl border border-white/10 bg-white/[.04] p-3">
+      <p className="text-[11px] font-black uppercase tracking-[.16em] text-emerald-300">{label}</p>
+      <p className="mt-1 leading-6 text-slate-300">{text}</p>
     </div>
   )
 }

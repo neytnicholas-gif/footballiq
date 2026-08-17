@@ -17,7 +17,7 @@ export function LegalPage({ title, summary, children }: { title: string; summary
         <div className="mt-10 flex flex-wrap gap-4 border-t border-border pt-6 text-sm">
           <Link href="/terms" className="font-semibold text-primary hover:underline">Terms</Link>
           <Link href="/privacy" className="font-semibold text-primary hover:underline">Privacy</Link>
-          <Link href="/game-rules" className="font-semibold text-primary hover:underline">Game rules</Link>
+          <Link href="/game-rules" className="font-semibold text-primary hover:underline">Player Market rules</Link>
           <a href={`mailto:${BRAND.supportEmail}`} className="font-semibold text-primary hover:underline">Contact</a>
           <a href={`mailto:${BRAND.supportEmail}?subject=${encodeURIComponent('Early Shout legal or content report')}`} className="font-semibold text-primary hover:underline">Report content</a>
           <Link href="/" className="font-semibold text-primary hover:underline">Return home</Link>

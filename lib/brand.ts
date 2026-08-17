@@ -5,7 +5,8 @@ export const BRAND = {
   tagline: 'See it early. Make the call.',
   description:
     'Spot talent early, make the call and prove how well you read football.',
-  supportEmail: process.env.NEXT_PUBLIC_SUPPORT_EMAIL ?? 'hello@earlyshout.com',
+  supportEmail: process.env.NEXT_PUBLIC_SUPPORT_EMAIL ?? 'earlyshout@gmail.com',
+  partnershipEmail: 'earlyshout@gmail.com',
   legalOperatorName: process.env.NEXT_PUBLIC_LEGAL_OPERATOR_NAME?.trim() ?? '',
   legalOperatorAddress: process.env.NEXT_PUBLIC_LEGAL_OPERATOR_ADDRESS?.trim() ?? '',
   themeColor: '#07111f',

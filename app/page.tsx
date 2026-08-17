@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { ArrowRight, CalendarDays, Flag, Handshake, Radar, ShieldCheck, Smartphone, Sparkles, Trophy, Workflow } from 'lucide-react'
+import { ArrowRight, CalendarDays, Flag, Radar, ShieldCheck, Smartphone, Sparkles, Trophy, Workflow } from 'lucide-react'
 import { SiteHeader } from '@/components/site-header'
 import { SponsorPlacement } from '@/components/sponsor-placement'
 import { useAuth } from '@/components/auth-provider'
@@ -176,19 +176,8 @@ export default function HomePage() {
           </div>
         </section>
 
-        <section className="mx-auto flex max-w-7xl flex-col gap-4 px-4 pb-10 sm:px-6 sm:pb-12">
+        <section className="mx-auto max-w-7xl px-4 pb-10 sm:px-6 sm:pb-12">
           <SponsorPlacement placement="home" />
-          <Link href="/partners" className="group flex flex-col gap-4 rounded-3xl border border-sky-300/20 bg-sky-400/5 p-5 transition hover:border-sky-300/40 hover:bg-sky-400/10 sm:flex-row sm:items-center sm:justify-between sm:p-6">
-            <span className="flex items-start gap-4">
-              <span className="flex size-11 shrink-0 items-center justify-center rounded-xl border border-sky-300/25 bg-sky-400/10 text-sky-200"><Handshake className="size-5" /></span>
-              <span>
-                <span className="block text-xs font-bold uppercase tracking-[0.18em] text-sky-300">For brands and organisations</span>
-                <span className="mt-1 block text-lg font-black text-slate-100">Become an Early Shout launch partner.</span>
-                <span className="mt-1 block text-sm text-slate-300">Support independent football games with clear, respectful sponsorship.</span>
-              </span>
-            </span>
-            <span className="inline-flex items-center gap-2 font-bold text-sky-300">See partnership options <ArrowRight className="size-4 transition-transform group-hover:translate-x-1" /></span>
-          </Link>
         </section>
 
       </div>
