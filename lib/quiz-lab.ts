@@ -1,3 +1,10 @@
+import {
+  ODD_ONE_OUT_ROUND_COUNT,
+  ODD_ONE_OUT_ROUND_SIZE,
+  oddOneOutQuestionBank,
+  oddOneOutRoundNames,
+} from '@/lib/quiz-lab-odd-one-out'
+
 export type QuizLabFormat = 'odd-one-out' | 'truth-trap' | 'order-the-play' | 'link-up' | 'formation-fix'
 
 type QuizLabBase = {
@@ -37,20 +44,7 @@ export const quizLabFormats = [
   { id: 'formation-fix', title: 'Formation Fix', shortTitle: 'Formation Fix', description: 'Read the pitch problem and choose the missing role.', instruction: 'Fix the highlighted zone.', accent: 'emerald', skill: 'Shape reading' },
 ] as const satisfies ReadonlyArray<{ id: QuizLabFormat; title: string; shortTitle: string; description: string; instruction: string; accent: string; skill: string }>
 
-const oddOneOut: QuizLabChoiceQuestion[] = [
-  { id:'odd-01', kind:'odd-one-out', difficulty:'Starter', prompt:'Three are ways to restart play. Which one is not?', options:['Throw-in','Corner kick','Goal kick','Yellow card'], answer:'Yellow card', explanation:'A yellow card is a disciplinary sanction. The other three restart play.', takeaway:'Separate the restart from any card or warning.' },
-  { id:'odd-02', kind:'odd-one-out', difficulty:'Starter', prompt:'Three players normally form the last defensive line. Who is the odd one out?', options:['Centre-back','Right-back','Left-back','Centre-forward'], answer:'Centre-forward', explanation:'A centre-forward leads the attack. The other roles normally belong to the back line.', takeaway:'Start with the player’s main line and job.' },
-  { id:'odd-03', kind:'odd-one-out', difficulty:'Sharp', prompt:'Three actions help a team escape a high press. Which one usually does not?', options:['Create a spare player','Use the goalkeeper','Offer a third-player run','Stand behind the same marker'], answer:'Stand behind the same marker', explanation:'Hiding behind one marker removes a passing option. The other actions help create a free route.', takeaway:'Good build-up creates a free player or a new angle.' },
-  { id:'odd-04', kind:'odd-one-out', difficulty:'Starter', prompt:'Three clues belong in a balanced scouting report. Which one does not?', options:['Repeatable strength','Clear concern','Missing evidence','One viral highlight as final proof'], answer:'One viral highlight as final proof', explanation:'One clip is not enough for a final judgement. A report should balance strengths, concerns and unknowns.', takeaway:'Scout the repeatable behaviour, not the loudest clip.' },
-  { id:'odd-05', kind:'odd-one-out', difficulty:'Sharp', prompt:'Three can make a player offside-active. Which one cannot do it by itself?', options:['Playing the ball','Challenging an opponent','Blocking a goalkeeper’s view','Standing in an offside position'], answer:'Standing in an offside position', explanation:'Position alone is not an offence. The player must become involved in active play.', takeaway:'Offside position and offside offence are different.' },
-  { id:'odd-06', kind:'odd-one-out', difficulty:'Sharp', prompt:'Three help protect against a counter-attack. Which one is the odd choice?', options:['Keep cover behind the ball','Control central space','Stagger supporting players','Send every player ahead of the ball'], answer:'Send every player ahead of the ball', explanation:'Committing everyone removes the team’s rest defence. The other choices preserve protection.', takeaway:'Attack with cover already in place.' },
-  { id:'odd-07', kind:'odd-one-out', difficulty:'Starter', prompt:'Three are useful goalkeeper observations. Which one is not useful evidence?', options:['Starting position','Claim decisions','Pass choice under pressure','Boot colour'], answer:'Boot colour', explanation:'Boot colour says nothing about goalkeeper performance. The other observations affect the role.', takeaway:'Record actions that change the game.' },
-  { id:'odd-08', kind:'odd-one-out', difficulty:'Expert', prompt:'Three factors help judge DOGSO. Which one does not?', options:['Distance to goal','Direction of play','Likely control of the ball','How loudly the crowd appeals'], answer:'How loudly the crowd appeals', explanation:'Crowd reaction is not part of DOGSO. Distance, direction, control and defenders matter.', takeaway:'Use the football facts, not the noise.' },
-  { id:'odd-09', kind:'odd-one-out', difficulty:'Sharp', prompt:'Three movements can create space for a team-mate. Which one usually closes it?', options:['A decoy run','An overlap','A third-player run','Two attackers making the same run'], answer:'Two attackers making the same run', explanation:'Identical runs often bring defenders into the same space. Varied runs move or occupy different defenders.', takeaway:'Different run lines create different questions.' },
-  { id:'odd-10', kind:'odd-one-out', difficulty:'Starter', prompt:'Three are signs of a fair quiz question. Which one is not?', options:['One clear answer','Plausible choices','A short explanation','A trick based on hidden wording'], answer:'A trick based on hidden wording', explanation:'A good challenge tests football knowledge, not the player’s ability to guess the writer’s trick.', takeaway:'Difficulty should come from football thinking.' },
-  { id:'odd-11', kind:'odd-one-out', difficulty:'Expert', prompt:'Three belong to a referee’s decision sequence. Which one does not?', options:['Observe the action','Identify the offence','Choose the restart','Copy the loudest player’s opinion'], answer:'Copy the loudest player’s opinion', explanation:'Appeals do not replace observation and Law. The referee owns the final decision.', takeaway:'Observe, decide, sanction, restart.' },
-  { id:'odd-12', kind:'odd-one-out', difficulty:'Sharp', prompt:'Three describe useful player-development evidence. Which one is weakest?', options:['Improvement across several matches','Response to a harder role','Repeat action under pressure','A single easy match with no context'], answer:'A single easy match with no context', explanation:'One easy sample gives little information about repeatability or transfer to a harder level.', takeaway:'Context and repeated evidence improve a projection.' },
-]
+const oddOneOut: QuizLabChoiceQuestion[] = oddOneOutQuestionBank
 
 const truthTrap: QuizLabChoiceQuestion[] = [
   { id:'trap-01', kind:'truth-trap', difficulty:'Starter', prompt:'Which statement about a throw-in is false?', options:['It uses both hands','It comes from behind and over the head','Both feet must be completely inside the field','Opponents must respect the required distance'], answer:'Both feet must be completely inside the field', explanation:'Part of each foot may be on or outside the touchline, but the feet must meet the Law at release.', takeaway:'Judge the release position, not an invented “inside the field” rule.' },
@@ -130,12 +124,35 @@ export function quizLabCorrectAnswer(question: QuizLabQuestion) {
   return question.answer
 }
 
+export function quizLabRoundCount(format: QuizLabFormat) {
+  return format === 'odd-one-out' ? ODD_ONE_OUT_ROUND_COUNT : 1
+}
+
+export function quizLabRoundName(format: QuizLabFormat, round: number) {
+  if (format !== 'odd-one-out') return quizLabFormatById(format)?.title ?? 'Quiz Lab'
+  return oddOneOutRoundNames[round - 1] ?? `Odd One Out Round ${round}`
+}
+
+export function getQuizLabRound(format: QuizLabFormat, round = 1) {
+  const bank = quizLabQuestionBank[format]
+  if (format !== 'odd-one-out') {
+    if (round !== 1) throw new Error('This Quiz Lab format has one round.')
+    return bank
+  }
+  if (!Number.isSafeInteger(round) || round < 1 || round > ODD_ONE_OUT_ROUND_COUNT) {
+    throw new Error('Odd One Out round is outside the available range.')
+  }
+  const start = (round - 1) * ODD_ONE_OUT_ROUND_SIZE
+  return bank.slice(start, start + ODD_ONE_OUT_ROUND_SIZE)
+}
+
 export function validateQuizLab() {
   const errors: string[] = []
   const ids = new Set<string>()
   for (const format of quizLabFormats) {
     const questions = quizLabQuestionBank[format.id]
     if (questions.length < 10) errors.push(`${format.id}: expected at least ten questions`)
+    if (format.id === 'odd-one-out' && questions.length !== 240) errors.push('odd-one-out: expected exactly 240 questions')
     for (const question of questions) {
       if (ids.has(question.id)) errors.push(`${question.id}: duplicate id`)
       ids.add(question.id)

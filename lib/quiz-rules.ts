@@ -5,7 +5,7 @@ import { calculateDuelXp } from '@/lib/progression'
 import type { QuizProof } from '@/lib/quiz-proof'
 import { expandedScoutScenarios } from '@/lib/scout-scenario-expansion'
 import { getLeagueWorldQuestions } from '@/lib/football-leagues'
-import { quizLabCorrectAnswer, quizLabQuestionBank, type QuizLabFormat } from '@/lib/quiz-lab'
+import { getQuizLabRound, quizLabCorrectAnswer, type QuizLabFormat } from '@/lib/quiz-lab'
 
 export type QuizCompletionClaim = {
   quizId: string
@@ -194,8 +194,9 @@ export function verifyQuizReward(claim: QuizCompletionClaim): VerifiedQuizReward
   const quizLabMatch = QUIZ_LAB_ID.exec(quizId)
   if (quizLabMatch) {
     const format = quizLabMatch[1] as QuizLabFormat
-    const questions = quizLabQuestionBank[format]
     const proof = requireProof(claim.proof, 'quiz-lab')
+    const round = proof.round ?? 1
+    const questions = getQuizLabRound(format, round)
     assertResult(score, total, questions.length)
     if (proof.format !== format || proof.answers.length !== questions.length || proof.answers.some((answer) => typeof answer !== 'string')) {
       throw new Error('Quiz Lab answer proof is incomplete.')

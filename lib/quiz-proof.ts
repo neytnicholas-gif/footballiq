@@ -11,7 +11,7 @@ export type QuizProof =
   | { kind: 'scout-dossier'; answers: DossierDecision[] }
   | { kind: 'scout-vision'; answers: Array<{ scenarioId: string; decision: ScoutRecommendation }> }
   | { kind: 'higher-lower'; deckSeed: number; answers: boolean[] }
-  | { kind: 'quiz-lab'; format: QuizLabFormat; answers: string[] }
+  | { kind: 'quiz-lab'; format: QuizLabFormat; round?: number; answers: string[] }
   | {
       kind: 'duel'
       packId: string

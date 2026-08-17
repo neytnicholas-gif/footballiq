@@ -6,6 +6,7 @@ import { careerQuestions, higherLowerItems, whoAmIQuestions } from '@/lib/game-d
 import { tacticalScenarios } from '@/lib/tactical-scenarios'
 import { refereeScenarios } from '@/lib/referee-scenarios'
 import { scoutScenarioCount } from '@/lib/scout-scenario-expansion'
+import { quizLabQuestionBank } from '@/lib/quiz-lab'
 
 const refereeQuestions = refereeScenarios
 const scoutQuestions = { length: scoutScenarioCount }
@@ -17,7 +18,7 @@ const modes = [
   { kind: 'game', title: 'Football Duels', description: 'Pick winners in fast stat battles across leagues, trophies and records.', href: '/quizzes/football-duels', icon: Trophy, accent: 'blue', count: `${duelPacks.length} packs`, duration: '5–10 min', skill: 'Knowledge' },
   { kind: 'quiz', title: 'Daily Challenge', description: 'Answer today’s five questions and keep your streak going.', href: '/daily', icon: Sparkles, accent: 'amber', count: '5 questions', duration: 'Daily', skill: 'Mixed' },
   { kind: 'quiz', title: 'League World', description: 'Travel through 24 leagues, including all four nationwide English divisions.', href: '/quizzes/league-world', icon: Globe2, accent: 'blue', count: '24 league rooms', duration: '15 questions each', skill: 'World football' },
-  { kind: 'quiz', title: 'Odd One Out', description: 'Spot the role, rule or football idea that does not belong.', href: '/quizzes/quiz-lab/odd-one-out', icon: CircleDotDashed, accent: 'cyan', count: '12 challenges', duration: '6–9 min', skill: 'Patterns' },
+  { kind: 'quiz', title: 'Odd One Out', description: 'Spot the role, rule or football idea that does not belong.', href: '/quizzes/quiz-lab/odd-one-out', icon: CircleDotDashed, accent: 'cyan', count: `${quizLabQuestionBank['odd-one-out'].length} challenges`, duration: '12 per round', skill: 'Patterns' },
   { kind: 'quiz', title: 'Truth Trap', description: 'Three statements are sound. Find the one false football claim.', href: '/quizzes/quiz-lab/truth-trap', icon: ShieldQuestion, accent: 'rose', count: '12 challenges', duration: '6–9 min', skill: 'Careful reading' },
   { kind: 'quiz', title: 'Order the Play', description: 'Build a decision, routine or team move in the correct order.', href: '/quizzes/quiz-lab/order-the-play', icon: ListOrdered, accent: 'amber', count: '12 challenges', duration: '8–10 min', skill: 'Sequences' },
   { kind: 'quiz', title: 'Link-Up Board', description: 'Connect four football roles, rules or clues to their correct partners.', href: '/quizzes/quiz-lab/link-up', icon: Link2, accent: 'violet', count: '12 boards', duration: '8–12 min', skill: 'Connections' },
