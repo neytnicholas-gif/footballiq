@@ -14,7 +14,7 @@ describe('Early Shout identity', () => {
 
     expect(brand).toContain("name: 'Early Shout'")
     expect(brand).toContain("tagline: 'See it early. Make the call.'")
-    expect(logo).toContain('Early <span className="text-primary">Shout</span>')
+    expect(logo).toContain('Early <span className="brand-accent-text">Shout</span>')
     expect(home).toContain('>EARLY</span>')
     expect(home).toContain('>SHOUT.</span>')
     expect(rules).toContain('100m Market Credits')

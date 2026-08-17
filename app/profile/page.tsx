@@ -10,6 +10,7 @@ import { getRankProgress } from '@/lib/progression'
 import { academyExperiences, computeAcademyProgress, loadAcademyCompletions, type AcademyCompletion } from '@/lib/academy'
 import { LoadingState, ProgressCard, StatCard, SurfaceCard, StatusBadge } from '@/components/platform/primitives'
 import { supabase } from '@/lib/supabase'
+import { LevelProgress } from '@/components/level-progress'
 
 function formatDays(value: number) {
   return `${value} day${value === 1 ? '' : 's'}`
@@ -106,7 +107,9 @@ export default function ProfilePage() {
                   <StatusBadge label="Quizzes and Academy free" tone="neutral" />
                   {membership.source === 'dev-local-override' ? <StatusBadge label="Local dev override" tone="warn" /> : null}
                 </div>
-                <div className="mt-6">
+                <LevelProgress xp={profile.xp} className="mt-6" />
+                <div className="mt-6 rounded-2xl border border-border bg-card/70 p-4">
+                  <p className="mb-2 text-xs font-bold uppercase tracking-[0.18em] text-muted-foreground">Rank milestone</p>
                   <div className="flex justify-between text-sm text-foreground"><span>{profile.xp.toLocaleString()} XP</span><span>{rank.next ? `${rank.remaining} XP to ${rank.next.title}` : 'Maximum rank'}</span></div>
                   <div className="mt-3 h-3 overflow-hidden rounded-full bg-secondary"><div className="h-full rounded-full bg-primary" style={{ width: `${rank.percent}%` }} /></div>
                 </div>
@@ -144,12 +147,14 @@ export default function ProfilePage() {
                 <h2 className="mt-2 text-2xl font-black tracking-tight text-foreground">Your progress at a glance</h2>
                 <ul className="mt-4 space-y-2 text-sm text-muted-foreground">
                   <li>• Your XP, rating and streaks are saved</li>
+                  <li>• Your overall level rises often; ranks mark bigger milestones</li>
                   <li>• Your accuracy updates when you finish a quiz</li>
                   <li>• Finished Academy lessons appear here</li>
                   {academyExperiences.filter((item) => item.status !== 'available').slice(0, 2).map((item) => <li key={item.key}>• {item.title} · {item.status === 'coming-next' ? 'Coming next' : 'Planned later'}</li>)}
                 </ul>
                 <div className="mt-4 flex flex-wrap gap-3">
                   <Link href="/market/rewards" className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground"><Award className="size-4"/>Market challenges</Link>
+                  <Link href="/how-to-play" className="inline-flex items-center gap-2 rounded-xl border border-border bg-background px-4 py-2.5 text-sm font-semibold text-foreground"><BookOpen className="size-4"/>How to play</Link>
                   <Link href={`/player/${encodeURIComponent(profile.username)}`} className="inline-flex items-center gap-2 rounded-xl border border-border bg-background px-4 py-2.5 text-sm font-semibold text-foreground"><ExternalLink className="size-4"/>Public profile</Link>
                   <Link href="/username" className="rounded-xl border border-border bg-background px-4 py-2.5 text-sm font-semibold text-foreground transition hover:border-primary/35 hover:bg-secondary/40">Edit username</Link>
                   <button onClick={() => void signOut()} className="rounded-xl border border-border bg-background px-4 py-2.5 text-sm font-semibold text-foreground transition hover:border-primary/35 hover:bg-secondary/40">Log out</button>

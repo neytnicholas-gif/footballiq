@@ -5,7 +5,7 @@ import { ArrowRight, CalendarDays, Flag, Handshake, Radar, ShieldCheck, Smartpho
 import { SiteHeader } from '@/components/site-header'
 import { SponsorPlacement } from '@/components/sponsor-placement'
 import { useAuth } from '@/components/auth-provider'
-import { getRankProgress } from '@/lib/progression'
+import { getLevelInfo, getRankProgress } from '@/lib/progression'
 
 const featuredModes = [
   {
@@ -48,6 +48,7 @@ const featuredModes = [
 export default function HomePage() {
   const { user, profile } = useAuth()
   const rank = getRankProgress(profile?.xp ?? 0)
+  const level = getLevelInfo(profile?.xp ?? 0)
   const accuracy = formatAccuracy(profile?.correct_answers ?? 0, profile?.total_answers ?? 0)
   const streakLabel = user ? formatDayCount(profile?.current_streak ?? 0) : 'Sign in to track'
 
@@ -105,7 +106,7 @@ export default function HomePage() {
           <div className="grid gap-3 rounded-3xl border border-white/10 bg-[#0a1422]/90 p-4 sm:grid-cols-2 sm:p-5 lg:grid-cols-1">
             <HeroMetric label="What you learn" value="Better choices" hint="Referee, scout and coach games" />
             <HeroMetric label="Daily format" value="5 questions" hint="One challenge per day" />
-            <HeroMetric label="Your progress" value="XP + rank" hint="See yourself improve" />
+            <HeroMetric label="Your progress" value="Level + rank" hint="See yourself improve" />
           </div>
         </section>
 
@@ -151,6 +152,7 @@ export default function HomePage() {
               </div>
               <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-1">
                 <StripStat label="Rank" value={user ? rank.current.title : 'Sign in'} />
+                <StripStat label="Level" value={user ? level.level.toLocaleString() : 'Track it'} />
                 <StripStat label="XP" value={user ? (profile?.xp ?? 0).toLocaleString() : 'Track it'} />
                 <StripStat label="Streak" value={streakLabel} />
                 <StripStat label="Accuracy" value={user ? accuracy : 'Track it'} />

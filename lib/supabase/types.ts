@@ -20,6 +20,8 @@ export type Database = {
           current_streak: number
           longest_streak: number
           last_activity_date: string | null
+          onboarding_version: number
+          onboarding_completed_at: string | null
           created_at: string
           updated_at: string
         }
@@ -41,6 +43,8 @@ export type Database = {
           current_streak?: number
           longest_streak?: number
           last_activity_date?: string | null
+          onboarding_version?: number
+          onboarding_completed_at?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -62,6 +66,8 @@ export type Database = {
           current_streak?: number
           longest_streak?: number
           last_activity_date?: string | null
+          onboarding_version?: number
+          onboarding_completed_at?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -816,6 +822,12 @@ export type Database = {
       }
     }
     Functions: {
+      complete_site_onboarding: {
+        Args: {
+          p_version: number
+        }
+        Returns: number
+      }
       get_public_profiles: {
         Args: {
           p_user_ids?: string[] | null

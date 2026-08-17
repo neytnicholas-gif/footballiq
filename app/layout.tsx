@@ -6,6 +6,7 @@ import { AccountPrompt } from '@/components/account-prompt'
 import { SiteFooter } from '@/components/site-footer'
 import { MarketRewardCelebration } from '@/components/market/market-reward-celebration'
 import { BetaFeedbackButton } from '@/components/beta-feedback-button'
+import { OnboardingTour } from '@/components/onboarding-tour'
 import { BRAND } from '@/lib/brand'
 import './globals.css'
 
@@ -69,6 +70,7 @@ export default function RootLayout({
       <body className={`${sora.variable} ${plexMono.variable} bg-background font-sans antialiased`}>
         <AuthProvider>
           {children}
+          <OnboardingTour />
           <MarketRewardCelebration />
           <BetaFeedbackButton />
           <AccountPrompt />

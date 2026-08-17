@@ -10,6 +10,7 @@ import { supabase, type Profile } from '@/lib/supabase'
 import { SectionHeader, StatCard, SurfaceCard, StatusBadge } from '@/components/platform/primitives'
 import { ClubColourDot } from '@/components/market/club-colour-dot'
 import type { Database } from '@/lib/supabase/types'
+import { LevelProgress } from '@/components/level-progress'
 
 type PublicProfile = Database['public']['Functions']['get_public_profiles']['Returns'][number]
 type MarketPublicProfile = {
@@ -105,7 +106,9 @@ export default function PublicPlayerPage() {
                   <p className="mt-2 text-2xl font-black text-foreground">{rank.current.emoji} {rank.current.title}</p>
                 </div>
               </div>
-              <div className="mt-8">
+              <LevelProgress xp={profile.xp} className="mt-8" />
+              <div className="mt-5 rounded-2xl border border-border bg-card/75 p-4">
+                <p className="mb-2 text-xs font-bold uppercase tracking-[0.18em] text-muted-foreground">Rank milestone</p>
                 <div className="flex justify-between text-sm text-foreground"><span>{profile.xp.toLocaleString()} XP</span><span>{rank.next ? `${rank.remaining} XP to ${rank.next.title}` : 'Maximum rank'}</span></div>
                 <div className="mt-3 h-3 overflow-hidden rounded-full bg-secondary"><div className="h-full rounded-full bg-primary" style={{ width: `${rank.percent}%` }} /></div>
               </div>

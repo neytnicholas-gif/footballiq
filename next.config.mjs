@@ -1,5 +1,10 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Keep page generation inside the memory available on local Windows and
+  // small CI builders. This changes build concurrency, not runtime capacity.
+  experimental: {
+    cpus: 2,
+  },
   images: {
     unoptimized: true,
   },

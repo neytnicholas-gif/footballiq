@@ -19,7 +19,7 @@ type AuthContextValue = {
 const AuthContext = createContext<AuthContextValue | undefined>(undefined)
 
 const PROFILE_COLUMNS =
-  'id, username, plan, subscription_status, trial_ends_at, subscription_started_at, subscription_expires_at, rating, xp, streak, quizzes_completed, correct_answers, total_answers, perfect_quizzes, current_streak, longest_streak, last_activity_date, created_at, updated_at'
+  'id, username, plan, subscription_status, trial_ends_at, subscription_started_at, subscription_expires_at, rating, xp, streak, quizzes_completed, correct_answers, total_answers, perfect_quizzes, current_streak, longest_streak, last_activity_date, onboarding_version, onboarding_completed_at, created_at, updated_at'
 
 const PROFILE_COLUMNS_LEGACY =
   'id, username, rating, xp, streak, quizzes_completed, correct_answers, total_answers, perfect_quizzes, current_streak, longest_streak, last_activity_date, created_at, updated_at'
@@ -97,6 +97,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       trial_ends_at: source.trial_ends_at ?? null,
       subscription_started_at: source.subscription_started_at ?? null,
       subscription_expires_at: source.subscription_expires_at ?? null,
+      onboarding_version: source.onboarding_version ?? 0,
+      onboarding_completed_at: source.onboarding_completed_at ?? null,
     } as Profile
 
     setProfile(resolved)

@@ -21,7 +21,7 @@ export function Logo({ className }: { className?: string }) {
         <span className="relative">{BRAND.initials}</span>
       </span>
       <span className="brand-wordmark text-lg font-black uppercase leading-none tracking-[-0.055em]">
-        Early <span className="text-primary">Shout</span>
+        Early <span className="brand-accent-text">Shout</span>
       </span>
     </Link>
   )

@@ -18,6 +18,7 @@ const navLinks = [
   { label: 'Terms', href: '/terms' },
   { label: 'Privacy', href: '/privacy' },
   { label: 'Game rules', href: '/game-rules' },
+  { label: 'How to play', href: '/how-to-play' },
   { label: 'Report content', href: `mailto:${BRAND.supportEmail}?subject=${encodeURIComponent('Early Shout content or safety report')}` },
 ]
 

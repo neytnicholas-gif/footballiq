@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react'
 import { usePathname } from 'next/navigation'
 import { Logo } from '@/components/logo'
 import { useAuth } from '@/components/auth-provider'
+import { LevelBadge } from '@/components/level-progress'
 import { cn } from '@/lib/utils'
 
 const links = [
@@ -16,6 +17,7 @@ const links = [
   ['Predictions', '/predictions'],
   ['Leaderboard', '/leaderboard'],
   ['Profile', '/profile'],
+  ['How to play', '/how-to-play'],
 ]
 
 export function SiteHeader() {
@@ -39,13 +41,13 @@ export function SiteHeader() {
   const authBlock = !authResolved
     ? <span className="h-10 w-24 animate-pulse rounded-xl bg-secondary/60" aria-hidden="true" />
     : showSignedOutCta
-      ? <Link href="/login" className="inline-flex min-h-11 items-center whitespace-nowrap rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground shadow-[0_14px_34px_-18px_rgba(16,185,129,.65)] transition hover:bg-primary/90">Sign in</Link>
+      ? <Link href="/login" className="inline-flex min-h-11 items-center whitespace-nowrap rounded-lg bg-[#087f68] px-3 py-2 text-sm font-semibold text-white shadow-[0_14px_34px_-18px_rgba(16,185,129,.65)] transition hover:bg-[#066b59]">Sign in</Link>
       : user && !profile?.username
         ? <Link href="/username" className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground shadow-[0_14px_34px_-18px_rgba(16,185,129,.65)] transition hover:bg-primary/90">Choose username</Link>
       : (
         <div className="flex items-center gap-2">
           <Link href="/profile" className="flex min-h-11 max-w-36 items-center rounded-lg border border-border bg-secondary/30 px-2 py-2 text-sm text-foreground transition hover:border-primary/40 hover:bg-secondary/55 sm:max-w-52 sm:px-3">
-            <span className="mr-2 rounded-full bg-primary px-2 py-1 text-xs font-semibold text-primary-foreground">{Math.max(1, Math.floor((profile?.xp ?? 0) / 250) + 1)}</span>
+            <LevelBadge xp={profile?.xp ?? 0} compact className="mr-2" />
             <span className="truncate">{profile?.username ?? 'Profile'}</span>
           </Link>
           <button onClick={() => void signOut()} className="hidden rounded-lg border border-border bg-secondary/25 px-3 py-2 text-sm text-muted-foreground transition hover:border-primary/30 hover:text-foreground sm:block">Log out</button>
@@ -65,7 +67,7 @@ export function SiteHeader() {
               aria-current={pathname === href ? 'page' : undefined}
               className={cn(
                 'rounded-lg px-2.5 py-1.5 text-sm transition',
-                pathname === href || (href === '/market' && pathname.startsWith('/market')) ? 'bg-primary text-primary-foreground shadow-[0_12px_28px_-16px_rgba(16,185,129,.7)]' : 'text-muted-foreground hover:bg-secondary/70 hover:text-foreground',
+                pathname === href || (href === '/market' && pathname.startsWith('/market')) || (href === '/quizzes' && pathname.startsWith('/quizzes')) ? 'bg-[#087f68] text-white shadow-[0_12px_28px_-16px_rgba(16,185,129,.7)]' : 'text-muted-foreground hover:bg-secondary/70 hover:text-foreground',
               )}
             >
               {label}
@@ -85,7 +87,7 @@ export function SiteHeader() {
         <nav id="mobile-primary-navigation" aria-label="Mobile primary navigation" className="border-t border-border bg-background/98 p-3 lg:hidden">
           <div className="grid gap-1">
             {links.map(([label, href]) => (
-              <Link key={href} href={href} onClick={closeMobile} className={cn('flex min-h-11 items-center rounded-lg px-3 py-2 text-sm transition', pathname === href ? 'bg-primary/15 font-semibold text-primary' : 'text-muted-foreground hover:bg-secondary/70 hover:text-foreground')}>
+              <Link key={href} href={href} onClick={closeMobile} className={cn('flex min-h-11 items-center rounded-lg px-3 py-2 text-sm transition', pathname === href || (href === '/market' && pathname.startsWith('/market')) || (href === '/quizzes' && pathname.startsWith('/quizzes')) ? 'bg-primary/15 font-semibold text-primary' : 'text-muted-foreground hover:bg-secondary/70 hover:text-foreground')}>
                 {label}
               </Link>
             ))}

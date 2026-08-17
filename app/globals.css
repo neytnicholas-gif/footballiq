@@ -7,6 +7,10 @@
   text-shadow: 0 0 24px color-mix(in srgb, var(--primary) 24%, transparent);
 }
 
+.brand-accent-text {
+  color: oklch(0.46 0.13 170);
+}
+
 .brand-display {
   font-stretch: condensed;
   letter-spacing: -0.075em;
@@ -138,6 +142,10 @@
   --sidebar-ring: oklch(0.74 0.19 152);
 }
 
+.dark .brand-accent-text {
+  color: oklch(0.78 0.15 166);
+}
+
 @media (prefers-color-scheme: dark) {
   :root:not(.light) {
     color-scheme: dark;
@@ -172,6 +180,10 @@
     --sidebar-accent-foreground: oklch(0.98 0 0);
     --sidebar-border: oklch(1 0 0 / 10%);
     --sidebar-ring: oklch(0.74 0.19 152);
+  }
+
+  :root:not(.light) .brand-accent-text {
+    color: oklch(0.78 0.15 166);
   }
 }
 

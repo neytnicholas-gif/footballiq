@@ -47,38 +47,89 @@ export function calculateDuelXp(score: number, total: number, bestCombo: number,
   return 20 + score * 10 + accuracyBonus + comboBonus + speedBonus + (perfect ? 60 : 0)
 }
 
-const levelColors = ['#6B7280', '#22C55E', '#0EA5E9', '#F59E0B', '#EF4444', '#E11D48']
+/**
+ * Levels are deliberately separate from named ranks. A rank is a milestone;
+ * a level is the small, regular reward a player sees between milestones.
+ *
+ * The curve starts gently, gets gradually harder through level 1000, then
+ * keeps going at the level-1000 pace. That gives the system no artificial
+ * ceiling without turning later levels into an unreasonable grind.
+ */
+export const DISTINCT_LEVEL_COLOUR_COUNT = 1000
+
+function roundToFive(value: number) {
+  return Math.round(value / 5) * 5
+}
+
+export function xpNeededForLevelUp(level: number) {
+  const safeLevel = Math.max(1, Math.min(DISTINCT_LEVEL_COLOUR_COUNT, Number.isFinite(level) ? Math.floor(level) : 1))
+  return roundToFive(75 + safeLevel * 3 + 12 * Math.sqrt(safeLevel))
+}
+
+const levelStartXp: number[] = [0]
+for (let level = 1; level < DISTINCT_LEVEL_COLOUR_COUNT; level += 1) {
+  levelStartXp.push(levelStartXp[level - 1] + xpNeededForLevelUp(level))
+}
+
+export function getXpAtStartOfLevel(level: number) {
+  const safeLevel = Math.max(1, Number.isFinite(level) ? Math.floor(level) : 1)
+  if (safeLevel <= DISTINCT_LEVEL_COLOUR_COUNT) return levelStartXp[safeLevel - 1]
+  const extraLevels = safeLevel - DISTINCT_LEVEL_COLOUR_COUNT
+  return levelStartXp[DISTINCT_LEVEL_COLOUR_COUNT - 1] + extraLevels * xpNeededForLevelUp(DISTINCT_LEVEL_COLOUR_COUNT)
+}
 
 export function getLevelInfo(totalXp: number) {
-  const safeXp = Math.max(0, Number.isFinite(totalXp) ? totalXp : 0)
-  const current = getRank(safeXp)
-  const next = getNextRank(safeXp)
-  const level = Math.max(1, ranks.findIndex((rank) => rank.title === current.title) + 1)
+  const safeXp = Math.max(0, Number.isFinite(totalXp) ? Math.floor(totalXp) : 0)
+  const level1000Start = levelStartXp[DISTINCT_LEVEL_COLOUR_COUNT - 1]
 
-  if (!next) {
-    return {
-      level,
-      xpInLevel: 1,
-      xpNeeded: 1,
-      progressPercentage: 100,
-      color: getLevelColor(level),
+  let level: number
+  let xpInLevel: number
+  let xpNeeded: number
+
+  if (safeXp >= level1000Start) {
+    xpNeeded = xpNeededForLevelUp(DISTINCT_LEVEL_COLOUR_COUNT)
+    const earnedAfterLevel1000 = safeXp - level1000Start
+    level = DISTINCT_LEVEL_COLOUR_COUNT + Math.floor(earnedAfterLevel1000 / xpNeeded)
+    xpInLevel = earnedAfterLevel1000 % xpNeeded
+  } else {
+    let low = 0
+    let high = levelStartXp.length - 1
+    while (low <= high) {
+      const middle = Math.floor((low + high) / 2)
+      if (levelStartXp[middle] <= safeXp) low = middle + 1
+      else high = middle - 1
     }
+    level = high + 1
+    xpInLevel = safeXp - levelStartXp[high]
+    xpNeeded = xpNeededForLevelUp(level)
   }
-
-  const xpInLevel = Math.max(0, safeXp - current.minXp)
-  const xpNeeded = Math.max(1, next.minXp - current.minXp)
-  const progressPercentage = Math.max(0, Math.min(100, Math.round((xpInLevel / xpNeeded) * 100)))
 
   return {
     level,
     xpInLevel,
     xpNeeded,
-    progressPercentage,
+    xpToNextLevel: Math.max(0, xpNeeded - xpInLevel),
+    progressPercentage: Math.max(0, Math.min(100, Math.round((xpInLevel / xpNeeded) * 100))),
     color: getLevelColor(level),
+    palette: getLevelPalette(level),
+  }
+}
+
+export function getLevelPalette(level: number) {
+  const safeLevel = Math.max(1, Number.isFinite(level) ? Math.floor(level) : 1)
+  const colourIndex = (safeLevel - 1) % DISTINCT_LEVEL_COLOUR_COUNT
+  const hue = Number(((158 + colourIndex * 137.507764) % 360).toFixed(3))
+  const secondHue = Number(((hue + 24 + (colourIndex % 7) * 3) % 360).toFixed(3))
+
+  return {
+    accent: `hsl(${hue} 76% 42%)`,
+    badge: `linear-gradient(135deg, hsl(${hue} 72% 28%), hsl(${secondHue} 72% 35%))`,
+    soft: `hsl(${hue} 72% 92%)`,
+    ring: `hsl(${hue} 78% 55%)`,
+    foreground: '#ffffff',
   }
 }
 
 export function getLevelColor(level: number) {
-  const safeLevel = Math.max(1, Number.isFinite(level) ? Math.floor(level) : 1)
-  return levelColors[Math.min(levelColors.length - 1, Math.floor((safeLevel - 1) / 2))]
+  return getLevelPalette(level).accent
 }
