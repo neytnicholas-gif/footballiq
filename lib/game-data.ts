@@ -1,9 +1,11 @@
 import { refereeScenarios } from './referee-scenarios'
 import { expandedScoutScenarios } from './scout-scenario-expansion'
+import { higherLowerDecks as duelHigherLowerDecks } from './duel-packs'
+import { careerQuestionBank, whoAmIQuestionBank } from './player-knowledge-bank'
 
 export type HigherLowerItem = { name: string; value: number; detail: string }
-export type WhoAmIQuestion = { answer: string; clues: string[] }
-export type CareerQuestion = { answer: string; clubs: string[]; hint: string }
+export type WhoAmIQuestion = { answer: string; aliases?: string[]; clues: string[] }
+export type CareerQuestion = { answer: string; aliases?: string[]; clubs: string[]; hint: string }
 export type RefereeQuestion = { id?: string; scenario: string; options: string[]; answer: number; explanation: string }
 export type ScoutDecision = 'Strongly follow' | 'Follow' | 'Monitor' | 'Do not pursue'
 export type ScoutQaVerdict = 'launch-ready' | 'needs improvement' | 'replace'
@@ -31,7 +33,7 @@ export type ScoutQuestion = {
   qaRevision: string
 }
 
-export const higherLowerItems: HigherLowerItem[] = [
+const legacyHigherLowerItems: HigherLowerItem[] = [
   { name: 'Thierry Henry', value: 175, detail: 'Premier League goals' },
   { name: 'Frank Lampard', value: 177, detail: 'Premier League goals' },
   { name: 'Sergio Agüero', value: 184, detail: 'Premier League goals' },
@@ -48,7 +50,7 @@ export const higherLowerItems: HigherLowerItem[] = [
   { name: 'David Silva', value: 60, detail: 'Premier League goals' },
 ]
 
-export const whoAmIQuestions: WhoAmIQuestion[] = [
+const legacyWhoAmIQuestions: WhoAmIQuestion[] = [
   { answer: 'Kevin De Bruyne', clues: ['I am Belgian.', 'I played for Wolfsburg before becoming a Premier League star.', 'I am known for elite chance creation and crossing.', 'I became a central figure at Manchester City.'] },
   { answer: 'Didier Drogba', clues: ['I represented an African national team.', 'I played in France before moving to England.', 'I scored in a Champions League final.', 'I became a Chelsea icon.'] },
   { answer: 'Luka Modrić', clues: ['I am a midfielder from Croatia.', 'I played for Tottenham before moving to Spain.', 'I won the Ballon d’Or in 2018.', 'I became a Real Madrid legend.'] },
@@ -61,7 +63,7 @@ export const whoAmIQuestions: WhoAmIQuestion[] = [
   { answer: 'Manuel Neuer', clues: ['I am German.', 'I started at Schalke.', 'I changed expectations of a goalkeeper’s role outside the box.', 'I became a Bayern Munich captain.'] },
 ]
 
-export const careerQuestions: CareerQuestion[] = [
+const legacyCareerQuestions: CareerQuestion[] = [
   { answer: 'Zlatan Ibrahimović', clubs: ['Malmö', 'Ajax', 'Juventus', 'Inter', 'Barcelona', 'Milan', 'PSG', 'Manchester United', 'LA Galaxy'], hint: 'Swedish striker' },
   { answer: 'Nicolas Anelka', clubs: ['PSG', 'Arsenal', 'Real Madrid', 'Liverpool', 'Manchester City', 'Fenerbahçe', 'Bolton', 'Chelsea'], hint: 'French forward' },
   { answer: 'Arjen Robben', clubs: ['Groningen', 'PSV', 'Chelsea', 'Real Madrid', 'Bayern Munich'], hint: 'Dutch winger' },
@@ -86,6 +88,15 @@ export const legacyRefereeQuestions: RefereeQuestion[] = [
   { scenario: 'A player commits a reckless tackle.', options: ['No card', 'Yellow card', 'Red card in every case', 'Only a warning'], answer: 1, explanation: 'Reckless challenges require a caution.' },
   { scenario: 'Two players from the same team collide and one suffers a serious head injury while play continues.', options: ['Always wait until the ball is out', 'Stop play immediately for serious injury', 'Award a free kick', 'Send off the other player'], answer: 1, explanation: 'The referee should stop play for a serious injury, especially a suspected head injury, even when no offence occurred.' },
 ]
+
+void legacyHigherLowerItems
+void legacyWhoAmIQuestions
+void legacyCareerQuestions
+
+export const higherLowerDecks: Array<{ id: string; title: string; statLabel: string; items: HigherLowerItem[] }> = duelHigherLowerDecks
+export const higherLowerItems: HigherLowerItem[] = higherLowerDecks.flatMap((deck) => deck.items)
+export const whoAmIQuestions: WhoAmIQuestion[] = whoAmIQuestionBank
+export const careerQuestions: CareerQuestion[] = careerQuestionBank
 
 export const refereeQuestions: RefereeQuestion[] = refereeScenarios.map((scenario) => ({
   id: scenario.id,

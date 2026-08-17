@@ -1,11 +1,12 @@
 import { duelPacks } from '@/lib/duel-packs'
-import { careerQuestions, higherLowerItems, refereeQuestions, scoutQuestions, whoAmIQuestions } from '@/lib/game-data'
+import { higherLowerDecks, refereeQuestions, scoutQuestions } from '@/lib/game-data'
 import { getDailySeedFromKey } from '@/lib/daily'
 import { calculateDuelXp } from '@/lib/progression'
 import type { QuizProof } from '@/lib/quiz-proof'
 import { expandedScoutScenarios } from '@/lib/scout-scenario-expansion'
 import { getLeagueWorldQuestions } from '@/lib/football-leagues'
 import { getQuizLabRound, quizLabCorrectAnswer, type QuizLabFormat } from '@/lib/quiz-lab'
+import { getCareerRound, getWhoAmIRound, playerGuessMatches } from '@/lib/player-knowledge-bank'
 
 export type QuizCompletionClaim = {
   quizId: string
@@ -26,6 +27,9 @@ export type VerifiedQuizReward = QuizCompletionClaim & {
 const DAILY_QUIZ_ID = /^daily-(\d{4}-\d{2}-\d{2})$/
 const LEAGUE_WORLD_QUIZ_ID = /^league-world-([a-z0-9-]+)$/
 const QUIZ_LAB_ID = /^quiz-lab-(odd-one-out|truth-trap|order-the-play|link-up|formation-fix)$/
+const CAREER_PATH_ID = /^career-path-(\d+)$/
+const WHO_AM_I_ID = /^who-am-i-(\d+)$/
+const HIGHER_LOWER_ID = /^higher-lower-([a-z0-9-]+)$/
 
 function integer(value: unknown, label: string) {
   if (typeof value !== 'number' || !Number.isSafeInteger(value)) {
@@ -121,31 +125,42 @@ export function verifyQuizReward(claim: QuizCompletionClaim): VerifiedQuizReward
     return { ...claim, quizId, score: verifiedScore, total, xp: standardXp(verifiedScore, total) }
   }
 
-  if (quizId === 'career-path-1') {
+  const careerMatch = CAREER_PATH_ID.exec(quizId)
+  if (careerMatch) {
     const proof = requireProof(claim.proof, 'career')
-    assertResult(score, total, careerQuestions.length)
-    if (proof.answers.length !== careerQuestions.length) throw new Error('Quiz answer proof is incomplete.')
-    const verifiedScore = assertClaimedScore(score, proof.answers.reduce((sum, answer, index) => sum + (answer.trim().toLowerCase() === careerQuestions[index]!.answer.toLowerCase() ? 1 : 0), 0))
+    const round = integer(Number(careerMatch[1]), 'Career round')
+    if (proof.round !== round) throw new Error('Career answer proof uses the wrong round.')
+    const questions = getCareerRound(round)
+    assertResult(score, total, questions.length)
+    if (proof.answers.length !== questions.length) throw new Error('Quiz answer proof is incomplete.')
+    const verifiedScore = assertClaimedScore(score, proof.answers.reduce((sum, answer, index) => sum + (playerGuessMatches(answer, questions[index]!) ? 1 : 0), 0))
     return { ...claim, quizId, score: verifiedScore, total, xp: 20 + verifiedScore * 10 }
   }
 
-  if (quizId === 'who-am-i-1') {
+  const whoMatch = WHO_AM_I_ID.exec(quizId)
+  if (whoMatch) {
     const proof = requireProof(claim.proof, 'who-am-i')
-    assertResult(score, total, 40)
-    if (proof.answers.length !== whoAmIQuestions.length) throw new Error('Quiz answer proof is incomplete.')
+    const round = integer(Number(whoMatch[1]), 'Who Am I round')
+    if (proof.round !== round) throw new Error('Who Am I answer proof uses the wrong round.')
+    const questions = getWhoAmIRound(round)
+    assertResult(score, total, questions.length * 4)
+    if (proof.answers.length !== questions.length) throw new Error('Quiz answer proof is incomplete.')
     const verifiedScore = assertClaimedScore(score, proof.answers.reduce((sum, answer, index) => {
       const clueCount = integer(answer.clues, 'Clue count')
       if (clueCount < 1 || clueCount > 4) throw new Error('Clue count is outside the allowed range.')
-      const correct = answer.guess.trim().toLowerCase() === whoAmIQuestions[index]!.answer.toLowerCase()
+      const correct = playerGuessMatches(answer.guess, questions[index]!)
       return sum + (correct ? 5 - clueCount : 0)
     }, 0))
     return { ...claim, quizId, score: verifiedScore, total, xp: 20 + verifiedScore * 3 }
   }
 
-  if (quizId === 'higher-lower-pl-goals') {
+  const higherLowerMatch = HIGHER_LOWER_ID.exec(quizId)
+  if (higherLowerMatch) {
     const proof = requireProof(claim.proof, 'higher-lower')
-    assertResult(score, total, Math.max(1, higherLowerItems.length - 1))
-    const deck = seededShuffle(higherLowerItems, integer(proof.deckSeed, 'Deck seed'))
+    const deckDefinition = higherLowerDecks.find((deck) => deck.id === higherLowerMatch[1])
+    if (!deckDefinition || proof.deckId !== deckDefinition.id) throw new Error('Higher/lower answer proof uses an unknown deck.')
+    assertResult(score, total, Math.max(1, deckDefinition.items.length - 1))
+    const deck = seededShuffle(deckDefinition.items, integer(proof.deckSeed, 'Deck seed'))
     let verifiedScore = 0
     let ended = false
     for (let round = 0; round < proof.answers.length; round += 1) {
@@ -154,8 +169,8 @@ export function verifyQuizReward(claim: QuizCompletionClaim): VerifiedQuizReward
       const left = deck[index - 1]!
       const right = deck[index]!
       const correct = proof.answers[round] ? right.value >= left.value : right.value <= left.value
+      if (correct) verifiedScore += 1
       if (!correct || index === deck.length - 1) ended = true
-      else verifiedScore += 1
     }
     if (!ended) throw new Error('Higher/lower answer proof is incomplete.')
     assertClaimedScore(score, verifiedScore)

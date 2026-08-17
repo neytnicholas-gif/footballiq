@@ -29,9 +29,9 @@ export function ModePage({ eyebrow, title, description, theme, children, compact
         <div className="relative z-10 flex flex-wrap items-end justify-between gap-7">
           <div className="max-w-3xl">
             <StatusBadge label={meta.label} tone={theme === 'scout' ? 'good' : theme === 'referee' || theme === 'daily' ? 'warn' : theme === 'duels' || theme === 'career' ? 'info' : 'neutral'} />
-            <p className={`mt-5 text-xs font-semibold uppercase tracking-[.28em] ${compact ? 'text-slate-400' : 'text-muted-foreground'}`}>{eyebrow}</p>
-            <h1 className={`mt-2 font-black tracking-tight ${compact ? 'text-3xl text-slate-50 sm:text-5xl' : 'text-4xl text-foreground sm:text-6xl'}`}>{title}</h1>
-            <p className={`mt-4 max-w-2xl text-base leading-relaxed sm:text-lg ${compact ? 'text-slate-300' : 'text-muted-foreground'}`}>{description}</p>
+            <p className="mt-5 text-xs font-semibold uppercase tracking-[.28em] text-slate-400">{eyebrow}</p>
+            <h1 className={`mt-2 font-black tracking-tight text-slate-50 ${compact ? 'text-3xl sm:text-5xl' : 'text-4xl sm:text-6xl'}`}>{title}</h1>
+            <p className="mt-4 max-w-2xl text-base leading-relaxed text-slate-300 sm:text-lg">{description}</p>
           </div>
           <Link href={`/leaderboard?board=${meta.leaderboard}`} className="mode-action inline-flex h-11 items-center justify-center rounded-xl border px-5 text-sm font-bold outline-none transition hover:-translate-y-0.5 focus-visible:ring-2 focus-visible:ring-white/60">View ranking →</Link>
         </div>

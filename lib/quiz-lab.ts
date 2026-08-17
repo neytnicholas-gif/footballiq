@@ -1,9 +1,12 @@
 import {
-  ODD_ONE_OUT_ROUND_COUNT,
-  ODD_ONE_OUT_ROUND_SIZE,
   oddOneOutQuestionBank,
   oddOneOutRoundNames,
 } from '@/lib/quiz-lab-odd-one-out'
+import { formationFixQuestionBank } from '@/lib/quiz-lab-formation-fix'
+import { linkUpQuestionBank } from '@/lib/quiz-lab-link-up'
+import { orderThePlayQuestionBank } from '@/lib/quiz-lab-order-the-play'
+import { QUIZ_LAB_ROUND_COUNT, QUIZ_LAB_ROUND_SIZE, quizLabRoundNames } from '@/lib/quiz-lab-rounds'
+import { truthTrapQuestionBank } from '@/lib/quiz-lab-truth-trap'
 
 export type QuizLabFormat = 'odd-one-out' | 'truth-trap' | 'order-the-play' | 'link-up' | 'formation-fix'
 
@@ -106,12 +109,19 @@ const formationFix: QuizLabChoiceQuestion[] = [
   { id:'shape-12', kind:'formation-fix', difficulty:'Sharp', visual:'half-space', prompt:'Your striker drops short, but nobody attacks the space they leave behind. Which role should react?', options:['An opposite winger or midfielder running beyond','The goalkeeper moving into midfield','Both full-backs dropping to the corner flags','The nearest player standing beside the striker'], answer:'An opposite winger or midfielder running beyond', explanation:'The short movement can pull a defender out; a second runner should threaten the newly opened depth.', takeaway:'One player comes short so another can go long.' },
 ]
 
+// Kept temporarily as a migration reference for the original twelve-question
+// rooms. The live banks below use the expanded, validated 240-item libraries.
+void truthTrap
+void orderThePlay
+void linkUp
+void formationFix
+
 export const quizLabQuestionBank: Record<QuizLabFormat, QuizLabQuestion[]> = {
   'odd-one-out': oddOneOut,
-  'truth-trap': truthTrap,
-  'order-the-play': orderThePlay,
-  'link-up': linkUp,
-  'formation-fix': formationFix,
+  'truth-trap': truthTrapQuestionBank,
+  'order-the-play': orderThePlayQuestionBank,
+  'link-up': linkUpQuestionBank,
+  'formation-fix': formationFixQuestionBank,
 }
 
 export function quizLabFormatById(format: string) {
@@ -125,25 +135,24 @@ export function quizLabCorrectAnswer(question: QuizLabQuestion) {
 }
 
 export function quizLabRoundCount(format: QuizLabFormat) {
-  return format === 'odd-one-out' ? ODD_ONE_OUT_ROUND_COUNT : 1
+  const count = quizLabQuestionBank[format].length / QUIZ_LAB_ROUND_SIZE
+  if (!Number.isSafeInteger(count)) throw new Error(`${format} does not split into complete Quiz Lab rounds.`)
+  return count
 }
 
 export function quizLabRoundName(format: QuizLabFormat, round: number) {
-  if (format !== 'odd-one-out') return quizLabFormatById(format)?.title ?? 'Quiz Lab'
-  return oddOneOutRoundNames[round - 1] ?? `Odd One Out Round ${round}`
+  if (format === 'odd-one-out') return oddOneOutRoundNames[round - 1] ?? `Odd One Out Round ${round}`
+  return quizLabRoundNames[round - 1] ?? `${quizLabFormatById(format)?.title ?? 'Quiz Lab'} Round ${round}`
 }
 
 export function getQuizLabRound(format: QuizLabFormat, round = 1) {
   const bank = quizLabQuestionBank[format]
-  if (format !== 'odd-one-out') {
-    if (round !== 1) throw new Error('This Quiz Lab format has one round.')
-    return bank
+  const roundCount = quizLabRoundCount(format)
+  if (!Number.isSafeInteger(round) || round < 1 || round > roundCount) {
+    throw new Error(`${quizLabFormatById(format)?.title ?? 'Quiz Lab'} round is outside the available range.`)
   }
-  if (!Number.isSafeInteger(round) || round < 1 || round > ODD_ONE_OUT_ROUND_COUNT) {
-    throw new Error('Odd One Out round is outside the available range.')
-  }
-  const start = (round - 1) * ODD_ONE_OUT_ROUND_SIZE
-  return bank.slice(start, start + ODD_ONE_OUT_ROUND_SIZE)
+  const start = (round - 1) * QUIZ_LAB_ROUND_SIZE
+  return bank.slice(start, start + QUIZ_LAB_ROUND_SIZE)
 }
 
 export function validateQuizLab() {
@@ -151,8 +160,7 @@ export function validateQuizLab() {
   const ids = new Set<string>()
   for (const format of quizLabFormats) {
     const questions = quizLabQuestionBank[format.id]
-    if (questions.length < 10) errors.push(`${format.id}: expected at least ten questions`)
-    if (format.id === 'odd-one-out' && questions.length !== 240) errors.push('odd-one-out: expected exactly 240 questions')
+    if (questions.length !== QUIZ_LAB_ROUND_COUNT * QUIZ_LAB_ROUND_SIZE) errors.push(`${format.id}: expected exactly 240 questions`)
     for (const question of questions) {
       if (ids.has(question.id)) errors.push(`${question.id}: duplicate id`)
       ids.add(question.id)

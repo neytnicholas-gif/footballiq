@@ -6,11 +6,11 @@ export type QuizProof =
   | { kind: 'choice'; answers: number[] }
   | { kind: 'scenario-choice'; scenarioIds: string[]; answers: number[] }
   | { kind: 'daily'; dateKey: string; answers: number[] }
-  | { kind: 'career'; answers: string[] }
-  | { kind: 'who-am-i'; answers: Array<{ guess: string; clues: number }> }
+  | { kind: 'career'; round: number; answers: string[] }
+  | { kind: 'who-am-i'; round: number; answers: Array<{ guess: string; clues: number }> }
   | { kind: 'scout-dossier'; answers: DossierDecision[] }
   | { kind: 'scout-vision'; answers: Array<{ scenarioId: string; decision: ScoutRecommendation }> }
-  | { kind: 'higher-lower'; deckSeed: number; answers: boolean[] }
+  | { kind: 'higher-lower'; deckId: string; deckSeed: number; answers: boolean[] }
   | { kind: 'quiz-lab'; format: QuizLabFormat; round?: number; answers: string[] }
   | {
       kind: 'duel'

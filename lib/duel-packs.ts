@@ -19,7 +19,7 @@ const q = (a: string, av: number, ad: string, b: string, bv: number, bd: string)
   right: { name: b, value: bv, detail: bd },
 })
 
-export const duelPacks: DuelPack[] = [
+const baseDuelPacks: DuelPack[] = [
   { id: 'pl-goals', title: 'Premier League Goals', shortTitle: 'PL Goals', description: 'The classic. Pick who scored more Premier League goals.', statLabel: 'PL goals', category: 'League', difficulty: 'Starter', emoji: '⚽', questions: [
     q('Carlos Tevez',84,'West Ham, Man Utd, Man City','Olivier Giroud',90,'Arsenal, Chelsea'), q('Raheem Sterling',123,'Liverpool, Man City, Chelsea','Sadio Mané',111,'Southampton, Liverpool'), q('Fernando Torres',85,'Liverpool, Chelsea','Dimitar Berbatov',94,'Tottenham, Man Utd, Fulham'), q('Wayne Rooney',208,'Everton, Man Utd','Harry Kane',213,'Tottenham'), q('Cristiano Ronaldo',103,'Manchester United','Olivier Giroud',90,'Arsenal, Chelsea'), q('David Silva',60,'Manchester City','Luis Suárez',69,'Liverpool'), q('Son Heung-min',120,'Tottenham','Raheem Sterling',123,'Liverpool, Man City, Chelsea'), q('Thierry Henry',175,'Arsenal','Frank Lampard',177,'West Ham, Chelsea, Man City'), q('Mohamed Salah',157,'Chelsea, Liverpool','Sergio Agüero',184,'Manchester City'), q('Robin van Persie',144,'Arsenal, Man Utd','Sadio Mané',111,'Southampton, Liverpool') ] },
   { id: 'pl-assists', title: 'Premier League Assists', shortTitle: 'PL Assists', description: 'Creators only. Who set up more Premier League goals?', statLabel: 'PL assists', category: 'League', difficulty: 'Sharp', emoji: '🎯', questions: [
@@ -41,3 +41,51 @@ export const duelPacks: DuelPack[] = [
   { id: 'euro-goals', title: 'European Championship Goals', shortTitle: 'EURO Goals', description: 'European Championship finals only. Pick the bigger scorer.', statLabel: 'EURO goals', category: 'Europe', difficulty: 'Expert', emoji: '🇪🇺', questions: [
     q('Cristiano Ronaldo',14,'Portugal','Michel Platini',9,'France'), q('Antoine Griezmann',7,'France','Alan Shearer',7,'England'), q('Harry Kane',7,'England','Wayne Rooney',6,'England'), q('Álvaro Morata',7,'Spain','Fernando Torres',5,'Spain'), q('Zlatan Ibrahimović',6,'Sweden','Thierry Henry',6,'France'), q('Romelu Lukaku',6,'Belgium','Ruud van Nistelrooy',6,'Netherlands'), q('Kylian Mbappé',1,'France','Karim Benzema',4,'France'), q('Marco van Basten',5,'Netherlands','Dennis Bergkamp',4,'Netherlands'), q('David Villa',4,'Spain','Andrés Iniesta',0,'Spain'), q('Mario Balotelli',3,'Italy','Andrea Pirlo',2,'Italy') ] },
 ]
+
+function expandedQuestions(pack: DuelPack) {
+  const options = new Map<string, DuelOption>()
+  for (const question of pack.questions) {
+    options.set(question.left.name, question.left)
+    options.set(question.right.name, question.right)
+  }
+  const players = [...options.values()]
+  const pairings: DuelQuestion[] = []
+  for (let gap = 1; gap < players.length; gap += 1) {
+    for (let leftIndex = 0; leftIndex < players.length; leftIndex += 1) {
+      const rightIndex = (leftIndex + gap) % players.length
+      if (leftIndex >= rightIndex) continue
+      const left = players[leftIndex]!
+      const right = players[rightIndex]!
+      pairings.push({ left: { ...left }, right: { ...right } })
+    }
+  }
+  if (pairings.length < 100) throw new Error(`${pack.id} needs more distinct players for ten duel sets.`)
+  return pairings.slice(0, 100)
+}
+
+/** Ten distinct ten-question sets for every stat theme: 100 playable packs. */
+export const duelPacks: DuelPack[] = baseDuelPacks.flatMap((pack) => {
+  const questions = expandedQuestions(pack)
+  return Array.from({ length: 10 }, (_, edition) => ({
+    ...pack,
+    id: edition === 0 ? pack.id : `${pack.id}-${edition + 1}`,
+    title: edition === 0 ? pack.title : `${pack.title} · Set ${edition + 1}`,
+    shortTitle: edition === 0 ? pack.shortTitle : `${pack.shortTitle} ${edition + 1}`,
+    description: edition === 0 ? pack.description : `${pack.description} A fresh set of ten match-ups.`,
+    questions: questions.slice(edition * 10, edition * 10 + 10),
+  }))
+})
+
+export const higherLowerDecks = baseDuelPacks.map((pack) => {
+  const players = new Map<string, DuelOption>()
+  for (const question of pack.questions) {
+    players.set(question.left.name, question.left)
+    players.set(question.right.name, question.right)
+  }
+  return {
+    id: pack.id,
+    title: pack.title,
+    statLabel: pack.statLabel,
+    items: [...players.values()].slice(0, 14),
+  }
+})

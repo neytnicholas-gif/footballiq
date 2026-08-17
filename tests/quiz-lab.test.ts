@@ -15,34 +15,37 @@ import { verifyQuizReward } from '@/lib/quiz-rules'
 const completionKey = 'cqk:quiz-lab-test:run-123456789012345678901234'
 
 describe('Quiz Lab', () => {
-  it('ships five distinct mechanics and a 240-question Odd One Out bank', () => {
+  it('ships five distinct mechanics with 240 questions in every bank', () => {
     expect(quizLabFormats).toHaveLength(5)
     expect(new Set(quizLabFormats.map((format) => format.id)).size).toBe(5)
     expect(new Set(quizLabFormats.map((format) => format.instruction)).size).toBe(5)
     expect(quizLabQuestionBank['odd-one-out']).toHaveLength(240)
-    expect(quizLabFormats.reduce((total, format) => total + quizLabQuestionBank[format.id].length, 0)).toBe(288)
-    for (const format of quizLabFormats.filter((item) => item.id !== 'odd-one-out')) expect(quizLabQuestionBank[format.id]).toHaveLength(12)
+    expect(quizLabFormats.reduce((total, format) => total + quizLabQuestionBank[format.id].length, 0)).toBe(1200)
+    for (const format of quizLabFormats) expect(quizLabQuestionBank[format.id]).toHaveLength(240)
     expect(validateQuizLab()).toEqual([])
   })
 
-  it('keeps every Odd One Out round short, distinct and balanced', () => {
-    const bank = quizLabQuestionBank['odd-one-out'] as QuizLabChoiceQuestion[]
-    expect(quizLabRoundCount('odd-one-out')).toBe(20)
-    expect(new Set(bank.map((question) => question.id)).size).toBe(240)
-    expect(new Set(bank.map((question) => `${question.prompt}|${[...question.options].sort().join('|')}`)).size).toBe(240)
-    expect(bank.reduce((positions, question) => {
-      positions[question.options.indexOf(question.answer)] += 1
-      return positions
-    }, [0, 0, 0, 0])).toEqual([60, 60, 60, 60])
-    expect(bank.filter((question) => question.difficulty === 'Starter')).toHaveLength(48)
-    expect(bank.filter((question) => question.difficulty === 'Sharp')).toHaveLength(128)
-    expect(bank.filter((question) => question.difficulty === 'Expert')).toHaveLength(64)
-
-    for (let round = 1; round <= 20; round += 1) {
-      const questions = getQuizLabRound('odd-one-out', round)
-      expect(questions).toHaveLength(12)
-      expect(new Set(questions.map((question) => question.id)).size).toBe(12)
-      expect(quizLabRoundName('odd-one-out', round)).not.toMatch(/^Odd One Out Round/)
+  it('keeps every bank and round short, distinct and difficulty-balanced', () => {
+    for (const format of quizLabFormats) {
+      const bank = quizLabQuestionBank[format.id]
+      expect(quizLabRoundCount(format.id)).toBe(20)
+      expect(new Set(bank.map((question) => question.id)).size).toBe(240)
+      expect(bank.filter((question) => question.difficulty === 'Starter')).toHaveLength(48)
+      expect(bank.filter((question) => question.difficulty === 'Sharp')).toHaveLength(128)
+      expect(bank.filter((question) => question.difficulty === 'Expert')).toHaveLength(64)
+      if (format.id === 'odd-one-out' || format.id === 'truth-trap' || format.id === 'formation-fix') {
+        const choiceBank = bank as QuizLabChoiceQuestion[]
+        expect(choiceBank.reduce((positions, question) => {
+          positions[question.options.indexOf(question.answer)] += 1
+          return positions
+        }, [0, 0, 0, 0])).toEqual([60, 60, 60, 60])
+      }
+      for (let round = 1; round <= 20; round += 1) {
+        const questions = getQuizLabRound(format.id, round)
+        expect(questions).toHaveLength(12)
+        expect(new Set(questions.map((question) => question.id)).size).toBe(12)
+        expect(quizLabRoundName(format.id, round)).not.toMatch(/ Round \d+$/)
+      }
     }
   })
 
@@ -94,9 +97,9 @@ describe('Quiz Lab', () => {
     })).toThrow('incomplete')
   })
 
-  it('rejects unknown Odd One Out rounds', () => {
-    expect(() => getQuizLabRound('odd-one-out', 0)).toThrow('outside the available range')
-    expect(() => getQuizLabRound('odd-one-out', 21)).toThrow('outside the available range')
+  it('rejects unknown Quiz Lab rounds', () => {
+    expect(() => getQuizLabRound('truth-trap', 0)).toThrow('outside the available range')
+    expect(() => getQuizLabRound('formation-fix', 21)).toThrow('outside the available range')
     expect(() => verifyQuizReward({
       quizId: 'quiz-lab-odd-one-out',
       score: 0,
