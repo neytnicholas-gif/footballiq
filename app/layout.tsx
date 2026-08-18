@@ -68,8 +68,11 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${sora.variable} ${plexMono.variable} bg-background font-sans antialiased`}>
+        <a href="#main-content" className="fixed left-4 top-4 z-[100] -translate-y-24 rounded-xl bg-emerald-300 px-4 py-3 font-black text-slate-950 shadow-xl transition-transform focus:translate-y-0 focus:outline-none focus:ring-2 focus:ring-white motion-reduce:transition-none">
+          Skip to main content
+        </a>
         <AuthProvider>
-          {children}
+          <div id="main-content" tabIndex={-1}>{children}</div>
           <OnboardingTour />
           <MarketRewardCelebration />
           <BetaFeedbackButton />

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { inferModeFromQuizId } from '@/lib/competitive'
 import {
   getQuizLabRound,
+  quizLabQuestionFamilyId,
   quizLabCorrectAnswer,
   quizLabFormats,
   quizLabQuestionBank,
@@ -10,6 +11,7 @@ import {
   type QuizLabChoiceQuestion,
   validateQuizLab,
 } from '@/lib/quiz-lab'
+import { sampleUniqueQuizFamilies } from '@/lib/quiz-session'
 import { verifyQuizReward } from '@/lib/quiz-rules'
 
 const completionKey = 'cqk:quiz-lab-test:run-123456789012345678901234'
@@ -46,6 +48,14 @@ describe('Quiz Lab', () => {
         expect(new Set(questions.map((question) => question.id)).size).toBe(12)
         expect(quizLabRoundName(format.id, round)).not.toMatch(/ Round \d+$/)
       }
+    }
+  })
+
+  it('never repeats the same underlying football situation in one mixed session', () => {
+    for (const format of quizLabFormats) {
+      const session = sampleUniqueQuizFamilies(quizLabQuestionBank[format.id], 12, 48157, quizLabQuestionFamilyId)
+      expect(session).toHaveLength(12)
+      expect(new Set(session.map(quizLabQuestionFamilyId)).size).toBe(12)
     }
   })
 

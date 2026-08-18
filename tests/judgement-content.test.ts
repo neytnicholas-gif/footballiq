@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { scoutQuestions } from '../lib/game-data'
 import { refereeScenarios, validateRefereeScenarios } from '../lib/referee-scenarios'
 import { expandedScoutScenarios, scoutScenarioCount, validateScoutScenarios } from '../lib/scout-scenario-expansion'
 import { tacticalScenarios, validateTacticalScenarios } from '../lib/tactical-scenarios'
@@ -19,6 +20,17 @@ describe('450-each judgement content contract', () => {
     expect(validateScoutScenarios(expandedScoutScenarios)).toEqual([])
   })
 
+  it('never reveals the scouting recommendation before the player answers', () => {
+    const generatedQuestionIds = new Set(expandedScoutScenarios.map((scenario) => scenario.playerCode))
+    const generatedQuestions = scoutQuestions.filter((question) => generatedQuestionIds.has(question.id))
+
+    expect(generatedQuestions).toHaveLength(expandedScoutScenarios.length)
+    for (const question of generatedQuestions) {
+      expect(question.summary).not.toMatch(/strong(?:ly)? follow|do not pursue|\bmonitor\b/i)
+      expect(question.summary).not.toContain(question.strongestDecision)
+    }
+  })
+
   it('passes tactical content validation', () => {
     expect(validateTacticalScenarios(tacticalScenarios)).toEqual([])
   })
@@ -32,5 +44,16 @@ describe('450-each judgement content contract', () => {
     }
     expect(new Set(expandedScoutScenarios.map((item) => item.position)).size).toBeGreaterThanOrEqual(9)
     expect(new Set(expandedScoutScenarios.map((item) => item.recommended)).size).toBe(4)
+  })
+
+  it('does not teach players that one answer-button position is usually right', () => {
+    const answerPositions = [
+      refereeScenarios.map((item) => item.options.indexOf(item.answer)),
+      tacticalScenarios.map((item) => item.answer),
+    ]
+    for (const positions of answerPositions) {
+      const counts = [0, 1, 2, 3].map((position) => positions.filter((answer) => answer === position).length)
+      expect(Math.max(...counts) - Math.min(...counts)).toBeLessThanOrEqual(1)
+    }
   })
 })

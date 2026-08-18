@@ -192,7 +192,15 @@ const contextualRefereeScenarios = applicationFrames.flatMap((frame, frameIndex)
   difficulty: (['Easy', 'Medium', 'Hard'] as const)[(scenarioIndex + frameIndex + 1) % 3],
 })))
 
-export const refereeScenarios: RefereeScenario[] = [...coreRefereeScenarios, ...contextualRefereeScenarios]
+export const refereeScenarios: RefereeScenario[] = [...coreRefereeScenarios, ...contextualRefereeScenarios].map((scenario, index) => {
+  const currentAnswer = scenario.options.indexOf(scenario.answer)
+  const targetAnswer = index % scenario.options.length
+  const shift = (currentAnswer - targetAnswer + scenario.options.length) % scenario.options.length
+  return {
+    ...scenario,
+    options: [...scenario.options.slice(shift), ...scenario.options.slice(0, shift)],
+  }
+})
 
 export function validateRefereeScenarios(items: RefereeScenario[]) {
   const errors: string[] = []

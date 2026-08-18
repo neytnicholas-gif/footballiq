@@ -1,4 +1,4 @@
-import { BarChart3, BookOpen, Trophy, Zap } from 'lucide-react'
+import { BarChart3, Trophy, Zap } from 'lucide-react'
 import { BallIcon } from '@/components/logo'
 import { Reveal } from '@/components/reveal'
 

@@ -68,6 +68,7 @@ export async function POST(request: Request) {
     const admin = createClient(url, serviceRoleKey, {
       auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
     })
+    const rewardBucket = `${verified.quizId}:${verified.proof?.difficulty ?? 'all'}`.slice(0, 180)
     const expiresAt = new Date(Date.now() + 5 * 60_000).toISOString()
     stage = 'ticket-authorisation'
     const { error: ticketError } = await admin.from('quiz_completion_tickets').upsert({
@@ -77,6 +78,7 @@ export async function POST(request: Request) {
       score: verified.score,
       total: verified.total,
       xp_earned: verified.xp,
+      reward_bucket: rewardBucket,
       expires_at: expiresAt,
     }, { onConflict: 'user_id,completion_key' })
     if (ticketError) throw new Error(`Could not secure quiz completion: ${ticketError.message}`)

@@ -19,7 +19,7 @@ export function AccountPrompt() {
   const [readyToShow, setReadyToShow] = useState(false)
 
   useEffect(() => {
-    const frame = window.requestAnimationFrame(() => {
+    const timeout = window.setTimeout(() => {
       setMounted(true)
       try {
         setDismissed(sessionStorage.getItem(DISMISS_KEY) === '1')
@@ -27,7 +27,7 @@ export function AccountPrompt() {
         setDismissed(false)
       }
     })
-    return () => window.cancelAnimationFrame(frame)
+    return () => window.clearTimeout(timeout)
   }, [])
 
   useEffect(() => {

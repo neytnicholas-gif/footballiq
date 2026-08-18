@@ -4,6 +4,9 @@ import type { QuizProof } from '@/lib/quiz-proof'
 type SaveQuizResultResult = {
   error: Error | null
   alreadyCompleted: boolean
+  xpAwarded?: number
+  baseXp?: number
+  dailyBucketRun?: number
 }
 
 type CompleteQuizResult = {
@@ -11,6 +14,9 @@ type CompleteQuizResult = {
   already_processed: boolean
   completion_key: string
   activity_date: string
+  xp_awarded?: number
+  base_xp?: number
+  daily_bucket_run?: number
 }
 
 type QuizCompletionRequest = (payload: {
@@ -100,7 +106,13 @@ export async function saveQuizResult({
         completionAttempts.delete(completionKey)
         return { error: response.error, alreadyCompleted: false }
       }
-      return { error: null, alreadyCompleted: Boolean(response.data?.already_processed) }
+      return {
+        error: null,
+        alreadyCompleted: Boolean(response.data?.already_processed),
+        ...(typeof response.data?.xp_awarded === 'number' ? { xpAwarded: response.data.xp_awarded } : {}),
+        ...(typeof response.data?.base_xp === 'number' ? { baseXp: response.data.base_xp } : {}),
+        ...(typeof response.data?.daily_bucket_run === 'number' ? { dailyBucketRun: response.data.daily_bucket_run } : {}),
+      }
     }
 
     const { data: sessionData, error: sessionError } = await supabase.auth.getSession()
@@ -127,6 +139,9 @@ export async function saveQuizResult({
     return {
       error: null,
       alreadyCompleted: Boolean(payload?.already_processed),
+      ...(typeof payload?.xp_awarded === 'number' ? { xpAwarded: payload.xp_awarded } : {}),
+      ...(typeof payload?.base_xp === 'number' ? { baseXp: payload.base_xp } : {}),
+      ...(typeof payload?.daily_bucket_run === 'number' ? { dailyBucketRun: payload.daily_bucket_run } : {}),
     }
   })()
 

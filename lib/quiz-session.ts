@@ -27,6 +27,26 @@ export function sampleQuizSession<T>(items: readonly T[], count: number, seed: n
   return pool.slice(0, Math.min(count, pool.length))
 }
 
+export function sampleUniqueQuizFamilies<T>(
+  items: readonly T[],
+  count: number,
+  seed: number,
+  familyId: (item: T) => string,
+) {
+  const families = new Map<string, T[]>()
+  for (const item of items) {
+    const key = familyId(item)
+    const family = families.get(key) ?? []
+    family.push(item)
+    families.set(key, family)
+  }
+
+  const selectedFamilies = sampleQuizSession([...families.values()], count, seed)
+  return selectedFamilies.map((family, index) => (
+    sampleQuizSession(family, 1, seed ^ Math.imul(index + 1, 0x9e37_79b9))[0]!
+  ))
+}
+
 export function sampleBalancedQuizSession<T>(
   items: readonly T[],
   count: number,

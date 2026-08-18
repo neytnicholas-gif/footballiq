@@ -58,8 +58,8 @@ export function PlayerMarketLeagues({
   useEffect(() => {
     const code = new URLSearchParams(window.location.search).get('join')?.trim().toUpperCase()
     if (!code) return
-    const frame = window.requestAnimationFrame(() => setJoinCode(code))
-    return () => window.cancelAnimationFrame(frame)
+    const timeout = window.setTimeout(() => setJoinCode(code), 0)
+    return () => window.clearTimeout(timeout)
   }, [])
 
   async function copyLeagueCode(code: string) {

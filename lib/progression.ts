@@ -14,7 +14,14 @@ export const ranks: Rank[] = [
   { title: 'Head Scout', minXp: 5500, emoji: '📋', nextTitle: 'Sporting Director' },
   { title: 'Sporting Director', minXp: 9000, emoji: '🧠', nextTitle: 'Football Genius' },
   { title: 'Football Genius', minXp: 14000, emoji: '✨', nextTitle: 'Legend' },
-  { title: 'Legend', minXp: 22000, emoji: '👑' },
+  { title: 'Legend', minXp: 22000, emoji: '👑', nextTitle: 'Club Icon' },
+  { title: 'Club Icon', minXp: 45000, emoji: '🏟️', nextTitle: 'National Hero' },
+  { title: 'National Hero', minXp: 85000, emoji: '🦸', nextTitle: 'Continental Star' },
+  { title: 'Continental Star', minXp: 150000, emoji: '🌍', nextTitle: 'World Class' },
+  { title: 'World Class', minXp: 275000, emoji: '💫', nextTitle: 'Hall of Famer' },
+  { title: 'Hall of Famer', minXp: 500000, emoji: '🏆', nextTitle: 'Football Immortal' },
+  { title: 'Football Immortal', minXp: 900000, emoji: '🔥', nextTitle: 'Eternal Great' },
+  { title: 'Eternal Great', minXp: 1500000, emoji: '💎' },
 ]
 
 export function getRank(xp: number) {
@@ -123,7 +130,7 @@ export function getLevelPalette(level: number) {
 
   return {
     accent: `hsl(${hue} 76% 42%)`,
-    badge: `linear-gradient(135deg, hsl(${hue} 72% 28%), hsl(${secondHue} 72% 35%))`,
+    badge: `linear-gradient(135deg, hsl(${hue} 72% 19%), hsl(${secondHue} 72% 25%))`,
     soft: `hsl(${hue} 72% 92%)`,
     ring: `hsl(${hue} 78% 55%)`,
     foreground: '#ffffff',

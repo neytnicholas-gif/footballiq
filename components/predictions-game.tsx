@@ -12,13 +12,16 @@ import {
   Crown,
   Loader2,
   LockKeyhole,
+  LogOut,
   Medal,
   Plus,
   Share2,
   Sparkles,
   Target,
+  Trash2,
   Trophy,
   Users,
+  X,
 } from 'lucide-react'
 import { useAuth } from '@/components/auth-provider'
 import { footballLeagues } from '@/lib/football-leagues'
@@ -62,6 +65,7 @@ type PredictionLeague = {
   created_at: string
   role?: 'owner' | 'member'
 }
+type LeagueAction = { league: PredictionLeague; kind: 'leave' | 'delete' }
 type Standing = {
   user_id: string
   username: string
@@ -161,6 +165,7 @@ export function PredictionsGame() {
   const [currentTime, setCurrentTime] = useState(0)
   const [fixtureLeague, setFixtureLeague] = useState('all')
   const [visibleFixtureCount, setVisibleFixtureCount] = useState(INITIAL_FIXTURE_COUNT)
+  const [leagueAction, setLeagueAction] = useState<LeagueAction | null>(null)
 
   const loadLeagues = useCallback(async () => {
     if (!user) {
@@ -264,12 +269,12 @@ export function PredictionsGame() {
       setError('Fixtures are taking longer than expected. Please refresh once. If no matches are ready yet, check back before the next gameweek.')
     }, 10_000)
 
-    const frame = window.requestAnimationFrame(() => {
+    const loadTimeout = window.setTimeout(() => {
       void load().finally(() => window.clearTimeout(timeout))
-    })
+    }, 0)
     return () => {
       active = false
-      window.cancelAnimationFrame(frame)
+      window.clearTimeout(loadTimeout)
       window.clearTimeout(timeout)
     }
   }, [load])
@@ -277,18 +282,18 @@ export function PredictionsGame() {
   useEffect(() => {
     const code = new URLSearchParams(window.location.search).get('join')?.trim().toUpperCase()
     if (!code) return
-    const frame = window.requestAnimationFrame(() => {
+    const timeout = window.setTimeout(() => {
       setJoinCode(code)
       setTab('leagues')
-    })
-    return () => window.cancelAnimationFrame(frame)
+    }, 0)
+    return () => window.clearTimeout(timeout)
   }, [])
 
   useEffect(() => {
     const updateClock = () => setCurrentTime(Date.now())
-    const frame = window.requestAnimationFrame(updateClock)
+    const timeout = window.setTimeout(updateClock, 0)
     const interval = window.setInterval(updateClock, 60_000)
-    return () => { window.cancelAnimationFrame(frame); window.clearInterval(interval) }
+    return () => { window.clearTimeout(timeout); window.clearInterval(interval) }
   }, [])
 
   const upcoming = useMemo(() => fixtures.filter((fixture) => fixture.status === 'scheduled' && (currentTime === 0 || new Date(fixture.kickoff_at).getTime() > currentTime)), [currentTime, fixtures])
@@ -396,6 +401,26 @@ export function PredictionsGame() {
       setJoinCode('')
       setNotice('You joined the league. Your scored picks will appear in its table.')
       await loadLeagues()
+    }
+    setWorking(false)
+  }
+
+  async function completeLeagueAction() {
+    if (!leagueAction) return
+    const { league, kind } = leagueAction
+    setWorking(true)
+    setError('')
+    setNotice('')
+    const { error: actionError } = kind === 'delete'
+      ? await supabase.rpc('prediction_delete_league', { p_league_id: league.id })
+      : await supabase.rpc('prediction_leave_league', { p_league_id: league.id })
+    if (actionError) {
+      setError(kind === 'delete' ? 'That league could not be deleted. Only its owner can delete it.' : 'You could not leave that league. Please try again.')
+    } else {
+      setLeagues((current) => current.filter((item) => item.id !== league.id))
+      setLeagueStandings((current) => { const next = { ...current }; delete next[league.id]; return next })
+      setNotice(kind === 'delete' ? `${league.name} was deleted for everyone.` : `You left ${league.name}.`)
+      setLeagueAction(null)
     }
     setWorking(false)
   }
@@ -585,7 +610,7 @@ export function PredictionsGame() {
 
           <section>
             <div className="flex items-end justify-between gap-3"><div><p className="text-xs font-black uppercase tracking-[.18em] text-fuchsia-300">My leagues</p><h3 className="mt-1 text-2xl font-black text-white">Friends tables</h3></div><span className="rounded-full border border-slate-700 px-3 py-1 text-xs font-bold text-slate-300">{leagues.length}</span></div>
-            {leagues.length ? <div className="mt-3 grid gap-3 lg:grid-cols-2">{leagues.map((league) => <LeagueCard key={league.id} league={league} standings={leagueStandings[league.id]} working={working} onShare={() => void shareLeague(league)} onTable={() => void showLeagueTable(league)} />)}</div> : <div className="mt-3 rounded-2xl border border-dashed border-slate-600 bg-slate-900/45 p-6 text-center text-sm text-slate-400">No friend leagues yet. Make the first one above.</div>}
+            {leagues.length ? <div className="mt-3 grid gap-3 lg:grid-cols-2">{leagues.map((league) => <LeagueCard key={league.id} league={league} standings={leagueStandings[league.id]} working={working} onShare={() => void shareLeague(league)} onTable={() => void showLeagueTable(league)} onChangeMembership={() => setLeagueAction({ league, kind: league.role === 'owner' ? 'delete' : 'leave' })} />)}</div> : <div className="mt-3 rounded-2xl border border-dashed border-slate-600 bg-slate-900/45 p-6 text-center text-sm text-slate-400">No friend leagues yet. Make the first one above.</div>}
           </section>
         </div>
       ) : null}
@@ -607,6 +632,7 @@ export function PredictionsGame() {
           <div className="rounded-2xl border border-slate-700 bg-slate-900/55 p-4 text-sm leading-6 text-slate-400"><strong className="text-white">More ways to compare:</strong> use Friend leagues for a private friends table. The main Early Shout leaderboard also lets you compare every quiz and game mode separately.</div>
         </div>
       ) : null}
+      {leagueAction ? <div className="fixed inset-0 z-[80] grid place-items-center bg-slate-950/80 p-4" role="presentation" onKeyDown={(event) => { if (event.key === 'Escape' && !working) setLeagueAction(null) }} onMouseDown={(event) => { if (event.target === event.currentTarget && !working) setLeagueAction(null) }}><section role="dialog" aria-modal="true" aria-labelledby="prediction-league-action-title" className="w-full max-w-md rounded-[1.75rem] border border-slate-600 bg-slate-900 p-5 shadow-2xl sm:p-6"><div className="flex items-start justify-between gap-4"><div><p className="text-xs font-black uppercase tracking-[.16em] text-sky-300">Confirm change</p><h3 id="prediction-league-action-title" className="mt-1 text-2xl font-black text-white">{leagueAction.kind === 'delete' ? 'Delete this league?' : 'Leave this league?'}</h3></div><button type="button" aria-label="Close confirmation" disabled={working} onClick={() => setLeagueAction(null)} className="grid size-10 place-items-center rounded-xl border border-slate-700 text-slate-300"><X className="size-4" /></button></div><p className="mt-3 text-sm leading-6 text-slate-300">{leagueAction.kind === 'delete' ? <><strong className="text-white">{leagueAction.league.name}</strong> and its private table will disappear for every member. Everyone&apos;s saved predictions remain on their profile.</> : <>You will leave <strong className="text-white">{leagueAction.league.name}</strong>. Your saved predictions remain on your profile.</>}</p><div className="mt-5 grid gap-2 sm:grid-cols-2"><button autoFocus type="button" disabled={working} onClick={() => setLeagueAction(null)} className="min-h-11 rounded-xl border border-slate-600 font-bold text-white">Keep league</button><button type="button" disabled={working} onClick={() => void completeLeagueAction()} className={`inline-flex min-h-11 items-center justify-center gap-2 rounded-xl font-black text-slate-950 disabled:opacity-50 ${leagueAction.kind === 'delete' ? 'bg-rose-300' : 'bg-sky-300'}`}>{working ? <Loader2 className="size-4 animate-spin" /> : null}{leagueAction.kind === 'delete' ? 'Delete for everyone' : 'Leave league'}</button></div></section></div> : null}
     </div>
   )
 }
@@ -639,8 +665,8 @@ function RecentResults({ fixtures, saved }: { fixtures: Fixture[]; saved: Record
   return <section><div><p className="text-xs font-black uppercase tracking-[.18em] text-emerald-300">Settled</p><h3 className="mt-1 text-2xl font-black text-white">Recent results</h3></div><div className="mt-3 grid gap-2 sm:grid-cols-2">{fixtures.map((fixture) => { const prediction = saved[fixture.fixture_id]; return <div key={fixture.fixture_id} className="flex items-center justify-between gap-3 rounded-xl border border-slate-700 bg-slate-900/55 p-3"><div className="min-w-0"><p className="truncate text-sm font-bold text-white">{fixture.home_team} {fixture.home_score}–{fixture.away_score} {fixture.away_team}</p><p className="mt-1 text-xs text-slate-500">{fixture.league_name}</p></div>{prediction ? <span className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-black ${(prediction.points_awarded ?? 0) > 0 ? 'bg-emerald-300/15 text-emerald-300' : 'bg-slate-800 text-slate-400'}`}>{prediction.points_awarded ?? 0} pts</span> : <span className="text-xs text-slate-500">No pick</span>}</div> })}</div></section>
 }
 
-function LeagueCard({ league, standings, working, onShare, onTable }: { league: PredictionLeague; standings?: Standing[]; working: boolean; onShare: () => void; onTable: () => void }) {
-  return <article className="overflow-hidden rounded-[1.35rem] border border-slate-700 bg-slate-900/65"><div className="border-b border-slate-700 bg-[linear-gradient(120deg,rgba(217,70,239,.12),rgba(56,189,248,.08))] p-4"><div className="flex items-start justify-between gap-3"><div><span className="text-[10px] font-black uppercase tracking-[.15em] text-fuchsia-300">{league.role === 'owner' ? 'You run this league' : 'Friend league'}</span><h4 className="mt-1 text-lg font-black text-white">{league.name}</h4></div><span className="rounded-lg border border-white/10 bg-slate-950/55 px-2.5 py-1 font-mono text-xs font-black tracking-[.1em] text-sky-200">{league.league_code}</span></div><p className="mt-2 text-xs leading-5 text-slate-400">{ruleLabels[league.rule_mode].title} · {league.league_keys.map((key) => leagueOptions.find((leagueOption) => leagueOption.key === key)?.label).filter(Boolean).join(', ')}</p></div><div className="p-4"><div className="flex flex-wrap gap-2"><button type="button" onClick={onShare} className="inline-flex min-h-10 items-center gap-2 rounded-xl bg-fuchsia-400 px-3 text-xs font-black text-slate-950 outline-none hover:bg-fuchsia-300 focus-visible:ring-2 focus-visible:ring-white"><Share2 className="size-3.5" />Share invite</button><button type="button" onClick={onTable} disabled={working} className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-slate-600 px-3 text-xs font-black text-white outline-none hover:border-sky-300 focus-visible:ring-2 focus-visible:ring-sky-300"><Trophy className="size-3.5" />{standings ? 'Refresh table' : 'Show table'}</button><button type="button" onClick={() => navigator.clipboard.writeText(league.league_code)} aria-label={`Copy ${league.name} code`} className="inline-flex size-10 items-center justify-center rounded-xl border border-slate-700 text-slate-300 outline-none hover:border-slate-500 focus-visible:ring-2 focus-visible:ring-sky-300"><Copy className="size-3.5" /></button></div>{standings ? <div className="mt-3"><StandingTable rows={standings} compact empty="No scored picks in this league yet." /></div> : null}</div></article>
+function LeagueCard({ league, standings, working, onShare, onTable, onChangeMembership }: { league: PredictionLeague; standings?: Standing[]; working: boolean; onShare: () => void; onTable: () => void; onChangeMembership: () => void }) {
+  return <article className="overflow-hidden rounded-[1.35rem] border border-slate-700 bg-slate-900/65"><div className="border-b border-slate-700 bg-[linear-gradient(120deg,rgba(217,70,239,.12),rgba(56,189,248,.08))] p-4"><div className="flex items-start justify-between gap-3"><div><span className="text-[10px] font-black uppercase tracking-[.15em] text-fuchsia-300">{league.role === 'owner' ? 'You run this league' : 'Friend league'}</span><h4 className="mt-1 text-lg font-black text-white">{league.name}</h4></div><span className="rounded-lg border border-white/10 bg-slate-950/55 px-2.5 py-1 font-mono text-xs font-black tracking-[.1em] text-sky-200">{league.league_code}</span></div><p className="mt-2 text-xs leading-5 text-slate-400">{ruleLabels[league.rule_mode].title} · {league.league_keys.map((key) => leagueOptions.find((leagueOption) => leagueOption.key === key)?.label).filter(Boolean).join(', ')}</p></div><div className="p-4"><div className="flex flex-wrap gap-2"><button type="button" onClick={onShare} className="inline-flex min-h-10 items-center gap-2 rounded-xl bg-fuchsia-400 px-3 text-xs font-black text-slate-950 outline-none hover:bg-fuchsia-300 focus-visible:ring-2 focus-visible:ring-white"><Share2 className="size-3.5" />Share invite</button><button type="button" onClick={onTable} disabled={working} className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-slate-600 px-3 text-xs font-black text-white outline-none hover:border-sky-300 focus-visible:ring-2 focus-visible:ring-sky-300"><Trophy className="size-3.5" />{standings ? 'Refresh table' : 'Show table'}</button><button type="button" onClick={() => navigator.clipboard.writeText(league.league_code)} aria-label={`Copy ${league.name} code`} className="inline-flex size-10 items-center justify-center rounded-xl border border-slate-700 text-slate-300 outline-none hover:border-slate-500 focus-visible:ring-2 focus-visible:ring-sky-300"><Copy className="size-3.5" /></button><button type="button" onClick={onChangeMembership} disabled={working} className={`inline-flex min-h-10 items-center gap-2 rounded-xl border px-3 text-xs font-black outline-none focus-visible:ring-2 focus-visible:ring-sky-300 disabled:opacity-50 ${league.role === 'owner' ? 'border-rose-300/35 text-rose-200 hover:bg-rose-300/10' : 'border-slate-600 text-slate-300 hover:border-slate-400'}`}>{league.role === 'owner' ? <Trash2 className="size-3.5" /> : <LogOut className="size-3.5" />}{league.role === 'owner' ? 'Delete league' : 'Leave league'}</button></div>{standings ? <div className="mt-3"><StandingTable rows={standings} compact empty="No scored picks in this league yet." /></div> : null}</div></article>
 }
 
 function StandingTable({ rows, working = false, compact = false, empty }: { rows: Standing[]; working?: boolean; compact?: boolean; empty: string }) {

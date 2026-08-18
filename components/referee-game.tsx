@@ -12,7 +12,7 @@ const SESSION_STORAGE_KEY = 'early-shout:referee-session-seed'
 const difficultyIndex = buildQuizDifficultyIndex(refereeQuestions, {
   id: (question) => question.id!,
   authored: (question) => question.difficulty ?? 'Medium',
-  text: (question) => `${question.scenario} ${question.options.join(' ')} ${question.explanation}`,
+  text: (question) => `${question.scenario} ${question.options.join(' ')}`,
 })
 const difficultyCounts = quizDifficultyCounts(difficultyIndex)
 
@@ -26,13 +26,13 @@ export function RefereeGame() {
   ), [difficulty, sessionSeed])
 
   useEffect(() => {
-    const frame = window.requestAnimationFrame(() => {
+    const timeout = window.setTimeout(() => {
       const stored = Number(window.sessionStorage.getItem(SESSION_STORAGE_KEY))
       const nextSeed = Number.isSafeInteger(stored) && stored > 0 ? stored : createQuizSessionSeed()
       window.sessionStorage.setItem(SESSION_STORAGE_KEY, String(nextSeed))
       setSessionSeed(nextSeed)
     })
-    return () => window.cancelAnimationFrame(frame)
+    return () => window.clearTimeout(timeout)
   }, [])
 
   function newSession() {

@@ -58,6 +58,7 @@ function expandedQuestions(pack: DuelPack) {
       if (leftIndex >= rightIndex) continue
       const left = players[leftIndex]!
       const right = players[rightIndex]!
+      if (left.value === right.value) continue
       pairings.push({ left: { ...left }, right: { ...right } })
     }
   }
@@ -69,12 +70,12 @@ const duelThemeDifficulties: Record<string, QuizDifficulty> = {
   'pl-goals': 'beginner',
   'international-goals': 'beginner',
   'ballon-dor': 'easy',
+  'world-cup-goals': 'easy',
   'pl-assists': 'normal',
-  'ucl-goals': 'normal',
-  'world-cup-goals': 'normal',
   'premier-league-titles': 'normal',
-  'pl-appearances': 'hard',
+  'ucl-goals': 'hard',
   'euro-goals': 'hard',
+  'pl-appearances': 'expert',
   'pl-clean-sheets': 'expert',
 }
 

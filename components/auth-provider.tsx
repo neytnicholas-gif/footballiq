@@ -2,6 +2,7 @@
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
 import type { Session, User } from '@supabase/supabase-js'
+import { useRouter } from 'next/navigation'
 import { supabase, type Profile } from '@/lib/supabase'
 import { resolveEffectiveMembership, type Membership } from '@/lib/membership'
 
@@ -38,6 +39,7 @@ async function importGuestMarketOnce(userId: string) {
 }
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const router = useRouter()
   const [session, setSession] = useState<Session | null>(null)
   const [profile, setProfile] = useState<Profile | null>(null)
   const [loading, setLoading] = useState(true)
@@ -176,10 +178,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [loadProfile])
 
-  async function signOut() {
+  const signOut = useCallback(async () => {
     await supabase.auth.signOut()
-    window.location.assign('/')
-  }
+    router.replace('/')
+    router.refresh()
+  }, [router])
 
   const value = useMemo(
     () => ({
@@ -192,7 +195,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       refreshProfile,
       signOut,
     }),
-    [session, profile, loading, profileLoading, refreshProfile],
+    [session, profile, loading, profileLoading, refreshProfile, signOut],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

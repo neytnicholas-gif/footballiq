@@ -16,7 +16,7 @@ type RewardStatus = 'idle' | 'saving' | 'saved' | 'already' | 'error'
 const difficultyIndex = buildQuizDifficultyIndex(tacticalScenarios, {
   id: (scenario) => scenario.id,
   authored: (scenario) => scenario.difficulty,
-  text: (scenario) => `${scenario.prompt} ${scenario.context} ${scenario.options.join(' ')} ${scenario.explanation}`,
+  text: (scenario) => `${scenario.prompt} ${scenario.context} ${scenario.options.join(' ')}`,
 })
 const difficultyCounts = quizDifficultyCounts(difficultyIndex)
 
@@ -30,6 +30,7 @@ export function TacticalLab() {
   const [answers, setAnswers] = useState<number[]>([])
   const [runKey, setRunKey] = useState(() => createCompletionRunId())
   const [rewardStatus, setRewardStatus] = useState<RewardStatus>('idle')
+  const [awardedXp, setAwardedXp] = useState(0)
   const scenarios = useMemo(
     () => sessionSeed === null ? [] : sampleBalancedQuizSession(
       filterQuizDifficulty(tacticalScenarios, difficulty, difficultyIndex, (item) => item.id),
@@ -44,13 +45,13 @@ export function TacticalLab() {
   const xp = quizXp(20 + score * 10 + (score === scenarios.length ? 40 : 0), difficulty)
 
   useEffect(() => {
-    const frame = window.requestAnimationFrame(() => {
+    const timeout = window.setTimeout(() => {
       const stored = Number(window.sessionStorage.getItem(SESSION_STORAGE_KEY))
       const nextSeed = Number.isSafeInteger(stored) && stored > 0 ? stored : createQuizSessionSeed()
       window.sessionStorage.setItem(SESSION_STORAGE_KEY, String(nextSeed))
       setSessionSeed(nextSeed)
     })
-    return () => window.cancelAnimationFrame(frame)
+    return () => window.clearTimeout(timeout)
   }, [])
 
   function choose(option: number) {
@@ -75,6 +76,7 @@ export function TacticalLab() {
     setAnswers([])
     setRunKey(createCompletionRunId())
     setRewardStatus('idle')
+    setAwardedXp(0)
   }
 
   function changeDifficulty(nextDifficulty: typeof difficulty) {
@@ -85,7 +87,7 @@ export function TacticalLab() {
   async function save() {
     if (!user || !complete || rewardStatus === 'saving' || rewardStatus === 'saved' || rewardStatus === 'already') return
     setRewardStatus('saving')
-    const { error, alreadyCompleted } = await saveQuizResult({
+    const { error, alreadyCompleted, xpAwarded } = await saveQuizResult({
       quizId: 'tactical-lab-1',
       score,
       total: scenarios.length,
@@ -97,6 +99,7 @@ export function TacticalLab() {
       setRewardStatus('error')
       return
     }
+    setAwardedXp(alreadyCompleted ? 0 : (xpAwarded ?? xp))
     setRewardStatus(alreadyCompleted ? 'already' : 'saved')
     if (!alreadyCompleted) await refreshProfile()
   }
@@ -136,7 +139,7 @@ export function TacticalLab() {
 
         {complete ? <section className="mt-6 overflow-hidden rounded-3xl border border-cyan-300/25 bg-[radial-gradient(circle_at_top_right,rgba(34,211,238,.18),transparent_42%),linear-gradient(145deg,rgba(15,23,42,.98),rgba(7,17,31,.98))] p-5 sm:p-6" aria-live="polite">
           <div className="flex flex-wrap items-start justify-between gap-4"><div><p className="text-xs font-black uppercase tracking-[.2em] text-cyan-300">Round complete</p><h3 className="mt-2 text-3xl font-black text-white">Your tactical read: {score}/{scenarios.length}</h3><p className="mt-2 text-sm text-slate-300">{user ? 'You made ten match decisions. Save the result to add it to your Early Shout profile.' : 'This was a practice round. Your score stays on this screen, but it is not added to a profile.'}</p></div><span className="flex size-14 items-center justify-center rounded-2xl border border-amber-300/25 bg-amber-300/10 text-amber-200"><Trophy className="size-7" /></span></div>
-          <div className="mt-5 grid gap-3 sm:grid-cols-3"><ResultStat label="Accuracy" value={`${Math.round((score / scenarios.length) * 100)}%`} /><ResultStat label={user ? rewardStatus === 'saved' || rewardStatus === 'already' ? 'XP saved' : 'XP available' : 'Practice XP'} value={`+${xp}`} /><ResultStat label="Fresh scenarios" value={`${scenarios.length}`} /></div>
+          <div className="mt-5 grid gap-3 sm:grid-cols-3"><ResultStat label="Accuracy" value={`${Math.round((score / scenarios.length) * 100)}%`} /><ResultStat label={user ? rewardStatus === 'saved' || rewardStatus === 'already' ? 'XP saved' : 'XP available' : 'Practice XP'} value={`+${rewardStatus === 'saved' || rewardStatus === 'already' ? awardedXp : xp}`} /><ResultStat label="Fresh scenarios" value={`${scenarios.length}`} /></div>
           <div className="mt-5 flex flex-wrap gap-3">
             {user ? <button type="button" onClick={() => void save()} disabled={rewardStatus === 'saving' || rewardStatus === 'saved' || rewardStatus === 'already'} className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-cyan-300 px-5 py-2.5 text-sm font-black text-slate-950 disabled:opacity-60">{rewardStatus === 'saving' ? <Loader2 className="size-4 animate-spin" /> : <Sparkles className="size-4" />}{rewardStatus === 'saving' ? 'Saving result…' : rewardStatus === 'saved' ? 'XP saved' : rewardStatus === 'already' ? 'Already saved' : rewardStatus === 'error' ? 'Try saving again' : 'Save result and XP'}</button> : <p className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-slate-300">Create an account before your next round to save XP, accuracy and leaderboard progress.</p>}
             <button type="button" onClick={restart} className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-white/15 px-4 py-2 text-sm font-bold text-white"><RotateCcw className="size-4" /> Play 10 new scenarios</button>

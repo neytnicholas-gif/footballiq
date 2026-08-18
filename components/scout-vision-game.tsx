@@ -10,7 +10,7 @@ import { createQuizSessionSeed, sampleQuizSession } from '@/lib/quiz-session'
 
 type ScoutDecision = 'strong-follow' | 'follow' | 'monitor' | 'do-not-pursue'
 
-type ScoutScenario = Omit<ExpandedScoutScenario, 'difficulty'>
+type ScoutScenario = Omit<ExpandedScoutScenario, 'difficulty' | 'briefing'>
 
 const decisionLabels: Record<ScoutDecision, string> = {
   'strong-follow': 'Strongly follow',
@@ -205,6 +205,7 @@ const baseScenarios: ScoutScenario[] = [
 const allScenarios: ExpandedScoutScenario[] = [
   ...baseScenarios.map((scenario, index) => ({
     ...scenario,
+    briefing: `${scenario.context}. Weigh the evidence, the risk and what still needs checking.`,
     difficulty: (['Starter', 'Sharp', 'Expert'] as const)[index % 3],
   })),
   ...expandedScoutScenarios,
@@ -231,13 +232,13 @@ export function ScoutVisionGame() {
   )
 
   useEffect(() => {
-    const frame = window.requestAnimationFrame(() => {
+    const timeout = window.setTimeout(() => {
       const stored = Number(window.sessionStorage.getItem(SCOUT_SESSION_STORAGE_KEY))
       const nextSeed = Number.isSafeInteger(stored) && stored > 0 ? stored : createQuizSessionSeed()
       window.sessionStorage.setItem(SCOUT_SESSION_STORAGE_KEY, String(nextSeed))
       setSessionSeed(nextSeed)
     })
-    return () => window.cancelAnimationFrame(frame)
+    return () => window.clearTimeout(timeout)
   }, [])
 
   function choose(decision: ScoutDecision) {

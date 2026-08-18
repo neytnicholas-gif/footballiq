@@ -80,7 +80,7 @@ export async function loadAcademyCompletions() {
     }
   }
 
-  const { data, error } = await (supabase as any)
+  const { data, error } = await supabase
     .from('academy_completions')
     .select('experience_key, track, completed_at, confidence_label')
     .eq('user_id', authData.user.id)
@@ -133,7 +133,7 @@ export async function saveAcademyCompletion(input: { experienceKey: string; trac
     return { error: null as Error | null }
   }
 
-  const { error } = await (supabase as any)
+  const { error } = await supabase
     .from('academy_completions')
     .upsert(
       {

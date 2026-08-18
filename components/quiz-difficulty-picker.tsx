@@ -9,12 +9,12 @@ export function useQuizDifficulty(storageKey: string) {
   const [ready, setReady] = useState(false)
 
   useEffect(() => {
-    const frame = window.requestAnimationFrame(() => {
+    const timeout = window.setTimeout(() => {
       const stored = window.localStorage.getItem(`early-shout:quiz-difficulty:${storageKey}`)
       if (stored && quizDifficulties.includes(stored as QuizDifficulty)) setDifficultyState(stored as QuizDifficulty)
       setReady(true)
     })
-    return () => window.cancelAnimationFrame(frame)
+    return () => window.clearTimeout(timeout)
   }, [storageKey])
 
   function setDifficulty(value: QuizDifficulty) {

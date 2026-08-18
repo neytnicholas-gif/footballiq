@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import fs from 'node:fs'
 import path from 'node:path'
-import { DISTINCT_LEVEL_COLOUR_COUNT, getLevelColor, getLevelInfo, getXpAtStartOfLevel, xpNeededForLevelUp } from '@/lib/progression'
+import { DISTINCT_LEVEL_COLOUR_COUNT, getLevelColor, getLevelInfo, getLevelPalette, getRank, getRankProgress, getXpAtStartOfLevel, xpNeededForLevelUp } from '@/lib/progression'
 import { SITE_ONBOARDING_VERSION, isOnboardingRoute, onboardingStorageKey } from '@/lib/onboarding'
 
 describe('overall level progression', () => {
@@ -32,6 +32,21 @@ describe('overall level progression', () => {
   it('gives every level from 1 to 1000 a distinct colour', () => {
     const colours = Array.from({ length: DISTINCT_LEVEL_COLOUR_COUNT }, (_, index) => getLevelColor(index + 1))
     expect(new Set(colours).size).toBe(DISTINCT_LEVEL_COLOUR_COUNT)
+  })
+
+  it('keeps named rank milestones meaningful through the level-1000 journey', () => {
+    expect(getRank(22000).title).toBe('Legend')
+    expect(getRank(275000).title).toBe('World Class')
+    expect(getRank(1500000).title).toBe('Eternal Great')
+    expect(getRankProgress(1499999).next?.title).toBe('Eternal Great')
+    expect(getRankProgress(1500000).next).toBeNull()
+  })
+
+  it('keeps every level badge dark enough for its white label', () => {
+    for (let level = 1; level <= DISTINCT_LEVEL_COLOUR_COUNT; level += 1) {
+      const lightnessStops = [...getLevelPalette(level).badge.matchAll(/72% (\d+)%/g)].map((match) => Number(match[1]))
+      expect(lightnessStops).toEqual([19, 25])
+    }
   })
 })
 

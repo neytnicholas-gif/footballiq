@@ -39,8 +39,8 @@ export default function PlayerMarketLeaguesPage() {
   }, [user])
 
   useEffect(() => {
-    const frame = window.requestAnimationFrame(() => void load())
-    return () => window.cancelAnimationFrame(frame)
+    const timeout = window.setTimeout(() => void load(), 0)
+    return () => window.clearTimeout(timeout)
   }, [load])
 
   return (

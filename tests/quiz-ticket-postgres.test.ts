@@ -4,6 +4,7 @@ import { PGlite } from '@electric-sql/pglite'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
 const migration = readFileSync('supabase/migrations/20260813120000_secure_quiz_completion_tickets.sql', 'utf8')
+const replayXpMigration = readFileSync('supabase/migrations/20260818223000_diminish_quiz_replay_xp.sql', 'utf8')
 const db = new PGlite()
 const userId = '10000000-0000-0000-0000-000000000001'
 const key = 'cqk:ticket-test:run-123456789012345678901234'
@@ -34,6 +35,7 @@ describe('quiz completion ticket database boundary', () => {
       insert into auth.users values('${userId}');
     `)
     await db.exec(migration)
+    await db.exec(replayXpMigration)
     await db.query("select set_config('request.jwt.claim.sub',$1,false)", [userId])
   })
 
@@ -75,5 +77,22 @@ describe('quiz completion ticket database boundary', () => {
     await expect(db.query('select public.complete_quiz($1,$2,$3,$4,$5)', [
       'daily-2026-08-13', 5, 5, 110, mismatchKey,
     ])).rejects.toThrow('does not match')
+  })
+
+  it('awards diminishing XP for repeated runs in one daily reward bucket', async () => {
+    const expectedXp = [100, 50, 25, 10]
+    for (const [index, expected] of expectedXp.entries()) {
+      const replayKey = `cqk:replay-test:run-${String(index + 1).padStart(24, '0')}`
+      await db.query(`insert into public.quiz_completion_tickets(
+        user_id,completion_key,quiz_id,score,total,xp_earned,reward_bucket,expires_at
+      ) values($1,$2,$3,$4,$5,$6,$7,now()+interval '5 minutes')`, [
+        userId, replayKey, 'quiz-lab-odd-one-out', 10, 10, 100, 'quiz-lab-odd-one-out:normal',
+      ])
+      const result = await db.query<{ result: { xp_awarded: number; daily_bucket_run: number } }>(
+        'select public.complete_quiz($1,$2,$3,$4,$5) result',
+        ['quiz-lab-odd-one-out', 10, 10, 100, replayKey],
+      )
+      expect(result.rows[0]!.result).toMatchObject({ xp_awarded: expected, daily_bucket_run: index + 1 })
+    }
   })
 })

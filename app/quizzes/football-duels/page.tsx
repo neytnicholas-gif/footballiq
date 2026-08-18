@@ -33,7 +33,7 @@ export default function FootballDuelsPage() {
 
   useEffect(() => {
     if (!ready) return
-    const frame = window.requestAnimationFrame(() => {
+    const timeout = window.setTimeout(() => {
       const firstPack = duelPacks.find((pack) => getDuelPackDifficulty(pack.id) === difficulty)
       setSelected(difficulty === 'normal' ? dailyPack() : (firstPack ?? duelPacks[0]!))
       try {
@@ -43,7 +43,7 @@ export default function FootballDuelsPage() {
         setCompleted({})
       }
     })
-    return () => window.cancelAnimationFrame(frame)
+    return () => window.clearTimeout(timeout)
   }, [difficulty, ready])
 
   const filtered = useMemo(() => duelPacks.filter((pack) => {

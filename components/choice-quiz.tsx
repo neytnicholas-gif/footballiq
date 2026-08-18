@@ -33,13 +33,13 @@ export function ChoiceQuiz({ quizId, title, items, labels, answerProof, onRestar
   const [saving, setSaving] = useState(false)
   const [runKey, setRunKey] = useState(() => createCompletionRunId())
   const [rewardStatus, setRewardStatus] = useState<RewardStatus>('idle')
+  const [creditedXp, setCreditedXp] = useState(0)
   const [resumeState, setResumeState] = useState<{ index: number; selected: number | null; score: number; answers: number[] } | null>(null)
   const [checkingProgress, setCheckingProgress] = useState(Boolean(user))
   const item = items[index]
   const finished = selected !== null && index === items.length - 1
   const accuracy = Math.round((score / items.length) * 100)
   const baseXp = quizXp(20 + score * 10 + (score === items.length ? 40 : 0), difficulty ?? 'normal')
-  const creditedXp = rewardStatus === 'saved' ? baseXp : 0
   const rank = getRankProgress((profile?.xp ?? 0) + creditedXp)
   const progressQuizId = difficulty ? `${quizId}:${difficulty}` : quizId
 
@@ -104,9 +104,10 @@ export function ChoiceQuiz({ quizId, title, items, labels, answerProof, onRestar
     if (!user || saved || saving) return
     setRewardStatus('saving')
     setSaving(true)
-    const { error, alreadyCompleted } = await saveQuizResult({ quizId, score, total: items.length, xp: baseXp, completionKey: buildCompletionKey(quizId, runKey), proof: answerProof ? answerProof(answers) : { kind: 'choice', answers } })
+    const { error, alreadyCompleted, xpAwarded } = await saveQuizResult({ quizId, score, total: items.length, xp: baseXp, completionKey: buildCompletionKey(quizId, runKey), proof: answerProof ? answerProof(answers) : { kind: 'choice', answers } })
     if (!error) {
       setSaved(true)
+      setCreditedXp(alreadyCompleted ? 0 : (xpAwarded ?? baseXp))
       setRewardStatus(alreadyCompleted ? 'already' : 'saved')
       void clearQuizProgress(progressQuizId)
       if (!alreadyCompleted) await refreshProfile()
@@ -136,6 +137,7 @@ export function ChoiceQuiz({ quizId, title, items, labels, answerProof, onRestar
     setAnswers([])
     setSaved(false)
     setRewardStatus('idle')
+    setCreditedXp(0)
     setRunKey(createCompletionRunId())
     setResumeState(null)
     void clearQuizProgress(progressQuizId)

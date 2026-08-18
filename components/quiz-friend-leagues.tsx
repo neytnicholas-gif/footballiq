@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useCallback, useEffect, useState } from 'react'
-import { Check, Copy, Globe2, Loader2, Share2, Sparkles, Trophy, Users } from 'lucide-react'
+import { Check, Copy, Globe2, Loader2, LogOut, Share2, Sparkles, Trash2, Trophy, Users, X } from 'lucide-react'
 import { useAuth } from '@/components/auth-provider'
 import { footballLeagues } from '@/lib/football-leagues'
 import { supabase } from '@/lib/supabase'
@@ -12,6 +12,7 @@ type ScoringMode = 'xp' | 'accuracy'
 type Period = 'weekly' | 'monthly' | 'season' | 'all'
 type QuizLeague = { id:string; league_code:string; name:string; owner_user_id:string; content_mode:ContentMode; scoring_mode:ScoringMode; period:Period; league_keys:string[]; role?:'owner'|'member' }
 type QuizStanding = { user_id:string; username:string; score_value:number; accuracy_percent:number; xp_earned:number; quizzes_completed:number; rank:number }
+type LeagueAction = { league: QuizLeague; kind: 'leave' | 'delete' }
 
 const contentChoices: Record<ContentMode,{title:string;copy:string}> = {
   all:{title:'Everything',copy:'Every saved quiz and quick game counts.'},
@@ -34,6 +35,7 @@ export function QuizFriendLeagues() {
   const [busy,setBusy]=useState('')
   const [notice,setNotice]=useState('')
   const [error,setError]=useState('')
+  const [leagueAction,setLeagueAction]=useState<LeagueAction|null>(null)
   const load=useCallback(async()=>{
     if(!user){setLeagues([]);return}
     const {data:memberships,error:memberError}=await supabase.from('quiz_friend_league_members').select('league_id,role').eq('user_id',user.id)
@@ -45,8 +47,8 @@ export function QuizFriendLeagues() {
     setLeagues((data ?? []).map((league:QuizLeague)=>({...league,role:roleById.get(league.id)})))
   },[user])
 
-  useEffect(()=>{const frame=requestAnimationFrame(()=>{void load().catch(()=>setError('Your quiz leagues could not load. Please refresh.'))});return()=>cancelAnimationFrame(frame)},[load])
-  useEffect(()=>{const frame=requestAnimationFrame(()=>{const code=new URLSearchParams(window.location.search).get('join')?.trim().toUpperCase();if(code)setJoinCode(code)});return()=>cancelAnimationFrame(frame)},[])
+  useEffect(()=>{const timeout=window.setTimeout(()=>{void load().catch(()=>setError('Your quiz leagues could not load. Please refresh.'))},0);return()=>window.clearTimeout(timeout)},[load])
+  useEffect(()=>{const timeout=window.setTimeout(()=>{const code=new URLSearchParams(window.location.search).get('join')?.trim().toUpperCase();if(code)setJoinCode(code)},0);return()=>window.clearTimeout(timeout)},[])
 
   async function createLeague(){
     if(!user)return setError('Sign in to make a quiz league.')
@@ -83,6 +85,24 @@ export function QuizFriendLeagues() {
     else{await navigator.clipboard.writeText(url);setNotice('Invite link copied. Send it to your friends.')}
   }
 
+  async function completeLeagueAction(){
+    if(!leagueAction)return
+    const {league,kind}=leagueAction
+    const actionKey=`${kind}:${league.id}`
+    setBusy(actionKey);setError('');setNotice('')
+    const {error:actionError}=kind==='delete'
+      ? await supabase.rpc('quiz_delete_friend_league',{p_league_id:league.id})
+      : await supabase.rpc('quiz_leave_friend_league',{p_league_id:league.id})
+    if(actionError)setError(kind==='delete'?'That league could not be deleted. Only its owner can delete it.':'You could not leave that league. Please try again.')
+    else{
+      setLeagues((current)=>current.filter((item)=>item.id!==league.id))
+      setTables((current)=>{const next={...current};delete next[league.id];return next})
+      setNotice(kind==='delete'?`${league.name} was deleted for everyone.`:`You left ${league.name}.`)
+      setLeagueAction(null)
+    }
+    setBusy('')
+  }
+
   return <div className="space-y-6">
     <section className="overflow-hidden rounded-[2rem] border border-cyan-300/20 bg-[radial-gradient(circle_at_90%_10%,rgba(34,211,238,.2),transparent_30%),linear-gradient(140deg,#071827,#18234a)] p-5 shadow-xl sm:p-7">
       <div className="flex items-start gap-3"><span className="grid size-11 shrink-0 place-items-center rounded-xl bg-cyan-300/15 text-cyan-200"><Users className="size-5"/></span><div><p className="text-xs font-black uppercase tracking-[.2em] text-cyan-300">Quiz mini leagues</p><h2 className="mt-1 text-3xl font-black text-white">Set the rules. Invite your people.</h2><p className="mt-2 max-w-2xl text-sm leading-6 text-slate-300">Choose what counts, how long the race lasts and what decides the winner. Everyone gets the same clear table.</p></div></div>
@@ -105,8 +125,9 @@ export function QuizFriendLeagues() {
     </div>
 
     <section><div className="flex items-end justify-between"><div><p className="text-xs font-black uppercase tracking-[.18em] text-fuchsia-300">Private tables</p><h3 className="mt-1 text-2xl font-black text-white">Your quiz leagues</h3></div><span className="rounded-full border border-slate-700 px-3 py-1 text-xs font-bold text-slate-300">{leagues.length}</span></div>
-      <div className="mt-3 grid gap-3 lg:grid-cols-2">{leagues.map((league)=>{const rows=tables[league.id];return <article key={league.id} className="overflow-hidden rounded-2xl border border-slate-700 bg-slate-900/65"><div className="border-b border-slate-700 bg-[linear-gradient(120deg,rgba(217,70,239,.12),rgba(34,211,238,.08))] p-4"><div className="flex justify-between gap-3"><div><p className="text-xs font-black uppercase tracking-[.14em] text-fuchsia-300">{contentChoices[league.content_mode].title} · {periodChoices[league.period]}</p><h4 className="mt-1 text-lg font-black text-white">{league.name}</h4></div><span className="h-fit rounded-lg bg-slate-950/60 px-2 py-1 font-mono text-xs font-black text-cyan-200">{league.league_code}</span></div><p className="mt-2 text-xs text-slate-400">Winner: {league.scoring_mode==='xp'?'most XP':'best accuracy'}{league.content_mode==='league_world'?` · ${league.league_keys.length} rooms`:''}</p></div><div className="p-4"><div className="flex flex-wrap gap-2"><button onClick={()=>void shareLeague(league)} className="inline-flex min-h-10 items-center gap-2 rounded-xl bg-fuchsia-300 px-3 text-xs font-black text-slate-950"><Share2 className="size-3.5"/>Share</button><button onClick={()=>void showTable(league)} className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-slate-600 px-3 text-xs font-black text-white"><Trophy className="size-3.5"/>{rows?'Refresh':'Show table'}</button><button aria-label={`Copy ${league.name} code`} onClick={()=>void navigator.clipboard.writeText(league.league_code)} className="grid size-10 place-items-center rounded-xl border border-slate-700 text-slate-300"><Copy className="size-3.5"/></button></div>{busy===league.id?<Loader2 className="mx-auto mt-5 size-5 animate-spin text-cyan-300"/>:null}{rows?<div className="mt-3 space-y-2">{rows.length?rows.map((row)=><div key={row.user_id} className="grid grid-cols-[auto_1fr_auto] items-center gap-3 rounded-xl border border-slate-700 bg-slate-950/50 px-3 py-2 text-sm"><span className="font-black text-slate-500">#{row.rank}</span><span className="truncate font-bold text-white">{row.username}</span><span className="font-black text-cyan-300">{league.scoring_mode==='xp'?`${row.xp_earned} XP`:`${row.accuracy_percent}%`}</span></div>):<p className="text-sm text-slate-400">No saved scores in this table yet.</p>}</div>:null}</div></article>})}</div>
+      <div className="mt-3 grid gap-3 lg:grid-cols-2">{leagues.map((league)=>{const rows=tables[league.id];return <article key={league.id} className="overflow-hidden rounded-2xl border border-slate-700 bg-slate-900/65"><div className="border-b border-slate-700 bg-[linear-gradient(120deg,rgba(217,70,239,.12),rgba(34,211,238,.08))] p-4"><div className="flex justify-between gap-3"><div><p className="text-xs font-black uppercase tracking-[.14em] text-fuchsia-300">{contentChoices[league.content_mode].title} · {periodChoices[league.period]}</p><h4 className="mt-1 text-lg font-black text-white">{league.name}</h4></div><span className="h-fit rounded-lg bg-slate-950/60 px-2 py-1 font-mono text-xs font-black text-cyan-200">{league.league_code}</span></div><p className="mt-2 text-xs text-slate-400">Winner: {league.scoring_mode==='xp'?'most XP':'best accuracy'}{league.content_mode==='league_world'?` · ${league.league_keys.length} rooms`:''}</p></div><div className="p-4"><div className="flex flex-wrap gap-2"><button onClick={()=>void shareLeague(league)} className="inline-flex min-h-10 items-center gap-2 rounded-xl bg-fuchsia-300 px-3 text-xs font-black text-slate-950"><Share2 className="size-3.5"/>Share</button><button onClick={()=>void showTable(league)} className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-slate-600 px-3 text-xs font-black text-white"><Trophy className="size-3.5"/>{rows?'Refresh':'Show table'}</button><button aria-label={`Copy ${league.name} code`} onClick={()=>void navigator.clipboard.writeText(league.league_code)} className="grid size-10 place-items-center rounded-xl border border-slate-700 text-slate-300"><Copy className="size-3.5"/></button><button type="button" onClick={()=>setLeagueAction({league,kind:league.role==='owner'?'delete':'leave'})} className={`inline-flex min-h-10 items-center gap-2 rounded-xl border px-3 text-xs font-black ${league.role==='owner'?'border-rose-300/35 text-rose-200 hover:bg-rose-300/10':'border-slate-600 text-slate-300 hover:border-slate-400'}`}>{league.role==='owner'?<Trash2 className="size-3.5"/>:<LogOut className="size-3.5"/>}{league.role==='owner'?'Delete league':'Leave league'}</button></div>{busy===league.id?<Loader2 className="mx-auto mt-5 size-5 animate-spin text-cyan-300"/>:null}{rows?<div className="mt-3 space-y-2">{rows.length?rows.map((row)=><div key={row.user_id} className="grid grid-cols-[auto_1fr_auto] items-center gap-3 rounded-xl border border-slate-700 bg-slate-950/50 px-3 py-2 text-sm"><span className="font-black text-slate-500">#{row.rank}</span><span className="truncate font-bold text-white">{row.username}</span><span className="font-black text-cyan-300">{league.scoring_mode==='xp'?`${row.xp_earned} XP`:`${row.accuracy_percent}%`}</span></div>):<p className="text-sm text-slate-400">No saved scores in this table yet.</p>}</div>:null}</div></article>})}</div>
       {!leagues.length?<div className="mt-3 rounded-2xl border border-dashed border-slate-700 p-7 text-center text-sm text-slate-400">No quiz leagues yet. Create one above, then share the code.</div>:null}
     </section>
+    {leagueAction?<div className="fixed inset-0 z-[80] grid place-items-center bg-slate-950/80 p-4" role="presentation" onKeyDown={(event)=>{if(event.key==='Escape'&&!busy)setLeagueAction(null)}} onMouseDown={(event)=>{if(event.target===event.currentTarget&&!busy)setLeagueAction(null)}}><section role="dialog" aria-modal="true" aria-labelledby="quiz-league-action-title" className="w-full max-w-md rounded-[1.75rem] border border-slate-600 bg-slate-900 p-5 shadow-2xl sm:p-6"><div className="flex items-start justify-between gap-4"><div><p className="text-xs font-black uppercase tracking-[.16em] text-cyan-300">Confirm change</p><h3 id="quiz-league-action-title" className="mt-1 text-2xl font-black text-white">{leagueAction.kind==='delete'?'Delete this league?':'Leave this league?'}</h3></div><button type="button" aria-label="Close confirmation" disabled={Boolean(busy)} onClick={()=>setLeagueAction(null)} className="grid size-10 place-items-center rounded-xl border border-slate-700 text-slate-300"><X className="size-4"/></button></div><p className="mt-3 text-sm leading-6 text-slate-300">{leagueAction.kind==='delete'?<><strong className="text-white">{leagueAction.league.name}</strong> and its private table will disappear for every member. Saved quiz results stay on each person&apos;s profile.</>:<>You will leave <strong className="text-white">{leagueAction.league.name}</strong>. Your saved quiz results stay on your profile.</>}</p><div className="mt-5 grid gap-2 sm:grid-cols-2"><button autoFocus type="button" disabled={Boolean(busy)} onClick={()=>setLeagueAction(null)} className="min-h-11 rounded-xl border border-slate-600 font-bold text-white">Keep league</button><button type="button" disabled={Boolean(busy)} onClick={()=>void completeLeagueAction()} className={`inline-flex min-h-11 items-center justify-center gap-2 rounded-xl font-black text-slate-950 disabled:opacity-50 ${leagueAction.kind==='delete'?'bg-rose-300':'bg-cyan-300'}`}>{busy?<Loader2 className="size-4 animate-spin"/>:null}{leagueAction.kind==='delete'?'Delete for everyone':'Leave league'}</button></div></section></div>:null}
   </div>
 }

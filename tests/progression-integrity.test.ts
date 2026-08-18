@@ -6,6 +6,8 @@ import { describe, expect, it } from 'vitest'
 const thisFilePath = fileURLToPath(import.meta.url)
 const repoRoot = path.resolve(path.dirname(thisFilePath), '..')
 const migrationPath = path.join(repoRoot, 'supabase', 'migrations', '20260802000100_staging_progression_integrity_repair.sql')
+const simulatedMarketCleanupPath = path.join(repoRoot, 'supabase', 'migrations', '20260818221500_drop_legacy_simulated_market_rpc.sql')
+const replayXpMigrationPath = path.join(repoRoot, 'supabase', 'migrations', '20260818223000_diminish_quiz_replay_xp.sql')
 const usernamePagePath = path.join(repoRoot, 'app', 'username', 'page.tsx')
 
 async function migration() {
@@ -29,6 +31,28 @@ async function collectSqlFiles(dir: string, acc: string[] = []) {
 }
 
 describe('progression integrity SQL guards', () => {
+  it('permanently removes the legacy simulated market-price RPC from deployed schemas', async () => {
+    const cleanupSql = await readFile(simulatedMarketCleanupPath, 'utf8')
+    const migrationFiles = await collectSqlFiles(path.join(repoRoot, 'supabase', 'migrations'))
+
+    expect(cleanupSql).toMatch(/drop function if exists public\.market_apply_simulated_matchweek\(text,\s*jsonb,\s*text\)/i)
+
+    for (const filePath of migrationFiles) {
+      const sql = await readFile(filePath, 'utf8')
+      expect(sql).not.toMatch(/grant\s+execute\s+on\s+function\s+public\.market_apply_simulated_matchweek/i)
+      expect(sql).not.toMatch(/create\s+or\s+replace\s+function\s+public\.market_apply_simulated_matchweek/i)
+    }
+  })
+
+  it('atomically diminishes repeated XP without blocking practice', async () => {
+    const sql = await readFile(replayXpMigrationPath, 'utf8')
+    expect(sql).toMatch(/primary key \(user_id, reward_bucket, activity_date\)/i)
+    expect(sql).toMatch(/on conflict \(user_id, reward_bucket, activity_date\) do update/i)
+    expect(sql).toMatch(/when 1 then p_xp[\s\S]*when 2 then round\(p_xp \* 0\.50\)[\s\S]*when 3 then round\(p_xp \* 0\.25\)[\s\S]*else round\(p_xp \* 0\.10\)/i)
+    expect(sql).toMatch(/set consumed_at = now\(\), awarded_xp = adjusted_xp/i)
+    expect(sql).toMatch(/complete_quiz_unsecured_internal\([\s\S]*adjusted_xp/i)
+  })
+
   it('completion keys are persisted and unique per user at database level', async () => {
     const sql = await migration()
     expect(sql).toMatch(/add column if not exists completion_key text/i)

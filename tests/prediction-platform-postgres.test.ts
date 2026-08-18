@@ -9,6 +9,7 @@ const marketLeagueMigration = readFileSync('supabase/migrations/20260809152000_c
 const expansionMigration = readFileSync('supabase/migrations/20260815150000_expand_competition_worlds.sql', 'utf8')
 const licensedCompetitionMigration = readFileSync('supabase/migrations/20260816000100_allow_licensed_prediction_competitions.sql', 'utf8')
 const queryHardeningMigration = readFileSync('supabase/migrations/20260816000200_finish_prediction_and_quiz_query_hardening.sql', 'utf8')
+const lifecycleMigration = readFileSync('supabase/migrations/20260818224500_complete_friend_league_lifecycle.sql', 'utf8')
 const db = new PGlite()
 const owner = '10000000-0000-4000-8000-000000000001'
 const friend = '10000000-0000-4000-8000-000000000002'
@@ -49,6 +50,7 @@ beforeAll(async () => {
   await db.exec(expansionMigration)
   await db.exec(licensedCompetitionMigration)
   await db.exec(queryHardeningMigration)
+  await db.exec(lifecycleMigration)
 })
 
 afterAll(async () => db.close())
@@ -82,6 +84,16 @@ describe('prediction competition database boundary', () => {
 
     await db.exec(`select set_config('request.jwt.claim.sub','${owner}',false)`)
     await expect(db.query(`select public.prediction_leave_league($1)`, [league.id])).rejects.toThrow('OWNER_CANNOT_LEAVE')
+
+    await db.exec(`select set_config('request.jwt.claim.sub','${friend}',false)`)
+    const left = await db.query<{ result: { left: boolean } }>(`select public.prediction_leave_league($1) result`, [league.id])
+    expect(left.rows[0]?.result.left).toBe(true)
+
+    await db.exec(`select set_config('request.jwt.claim.sub','${owner}',false)`)
+    const deleted = await db.query<{ result: { deleted: boolean } }>(`select public.prediction_delete_league($1) result`, [league.id])
+    expect(deleted.rows[0]?.result.deleted).toBe(true)
+    const remaining = await db.query<{ count: number }>(`select count(*)::int count from public.prediction_leagues where id=$1`, [league.id])
+    expect(remaining.rows[0]?.count).toBe(0)
   })
 
   it('accepts every licensed prediction competition instead of the old three-league prototype', async () => {
@@ -112,6 +124,9 @@ describe('prediction competition database boundary', () => {
     const quizTable=await db.query<{accuracy_percent:number;quizzes_completed:number}>(`select accuracy_percent,quizzes_completed from public.quiz_get_friend_league_leaderboard('${quizLeague.id}')`)
     expect(Number(quizTable.rows[0]?.accuracy_percent)).toBe(80)
     expect(quizTable.rows[0]?.quizzes_completed).toBe(1)
+
+    const deletedQuiz = await db.query<{result:{deleted:boolean}}>(`select public.quiz_delete_friend_league('${quizLeague.id}') result`)
+    expect(deletedQuiz.rows[0]?.result.deleted).toBe(true)
 
     const market=await db.query<{result:{id:number;score_mode:string}}>(`select public.market_create_friend_league('Weekly Movers','weekly_gain') result`)
     expect(market.rows[0]?.result.score_mode).toBe('weekly_gain')

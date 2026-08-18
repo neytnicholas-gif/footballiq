@@ -6,7 +6,9 @@ import { useAuth } from '@/components/auth-provider'
 import { QuizDifficultyPicker, useQuizDifficulty } from '@/components/quiz-difficulty-picker'
 import {
   quizLabCorrectAnswer,
+  quizLabDifficultyText,
   quizLabFormatById,
+  quizLabQuestionFamilyId,
   quizLabQuestionBank,
   type QuizLabChoiceQuestion,
   type QuizLabFormat,
@@ -16,7 +18,7 @@ import {
 } from '@/lib/quiz-lab'
 import { buildQuizDifficultyIndex, filterQuizDifficulty, quizDifficultyCounts, quizXp } from '@/lib/quiz-difficulty'
 import { buildCompletionKey, createCompletionRunId, saveQuizResult } from '@/lib/quiz-save'
-import { createQuizSessionSeed, sampleQuizSession } from '@/lib/quiz-session'
+import { createQuizSessionSeed, sampleUniqueQuizFamilies } from '@/lib/quiz-session'
 
 const accentClasses: Record<QuizLabFormat, { badge: string; button: string; soft: string }> = {
   'odd-one-out': { badge: 'border-cyan-300/30 bg-cyan-300/10 text-cyan-200', button: 'bg-cyan-300 text-slate-950', soft: 'border-cyan-300/25 bg-cyan-300/5' },
@@ -32,7 +34,7 @@ const difficultyIndexes = Object.fromEntries(Object.entries(quizLabQuestionBank)
   buildQuizDifficultyIndex(questions, {
     id: (question) => question.id,
     authored: (question) => question.difficulty,
-    text: (question) => `${question.prompt} ${question.explanation} ${question.takeaway}`,
+    text: quizLabDifficultyText,
   }),
 ])) as Record<QuizLabFormat, Map<string, import('@/lib/quiz-difficulty').QuizDifficulty>>
 
@@ -114,10 +116,11 @@ export function QuizLabGame({ format }: { format: QuizLabFormat }) {
   const bankSize = quizLabQuestionBank[format].length
   const difficultyIndex = difficultyIndexes[format]
   const difficultyCounts = useMemo(() => quizDifficultyCounts(difficultyIndex), [difficultyIndex])
-  const questions = useMemo(() => sampleQuizSession(
+  const questions = useMemo(() => sampleUniqueQuizFamilies(
     filterQuizDifficulty(quizLabQuestionBank[format], difficulty, difficultyIndex, (question) => question.id),
     SESSION_SIZE,
     sessionSeed,
+    quizLabQuestionFamilyId,
   ), [difficulty, difficultyIndex, format, sessionSeed])
   const [index, setIndex] = useState(0)
   const [score, setScore] = useState(0)
@@ -125,6 +128,7 @@ export function QuizLabGame({ format }: { format: QuizLabFormat }) {
   const [selected, setSelected] = useState<string | null>(null)
   const [answered, setAnswered] = useState(false)
   const [saved, setSaved] = useState(false)
+  const [awardedXp, setAwardedXp] = useState(0)
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState(false)
   const [runKey, setRunKey] = useState(() => createCompletionRunId())
@@ -136,14 +140,14 @@ export function QuizLabGame({ format }: { format: QuizLabFormat }) {
   const FormatIcon = useMemo(() => format === 'order-the-play' ? ListOrdered : format === 'link-up' ? Link2 : format === 'formation-fix' ? Target : ShieldCheck, [format])
 
   useEffect(() => {
-    const frame = window.requestAnimationFrame(() => {
+    const timeout = window.setTimeout(() => {
       const key = `early-shout:quiz-lab-seed:${format}:${difficulty}`
       const stored = Number(window.sessionStorage.getItem(key))
       const nextSeed = Number.isSafeInteger(stored) && stored > 0 ? stored : createQuizSessionSeed()
       window.sessionStorage.setItem(key, String(nextSeed))
       setSessionSeed(nextSeed)
     })
-    return () => window.cancelAnimationFrame(frame)
+    return () => window.clearTimeout(timeout)
   }, [difficulty, format])
 
   function answer(value: string) {
@@ -163,7 +167,7 @@ export function QuizLabGame({ format }: { format: QuizLabFormat }) {
   function startRound() {
     const nextSeed = createQuizSessionSeed()
     window.sessionStorage.setItem(`early-shout:quiz-lab-seed:${format}:${difficulty}`, String(nextSeed))
-    setSessionSeed(nextSeed); setIndex(0); setScore(0); setAnswers([]); setSelected(null); setAnswered(false); setSaved(false); setSaving(false); setSaveError(false); setRunKey(createCompletionRunId())
+    setSessionSeed(nextSeed); setIndex(0); setScore(0); setAnswers([]); setSelected(null); setAnswered(false); setSaved(false); setAwardedXp(0); setSaving(false); setSaveError(false); setRunKey(createCompletionRunId())
   }
 
   function restart() {
@@ -172,16 +176,16 @@ export function QuizLabGame({ format }: { format: QuizLabFormat }) {
 
   function changeDifficulty(nextDifficulty: typeof difficulty) {
     setDifficulty(nextDifficulty)
-    setIndex(0); setScore(0); setAnswers([]); setSelected(null); setAnswered(false); setSaved(false); setSaving(false); setSaveError(false); setRunKey(createCompletionRunId())
+    setIndex(0); setScore(0); setAnswers([]); setSelected(null); setAnswered(false); setSaved(false); setAwardedXp(0); setSaving(false); setSaveError(false); setRunKey(createCompletionRunId())
   }
 
   async function save() {
     if (!user || saved || saving) return
     setSaving(true); setSaveError(false)
     const quizId = `quiz-lab-${format}`
-    const { error } = await saveQuizResult({ quizId, score, total: questions.length, xp, completionKey: buildCompletionKey(quizId, runKey), proof: { kind: 'quiz-lab', format, questionIds: questions.map((item) => item.id), answers, difficulty } })
+    const { error, alreadyCompleted, xpAwarded } = await saveQuizResult({ quizId, score, total: questions.length, xp, completionKey: buildCompletionKey(quizId, runKey), proof: { kind: 'quiz-lab', format, questionIds: questions.map((item) => item.id), answers, difficulty } })
     if (error) setSaveError(true)
-    else { setSaved(true); await refreshProfile() }
+    else { setSaved(true); setAwardedXp(alreadyCompleted ? 0 : (xpAwarded ?? xp)); if (!alreadyCompleted) await refreshProfile() }
     setSaving(false)
   }
 
@@ -195,7 +199,7 @@ export function QuizLabGame({ format }: { format: QuizLabFormat }) {
         <div className="flex items-center gap-3"><span className={`flex size-11 items-center justify-center rounded-xl border ${colors.badge}`}><FormatIcon className="size-5" /></span><div><p className="text-xs font-black uppercase tracking-[.18em] text-slate-400">{meta.skill}</p><h2 className="text-xl font-black text-white">{meta.title}</h2></div></div>
         <div className="text-right"><p className="text-sm font-bold text-white">{index + 1} / {questions.length}</p><p className="text-xs text-slate-400">Score {score}</p></div>
       </div>
-      <div className="mt-5 rounded-2xl border border-cyan-300/20 bg-cyan-300/5 p-4"><p className="text-xs font-black uppercase tracking-[.16em] text-cyan-200">Fresh difficulty-matched round</p><p className="mt-1 text-sm font-bold text-white">12 {difficulty} questions</p><p className="mt-1 text-xs text-slate-400">Your level is selected from {bankSize} different {meta.title} challenges. Play again for another mix.</p></div>
+      <div className="mt-5 rounded-2xl border border-cyan-300/20 bg-cyan-300/5 p-4"><p className="text-xs font-black uppercase tracking-[.16em] text-cyan-200">Fresh difficulty-matched round</p><p className="mt-1 text-sm font-bold text-white">12 {difficulty} questions</p><p className="mt-1 text-xs text-slate-400">Your level is selected from {bankSize} playable variations across 60 football situations. Each round uses 12 different situations.</p></div>
       <div className="mt-5 h-2 overflow-hidden rounded-full bg-slate-800"><div className={`h-full rounded-full transition-all duration-500 ${colors.button}`} style={{ width: `${progress}%` }} /></div>
     </div>
 
@@ -207,7 +211,7 @@ export function QuizLabGame({ format }: { format: QuizLabFormat }) {
       {answered ? <div className={`mt-6 rounded-2xl border p-5 ${right ? 'border-emerald-300/35 bg-emerald-300/8' : 'border-rose-300/35 bg-rose-300/8'}`} role="status">
         <div className="flex items-start gap-3"><span className={`mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-full ${right ? 'bg-emerald-300 text-emerald-950' : 'bg-rose-300 text-rose-950'}`}>{right ? <Check className="size-4" /> : <X className="size-4" />}</span><div><p className="font-black text-white">{right ? 'Nice read.' : 'Not this time.'}</p><p className="mt-1 text-sm leading-relaxed text-slate-300">{question.explanation}</p><p className="mt-3 rounded-xl bg-slate-950/45 px-3 py-2 text-sm text-slate-200"><strong>Remember:</strong> {question.takeaway}</p></div></div>
         <div className="mt-5 flex flex-wrap gap-3">{!last ? <button type="button" onClick={next} className={`inline-flex min-h-11 items-center gap-2 rounded-xl px-5 text-sm font-black ${colors.button}`}>Next challenge <ArrowRight className="size-4" /></button> : <>
-          <button type="button" onClick={() => void save()} disabled={!user || saved || saving} className={`min-h-11 rounded-xl px-5 text-sm font-black disabled:opacity-50 ${colors.button}`}>{!user ? 'Sign in to save your XP' : saving ? 'Saving…' : saved ? `Saved · ${xp} XP` : `Finish and save ${xp} XP`}</button>
+          <button type="button" onClick={() => void save()} disabled={!user || saved || saving} className={`min-h-11 rounded-xl px-5 text-sm font-black disabled:opacity-50 ${colors.button}`}>{!user ? 'Sign in to save your XP' : saving ? 'Saving…' : saved ? `Saved · ${awardedXp} XP` : `Finish and save up to ${xp} XP`}</button>
           <button type="button" onClick={startRound} className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-cyan-300/45 bg-cyan-300/10 px-4 text-sm font-bold text-cyan-100">Next 12 questions <ArrowRight className="size-4" /></button>
           <button type="button" onClick={restart} className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-slate-600 px-4 text-sm font-bold text-slate-100"><RotateCcw className="size-4" /> Play again</button>
         </>}</div>{saveError ? <p className="mt-3 text-sm font-semibold text-rose-200">We could not save that run. Please try again.</p> : null}

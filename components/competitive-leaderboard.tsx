@@ -80,8 +80,8 @@ export function CompetitiveLeaderboard({ initialBoard = 'overall' }: { initialBo
   const pathname = usePathname()
 
   useEffect(() => {
-    const frame = window.requestAnimationFrame(() => void loadBoard(board))
-    return () => window.cancelAnimationFrame(frame)
+    const timeout = window.setTimeout(() => void loadBoard(board), 0)
+    return () => window.clearTimeout(timeout)
     // loadBoard deliberately reads the selected board passed above; changing
     // unrelated render-time helpers must not restart an in-flight request.
     // eslint-disable-next-line react-hooks/exhaustive-deps

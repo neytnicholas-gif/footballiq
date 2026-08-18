@@ -9,7 +9,7 @@ import {
   playerKnowledgeProfiles,
 } from '@/lib/player-knowledge-bank'
 import { calculateDuelXp } from '@/lib/progression'
-import { quizLabQuestionBank, quizLabCorrectAnswer } from '@/lib/quiz-lab'
+import { quizLabQuestionBank, quizLabCorrectAnswer, quizLabDifficultyText } from '@/lib/quiz-lab'
 import {
   buildQuizDifficultyIndex,
   filterQuizDifficulty,
@@ -25,7 +25,7 @@ const completionKey = 'cqk:difficulty-test:run-123456789012345678901234'
 const refereeIndex = buildQuizDifficultyIndex(refereeQuestions, {
   id: (question) => question.id!,
   authored: (question) => question.difficulty ?? 'Medium',
-  text: (question) => `${question.scenario} ${question.options.join(' ')} ${question.explanation}`,
+  text: (question) => `${question.scenario} ${question.options.join(' ')}`,
 })
 
 describe('five-level quiz difficulty', () => {
@@ -59,7 +59,7 @@ describe('five-level quiz difficulty', () => {
       quizDifficultyCounts(buildQuizDifficultyIndex(tacticalScenarios, {
         id: (scenario) => scenario.id,
         authored: (scenario) => scenario.difficulty,
-        text: (scenario) => `${scenario.prompt} ${scenario.context} ${scenario.explanation}`,
+        text: (scenario) => `${scenario.prompt} ${scenario.context} ${scenario.options.join(' ')}`,
       })),
       quizDifficultyCounts(buildQuizDifficultyIndex(scoutQuestions, {
         id: (question) => question.id,
@@ -69,7 +69,7 @@ describe('five-level quiz difficulty', () => {
       ...Object.values(quizLabQuestionBank).map((questions) => quizDifficultyCounts(buildQuizDifficultyIndex(questions, {
         id: (question) => question.id,
         authored: (question) => question.difficulty,
-        text: (question) => `${question.prompt} ${question.explanation} ${question.takeaway}`,
+        text: quizLabDifficultyText,
       }))),
     ]
 
@@ -110,7 +110,7 @@ describe('five-level quiz difficulty', () => {
     const index = buildQuizDifficultyIndex(questions, {
       id: (question) => question.id,
       authored: (question) => question.difficulty,
-      text: (question) => `${question.prompt} ${question.explanation} ${question.takeaway}`,
+      text: quizLabDifficultyText,
     })
     const hard = filterQuizDifficulty(questions, 'hard', index, (question) => question.id).slice(0, 12)
     const result = verifyQuizReward({
@@ -142,22 +142,22 @@ describe('five-level quiz difficulty', () => {
 
   it('keeps League World level slices fixed and rejects relabelled easy questions', () => {
     const questions = getLeagueWorldQuestions('premier-league')
-    const hardIndexes = [9, 10, 11]
+    const hardIndexes = [15, 16, 17, 18, 19]
     const hard = verifyQuizReward({
       quizId: 'league-world-premier-league',
-      score: 3,
-      total: 3,
+      score: 5,
+      total: 5,
       completionKey,
       proof: { kind: 'choice', questionIndexes: hardIndexes, answers: hardIndexes.map((index) => questions[index]!.answer), difficulty: 'hard' },
     })
-    expect(hard.xp).toBe(113)
+    expect(hard.xp).toBe(138)
 
     expect(() => verifyQuizReward({
       quizId: 'league-world-premier-league',
-      score: 3,
-      total: 3,
+      score: 5,
+      total: 5,
       completionKey,
-      proof: { kind: 'choice', questionIndexes: [0, 1, 2], answers: [questions[0]!.answer, questions[1]!.answer, questions[2]!.answer], difficulty: 'hard' },
+      proof: { kind: 'choice', questionIndexes: [0, 1, 2, 3, 4], answers: [questions[0]!.answer, questions[1]!.answer, questions[2]!.answer, questions[3]!.answer, questions[4]!.answer], difficulty: 'hard' },
     })).toThrow('outside the chosen difficulty')
   })
 

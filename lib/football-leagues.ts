@@ -143,6 +143,28 @@ export function getLeagueWorldQuestions(key: string): LeagueWorldQuestion[] {
     `${league.name} — ${league.country}, ${tierLabels[league.tier].toLowerCase()}, ${differentConfederation}`,
     `${relatedLeague.name} — ${league.country}, ${tierLabels[league.tier].toLowerCase()}, ${league.confederation}`,
   ], leagueIndex + 25)
+  const countryFromCode = optionSet(league.country, footballLeagues.map((item) => item.country), leagueIndex + 27)
+  const competitionFromShortName = optionSet(league.name, footballLeagues.map((item) => item.name), leagueIndex + 29)
+  const cultureClueOptions = optionSet(league.cultureClue, footballLeagues.map((item) => item.cultureClue), leagueIndex + 31)
+  const identityClueOptions = optionSet(league.identityClue, footballLeagues.map((item) => item.identityClue), leagueIndex + 33)
+  const pyramidSignature = `${league.countryCode} · ${tierLabels[league.tier]} · ${league.confederation}`
+  const pyramidSignatureOptions = optionSet(pyramidSignature, footballLeagues.map((item) => `${item.countryCode} · ${tierLabels[item.tier]} · ${item.confederation}`), leagueIndex + 35)
+  const countryTierProfile = `${league.country} · ${tierLabels[league.tier]}`
+  const countryTierProfileOptions = optionSet(countryTierProfile, footballLeagues.map((item) => `${item.country} · ${tierLabels[item.tier]}`), leagueIndex + 37)
+  const confederationCountryProfile = `${league.confederation} · ${league.country}`
+  const confederationCountryProfileOptions = optionSet(confederationCountryProfile, footballLeagues.map((item) => `${item.confederation} · ${item.country}`), leagueIndex + 39)
+  const dualClueIdentity = optionSet(league.name, footballLeagues.map((item) => item.name), leagueIndex + 41)
+  const fullCodeProfile = `${league.shortName} · ${league.countryCode} · Tier ${league.tier}`
+  const fullCodeProfileOptions = optionSet(fullCodeProfile, footballLeagues.map((item) => `${item.shortName} · ${item.countryCode} · Tier ${item.tier}`), leagueIndex + 43)
+  const incorrectProfile = `${league.name} · ${wrongCountry} · ${league.confederation}`
+  const incorrectProfileChoices = [
+    incorrectProfile,
+    `${sameRegion.name} · ${sameRegion.country} · ${sameRegion.confederation}`,
+    `${otherRegion.name} · ${otherRegion.country} · ${otherRegion.confederation}`,
+    `${thirdRegion.name} · ${thirdRegion.country} · ${thirdRegion.confederation}`,
+  ]
+  const incorrectProfileShift = leagueIndex % incorrectProfileChoices.length
+  const incorrectProfileOptions = [...incorrectProfileChoices.slice(incorrectProfileShift), ...incorrectProfileChoices.slice(0, incorrectProfileShift)]
 
   return [
     { prompt: `Where is ${league.name} played?`, ...country, explanation: `${league.name} is played in ${league.country}.` },
@@ -160,6 +182,16 @@ export function getLeagueWorldQuestions(key: string): LeagueWorldQuestion[] {
     { prompt: `Which complete room label is fully correct for ${league.name}?`, ...completeRoomLabelOptions, explanation: `${completeRoomLabel} combines the correct country code, competition label and confederation.` },
     { prompt: `Which three-part profile of ${league.name} is accurate?`, ...completeProfileOptions, explanation: `${completeProfile} is the complete profile.` },
     { prompt: `Compare ${league.name} with ${relatedLeague.name}. Which tier statement is right?`, ...relationshipOptions, explanation: relationship },
+    { prompt: `The room code is ${league.countryCode}. Which country does it represent here?`, ...countryFromCode, explanation: `${league.countryCode} marks ${league.country} in League World.` },
+    { prompt: `Which competition uses the short room name “${league.shortName}”?`, ...competitionFromShortName, explanation: `${league.shortName} is the short room name for ${league.name}.` },
+    { prompt: `Which culture clue belongs to ${league.name}?`, ...cultureClueOptions, explanation: league.cultureClue },
+    { prompt: `Which pyramid description belongs to ${league.name}?`, ...identityClueOptions, explanation: league.identityClue },
+    { prompt: `Which code, level and region signature is correct for ${league.name}?`, ...pyramidSignatureOptions, explanation: `${pyramidSignature} is the correct signature.` },
+    { prompt: `Which country-and-level card belongs to ${league.name}?`, ...countryTierProfileOptions, explanation: `${league.name} is played in ${league.country} at ${tierLabels[league.tier].toLowerCase()} level.` },
+    { prompt: `Which region-and-country pairing places ${league.name} correctly?`, ...confederationCountryProfileOptions, explanation: `${league.name} is in ${league.country}, within ${league.confederation}.` },
+    { prompt: `Two clues point to one room: “${league.identityClue}” and “${league.cultureClue}”. Which room is it?`, ...dualClueIdentity, explanation: `Both clues point to ${league.name}.` },
+    { prompt: `Which full scoreboard label belongs to ${league.name}?`, ...fullCodeProfileOptions, explanation: `${fullCodeProfile} keeps the competition, country code and pyramid level together.` },
+    { prompt: 'One of these complete room profiles is wrong. Which one?', options: incorrectProfileOptions, answer: incorrectProfileOptions.indexOf(incorrectProfile), explanation: `${league.name} is played in ${league.country}, not ${wrongCountry}.` },
   ]
 }
 

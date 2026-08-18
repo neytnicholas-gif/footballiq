@@ -73,6 +73,36 @@ export type Database = {
         }
         Relationships: []
       }
+      academy_completions: {
+        Row: {
+          user_id: string
+          experience_key: string
+          track: 'scout' | 'referee'
+          confidence_label: string | null
+          completed_at: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          user_id: string
+          experience_key: string
+          track: 'scout' | 'referee'
+          confidence_label?: string | null
+          completed_at?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          user_id?: string
+          experience_key?: string
+          track?: 'scout' | 'referee'
+          confidence_label?: string | null
+          completed_at?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       quiz_results: {
         Row: {
           id: number
@@ -953,6 +983,10 @@ export type Database = {
         Args: { p_league_id: string }
         Returns: Record<string, unknown>
       }
+      prediction_delete_league: {
+        Args: { p_league_id: string }
+        Returns: Record<string, unknown>
+      }
       prediction_save_picks: {
         Args: { p_picks: Array<{ fixture_id: string; pick: 'home' | 'draw' | 'away'; confidence: number }> }
         Returns: Record<string, unknown>
@@ -975,6 +1009,7 @@ export type Database = {
       }
       quiz_join_friend_league: { Args:{ p_league_code:string }; Returns:Record<string,unknown> }
       quiz_leave_friend_league: { Args:{ p_league_id:string }; Returns:Record<string,unknown> }
+      quiz_delete_friend_league: { Args:{ p_league_id:string }; Returns:Record<string,unknown> }
       quiz_get_friend_league_leaderboard: {
         Args:{ p_league_id:string }
         Returns:Array<{ user_id:string; username:string; score_value:number; accuracy_percent:number; xp_earned:number; quizzes_completed:number; rank:number }>

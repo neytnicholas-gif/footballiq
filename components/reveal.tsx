@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState, type ReactNode } from 'react'
+import { useCallback, useEffect, useRef, useState, type ElementType, type ReactNode } from 'react'
 import { cn } from '@/lib/utils'
 
 export function Reveal({
@@ -14,7 +14,8 @@ export function Reveal({
   delay?: number
   as?: 'div' | 'section' | 'li' | 'article'
 }) {
-  const ref = useRef<HTMLDivElement>(null)
+  const ref = useRef<HTMLElement>(null)
+  const setNode = useCallback((node: HTMLElement | null) => { ref.current = node }, [])
   const [visible, setVisible] = useState(false)
 
   useEffect(() => {
@@ -35,11 +36,11 @@ export function Reveal({
     return () => observer.disconnect()
   }, [])
 
-  const Component = Tag as any
+  const Component: ElementType = Tag
 
   return (
     <Component
-      ref={ref}
+      ref={setNode}
       style={{ animationDelay: `${delay}ms` }}
       className={cn('reveal', visible && 'in-view', className)}
     >

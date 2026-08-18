@@ -345,7 +345,7 @@ export const scoutQuestions: ScoutQuestion[] = [
     id: scenario.playerCode,
     title: `${scenario.position} dossier: ${scenario.playerCode}`,
     profile: [`${scenario.age} years old`, scenario.context, ...scenario.observation],
-    summary: scenario.rationale.interpretation,
+    summary: scenario.briefing,
     strongestDecision: recommendationLabel[scenario.recommended],
     confidence: (scenario.difficulty === 'Starter' ? 'High' : scenario.difficulty === 'Sharp' ? 'Medium' : 'Low') as ScoutQuestion['confidence'],
     observation: scenario.rationale.observation,

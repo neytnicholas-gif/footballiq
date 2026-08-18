@@ -7,6 +7,7 @@ export type ExpandedScoutScenario = {
   position: string
   difficulty: 'Starter' | 'Sharp' | 'Expert'
   context: string
+  briefing: string
   observation: string[]
   strengths: string[]
   concerns: string[]
@@ -103,6 +104,7 @@ export const expandedScoutScenarios: ExpandedScoutScenario[] = profiles.flatMap(
     position: profile.position,
     difficulty: (['Starter', 'Sharp', 'Expert'] as const)[(profileIndex + contextIndex) % 3],
     context: `${context.label}; evaluation focus: ${profile.trait}`,
+    briefing: `${context.label}. Judge how well the ${profile.trait} evidence holds up in this setting.`,
     observation: [profile.evidence[0], profile.evidence[1], `${profile.evidence[2]}; ${context.evidence}`],
     strengths: profile.strengths,
     concerns: profile.concerns,
@@ -128,6 +130,7 @@ export function validateScoutScenarios(items: ExpandedScoutScenario[]) {
     if (codes.has(item.playerCode)) errors.push(`${item.id}: duplicate player code`)
     ids.add(item.id); codes.add(item.playerCode)
     if (item.observation.length < 3 || item.strengths.length < 2 || item.concerns.length < 2) errors.push(`${item.id}: insufficient evidence balance`)
+    if (!item.briefing || /strong(?:ly)? follow|do not pursue|\bmonitor\b/i.test(item.briefing)) errors.push(`${item.id}: briefing reveals the recommendation`)
     if (!item.rationale.observation || !item.rationale.interpretation || !item.rationale.missing) errors.push(`${item.id}: incomplete rationale`)
     if (!item.rationale.interpretation.toLowerCase().includes('support')) errors.push(`${item.id}: judgement is framed too absolutely`)
     if (item.heatmap.length !== 24) errors.push(`${item.id}: malformed heatmap`)

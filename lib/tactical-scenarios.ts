@@ -191,7 +191,15 @@ const contextualTacticalScenarios = tacticalApplicationFrames.flatMap((frame, fr
   difficulty: (['Starter', 'Sharp', 'Expert'] as const)[(scenarioIndex + frameIndex + 1) % 3],
 })))
 
-export const tacticalScenarios: TacticalScenario[] = [...coreTacticalScenarios, ...contextualTacticalScenarios]
+export const tacticalScenarios: TacticalScenario[] = [...coreTacticalScenarios, ...contextualTacticalScenarios].map((scenario, index) => {
+  const targetAnswer = index % scenario.options.length
+  const shift = (scenario.answer - targetAnswer + scenario.options.length) % scenario.options.length
+  return {
+    ...scenario,
+    options: [...scenario.options.slice(shift), ...scenario.options.slice(0, shift)],
+    answer: targetAnswer,
+  }
+})
 
 export function validateTacticalScenarios(items: TacticalScenario[]) {
   const errors: string[] = []

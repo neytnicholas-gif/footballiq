@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { duelPacks } from '@/lib/duel-packs'
+import { duelPacks, getDuelPackDifficulty } from '@/lib/duel-packs'
 import { higherLowerDecks, higherLowerItems } from '@/lib/game-data'
 import { getCareerRound, getWhoAmIRound, playerGuessMatches, playerKnowledgeProfiles } from '@/lib/player-knowledge-bank'
 import { verifyQuizReward } from '@/lib/quiz-rules'
@@ -36,6 +36,19 @@ describe('expanded quick-game libraries',()=>{
       expect(deck.items.every(item=>item.detail.trim().length>0&&Number.isFinite(item.value))).toBe(true)
     }
     expect(new Set(playerKnowledgeProfiles.map(player=>[player.nationality,player.role,player.clubs.join(' > '),player.signature,player.landmark].join(' :: '))).size).toBe(100)
+  })
+
+  it('offers two distinct stat themes at every difficulty with no tied duels',()=>{
+    const themesByDifficulty=new Map<string,Set<string>>()
+    for(const pack of duelPacks){
+      const difficulty=getDuelPackDifficulty(pack.id)
+      const theme=pack.id.replace(/-\d+$/,'')
+      const themes=themesByDifficulty.get(difficulty)??new Set<string>()
+      themes.add(theme)
+      themesByDifficulty.set(difficulty,themes)
+      expect(pack.questions.every(question=>question.left.value!==question.right.value)).toBe(true)
+    }
+    expect([...themesByDifficulty.values()].map(themes=>themes.size)).toEqual([2,2,2,2,2])
   })
 
   it('keeps ten short career and mystery rounds with complete learning content',()=>{

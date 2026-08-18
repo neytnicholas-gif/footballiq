@@ -93,6 +93,7 @@ export function DuelQuiz({ pack, difficulty, onComplete }: { pack: DuelPack; dif
   const [resumeState, setResumeState] = useState<SavedDuelProgress | null>(null)
   const [checkingProgress, setCheckingProgress] = useState(Boolean(user))
   const [rewardStatus, setRewardStatus] = useState<RewardStatus>('idle')
+  const [creditedXp, setCreditedXp] = useState(0)
 
   const question = questions[index]
   const answer = correctChoice(question)
@@ -242,7 +243,7 @@ export function DuelQuiz({ pack, difficulty, onComplete }: { pack: DuelPack; dif
     setRewardStatus('saving')
     setSaving(true)
     const xpEarned = quizXp(calculateDuelXp(score, questions.length, bestCombo, points), difficulty)
-    const { error, alreadyCompleted } = await saveQuizResult({
+    const { error, alreadyCompleted, xpAwarded } = await saveQuizResult({
       quizId: pack.id,
       score,
       total: questions.length,
@@ -253,6 +254,7 @@ export function DuelQuiz({ pack, difficulty, onComplete }: { pack: DuelPack; dif
     })
     if (!error) {
       setSaved(true)
+      setCreditedXp(alreadyCompleted ? 0 : (xpAwarded ?? xpEarned))
       if (!alreadyCompleted) {
         setRewardStatus('saved')
         await refreshProfile()
@@ -343,6 +345,7 @@ export function DuelQuiz({ pack, difficulty, onComplete }: { pack: DuelPack; dif
     setSaved(false)
     setCopied(false)
     setRewardStatus('idle')
+    setCreditedXp(0)
     setRunKey(createCompletionRunId())
     setResumeState(null)
     void clearQuizProgress(progressQuizId)
@@ -363,6 +366,7 @@ export function DuelQuiz({ pack, difficulty, onComplete }: { pack: DuelPack; dif
     setShowResults(false)
     setSaved(false)
     setRewardStatus('idle')
+    setCreditedXp(0)
     setResumeState(null)
   }
 
@@ -381,6 +385,7 @@ export function DuelQuiz({ pack, difficulty, onComplete }: { pack: DuelPack; dif
     setSaved(false)
     setCopied(false)
     setRewardStatus('idle')
+    setCreditedXp(0)
     setResumeState(null)
     void clearQuizProgress(progressQuizId)
   }
@@ -407,7 +412,6 @@ export function DuelQuiz({ pack, difficulty, onComplete }: { pack: DuelPack; dif
     const grade = gradeFor(score, questions.length)
     const xpEarned = quizXp(calculateDuelXp(score, questions.length, bestCombo, points), difficulty)
     const accuracy = Math.round((score / questions.length) * 100)
-    const creditedXp = rewardStatus === 'saved' ? xpEarned : 0
     const rankProgress = getRankProgress((profile?.xp ?? 0) + creditedXp)
     const isNewBest = score >= (personalBest?.score ?? 0)
     return (

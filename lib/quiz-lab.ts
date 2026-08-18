@@ -134,6 +134,20 @@ export function quizLabCorrectAnswer(question: QuizLabQuestion) {
   return question.answer
 }
 
+export function quizLabDifficultyText(question: QuizLabQuestion) {
+  if (question.kind === 'order-the-play') return `${question.prompt} ${question.items.join(' ')}`
+  if (question.kind === 'link-up') return `${question.prompt} ${question.pairs.map((pair) => `${pair.left} ${pair.right}`).join(' ')}`
+  return `${question.prompt} ${question.options.join(' ')}`
+}
+
+export function quizLabQuestionFamilyId(question: QuizLabQuestion) {
+  const match = /^(.*?)-(\d+)$/.exec(question.id)
+  if (!match) return question.id
+  const questionNumber = Number(match[2])
+  const familyCount = QUIZ_LAB_ROUND_COUNT * 3
+  return `${match[1]}-${((questionNumber - 1) % familyCount) + 1}`
+}
+
 export function quizLabRoundCount(format: QuizLabFormat) {
   const count = quizLabQuestionBank[format].length / QUIZ_LAB_ROUND_SIZE
   if (!Number.isSafeInteger(count)) throw new Error(`${format} does not split into complete Quiz Lab rounds.`)

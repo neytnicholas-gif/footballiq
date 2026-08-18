@@ -31,6 +31,7 @@ export function ScoutGame() {
   const [saved, setSaved] = useState(false)
   const [saving, setSaving] = useState(false)
   const [alreadyCredited, setAlreadyCredited] = useState(false)
+  const [creditedXp, setCreditedXp] = useState(0)
   const [runKey, setRunKey] = useState(() => createCompletionRunId())
   const [resumeState, setResumeState] = useState<{ index: number; selected: ScoutDecision | null; score: number; answers: ScoutDecision[] } | null>(null)
   const [checkingProgress, setCheckingProgress] = useState(Boolean(user))
@@ -46,8 +47,8 @@ export function ScoutGame() {
   const maxScore = sessionQuestions.length * 2
   const accuracy = Math.round((score / maxScore) * 100)
   const xp = quizXp(30 + score * 6, difficulty)
-  const creditedXp = saved && !alreadyCredited ? xp : 0
-  const rank = getRankProgress((profile?.xp ?? 0) + creditedXp)
+  const visibleCreditedXp = saved ? creditedXp : 0
+  const rank = getRankProgress((profile?.xp ?? 0) + visibleCreditedXp)
   const progressQuizId = `would-you-scout-1:${difficulty}`
 
   const verdict = useMemo(() => {
@@ -60,14 +61,14 @@ export function ScoutGame() {
   }, [selected, dossier])
 
   useEffect(() => {
-    const frame = window.requestAnimationFrame(() => {
+    const timeout = window.setTimeout(() => {
       const key = `early-shout:scout-session-seed:${difficulty}`
       const stored = Number(window.sessionStorage.getItem(key))
       const nextSeed = Number.isSafeInteger(stored) && stored > 0 ? stored : createQuizSessionSeed()
       window.sessionStorage.setItem(key, String(nextSeed))
       setSessionSeed(nextSeed)
     })
-    return () => window.cancelAnimationFrame(frame)
+    return () => window.clearTimeout(timeout)
   }, [difficulty])
 
   useEffect(() => {
@@ -143,10 +144,11 @@ export function ScoutGame() {
   async function saveResult() {
     if (!user || saved || saving) return
     setSaving(true)
-    const { error, alreadyCompleted } = await saveQuizResult({ quizId: 'would-you-scout-1', score, total: maxScore, xp, completionKey: buildCompletionKey('would-you-scout-1', runKey), proof: { kind: 'scout-dossier', scenarioIds: sessionQuestions.map((question) => question.id), answers, difficulty } })
+    const { error, alreadyCompleted, xpAwarded } = await saveQuizResult({ quizId: 'would-you-scout-1', score, total: maxScore, xp, completionKey: buildCompletionKey('would-you-scout-1', runKey), proof: { kind: 'scout-dossier', scenarioIds: sessionQuestions.map((question) => question.id), answers, difficulty } })
     if (!error) {
       setSaved(true)
       setAlreadyCredited(alreadyCompleted)
+      setCreditedXp(alreadyCompleted ? 0 : (xpAwarded ?? xp))
       void clearQuizProgress(progressQuizId)
       if (!alreadyCompleted) await refreshProfile()
     }
@@ -270,7 +272,7 @@ export function ScoutGame() {
                     <div className="grid gap-3 sm:grid-cols-3">
                       <MiniStat label="Score" value={`${score}/${maxScore}`} />
                       <MiniStat label="Accuracy" value={`${accuracy}%`} />
-                      <MiniStat label="XP credited" value={user ? `+${creditedXp}` : `+${xp}`} />
+                      <MiniStat label="XP credited" value={user ? `+${visibleCreditedXp}` : `+${xp}`} />
                     </div>
                     {user ? (
                       <div className="mt-4 rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm">

@@ -5,7 +5,7 @@ import { calculateDuelXp } from '@/lib/progression'
 import type { QuizProof } from '@/lib/quiz-proof'
 import { expandedScoutScenarios } from '@/lib/scout-scenario-expansion'
 import { getLeagueWorldQuestions } from '@/lib/football-leagues'
-import { getQuizLabRound, quizLabCorrectAnswer, quizLabQuestionBank, type QuizLabFormat } from '@/lib/quiz-lab'
+import { getQuizLabRound, quizLabCorrectAnswer, quizLabDifficultyText, quizLabQuestionBank, type QuizLabFormat } from '@/lib/quiz-lab'
 import {
   getCareerDifficultyRound,
   getCareerRound,
@@ -52,16 +52,17 @@ const REFEREE_SESSION_SIZE = 10
 const TACTICAL_SESSION_SIZE = 10
 const SCOUT_SESSION_SIZE = 10
 const QUIZ_LAB_SESSION_SIZE = 12
+const LEAGUE_WORLD_SESSION_SIZE = 5
 
 const refereeDifficultyIndex = buildQuizDifficultyIndex(refereeQuestions, {
   id: (question) => question.id!,
   authored: (question) => question.difficulty ?? 'Medium',
-  text: (question) => `${question.scenario} ${question.options.join(' ')} ${question.explanation}`,
+  text: (question) => `${question.scenario} ${question.options.join(' ')}`,
 })
 const tacticalDifficultyIndex = buildQuizDifficultyIndex(tacticalScenarios, {
   id: (scenario) => scenario.id,
   authored: (scenario) => scenario.difficulty,
-  text: (scenario) => `${scenario.prompt} ${scenario.context} ${scenario.options.join(' ')} ${scenario.explanation}`,
+  text: (scenario) => `${scenario.prompt} ${scenario.context} ${scenario.options.join(' ')}`,
 })
 const scoutDifficultyIndex = buildQuizDifficultyIndex(scoutQuestions, {
   id: (question) => question.id,
@@ -73,7 +74,7 @@ const quizLabDifficultyIndexes = Object.fromEntries(Object.entries(quizLabQuesti
   buildQuizDifficultyIndex(questions, {
     id: (question) => question.id,
     authored: (question) => question.difficulty,
-    text: (question) => `${question.prompt} ${question.explanation} ${question.takeaway}`,
+    text: quizLabDifficultyText,
   }),
 ])) as Record<QuizLabFormat, Map<string, QuizDifficulty>>
 
@@ -370,11 +371,11 @@ export function verifyQuizReward(claim: QuizCompletionClaim): VerifiedQuizReward
       if (!question) throw new Error('League World session contains an unknown question.')
       return question
     }) ?? allQuestions
-    if (proof.questionIndexes && (new Set(proof.questionIndexes).size !== proof.questionIndexes.length || proof.questionIndexes.length !== 3)) throw new Error('League World session proof is invalid.')
+    if (proof.questionIndexes && (new Set(proof.questionIndexes).size !== proof.questionIndexes.length || proof.questionIndexes.length !== LEAGUE_WORLD_SESSION_SIZE)) throw new Error('League World session proof is invalid.')
     const difficulty = selectedDifficulty(proof)
     if (difficulty) {
-      const expectedStart = quizDifficulties.indexOf(difficulty) * 3
-      if (!proof.questionIndexes || proof.questionIndexes.some((index) => index < expectedStart || index >= expectedStart + 3)) throw new Error('Quiz answer proof contains a question outside the chosen difficulty.')
+      const expectedStart = quizDifficulties.indexOf(difficulty) * LEAGUE_WORLD_SESSION_SIZE
+      if (!proof.questionIndexes || proof.questionIndexes.some((index) => index < expectedStart || index >= expectedStart + LEAGUE_WORLD_SESSION_SIZE)) throw new Error('Quiz answer proof contains a question outside the chosen difficulty.')
     }
     assertResult(score, total, questions.length)
     const verifiedScore = assertClaimedScore(score, scoreChoiceAnswers(proof.answers, questions.map((question) => question.answer)))
