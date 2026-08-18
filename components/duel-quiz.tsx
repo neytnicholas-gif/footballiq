@@ -10,15 +10,17 @@ import { calculateDuelXp, getRankProgress } from '@/lib/progression'
 import { clearQuizProgress, loadQuizProgress, saveQuizProgress } from '@/lib/quiz-progress'
 import { buildCompletionKey, createCompletionRunId, saveQuizResult } from '@/lib/quiz-save'
 import { shouldIgnoreGlobalShortcut } from '@/lib/keyboard-shortcuts'
+import { quizDifficultyMeta, quizXp, type QuizDifficulty } from '@/lib/quiz-difficulty'
 
 type Choice = 'left' | 'right' | 'same'
 type Speed = 'relaxed' | 'timed'
 type RewardStatus = 'idle' | 'saving' | 'saved' | 'already' | 'error'
 
 type StoredBest = { score: number; points: number; bestCombo: number }
-type DuelProofAnswer = { left: string; right: string; choice: Choice | 'timeout'; speed: Speed; timeLeft: number }
+type DuelProofAnswer = { left: string; right: string; statLabel: string; choice: Choice | 'timeout'; speed: Speed; timeLeft: number }
 type SavedDuelProgress = {
   packId: string
+  difficulty: QuizDifficulty
   questions: DuelQuestion[]
   index: number
   selected: Choice | 'timeout' | null
@@ -66,9 +68,9 @@ function gradeFor(score: number, total: number) {
   return { title: 'Back to the Analysis Room', copy: 'This pack got you. The rematch is waiting.', emoji: '🎥' }
 }
 
-export function DuelQuiz({ pack, onComplete }: { pack: DuelPack; onComplete?: (packId: string, score: number) => void }) {
+export function DuelQuiz({ pack, difficulty, onComplete }: { pack: DuelPack; difficulty: QuizDifficulty; onComplete?: (packId: string, score: number) => void }) {
   const { user, profile, refreshProfile } = useAuth()
-  const progressQuizId = `duel-progress-${pack.id}`
+  const progressQuizId = `duel-progress-${pack.id}-${difficulty}`
   // A deterministic first deck prevents a server/client hydration mismatch.
   // Restart actions below still produce a fresh randomized deck.
   const [questions, setQuestions] = useState(() => shuffledQuestions(pack.questions, stableSeed(pack.id)))
@@ -133,6 +135,7 @@ export function DuelQuiz({ pack, onComplete }: { pack: DuelPack; onComplete?: (p
         && progress.status === 'in_progress'
         && savedState
         && savedState.packId === pack.id
+        && savedState.difficulty === difficulty
         && validQuestions
         && Number.isInteger(savedState.index)
         && savedState.index >= 0
@@ -148,7 +151,7 @@ export function DuelQuiz({ pack, onComplete }: { pack: DuelPack; onComplete?: (p
     return () => {
       active = false
     }
-  }, [pack.id, pack.questions.length, progressQuizId, user])
+  }, [difficulty, pack.id, pack.questions.length, progressQuizId, user])
 
   const persistProgress = useCallback(async (snapshot: SavedDuelProgress, status: 'in_progress' | 'completed' = 'in_progress') => {
     await saveQuizProgress({
@@ -164,7 +167,7 @@ export function DuelQuiz({ pack, onComplete }: { pack: DuelPack; onComplete?: (p
   const lockAnswer = useCallback((choice: Choice | 'timeout') => {
     if (checkingProgress || resumeState || answered) return
     setSelected(choice)
-    const nextProofAnswers = [...proofAnswers, { left: question.left.name, right: question.right.name, choice, speed, timeLeft }]
+    const nextProofAnswers = [...proofAnswers, { left: question.left.name, right: question.right.name, statLabel: currentStatLabel, choice, speed, timeLeft }]
     setProofAnswers(nextProofAnswers)
     const correct = choice === answer
     if (correct) {
@@ -180,6 +183,7 @@ export function DuelQuiz({ pack, onComplete }: { pack: DuelPack; onComplete?: (p
       setBestCombo((value) => Math.max(value, nextCombo))
       void persistProgress({
         packId: pack.id,
+        difficulty,
         questions,
         index,
         selected: choice,
@@ -195,6 +199,7 @@ export function DuelQuiz({ pack, onComplete }: { pack: DuelPack; onComplete?: (p
       setCombo(0)
       void persistProgress({
         packId: pack.id,
+        difficulty,
         questions,
         index,
         selected: choice,
@@ -207,7 +212,7 @@ export function DuelQuiz({ pack, onComplete }: { pack: DuelPack; onComplete?: (p
         answers: nextProofAnswers,
       })
     }
-  }, [answer, answered, bestCombo, checkingProgress, combo, index, pack.id, persistProgress, points, proofAnswers, question.left.name, question.right.name, questions, resumeState, score, speed, timeLeft])
+  }, [answer, answered, bestCombo, checkingProgress, combo, currentStatLabel, difficulty, index, pack.id, persistProgress, points, proofAnswers, question.left.name, question.right.name, questions, resumeState, score, speed, timeLeft])
 
   useEffect(() => {
     if (speed !== 'timed' || checkingProgress || resumeState || answered || showResults) return
@@ -236,7 +241,7 @@ export function DuelQuiz({ pack, onComplete }: { pack: DuelPack; onComplete?: (p
     if (!user || !profile || saved || saving) return
     setRewardStatus('saving')
     setSaving(true)
-    const xpEarned = calculateDuelXp(score, questions.length, bestCombo, points)
+    const xpEarned = quizXp(calculateDuelXp(score, questions.length, bestCombo, points), difficulty)
     const { error, alreadyCompleted } = await saveQuizResult({
       quizId: pack.id,
       score,
@@ -244,7 +249,7 @@ export function DuelQuiz({ pack, onComplete }: { pack: DuelPack; onComplete?: (p
       xp: xpEarned,
       completionKey: buildCompletionKey(pack.id, runKey),
       metrics: { bestCombo, points },
-      proof: { kind: 'duel', packId: pack.id, answers: proofAnswers },
+      proof: { kind: 'duel', packId: pack.id, difficulty, answers: proofAnswers },
     })
     if (!error) {
       setSaved(true)
@@ -264,6 +269,7 @@ export function DuelQuiz({ pack, onComplete }: { pack: DuelPack; onComplete?: (p
   function finish() {
     void persistProgress({
       packId: pack.id,
+      difficulty,
       questions,
       index,
       selected,
@@ -298,6 +304,7 @@ export function DuelQuiz({ pack, onComplete }: { pack: DuelPack; onComplete?: (p
     setTimeLeft(15)
     void persistProgress({
       packId: pack.id,
+      difficulty,
       questions,
       index: nextIndex,
       selected: null,
@@ -398,7 +405,7 @@ export function DuelQuiz({ pack, onComplete }: { pack: DuelPack; onComplete?: (p
 
   if (showResults) {
     const grade = gradeFor(score, questions.length)
-    const xpEarned = calculateDuelXp(score, questions.length, bestCombo, points)
+    const xpEarned = quizXp(calculateDuelXp(score, questions.length, bestCombo, points), difficulty)
     const accuracy = Math.round((score / questions.length) * 100)
     const creditedXp = rewardStatus === 'saved' ? xpEarned : 0
     const rankProgress = getRankProgress((profile?.xp ?? 0) + creditedXp)
@@ -460,7 +467,7 @@ export function DuelQuiz({ pack, onComplete }: { pack: DuelPack; onComplete?: (p
       <div className="border-b border-border p-5 sm:p-7">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
-            <div className="flex items-center gap-2 text-sm text-muted-foreground"><span>{pack.emoji}</span><span>{pack.title}</span><span>•</span><span>Question {index + 1}/{questions.length}</span></div>
+            <div className="flex items-center gap-2 text-sm text-muted-foreground"><span>{pack.emoji}</span><span>{pack.title}</span><span>•</span><span>{quizDifficultyMeta[difficulty].label} · {quizDifficultyMeta[difficulty].xpMultiplier}× XP</span><span>•</span><span>Question {index + 1}/{questions.length}</span></div>
             <div className="mt-2 flex flex-wrap items-center gap-3">
               <p className="text-2xl font-bold">Who has more?</p>
               {combo >= 2 && <span className="inline-flex items-center gap-1 rounded-full bg-orange-500/15 px-3 py-1 text-xs font-semibold text-orange-300"><Flame className="size-3.5" /> {combo}x combo</span>}

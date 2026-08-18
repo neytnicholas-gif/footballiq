@@ -1,6 +1,7 @@
 import { refereeScenarios } from './referee-scenarios'
 import { expandedScoutScenarios } from './scout-scenario-expansion'
 import { higherLowerDecks as duelHigherLowerDecks } from './duel-packs'
+import type { QuizDifficulty } from './quiz-difficulty'
 import { careerQuestionBank, whoAmIQuestionBank } from './player-knowledge-bank'
 
 export type HigherLowerItem = { name: string; value: number; detail: string }
@@ -94,7 +95,7 @@ void legacyHigherLowerItems
 void legacyWhoAmIQuestions
 void legacyCareerQuestions
 
-export const higherLowerDecks: Array<{ id: string; title: string; statLabel: string; items: HigherLowerItem[] }> = duelHigherLowerDecks
+export const higherLowerDecks: Array<{ id: string; title: string; statLabel: string; difficulty: QuizDifficulty; items: HigherLowerItem[] }> = duelHigherLowerDecks
 export const higherLowerItems: HigherLowerItem[] = higherLowerDecks.flatMap((deck) => deck.items)
 export const whoAmIQuestions: WhoAmIQuestion[] = whoAmIQuestionBank
 export const careerQuestions: CareerQuestion[] = careerQuestionBank

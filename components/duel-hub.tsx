@@ -3,7 +3,7 @@
 import { useMemo, useState } from 'react'
 import { CheckCircle2, Search } from 'lucide-react'
 import { DuelQuiz } from '@/components/duel-quiz'
-import { duelPacks, type DuelCategory, type DuelPack } from '@/lib/duel-packs'
+import { duelPacks, getDuelPackDifficulty, type DuelCategory, type DuelPack } from '@/lib/duel-packs'
 
 const categories: Array<'All' | DuelCategory> = ['All', 'League', 'Europe', 'International', 'Trophies']
 
@@ -27,7 +27,7 @@ export function DuelHub() {
 
   return (
     <div className="space-y-6">
-      <DuelQuiz key={selected.id} pack={selected} onComplete={markComplete} />
+      <DuelQuiz key={selected.id} pack={selected} difficulty={getDuelPackDifficulty(selected.id)} onComplete={markComplete} />
 
       <section className="rounded-3xl border border-border bg-card p-5 sm:p-6">
         <div className="flex flex-wrap items-end justify-between gap-3">

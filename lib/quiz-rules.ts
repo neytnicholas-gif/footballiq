@@ -1,4 +1,4 @@
-import { duelPacks } from '@/lib/duel-packs'
+import { buildDailyDuelPack, duelPacks, getDuelPackDifficulty, type DuelPack } from '@/lib/duel-packs'
 import { higherLowerDecks, refereeQuestions, scoutQuestions } from '@/lib/game-data'
 import { getDailySeedFromKey } from '@/lib/daily'
 import { calculateDuelXp } from '@/lib/progression'
@@ -6,7 +6,13 @@ import type { QuizProof } from '@/lib/quiz-proof'
 import { expandedScoutScenarios } from '@/lib/scout-scenario-expansion'
 import { getLeagueWorldQuestions } from '@/lib/football-leagues'
 import { getQuizLabRound, quizLabCorrectAnswer, quizLabQuestionBank, type QuizLabFormat } from '@/lib/quiz-lab'
-import { getCareerRound, getWhoAmIRound, playerGuessMatches } from '@/lib/player-knowledge-bank'
+import {
+  getCareerDifficultyRound,
+  getCareerRound,
+  getWhoAmIDifficultyRound,
+  getWhoAmIRound,
+  playerGuessMatches,
+} from '@/lib/player-knowledge-bank'
 import { tacticalScenarios } from '@/lib/tactical-scenarios'
 import {
   assertQuizDifficultySelection,
@@ -38,7 +44,10 @@ const LEAGUE_WORLD_QUIZ_ID = /^league-world-([a-z0-9-]+)$/
 const QUIZ_LAB_ID = /^quiz-lab-(odd-one-out|truth-trap|order-the-play|link-up|formation-fix)$/
 const CAREER_PATH_ID = /^career-path-(\d+)$/
 const WHO_AM_I_ID = /^who-am-i-(\d+)$/
+const CAREER_PATH_DIFFICULTY_ID = /^career-path-(beginner|easy|normal|hard|expert)-(\d+)$/
+const WHO_AM_I_DIFFICULTY_ID = /^who-am-i-(beginner|easy|normal|hard|expert)-(\d+)$/
 const HIGHER_LOWER_ID = /^higher-lower-([a-z0-9-]+)$/
+const DAILY_DUEL_ID = /^daily-duel-(\d{4}-\d{2}-\d{2})$/
 const REFEREE_SESSION_SIZE = 10
 const TACTICAL_SESSION_SIZE = 10
 const SCOUT_SESSION_SIZE = 10
@@ -133,6 +142,53 @@ const scoutVisionAnswers = new Map<string, string>([
   ...expandedScoutScenarios.map((scenario) => [scenario.id, scenario.recommended] as const),
 ])
 
+function verifyDuelClaim(claim: QuizCompletionClaim, quizId: string, duel: DuelPack): VerifiedQuizReward {
+  const proof = requireProof(claim.proof, 'duel')
+  const score = integer(claim.score, 'Score')
+  const total = integer(claim.total, 'Total')
+  const difficulty = selectedDifficulty(proof)
+  const expectedDifficulty = getDuelPackDifficulty(duel.id)
+  if (difficulty && difficulty !== expectedDifficulty) throw new Error('Duel answer proof uses the wrong difficulty.')
+  if (duel.id.startsWith('daily-duel-') && difficulty !== 'normal') throw new Error('Daily duel answer proof must use Normal difficulty.')
+  assertResult(score, total, duel.questions.length)
+  if (proof.packId !== quizId || proof.answers.length !== total) throw new Error('Quiz answer proof is incomplete.')
+
+  let verifiedScore = 0
+  let combo = 0
+  let bestCombo = 0
+  let points = 0
+  const unused = [...duel.questions]
+  for (const answer of proof.answers) {
+    if (!['left', 'right', 'same', 'timeout'].includes(answer.choice) || !['relaxed', 'timed'].includes(answer.speed)) throw new Error('Duel answer proof contains an invalid choice.')
+    if (duel.id.startsWith('daily-duel-') && !answer.statLabel) throw new Error('Daily duel answer proof is missing its stat label.')
+    const questionIndex = unused.findIndex((question) => {
+      const pairingMatches = (
+        (question.left.name === answer.left && question.right.name === answer.right)
+        || (question.left.name === answer.right && question.right.name === answer.left)
+      )
+      const statMatches = !answer.statLabel || (question.statLabel ?? duel.statLabel) === answer.statLabel
+      return pairingMatches && statMatches
+    })
+    if (questionIndex < 0) throw new Error('Duel answer proof contains an unknown pairing.')
+    const source = unused.splice(questionIndex, 1)[0]!
+    const leftValue = source.left.name === answer.left ? source.left.value : source.right.value
+    const rightValue = source.right.name === answer.right ? source.right.value : source.left.value
+    const correctChoice = leftValue === rightValue ? 'same' : leftValue > rightValue ? 'left' : 'right'
+    const correct = answer.choice === correctChoice
+    const timeLeft = integer(answer.timeLeft, 'Time left')
+    if (timeLeft < 0 || timeLeft > 15) throw new Error('Duel time proof is outside the allowed range.')
+    if (correct) {
+      points += 100 + (answer.speed === 'timed' ? timeLeft * 5 : 0) + Math.min(200, combo * 25)
+      combo += 1
+      bestCombo = Math.max(bestCombo, combo)
+      verifiedScore += 1
+    } else combo = 0
+  }
+  assertClaimedScore(score, verifiedScore)
+  const baseXp = calculateDuelXp(verifiedScore, total, bestCombo, points)
+  return { ...claim, quizId, score: verifiedScore, total, metrics: { bestCombo, points }, xp: difficulty ? quizXp(baseXp, difficulty) : baseXp }
+}
+
 /**
  * Converts an untrusted browser claim into the only score/XP combinations the
  * game allows. The database receives the returned values, never raw XP from
@@ -192,6 +248,19 @@ export function verifyQuizReward(claim: QuizCompletionClaim): VerifiedQuizReward
     return { ...claim, quizId, score: verifiedScore, total, xp: standardXp(verifiedScore, total) }
   }
 
+  const careerDifficultyMatch = CAREER_PATH_DIFFICULTY_ID.exec(quizId)
+  if (careerDifficultyMatch) {
+    const proof = requireProof(claim.proof, 'career')
+    const difficulty = careerDifficultyMatch[1] as QuizDifficulty
+    const round = integer(Number(careerDifficultyMatch[2]), 'Career round')
+    if (proof.round !== round || selectedDifficulty(proof) !== difficulty) throw new Error('Career answer proof uses the wrong difficulty or round.')
+    const questions = getCareerDifficultyRound(difficulty, round)
+    assertResult(score, total, questions.length)
+    if (proof.answers.length !== questions.length) throw new Error('Quiz answer proof is incomplete.')
+    const verifiedScore = assertClaimedScore(score, proof.answers.reduce((sum, answer, index) => sum + (playerGuessMatches(answer, questions[index]!) ? 1 : 0), 0))
+    return { ...claim, quizId, score: verifiedScore, total, xp: quizXp(20 + verifiedScore * 10, difficulty) }
+  }
+
   const careerMatch = CAREER_PATH_ID.exec(quizId)
   if (careerMatch) {
     const proof = requireProof(claim.proof, 'career')
@@ -202,6 +271,23 @@ export function verifyQuizReward(claim: QuizCompletionClaim): VerifiedQuizReward
     if (proof.answers.length !== questions.length) throw new Error('Quiz answer proof is incomplete.')
     const verifiedScore = assertClaimedScore(score, proof.answers.reduce((sum, answer, index) => sum + (playerGuessMatches(answer, questions[index]!) ? 1 : 0), 0))
     return { ...claim, quizId, score: verifiedScore, total, xp: 20 + verifiedScore * 10 }
+  }
+
+  const whoDifficultyMatch = WHO_AM_I_DIFFICULTY_ID.exec(quizId)
+  if (whoDifficultyMatch) {
+    const proof = requireProof(claim.proof, 'who-am-i')
+    const difficulty = whoDifficultyMatch[1] as QuizDifficulty
+    const round = integer(Number(whoDifficultyMatch[2]), 'Who Am I round')
+    if (proof.round !== round || selectedDifficulty(proof) !== difficulty) throw new Error('Who Am I answer proof uses the wrong difficulty or round.')
+    const questions = getWhoAmIDifficultyRound(difficulty, round)
+    assertResult(score, total, questions.length * 4)
+    if (proof.answers.length !== questions.length) throw new Error('Quiz answer proof is incomplete.')
+    const verifiedScore = assertClaimedScore(score, proof.answers.reduce((sum, answer, index) => {
+      const clueCount = integer(answer.clues, 'Clue count')
+      if (clueCount < 1 || clueCount > 4) throw new Error('Clue count is outside the allowed range.')
+      return sum + (playerGuessMatches(answer.guess, questions[index]!) ? 5 - clueCount : 0)
+    }, 0))
+    return { ...claim, quizId, score: verifiedScore, total, xp: quizXp(20 + verifiedScore * 3, difficulty) }
   }
 
   const whoMatch = WHO_AM_I_ID.exec(quizId)
@@ -226,6 +312,8 @@ export function verifyQuizReward(claim: QuizCompletionClaim): VerifiedQuizReward
     const proof = requireProof(claim.proof, 'higher-lower')
     const deckDefinition = higherLowerDecks.find((deck) => deck.id === higherLowerMatch[1])
     if (!deckDefinition || proof.deckId !== deckDefinition.id) throw new Error('Higher/lower answer proof uses an unknown deck.')
+    const difficulty = selectedDifficulty(proof)
+    if (difficulty && difficulty !== deckDefinition.difficulty) throw new Error('Higher/lower answer proof uses the wrong difficulty.')
     assertResult(score, total, Math.max(1, deckDefinition.items.length - 1))
     const deck = seededShuffle(deckDefinition.items, integer(proof.deckSeed, 'Deck seed'))
     let verifiedScore = 0
@@ -241,7 +329,7 @@ export function verifyQuizReward(claim: QuizCompletionClaim): VerifiedQuizReward
     }
     if (!ended) throw new Error('Higher/lower answer proof is incomplete.')
     assertClaimedScore(score, verifiedScore)
-    return { ...claim, quizId, score: verifiedScore, total, xp: 20 + verifiedScore * 8 }
+    return { ...claim, quizId, score: verifiedScore, total, xp: difficultyXp(20 + verifiedScore * 8, proof) }
   }
 
   if (quizId === 'would-you-scout-1') {
@@ -315,46 +403,11 @@ export function verifyQuizReward(claim: QuizCompletionClaim): VerifiedQuizReward
     return { ...claim, quizId, score: verifiedScore, total, xp: difficultyXp(standardXp(verifiedScore, total), proof) }
   }
 
+  const dailyDuelMatch = DAILY_DUEL_ID.exec(quizId)
+  if (dailyDuelMatch) return verifyDuelClaim(claim, quizId, buildDailyDuelPack(dailyDuelMatch[1]!))
+
   const duel = duelPacks.find((pack) => pack.id === quizId)
-  if (duel) {
-    const proof = requireProof(claim.proof, 'duel')
-    assertResult(score, total, duel.questions.length)
-    if (proof.packId !== quizId || proof.answers.length !== total) throw new Error('Quiz answer proof is incomplete.')
-    let verifiedScore = 0
-    let combo = 0
-    let bestCombo = 0
-    let points = 0
-    const unused = [...duel.questions]
-    for (const answer of proof.answers) {
-      const questionIndex = unused.findIndex((question) => (
-        (question.left.name === answer.left && question.right.name === answer.right)
-        || (question.left.name === answer.right && question.right.name === answer.left)
-      ))
-      if (questionIndex < 0) throw new Error('Duel answer proof contains an unknown pairing.')
-      const source = unused.splice(questionIndex, 1)[0]!
-      const leftValue = source.left.name === answer.left ? source.left.value : source.right.value
-      const rightValue = source.right.name === answer.right ? source.right.value : source.left.value
-      const correctChoice = leftValue === rightValue ? 'same' : leftValue > rightValue ? 'left' : 'right'
-      const correct = answer.choice === correctChoice
-      if (correct) {
-        const timeLeft = integer(answer.timeLeft, 'Time left')
-        if (timeLeft < 0 || timeLeft > 15) throw new Error('Duel time proof is outside the allowed range.')
-        points += 100 + (answer.speed === 'timed' ? timeLeft * 5 : 0) + Math.min(200, combo * 25)
-        combo += 1
-        bestCombo = Math.max(bestCombo, combo)
-        verifiedScore += 1
-      } else combo = 0
-    }
-    assertClaimedScore(score, verifiedScore)
-    return {
-      ...claim,
-      quizId,
-      score: verifiedScore,
-      total,
-      metrics: { bestCombo, points },
-      xp: calculateDuelXp(verifiedScore, total, bestCombo, points),
-    }
-  }
+  if (duel) return verifyDuelClaim(claim, quizId, duel)
 
   throw new Error('Unknown quiz.')
 }

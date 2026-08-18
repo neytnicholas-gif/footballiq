@@ -1,3 +1,5 @@
+import type { QuizDifficulty } from './quiz-difficulty'
+
 export type WhoAmIQuestion={answer:string;aliases?:string[];clues:string[]}
 export type CareerQuestion={answer:string;aliases?:string[];clubs:string[];hint:string}
 type Profile={answer:string;aliases?:string[];nationality:string;role:string;clubs:string[];signature:string;landmark:string}
@@ -117,6 +119,44 @@ export const playerKnowledgeProfiles:Profile[]=[
   p('Hidetoshi Nakata','Japan','midfielder',['Bellmare Hiratsuka','Perugia','Roma','Parma','Bologna','Fiorentina','Bolton Wanderers'],'I was a stylish midfielder who succeeded in Serie A.','I won the Italian league with Roma.'),
 ].slice(0,100)
 
+/**
+ * Editorial recognisability tiers. These are deliberately explicit rather
+ * than inferred from clue length: a short clue about an obscure player is not
+ * automatically an easy football question.
+ */
+export const playerKnowledgeDifficultyTiers: Record<QuizDifficulty, readonly string[]> = {
+  beginner: [
+    'Lionel Messi','Cristiano Ronaldo','Zinedine Zidane','Ronaldo Nazário','Ronaldinho',
+    'Neymar','Kylian Mbappé','Erling Haaland','Mohamed Salah','Kevin De Bruyne',
+    'Luka Modrić','Andrés Iniesta','Xavi','Sergio Ramos','Manuel Neuer',
+    'Gianluigi Buffon','Diego Maradona','Pelé','Thierry Henry','David Beckham',
+  ],
+  easy: [
+    'Sergio Busquets','Iker Casillas','Paolo Maldini','Fabio Cannavaro','Andrea Pirlo',
+    'Francesco Totti','Alessandro Del Piero','Roberto Baggio','Johan Cruyff','Marco van Basten',
+    'Dennis Bergkamp','Arjen Robben','Didier Drogba','Karim Benzema','Wayne Rooney',
+    'Steven Gerrard','Frank Lampard','Gareth Bale','Zlatan Ibrahimović','Robert Lewandowski',
+  ],
+  normal: [
+    'Franco Baresi','Gabriel Batistuta','Ruud Gullit','Wesley Sneijder','Clarence Seedorf',
+    'Patrick Vieira','N’Golo Kanté','Antoine Griezmann','Paul Scholes','Ryan Giggs',
+    'Eric Cantona','Alan Shearer','Cesc Fàbregas','Xabi Alonso','Fernando Torres',
+    'Raúl','Luís Figo','Thomas Müller','Toni Kroos','Roberto Carlos',
+  ],
+  hard: [
+    'Samuel Eto’o','George Weah','Claude Makélélé','Philipp Lahm','Miroslav Klose',
+    'Lothar Matthäus','Franz Beckenbauer','Gerd Müller','Kaká','Rivaldo',
+    'Cafu','Dani Alves','Marcelo','Vincent Kompany','Eden Hazard',
+    'Thibaut Courtois','Virgil van Dijk','Sadio Mané','Luis Suárez','Sergio Agüero',
+  ],
+  expert: [
+    'Edgar Davids','Deco','Edinson Cavani','Diego Forlán','Radamel Falcao',
+    'Ángel Di María','Carlos Tevez','Javier Mascherano','David Silva','Yaya Touré',
+    'Petr Čech','Andriy Shevchenko','Ruud van Nistelrooy','Robin van Persie','Nicolas Anelka',
+    'Ashley Cole','Patrice Evra','Alisson Becker','Hugo Lloris','Riyad Mahrez',
+  ],
+}
+
 export const whoAmIQuestionBank:WhoAmIQuestion[]=playerKnowledgeProfiles.map(profile=>({
   answer:profile.answer,
   aliases:profile.aliases,
@@ -127,10 +167,26 @@ export const careerQuestionBank:CareerQuestion[]=playerKnowledgeProfiles.map(pro
 
 export const PLAYER_KNOWLEDGE_ROUND_SIZE=10
 export const PLAYER_KNOWLEDGE_ROUND_COUNT=10
+export const PLAYER_KNOWLEDGE_DIFFICULTY_ROUND_COUNT=2
 export const playerKnowledgeRoundNames=['Modern Icons','Creators and Captains','Defensive Masters','European Greats','Premier League Icons','Global Stars','Midfield Controllers','Goals and Glory','Journeymen and Leaders','World Football Mix'] as const
+export const playerKnowledgeDifficultyRoundNames=['First XI','Second XI'] as const
 function roundSlice<T>(items:T[],round:number){if(!Number.isSafeInteger(round)||round<1||round>PLAYER_KNOWLEDGE_ROUND_COUNT)throw new Error('Player knowledge round is outside the available range.');const start=(round-1)*PLAYER_KNOWLEDGE_ROUND_SIZE;return items.slice(start,start+PLAYER_KNOWLEDGE_ROUND_SIZE)}
 export function getWhoAmIRound(round:number){return roundSlice(whoAmIQuestionBank,round)}
 export function getCareerRound(round:number){return roundSlice(careerQuestionBank,round)}
+
+function difficultyRoundSlice<T extends { answer: string }>(items:T[],difficulty:QuizDifficulty,round:number){
+  if(!Number.isSafeInteger(round)||round<1||round>PLAYER_KNOWLEDGE_DIFFICULTY_ROUND_COUNT)throw new Error('Difficulty round is outside the available range.')
+  const allowed=new Set(playerKnowledgeDifficultyTiers[difficulty])
+  const pool=items.filter((item)=>allowed.has(item.answer))
+  if(pool.length!==20)throw new Error(`${difficulty} player-knowledge tier must contain exactly 20 players.`)
+  const start=(round-1)*PLAYER_KNOWLEDGE_ROUND_SIZE
+  return pool.slice(start,start+PLAYER_KNOWLEDGE_ROUND_SIZE)
+}
+
+export function getWhoAmIDifficultyPool(difficulty:QuizDifficulty){const allowed=new Set(playerKnowledgeDifficultyTiers[difficulty]);return whoAmIQuestionBank.filter((item)=>allowed.has(item.answer))}
+export function getCareerDifficultyPool(difficulty:QuizDifficulty){const allowed=new Set(playerKnowledgeDifficultyTiers[difficulty]);return careerQuestionBank.filter((item)=>allowed.has(item.answer))}
+export function getWhoAmIDifficultyRound(difficulty:QuizDifficulty,round:number){return difficultyRoundSlice(whoAmIQuestionBank,difficulty,round)}
+export function getCareerDifficultyRound(difficulty:QuizDifficulty,round:number){return difficultyRoundSlice(careerQuestionBank,difficulty,round)}
 
 export function normalisePlayerGuess(value:string){return value.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim().replace(/\s+/g,' ')}
 export function playerGuessMatches(value:string,question:{answer:string;aliases?:string[]}){const guess=normalisePlayerGuess(value);return [question.answer,...(question.aliases??[])].some(answer=>normalisePlayerGuess(answer)===guess)}

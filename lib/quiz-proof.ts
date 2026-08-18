@@ -22,6 +22,7 @@ export type QuizProof = (
       answers: Array<{
         left: string
         right: string
+        statLabel?: string
         choice: 'left' | 'right' | 'same' | 'timeout'
         speed: 'relaxed' | 'timed'
         timeLeft: number

@@ -30,6 +30,7 @@ describe('Early Shout identity', () => {
   it('offers an honest one-click game before asking visitors to create an account', () => {
     const home = read('app/page.tsx')
     const duels = read('app/quizzes/football-duels/page.tsx')
+    const duelPacks = read('lib/duel-packs.ts')
     const tour = read('components/onboarding-tour.tsx')
 
     expect(home).toContain('href="/quizzes/football-duels"')
@@ -37,8 +38,8 @@ describe('Early Shout identity', () => {
     expect(home).toContain('No sign-up')
     expect(home).toContain('href="/beta"')
     expect(home).not.toContain('first 100')
-    expect(duels).toContain("title: 'Daily Quick Play'")
-    expect(duels).toContain('setSelected(buildDailyQuickPlay())')
+    expect(duelPacks).toContain("title: 'Daily Quick Play'")
+    expect(duels).toContain('setSelected(dailyPack())')
     expect(tour).toContain("router.push('/quizzes/football-duels')")
     expect(tour).toContain('Play now')
     expect(tour).toContain('Show me around')

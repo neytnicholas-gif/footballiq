@@ -1,3 +1,5 @@
+import type { QuizDifficulty } from './quiz-difficulty'
+
 export type DuelOption = { name: string; value: number; detail: string }
 export type DuelQuestion = { left: DuelOption; right: DuelOption; statLabel?: string }
 export type DuelDifficulty = 'Starter' | 'Sharp' | 'Expert'
@@ -63,6 +65,30 @@ function expandedQuestions(pack: DuelPack) {
   return pairings.slice(0, 100)
 }
 
+const duelThemeDifficulties: Record<string, QuizDifficulty> = {
+  'pl-goals': 'beginner',
+  'international-goals': 'beginner',
+  'ballon-dor': 'easy',
+  'pl-assists': 'normal',
+  'ucl-goals': 'normal',
+  'world-cup-goals': 'normal',
+  'premier-league-titles': 'normal',
+  'pl-appearances': 'hard',
+  'euro-goals': 'hard',
+  'pl-clean-sheets': 'expert',
+}
+
+function duelThemeId(packId: string) {
+  return packId.replace(/-\d+$/, '')
+}
+
+export function getDuelPackDifficulty(packId: string): QuizDifficulty {
+  if (packId.startsWith('daily-duel-')) return 'normal'
+  const difficulty = duelThemeDifficulties[duelThemeId(packId)]
+  if (!difficulty) throw new Error(`Unknown Football Duels pack: ${packId}`)
+  return difficulty
+}
+
 /** Ten distinct ten-question sets for every stat theme: 100 playable packs. */
 export const duelPacks: DuelPack[] = baseDuelPacks.flatMap((pack) => {
   const questions = expandedQuestions(pack)
@@ -86,6 +112,37 @@ export const higherLowerDecks = baseDuelPacks.map((pack) => {
     id: pack.id,
     title: pack.title,
     statLabel: pack.statLabel,
+    difficulty: getDuelPackDifficulty(pack.id),
     items: [...players.values()].slice(0, 14),
   }
 })
+
+function seededShuffle<T>(items: T[], seed: number) {
+  const copy = [...items]
+  let value = seed || 1
+  for (let index = copy.length - 1; index > 0; index -= 1) {
+    value = (value * 9301 + 49297) % 233280
+    const randomIndex = Math.floor((value / 233280) * (index + 1))
+    ;[copy[index], copy[randomIndex]] = [copy[randomIndex], copy[index]]
+  }
+  return copy
+}
+
+export function buildDailyDuelPack(dateKey: string): DuelPack {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(dateKey)) throw new Error('Daily duel date is invalid.')
+  const seed = Number(dateKey.replaceAll('-', ''))
+  const pool: DuelQuestion[] = duelPacks.flatMap((pack) => (
+    pack.questions.map((question) => ({ ...question, statLabel: pack.statLabel }))
+  ))
+  return {
+    id: `daily-duel-${dateKey}`,
+    title: 'Daily Quick Play',
+    shortTitle: 'Quick Play',
+    description: 'Ten mixed duels. Same challenge for everyone today.',
+    statLabel: 'stat',
+    category: 'League',
+    difficulty: 'Sharp',
+    emoji: '⚡',
+    questions: seededShuffle(pool, seed).slice(0, 10),
+  }
+}

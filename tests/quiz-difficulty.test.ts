@@ -1,6 +1,14 @@
 import { describe, expect, it } from 'vitest'
-import { refereeQuestions, scoutQuestions } from '@/lib/game-data'
+import { buildDailyDuelPack, duelPacks, getDuelPackDifficulty } from '@/lib/duel-packs'
+import { higherLowerDecks, refereeQuestions, scoutQuestions } from '@/lib/game-data'
 import { getLeagueWorldQuestions } from '@/lib/football-leagues'
+import {
+  getCareerDifficultyRound,
+  getWhoAmIDifficultyRound,
+  playerKnowledgeDifficultyTiers,
+  playerKnowledgeProfiles,
+} from '@/lib/player-knowledge-bank'
+import { calculateDuelXp } from '@/lib/progression'
 import { quizLabQuestionBank, quizLabCorrectAnswer } from '@/lib/quiz-lab'
 import {
   buildQuizDifficultyIndex,
@@ -21,6 +29,30 @@ const refereeIndex = buildQuizDifficultyIndex(refereeQuestions, {
 })
 
 describe('five-level quiz difficulty', () => {
+  it('splits all 100 player-knowledge profiles into five intentional, non-overlapping levels', () => {
+    const tieredNames = quizDifficulties.flatMap((difficulty) => playerKnowledgeDifficultyTiers[difficulty])
+    expect(tieredNames).toHaveLength(100)
+    expect(new Set(tieredNames).size).toBe(100)
+    expect(new Set(tieredNames)).toEqual(new Set(playerKnowledgeProfiles.map((profile) => profile.answer)))
+
+    for (const difficulty of quizDifficulties) {
+      const first = getWhoAmIDifficultyRound(difficulty, 1)
+      const second = getWhoAmIDifficultyRound(difficulty, 2)
+      expect(first).toHaveLength(10)
+      expect(second).toHaveLength(10)
+      expect(new Set([...first, ...second].map((question) => question.answer)).size).toBe(20)
+      expect(getCareerDifficultyRound(difficulty, 1)).toHaveLength(10)
+      expect(getCareerDifficultyRound(difficulty, 2)).toHaveLength(10)
+    }
+  })
+
+  it('gives Football Duels and Higher or Lower real content at every level', () => {
+    for (const difficulty of quizDifficulties) {
+      expect(duelPacks.filter((pack) => getDuelPackDifficulty(pack.id) === difficulty).length).toBeGreaterThan(0)
+      expect(higherLowerDecks.filter((deck) => deck.difficulty === difficulty).length).toBeGreaterThan(0)
+    }
+  })
+
   it('keeps every major authored pool large enough for a fresh session at every level', () => {
     const pools = [
       quizDifficultyCounts(refereeIndex),
@@ -128,4 +160,85 @@ describe('five-level quiz difficulty', () => {
       proof: { kind: 'choice', questionIndexes: [0, 1, 2], answers: [questions[0]!.answer, questions[1]!.answer, questions[2]!.answer], difficulty: 'hard' },
     })).toThrow('outside the chosen difficulty')
   })
+
+  it('server-verifies difficulty-ranked Career Path and Who Am I sessions', () => {
+    for (const difficulty of quizDifficulties) {
+      const careers = getCareerDifficultyRound(difficulty, 1)
+      const career = verifyQuizReward({
+        quizId: `career-path-${difficulty}-1`,
+        score: 10,
+        total: 10,
+        completionKey,
+        proof: { kind: 'career', difficulty, round: 1, answers: careers.map((question) => question.answer) },
+      })
+      expect(career.xp).toBe(quizXp(120, difficulty))
+
+      const mysteries = getWhoAmIDifficultyRound(difficulty, 1)
+      const mystery = verifyQuizReward({
+        quizId: `who-am-i-${difficulty}-1`,
+        score: 40,
+        total: 40,
+        completionKey,
+        proof: { kind: 'who-am-i', difficulty, round: 1, answers: mysteries.map((question) => ({ guess: question.answer, clues: 1 })) },
+      })
+      expect(mystery.xp).toBe(quizXp(140, difficulty))
+    }
+
+    const beginner = getCareerDifficultyRound('beginner', 1)
+    expect(() => verifyQuizReward({
+      quizId: 'career-path-expert-1',
+      score: 10,
+      total: 10,
+      completionKey,
+      proof: { kind: 'career', difficulty: 'beginner', round: 1, answers: beginner.map((question) => question.answer) },
+    })).toThrow('wrong difficulty')
+  })
+
+  it('server-verifies difficulty multipliers for stat games and the deterministic daily duel', () => {
+    for (const difficulty of quizDifficulties) {
+      const definition = higherLowerDecks.find((deck) => deck.difficulty === difficulty)!
+      const seed = 48157
+      const deck = seededDeck(definition.items, seed)
+      const answers = deck.slice(1).map((right, index) => right.value >= deck[index]!.value)
+      const result = verifyQuizReward({
+        quizId: `higher-lower-${definition.id}`,
+        score: 13,
+        total: 13,
+        completionKey,
+        proof: { kind: 'higher-lower', difficulty, deckId: definition.id, deckSeed: seed, answers },
+      })
+      expect(result.xp).toBe(quizXp(124, difficulty))
+
+      const pack = duelPacks.find((item) => getDuelPackDifficulty(item.id) === difficulty)!
+      const duelResult = verifyQuizReward({
+        quizId: pack.id,
+        score: 0,
+        total: 10,
+        completionKey,
+        proof: { kind: 'duel', difficulty, packId: pack.id, answers: pack.questions.map((question) => ({ left: question.left.name, right: question.right.name, statLabel: question.statLabel ?? pack.statLabel, choice: 'timeout', speed: 'timed', timeLeft: 0 })) },
+      })
+      expect(duelResult.xp).toBe(quizXp(calculateDuelXp(0, 10, 0, 0), difficulty))
+    }
+
+    const daily = buildDailyDuelPack('2026-08-18')
+    const dailyResult = verifyQuizReward({
+      quizId: daily.id,
+      score: 0,
+      total: 10,
+      completionKey,
+      proof: { kind: 'duel', difficulty: 'normal', packId: daily.id, answers: daily.questions.map((question) => ({ left: question.left.name, right: question.right.name, statLabel: question.statLabel ?? daily.statLabel, choice: 'timeout', speed: 'timed', timeLeft: 0 })) },
+    })
+    expect(dailyResult.score).toBe(0)
+  })
 })
+
+function seededDeck<T>(items: T[], seed: number) {
+  const copy = [...items]
+  let value = seed || 1
+  for (let index = copy.length - 1; index > 0; index -= 1) {
+    value = (value * 9301 + 49297) % 233280
+    const randomIndex = Math.floor((value / 233280) * (index + 1))
+    ;[copy[index], copy[randomIndex]] = [copy[randomIndex]!, copy[index]!]
+  }
+  return copy
+}
