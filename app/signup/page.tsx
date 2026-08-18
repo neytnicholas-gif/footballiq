@@ -77,6 +77,8 @@ export default function SignupPage() {
     }
 
     const hasSession = Boolean(data.session)
+    setCaptchaToken('')
+    setCaptchaResetKey((value) => value + 1)
     setShowResend(!hasSession)
     setMessageTone(hasSession ? 'success' : 'neutral')
     setMessage(getSignupSuccessMessage(hasSession))
@@ -87,9 +89,18 @@ export default function SignupPage() {
       return
     }
 
+    const captchaMessage = getCaptchaValidationMessage(Boolean(TURNSTILE_SITE_KEY), captchaToken)
+    if (captchaMessage) {
+      setMessage(captchaMessage)
+      setMessageTone('error')
+      return
+    }
+
     setResendLoading(true)
-    const result = await resendSignupConfirmation(supabase.auth, email, window.location.origin)
+    const result = await resendSignupConfirmation(supabase.auth, email, window.location.origin, captchaToken)
     setResendLoading(false)
+    setCaptchaToken('')
+    setCaptchaResetKey((value) => value + 1)
     setMessage(result.message)
     setMessageTone(result.tone)
     setShowResend(true)

@@ -62,9 +62,18 @@ export default function LoginPage() {
       return
     }
 
+    const captchaMessage = getCaptchaValidationMessage(Boolean(TURNSTILE_SITE_KEY), captchaToken)
+    if (captchaMessage) {
+      setMessage(captchaMessage)
+      setMessageTone('error')
+      return
+    }
+
     setResendLoading(true)
-    const result = await resendSignupConfirmation(supabase.auth, email, window.location.origin)
+    const result = await resendSignupConfirmation(supabase.auth, email, window.location.origin, captchaToken)
     setResendLoading(false)
+    setCaptchaToken('')
+    setCaptchaResetKey((value) => value + 1)
     setMessage(result.message)
     setMessageTone(result.tone === 'error' ? 'error' : 'neutral')
     setShowResend(true)

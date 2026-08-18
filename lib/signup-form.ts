@@ -91,7 +91,7 @@ type ResendAuthClient = {
   resend: (payload: {
     type: 'signup'
     email: string
-    options: { emailRedirectTo: string }
+    options: { emailRedirectTo: string; captchaToken?: string }
   }) => Promise<{ error: AuthErrorLike }>
 }
 
@@ -99,6 +99,7 @@ export async function resendSignupConfirmation(
   authClient: ResendAuthClient,
   email: string,
   origin: string,
+  captchaToken?: string,
 ) {
   const trimmedEmail = email.trim()
   if (!trimmedEmail) {
@@ -109,12 +110,15 @@ export async function resendSignupConfirmation(
     }
   }
 
+  const options: { emailRedirectTo: string; captchaToken?: string } = {
+    emailRedirectTo: `${origin}/auth/callback`,
+  }
+  if (captchaToken) options.captchaToken = captchaToken
+
   const { error } = await authClient.resend({
     type: 'signup',
     email: trimmedEmail,
-    options: {
-      emailRedirectTo: `${origin}/auth/callback`,
-    },
+    options,
   })
 
   if (error) {

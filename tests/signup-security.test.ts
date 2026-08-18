@@ -116,6 +116,35 @@ describe('signup security helpers', () => {
     expect(result.ok).toBe(true)
   })
 
+  it('passes a fresh CAPTCHA token when resending signup confirmation', async () => {
+    const calls: Array<unknown> = []
+    const authClient = {
+      resend: async (payload: unknown) => {
+        calls.push(payload)
+        return { error: null }
+      },
+    }
+
+    const result = await resendSignupConfirmation(
+      authClient,
+      'player@example.com',
+      'https://earlyshout.com',
+      'fresh-turnstile-token',
+    )
+
+    expect(result.ok).toBe(true)
+    expect(calls).toEqual([
+      {
+        type: 'signup',
+        email: 'player@example.com',
+        options: {
+          emailRedirectTo: 'https://earlyshout.com/auth/callback',
+          captchaToken: 'fresh-turnstile-token',
+        },
+      },
+    ])
+  })
+
   it('forgot-password request sends privacy-safe success copy and callback destination', async () => {
     const calls: Array<unknown> = []
     const authClient = {
