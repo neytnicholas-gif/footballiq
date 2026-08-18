@@ -55,7 +55,7 @@ export default function QuizzesPage() {
             <div className="max-w-3xl">
               <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-[.22em] text-emerald-300"><Brain className="size-4" /> Quizzes</p>
               <h1 className="mt-3 text-3xl font-black tracking-tight sm:text-5xl">Test your football brain.</h1>
-              <p className="mt-3 max-w-2xl text-sm leading-relaxed text-slate-300 sm:text-base">Choose a quiz to learn or a quick game to chase a high score.</p>
+              <p className="mt-3 max-w-2xl text-sm leading-relaxed text-slate-300 sm:text-base">Choose a quiz, pick one of five levels and learn at your pace. Quick games stay separate for scores and streaks.</p>
             </div>
             <div className="flex gap-6 border-l border-slate-700 pl-5">
               <div><p className="text-2xl font-black text-white">{modes.filter((mode)=>mode.kind==='quiz').length}</p><p className="text-xs text-slate-400">Quizzes</p></div>
@@ -83,7 +83,7 @@ export default function QuizzesPage() {
                 </div>
                 <h3 className="mt-4 text-xl font-extrabold tracking-tight text-white">{mode.title}</h3>
                 <p className="mt-2 flex-1 text-sm leading-relaxed text-slate-400">{mode.description}</p>
-                <div className="mt-4 flex flex-wrap gap-x-3 gap-y-1 border-t border-slate-700/70 pt-3 text-xs text-slate-400"><span>{mode.count}</span><span aria-hidden="true">·</span><span>{mode.duration}</span><span aria-hidden="true">·</span><span>{mode.skill}</span></div>
+                <div className="mt-4 flex flex-wrap gap-x-3 gap-y-1 border-t border-slate-700/70 pt-3 text-xs text-slate-400"><span className="font-bold text-cyan-200">{mode.title === 'Daily Challenge' ? 'One fair daily level' : '5 difficulty levels'}</span><span aria-hidden="true">·</span><span>{mode.count}</span><span aria-hidden="true">·</span><span>{mode.duration}</span><span aria-hidden="true">·</span><span>{mode.skill}</span></div>
                 <Link href={mode.href} className="mt-4 inline-flex min-h-10 items-center justify-between rounded-xl bg-slate-100 px-4 py-2 text-sm font-bold text-slate-950 outline-none transition hover:bg-white focus-visible:ring-2 focus-visible:ring-emerald-300 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900">
                   Play {mode.title}<ArrowRight className="size-4 transition group-hover:translate-x-0.5" />
                 </Link>

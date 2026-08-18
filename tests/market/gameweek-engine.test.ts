@@ -6,12 +6,15 @@ const migration = readFileSync('supabase/migrations/20260809213000_harden_verifi
 const portfolioRepair = readFileSync('supabase/migrations/20260809214500_keep_portfolio_prices_authoritative.sql', 'utf8')
 const priceBook = readFileSync('supabase/migrations/20260809215500_publish_authoritative_price_book.sql', 'utf8')
 const catalogueRoute = readFileSync('app/api/market/catalogue/route.ts', 'utf8')
-const priceBookGrants = readFileSync('supabase/migrations/20260809220000_grant_price_book_sources.sql', 'utf8')
+const launchHardening = readFileSync('supabase/migrations/20260818080145_harden_beta_launch_gates.sql', 'utf8')
+const permissionCutover = readFileSync('supabase/migrations/20260818080200_restrict_raw_market_data.sql', 'utf8')
 const publicCatalogue = readFileSync('supabase/migrations/20260809234500_publish_database_backed_market_catalogue.sql', 'utf8')
 const transferRollover = readFileSync('supabase/migrations/20260810144500_close_expired_transfer_gameweeks.sql', 'utf8')
 const residualBank = readFileSync('supabase/migrations/20260810170000_bank_subthreshold_market_performance.sql', 'utf8')
 const route = readFileSync('app/api/market/process-gameweek/route.ts', 'utf8')
 const runtime = readFileSync('lib/market/server/gameweek-engine.ts', 'utf8')
+const maintenance = readFileSync('app/api/market/daily-maintenance/route.ts', 'utf8')
+const vercelConfig = JSON.parse(readFileSync('vercel.json', 'utf8')) as { crons: Array<{ path: string; schedule: string }> }
 
 describe('verified gameweek engine', () => {
   it('closes expired transfer windows before returning the current gameweek', () => {
@@ -25,6 +28,8 @@ describe('verified gameweek engine', () => {
     expect(migration).toContain('on conflict(provider_fixture_id,player_id) do nothing')
     expect(migration).toContain("'sportmonks:'||(item->>'provider_fixture_id')||':'||(item->>'provider_player_id')")
     expect(runtime).toContain("processedPerformanceKeys.add(`${row.provider_fixture_id}:${providerPlayerId}`)")
+    expect(runtime).toContain(".lte('fixture_date', correctionWindowCutoff)")
+    expect(runtime).toContain(".order('id', { ascending: true })")
     expect(runtime).toContain('.range(from, from + 999)')
   })
 
@@ -69,7 +74,10 @@ describe('verified gameweek engine', () => {
     expect(publicCatalogue).toContain('security invoker')
     expect(publicCatalogue).toContain('player.current_price_minor')
     expect(catalogueRoute).not.toContain('applyPreviewValueExperiment')
-    expect(priceBookGrants).toContain('grant select on table public.market_valuation_events to anon,authenticated')
+    expect(permissionCutover).toContain('revoke all on table public.market_valuation_events from anon, authenticated')
+    expect(launchHardening).toContain('market_apply_verified_rating_corrections')
+    expect(launchHardening).toContain("'sportmonks-correction:'")
+    expect(runtime).toContain("admin.rpc('market_apply_verified_rating_corrections'")
   })
 
   it('requires a server secret at the cron boundary', () => {
@@ -82,6 +90,17 @@ describe('verified gameweek engine', () => {
     expect(runtime).toContain('providerTelemetry')
     expect(runtime).toContain('requestsMade: 0, rateLimits: []')
     expect(runtime).toContain('report: { durationMs: Date.now() - startedAt, providerTelemetry, predictionTelemetry }')
+  })
+
+  it('uses the second Hobby cron as a fail-safe retry and weekly catalogue refresh', () => {
+    expect(vercelConfig.crons).toHaveLength(2)
+    expect(vercelConfig.crons).toContainEqual({ path: '/api/market/process-gameweek', schedule: '15 4 * * *' })
+    expect(vercelConfig.crons).toContainEqual({ path: '/api/market/daily-maintenance', schedule: '15 7 * * *' })
+    expect(maintenance).toContain('isMarketAdminRequest(request)')
+    expect(maintenance).toContain('skipIfCompletedToday: true')
+    expect(maintenance).toContain('getUTCDay() === 1')
+    expect(runtime).toContain("completedRun?.status === 'completed'")
+    expect(runtime).toContain("event: 'market.gameweek.failed'")
   })
 
   it('settles checked fixtures without ratings but fails closed on provider-row errors', () => {

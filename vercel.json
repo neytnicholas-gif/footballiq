@@ -8,8 +8,8 @@
       "schedule": "15 4 * * *"
     },
     {
-      "path": "/api/market/sync-catalogue",
-      "schedule": "30 2 * * 1"
+      "path": "/api/market/daily-maintenance",
+      "schedule": "15 7 * * *"
     }
   ]
 }

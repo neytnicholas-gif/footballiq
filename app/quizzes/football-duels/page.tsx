@@ -39,17 +39,23 @@ function buildDailyQuickPlay(): DuelPack {
 }
 
 export default function FootballDuelsPage() {
-  const quickPlay = useMemo(() => buildDailyQuickPlay(), [])
-  const [selected, setSelected] = useState<DuelPack>(quickPlay)
+  // The daily pack cannot be chosen during prerendering: a deployment built on
+  // one date and opened on another would otherwise hydrate with different
+  // questions. Both server and browser now begin with the same loading state.
+  const [selected, setSelected] = useState<DuelPack | null>(null)
   const [category, setCategory] = useState<'All' | DuelCategory>('All')
   const [search, setSearch] = useState('')
   const [completed, setCompleted] = useState<Record<string, number>>({})
 
   useEffect(() => {
-    try {
-      const stored = localStorage.getItem('footballiq-duel-completed')
-      setCompleted(stored ? JSON.parse(stored) as Record<string, number> : {})
-    } catch { setCompleted({}) }
+    const frame = window.requestAnimationFrame(() => {
+      setSelected(buildDailyQuickPlay())
+      try {
+        const stored = localStorage.getItem('footballiq-duel-completed')
+        setCompleted(stored ? JSON.parse(stored) as Record<string, number> : {})
+      } catch { setCompleted({}) }
+    })
+    return () => window.cancelAnimationFrame(frame)
   }, [])
 
   const filtered = useMemo(() => duelPacks.filter((pack) => {
@@ -65,7 +71,7 @@ export default function FootballDuelsPage() {
   }
 
   function selectRandomPack() {
-    const options = duelPacks.filter((pack) => pack.id !== selected.id)
+    const options = duelPacks.filter((pack) => pack.id !== selected?.id)
     setSelected(options[Math.floor(Math.random() * options.length)] ?? duelPacks[0])
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
@@ -86,7 +92,17 @@ export default function FootballDuelsPage() {
           </div>
         </div>
 
-        <div className="mt-8"><DuelQuiz key={`${selected.id}-${selected.questions[0]?.left.name}`} pack={selected} onComplete={markComplete} /></div>
+        <div className="mt-8">
+          {selected ? (
+            <DuelQuiz key={`${selected.id}-${selected.questions[0]?.left.name}`} pack={selected} onComplete={markComplete} />
+          ) : (
+            <div role="status" className="rounded-[2rem] border border-border bg-card p-8 text-center sm:p-12">
+              <div className="mx-auto size-10 animate-pulse rounded-2xl bg-primary/20" />
+              <p className="mt-4 font-semibold">Preparing today’s Football Duels…</p>
+              <p className="mt-1 text-sm text-muted-foreground">Loading the same daily challenge for everyone.</p>
+            </div>
+          )}
+        </div>
 
         <section className="mt-14 rounded-2xl border border-border bg-card p-6 sm:p-7">
           <div className="flex flex-wrap items-end justify-between gap-4">
@@ -102,7 +118,7 @@ export default function FootballDuelsPage() {
           <div className="mt-6 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             {filtered.map((pack) => {
               const best = completed[pack.id]
-              const active = selected.id === pack.id
+              const active = selected?.id === pack.id
               return <button key={pack.id} onClick={() => { setSelected(pack); window.scrollTo({ top: 0, behavior: 'smooth' }) }} className={`group relative overflow-hidden rounded-3xl border p-6 text-left transition duration-300 hover:-translate-y-1 ${active ? 'border-primary bg-primary/10 ring-1 ring-primary/30' : 'border-border bg-card hover:border-primary/50'}`}>
                 <div className="flex items-start justify-between gap-4"><span className="text-3xl">{pack.emoji}</span><div className="flex items-center gap-2">{typeof best === 'number' && <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2.5 py-1 text-xs font-semibold text-primary"><CheckCircle2 className="size-3.5" /> {best}/10</span>}<span className="rounded-full border border-border px-2.5 py-1 text-[10px] uppercase tracking-wider text-muted-foreground">{pack.difficulty}</span></div></div>
                 <h3 className="mt-5 text-xl font-bold">{pack.title}</h3><p className="mt-2 min-h-12 text-sm leading-relaxed text-muted-foreground">{pack.description}</p>

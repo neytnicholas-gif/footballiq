@@ -2,16 +2,28 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { useAuth } from '@/components/auth-provider'
+import { QuizDifficultyPicker, useQuizDifficulty } from '@/components/quiz-difficulty-picker'
 import { QuizProgressBanner } from '@/components/quiz-progress-banner'
 import { clearQuizProgress, loadQuizProgress, saveQuizProgress } from '@/lib/quiz-progress'
 import { getRankProgress } from '@/lib/progression'
 import { buildCompletionKey, createCompletionRunId, saveQuizResult } from '@/lib/quiz-save'
 import { scoutQuestions, type ScoutDecision } from '@/lib/game-data'
+import { buildQuizDifficultyIndex, filterQuizDifficulty, quizDifficultyCounts, quizXp } from '@/lib/quiz-difficulty'
+import { createQuizSessionSeed, sampleQuizSession } from '@/lib/quiz-session'
 
 const decisionOptions: ScoutDecision[] = ['Strongly follow', 'Follow', 'Monitor', 'Do not pursue']
+const SESSION_SIZE = 10
+const difficultyIndex = buildQuizDifficultyIndex(scoutQuestions, {
+  id: (question) => question.id,
+  authored: (question) => question.difficulty ?? 'Sharp',
+  text: (question) => `${question.title} ${question.summary} ${question.profile.join(' ')} ${question.concerns} ${question.missingInformation}`,
+})
+const difficultyCounts = quizDifficultyCounts(difficultyIndex)
 
 export function ScoutGame() {
   const { user, profile, refreshProfile } = useAuth()
+  const { difficulty, setDifficulty, ready } = useQuizDifficulty('scout-vision')
+  const [sessionSeed, setSessionSeed] = useState<number | null>(null)
   const [index, setIndex] = useState(0)
   const [selected, setSelected] = useState<ScoutDecision | null>(null)
   const [score, setScore] = useState(0)
@@ -23,14 +35,20 @@ export function ScoutGame() {
   const [resumeState, setResumeState] = useState<{ index: number; selected: ScoutDecision | null; score: number; answers: ScoutDecision[] } | null>(null)
   const [checkingProgress, setCheckingProgress] = useState(Boolean(user))
 
-  const dossier = scoutQuestions[index]
-  const isLast = index === scoutQuestions.length - 1
-  const percent = Math.round(((index + (selected ? 1 : 0)) / scoutQuestions.length) * 100)
-  const maxScore = scoutQuestions.length * 2
+  const sessionQuestions = useMemo(() => sessionSeed === null ? [] : sampleQuizSession(
+    filterQuizDifficulty(scoutQuestions, difficulty, difficultyIndex, (question) => question.id),
+    SESSION_SIZE,
+    sessionSeed,
+  ), [difficulty, sessionSeed])
+  const dossier = sessionQuestions[index]!
+  const isLast = index === sessionQuestions.length - 1
+  const percent = Math.round(((index + (selected ? 1 : 0)) / sessionQuestions.length) * 100)
+  const maxScore = sessionQuestions.length * 2
   const accuracy = Math.round((score / maxScore) * 100)
-  const xp = 30 + score * 6
+  const xp = quizXp(30 + score * 6, difficulty)
   const creditedXp = saved && !alreadyCredited ? xp : 0
   const rank = getRankProgress((profile?.xp ?? 0) + creditedXp)
+  const progressQuizId = `would-you-scout-1:${difficulty}`
 
   const verdict = useMemo(() => {
     if (!selected) return null
@@ -42,7 +60,20 @@ export function ScoutGame() {
   }, [selected, dossier])
 
   useEffect(() => {
+    const frame = window.requestAnimationFrame(() => {
+      const key = `early-shout:scout-session-seed:${difficulty}`
+      const stored = Number(window.sessionStorage.getItem(key))
+      const nextSeed = Number.isSafeInteger(stored) && stored > 0 ? stored : createQuizSessionSeed()
+      window.sessionStorage.setItem(key, String(nextSeed))
+      setSessionSeed(nextSeed)
+    })
+    return () => window.cancelAnimationFrame(frame)
+  }, [difficulty])
+
+  useEffect(() => {
     let active = true
+
+    if (sessionSeed === null) return () => { active = false }
 
     if (!user) {
       const timeout = window.setTimeout(() => {
@@ -58,11 +89,11 @@ export function ScoutGame() {
 
     setCheckingProgress(true)
     void (async () => {
-      const progress = await loadQuizProgress('would-you-scout-1')
+      const progress = await loadQuizProgress(progressQuizId)
       if (!active) return
       const savedState = progress?.progress as { index?: number; selected?: ScoutDecision | null; score?: number; answers?: ScoutDecision[] } | undefined
       const savedIndex = typeof savedState?.index === 'number' && Number.isInteger(savedState.index) ? savedState.index : null
-      if (progress && progress.status === 'in_progress' && savedState && savedIndex !== null && savedIndex >= 0 && savedIndex < scoutQuestions.length) {
+      if (progress && progress.status === 'in_progress' && savedState && savedIndex !== null && savedIndex >= 0 && savedIndex < sessionQuestions.length) {
         setResumeState({
           index: savedIndex,
           selected: typeof savedState.selected === 'string' ? (savedState.selected as ScoutDecision) : null,
@@ -78,7 +109,7 @@ export function ScoutGame() {
     return () => {
       active = false
     }
-  }, [user])
+  }, [progressQuizId, sessionQuestions.length, sessionSeed, user])
 
   function choose(decision: ScoutDecision) {
     if (checkingProgress || resumeState || selected) return
@@ -88,10 +119,10 @@ export function ScoutGame() {
     setScore(nextScore)
     setAnswers(nextAnswers)
     void saveQuizProgress({
-      quizId: 'would-you-scout-1',
+      quizId: progressQuizId,
       currentIndex: index,
       score: nextScore,
-      total: scoutQuestions.length * 2,
+      total: maxScore,
       progress: { index, selected: decision, score: nextScore, answers: nextAnswers },
     })
   }
@@ -101,10 +132,10 @@ export function ScoutGame() {
     setSelected(null)
     setIndex(nextIndex)
     void saveQuizProgress({
-      quizId: 'would-you-scout-1',
+      quizId: progressQuizId,
       currentIndex: nextIndex,
       score,
-      total: scoutQuestions.length * 2,
+      total: maxScore,
       progress: { index: nextIndex, selected: null, score, answers },
     })
   }
@@ -112,17 +143,20 @@ export function ScoutGame() {
   async function saveResult() {
     if (!user || saved || saving) return
     setSaving(true)
-    const { error, alreadyCompleted } = await saveQuizResult({ quizId: 'would-you-scout-1', score, total: maxScore, xp, completionKey: buildCompletionKey('would-you-scout-1', runKey), proof: { kind: 'scout-dossier', answers } })
+    const { error, alreadyCompleted } = await saveQuizResult({ quizId: 'would-you-scout-1', score, total: maxScore, xp, completionKey: buildCompletionKey('would-you-scout-1', runKey), proof: { kind: 'scout-dossier', scenarioIds: sessionQuestions.map((question) => question.id), answers, difficulty } })
     if (!error) {
       setSaved(true)
       setAlreadyCredited(alreadyCompleted)
-      void clearQuizProgress('would-you-scout-1')
+      void clearQuizProgress(progressQuizId)
       if (!alreadyCompleted) await refreshProfile()
     }
     setSaving(false)
   }
 
   function restart() {
+    const nextSeed = createQuizSessionSeed()
+    window.sessionStorage.setItem(`early-shout:scout-session-seed:${difficulty}`, String(nextSeed))
+    setSessionSeed(nextSeed)
     setIndex(0)
     setSelected(null)
     setScore(0)
@@ -131,7 +165,19 @@ export function ScoutGame() {
     setAlreadyCredited(false)
     setRunKey(createCompletionRunId())
     setResumeState(null)
-    void clearQuizProgress('would-you-scout-1')
+    void clearQuizProgress(progressQuizId)
+  }
+
+  function changeDifficulty(nextDifficulty: typeof difficulty) {
+    setDifficulty(nextDifficulty)
+    setIndex(0)
+    setSelected(null)
+    setScore(0)
+    setAnswers([])
+    setSaved(false)
+    setAlreadyCredited(false)
+    setRunKey(createCompletionRunId())
+    setResumeState(null)
   }
 
   function continueProgress() {
@@ -143,14 +189,18 @@ export function ScoutGame() {
     setResumeState(null)
   }
 
+  if (!ready || !dossier) return <div className="flex min-h-64 items-center justify-center rounded-3xl border border-white/10 bg-slate-900/75 text-sm text-slate-300">Building a fresh Scout Vision round…</div>
+
   return (
-    <div className="overflow-hidden rounded-[1.75rem] border border-slate-700/80 bg-[#0a1625] text-slate-100 shadow-[0_30px_90px_-60px_rgba(16,185,129,.65)]">
+    <div className="space-y-5">
+      <QuizDifficultyPicker value={difficulty} onChange={changeDifficulty} counts={difficultyCounts} disabled={index > 0 || Boolean(selected)} />
+      <div className="overflow-hidden rounded-[1.75rem] border border-slate-700/80 bg-[#0a1625] text-slate-100 shadow-[0_30px_90px_-60px_rgba(16,185,129,.65)]">
       <div className="border-b border-white/10 bg-[linear-gradient(135deg,rgba(16,185,129,.16),rgba(14,36,58,.96)_50%,rgba(56,189,248,.12))] p-5 sm:p-7">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
             <p className="text-xs font-black uppercase tracking-[.24em] text-emerald-300">Scout Vision dossier</p>
             <h2 className="mt-2 text-2xl font-black tracking-tight text-white sm:text-3xl">{dossier.title}</h2>
-            <p className="mt-2 text-sm text-slate-300">Dossier <strong className="text-white">{index + 1}</strong> of <strong className="text-white">{scoutQuestions.length}</strong> · Think like a scout.</p>
+            <p className="mt-2 text-sm text-slate-300">Dossier <strong className="text-white">{index + 1}</strong> of <strong className="text-white">{sessionQuestions.length}</strong> · {difficulty.charAt(0).toUpperCase() + difficulty.slice(1)} level.</p>
           </div>
           <div className="rounded-2xl border border-emerald-300/20 bg-[#081421]/80 px-4 py-3 text-right">
             <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Judgement score</p>
@@ -199,7 +249,7 @@ export function ScoutGame() {
         </section>
 
         <section className="rounded-2xl border border-emerald-300/15 bg-[linear-gradient(180deg,rgba(11,36,42,.96),rgba(8,20,33,.98))] p-5">
-          {checkingProgress ? <div className="rounded-xl border border-white/10 bg-white/5 p-4 text-sm text-slate-300">Checking saved progress…</div> : resumeState && !saved ? <div className="mb-4"><QuizProgressBanner tone="dark" title="Resume your quiz?" copy={`You left off at dossier ${resumeState.index + 1} of ${scoutQuestions.length}.`} onContinue={continueProgress} onStartAgain={restart} /></div> : null}
+          {checkingProgress ? <div className="rounded-xl border border-white/10 bg-white/5 p-4 text-sm text-slate-300">Checking saved progress…</div> : resumeState && !saved ? <div className="mb-4"><QuizProgressBanner tone="dark" title="Resume your quiz?" copy={`You left off at dossier ${resumeState.index + 1} of ${sessionQuestions.length}.`} onContinue={continueProgress} onStartAgain={restart} /></div> : null}
           {!selected ? (
             <div className="min-h-44 rounded-xl border border-dashed border-emerald-300/25 bg-black/10 p-5 text-sm leading-6 text-slate-300">
               <p className="font-black text-emerald-200">Your report appears here.</p>
@@ -256,6 +306,7 @@ export function ScoutGame() {
             </div>
           )}
         </section>
+      </div>
       </div>
     </div>
   )

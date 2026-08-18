@@ -20,6 +20,11 @@ describe('League World', () => {
       expect(question.answer).toBeGreaterThanOrEqual(0)
       expect(question.answer).toBeLessThan(4)
     }
+    const answerSignatures = questions.map((question) => JSON.stringify({
+      correct: question.options[question.answer],
+      options: [...question.options].sort(),
+    }))
+    expect(new Set(answerSignatures).size).toBe(questions.length)
     const result = verifyQuizReward({
       quizId:`league-world-${key}`,score:15,total:15,
       completionKey:`cqk:league-world-test:${key}:12345678901234567890`,

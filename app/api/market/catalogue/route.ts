@@ -8,7 +8,6 @@ export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
 type PublicCatalogueRow = {
-  provider_player_id: string
   app_player_id: number
   slug: string
   display_name: string

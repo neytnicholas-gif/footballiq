@@ -12,6 +12,7 @@ const residualBank = readFileSync('supabase/migrations/20260810170000_bank_subth
 const isolatedFailures = readFileSync('supabase/migrations/20260814180347_isolate_gameweek_player_failures.sql', 'utf8')
 const fixtureSafety = readFileSync('supabase/migrations/20260816210000_beta_fixture_trade_safety.sql', 'utf8')
 const valuationCutoff = readFileSync('supabase/migrations/20260816210500_enforce_valuation_cutoff.sql', 'utf8')
+const launchHardening = readFileSync('supabase/migrations/20260818080145_harden_beta_launch_gates.sql', 'utf8')
 
 function functionSql(source: string, signature: string) {
   const start = source.indexOf(`create or replace function ${signature}`)
@@ -155,6 +156,7 @@ describe('executed PostgreSQL launch simulation', () => {
     await db.exec(functionSql(fixtureSafety, 'public.market_sell_player(p_player_slug text,p_idempotency_key text)'))
     await db.exec(functionSql(residualBank, 'public.market_apply_verified_gameweek('))
     await db.exec(functionSql(isolatedFailures, 'public.market_apply_verified_gameweek('))
+    await db.exec(functionSql(launchHardening, 'public.market_apply_verified_rating_corrections('))
     const triggerStart = unattended.indexOf('create or replace function public.market_enforce_trading_open()')
     const triggerEnd = unattended.indexOf('-- Keep hot user requests', triggerStart)
     await db.exec(unattended.slice(triggerStart, triggerEnd))
@@ -344,6 +346,38 @@ describe('executed PostgreSQL launch simulation', () => {
     expect(duplicate.rows[0]!.result).toMatchObject({ unchanged: true, processed_players: 0, skipped_players: 11 })
     expect(await count('public.market_player_match_stats')).toBe(11)
     expect(await count('public.market_valuation_events')).toBe(11)
+  }, 30_000)
+
+  it('applies a newer changed provider rating once and refreshes portfolio and Reveal totals', async () => {
+    await asUser('')
+    const correction = [{
+      provider_player_id: 'provider-1', provider_fixture_id: 'fixture-1',
+      fixture_date: '2026-08-09T16:00:00Z', started: true, minutes_played: 88,
+      rating: 5.5, retrieved_at: '2026-08-10T08:00:00Z',
+    }]
+    const first = await db.query<{ result: { corrected_players: number; skipped_corrections: number; failed_items: unknown[] } }>(
+      'select public.market_apply_verified_rating_corrections($1,$2::jsonb) result',
+      ['sportmonks-2026-32', JSON.stringify(correction)],
+    )
+    expect(first.rows[0]!.result).toMatchObject({ corrected_players: 1, skipped_corrections: 0, failed_items: [] })
+    expect(await count('public.market_player_match_stats')).toBe(11)
+    expect(await count('public.market_valuation_events')).toBe(12)
+    expect((await db.query<{ rating: number }>("select provider_rating_milli rating from public.market_player_match_stats where provider_fixture_id='fixture-1' and player_id=(select id from public.market_players where provider_player_id='provider-1')")).rows[0]!.rating).toBe(5500)
+
+    const duplicate = await db.query<{ result: { corrected_players: number; skipped_corrections: number } }>(
+      'select public.market_apply_verified_rating_corrections($1,$2::jsonb) result',
+      ['sportmonks-2026-32', JSON.stringify(correction)],
+    )
+    expect(duplicate.rows[0]!.result).toMatchObject({ corrected_players: 0, skipped_corrections: 1 })
+    expect(await count('public.market_valuation_events')).toBe(12)
+
+    const invalidTotals = await count('public.market_portfolios', `
+      total_portfolio_value_minor <> cash_balance_minor + current_holdings_value_minor
+      or current_holdings_value_minor <> (select coalesce(sum(current_value_minor),0)::integer from public.market_holdings where portfolio_id=market_portfolios.id)
+    `)
+    expect(invalidTotals).toBe(0)
+    const invalidReveals = await count('public.market_gameweek_reveals', 'new_portfolio_value_minor - previous_portfolio_value_minor <> weekly_change_minor')
+    expect(invalidReveals).toBe(0)
   }, 30_000)
 
   it('quarantines one hard provider-row failure and still prices the valid player', async () => {

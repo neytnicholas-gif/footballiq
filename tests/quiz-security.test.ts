@@ -34,6 +34,19 @@ describe('server-owned quiz rewards', () => {
     expect(result.xp).toBe(160)
   })
 
+  it('rejects abbreviated sessions that could farm completion bonuses', () => {
+    const refereeSession = refereeQuestions.slice(0, 9)
+    expect(() => verifyQuizReward({
+      quizId: 'referee-decisions-1', score: 9, total: 9, completionKey,
+      proof: { kind: 'scenario-choice', scenarioIds: refereeSession.map((question) => question.id!), answers: refereeSession.map((question) => question.answer) },
+    })).toThrow('Referee session proof is invalid')
+
+    expect(() => verifyQuizReward({
+      quizId: 'quiz-lab-odd-one-out', score: 1, total: 1, completionKey,
+      proof: { kind: 'quiz-lab', format: 'odd-one-out', round: 1, questionIds: ['odd-001'], answers: ['placeholder'] },
+    })).toThrow('Quiz Lab answer proof is incomplete')
+  })
+
   it('rejects a fabricated perfect score, unknown quizzes and fabricated lengths', () => {
     const wrongAnswers = refereeQuestions.map((question) => (question.answer + 1) % question.options.length)
     expect(() => verifyQuizReward({

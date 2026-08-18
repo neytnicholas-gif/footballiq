@@ -129,6 +129,20 @@ export function getLeagueWorldQuestions(key: string): LeagueWorldQuestion[] {
     `${relatedLeague.name} sits at a higher tier number`,
     'Neither competition belongs to a national league pyramid',
   ], leagueIndex + 21)
+  const completeRoomLabel = `${league.countryCode} · ${league.shortName} · ${league.confederation}`
+  const completeRoomLabelOptions = optionSet(completeRoomLabel, [
+    `${league.countryCode} · ${league.shortName} · ${differentConfederation}`,
+    `${league.countryCode} · ${tierLabels[differentTier]} · ${league.confederation}`,
+    `${footballLeagues.find((item) => item.countryCode !== league.countryCode)!.countryCode} · ${league.shortName} · ${league.confederation}`,
+    `${league.countryCode} · ${relatedLeague.shortName} · ${league.confederation}`,
+  ], leagueIndex + 23)
+  const completeProfile = `${league.name} — ${league.country}, ${tierLabels[league.tier].toLowerCase()}, ${league.confederation}`
+  const completeProfileOptions = optionSet(completeProfile, [
+    `${league.name} — ${wrongCountry}, ${tierLabels[league.tier].toLowerCase()}, ${league.confederation}`,
+    `${league.name} — ${league.country}, ${tierLabels[differentTier].toLowerCase()}, ${league.confederation}`,
+    `${league.name} — ${league.country}, ${tierLabels[league.tier].toLowerCase()}, ${differentConfederation}`,
+    `${relatedLeague.name} — ${league.country}, ${tierLabels[league.tier].toLowerCase()}, ${league.confederation}`,
+  ], leagueIndex + 25)
 
   return [
     { prompt: `Where is ${league.name} played?`, ...country, explanation: `${league.name} is played in ${league.country}.` },
@@ -143,8 +157,8 @@ export function getLeagueWorldQuestions(key: string): LeagueWorldQuestion[] {
     { prompt: `Which other competition in Quiz World is also covered by ${league.confederation}?`, ...regionalPeer, explanation: `${sameRegion.name} and ${league.name} are both in the ${league.confederation} region.` },
     { prompt: 'Which competition-to-confederation pairing is wrong?', options: rotatedRegionalPairs, answer: rotatedRegionalPairs.indexOf(regionalPairs[3]!), explanation: `${otherRegion.name} belongs to ${otherRegion.confederation}, not ${league.confederation}.` },
     { prompt: nationalPeer ? `Which other room belongs to the same national pyramid as ${league.name}?` : `Which room shares the same confederation as ${league.name}?`, ...related, explanation: nationalPeer ? `${relatedLeague.name} and ${league.name} are both played in ${league.country}.` : `${relatedLeague.name} and ${league.name} are both covered by ${league.confederation}.` },
-    { prompt: `Complete the room label: ${league.country} · ____ · ${league.confederation}.`, ...shortName, explanation: `${league.shortName} completes this Quiz World room label.` },
-    { prompt: `Which competition should you choose for this clue: “${league.identityClue} in the ${league.confederation} region”?`, ...identity, explanation: `Both clues identify ${league.name}.` },
+    { prompt: `Which complete room label is fully correct for ${league.name}?`, ...completeRoomLabelOptions, explanation: `${completeRoomLabel} combines the correct country code, competition label and confederation.` },
+    { prompt: `Which three-part profile of ${league.name} is accurate?`, ...completeProfileOptions, explanation: `${completeProfile} is the complete profile.` },
     { prompt: `Compare ${league.name} with ${relatedLeague.name}. Which tier statement is right?`, ...relationshipOptions, explanation: relationship },
   ]
 }

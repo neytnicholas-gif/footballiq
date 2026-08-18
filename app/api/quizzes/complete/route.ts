@@ -2,6 +2,7 @@ import { createClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
 import { isValidCompletionKey } from '@/lib/quiz-save'
 import { verifyQuizReward, type QuizCompletionClaim } from '@/lib/quiz-rules'
+import { claimSharedRateLimit } from '@/lib/server/shared-rate-limit'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -41,6 +42,17 @@ export async function POST(request: Request) {
     const body = await request.json() as Partial<QuizCompletionClaim>
     if (typeof body.completionKey !== 'string' || !isValidCompletionKey(body.completionKey)) {
       return NextResponse.json({ error: 'Invalid completion key.' }, { status: 400 })
+    }
+
+    stage = 'rate-limit'
+    const rateLimit = await claimSharedRateLimit({
+      scope: 'quiz-completion', subject: authData.user.id, limit: 120, windowSeconds: 60 * 60,
+    })
+    if (!rateLimit.allowed) {
+      return NextResponse.json({ error: 'Too many quiz results were submitted. Please try again later.' }, {
+        status: 429,
+        headers: { 'Retry-After': String(Math.max(1, Math.ceil((Date.parse(rateLimit.reset_at) - Date.now()) / 1000))) },
+      })
     }
 
     stage = 'reward-verification'

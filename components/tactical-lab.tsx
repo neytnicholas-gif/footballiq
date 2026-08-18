@@ -3,7 +3,9 @@
 import { useEffect, useMemo, useState } from 'react'
 import { ArrowRight, Check, Loader2, RotateCcw, Sparkles, Trophy, X } from 'lucide-react'
 import { useAuth } from '@/components/auth-provider'
+import { QuizDifficultyPicker, useQuizDifficulty } from '@/components/quiz-difficulty-picker'
 import { tacticalScenarios } from '@/lib/tactical-scenarios'
+import { buildQuizDifficultyIndex, filterQuizDifficulty, quizDifficultyCounts, quizXp } from '@/lib/quiz-difficulty'
 import { buildCompletionKey, createCompletionRunId, saveQuizResult } from '@/lib/quiz-save'
 import { createQuizSessionSeed, sampleBalancedQuizSession } from '@/lib/quiz-session'
 import { cn } from '@/lib/utils'
@@ -11,9 +13,16 @@ import { cn } from '@/lib/utils'
 const SESSION_SIZE = 10
 const SESSION_STORAGE_KEY = 'early-shout:tactical-session-seed'
 type RewardStatus = 'idle' | 'saving' | 'saved' | 'already' | 'error'
+const difficultyIndex = buildQuizDifficultyIndex(tacticalScenarios, {
+  id: (scenario) => scenario.id,
+  authored: (scenario) => scenario.difficulty,
+  text: (scenario) => `${scenario.prompt} ${scenario.context} ${scenario.options.join(' ')} ${scenario.explanation}`,
+})
+const difficultyCounts = quizDifficultyCounts(difficultyIndex)
 
 export function TacticalLab() {
   const { user, refreshProfile } = useAuth()
+  const { difficulty, setDifficulty, ready } = useQuizDifficulty('tactical-lab')
   const [sessionSeed, setSessionSeed] = useState<number | null>(null)
   const [index, setIndex] = useState(0)
   const [selected, setSelected] = useState<number | null>(null)
@@ -23,16 +32,16 @@ export function TacticalLab() {
   const [rewardStatus, setRewardStatus] = useState<RewardStatus>('idle')
   const scenarios = useMemo(
     () => sessionSeed === null ? [] : sampleBalancedQuizSession(
-      tacticalScenarios,
+      filterQuizDifficulty(tacticalScenarios, difficulty, difficultyIndex, (item) => item.id),
       SESSION_SIZE,
       sessionSeed,
       (item) => /^tac-(communication|fatigue|opponent-adjustment|one-touch|away-game|wet-surface|young-team|transition-reset)-\d{3}$/.test(item.id),
     ),
-    [sessionSeed],
+    [difficulty, sessionSeed],
   )
   const scenario = scenarios[index]
   const complete = Boolean(scenario) && index === scenarios.length - 1 && selected !== null
-  const xp = 20 + score * 10 + (score === scenarios.length ? 40 : 0)
+  const xp = quizXp(20 + score * 10 + (score === scenarios.length ? 40 : 0), difficulty)
 
   useEffect(() => {
     const frame = window.requestAnimationFrame(() => {
@@ -68,6 +77,11 @@ export function TacticalLab() {
     setRewardStatus('idle')
   }
 
+  function changeDifficulty(nextDifficulty: typeof difficulty) {
+    setDifficulty(nextDifficulty)
+    restart()
+  }
+
   async function save() {
     if (!user || !complete || rewardStatus === 'saving' || rewardStatus === 'saved' || rewardStatus === 'already') return
     setRewardStatus('saving')
@@ -77,7 +91,7 @@ export function TacticalLab() {
       total: scenarios.length,
       xp,
       completionKey: buildCompletionKey('tactical-lab-1', runKey),
-      proof: { kind: 'tactical-choice', scenarioIds: scenarios.map((item) => item.id), answers },
+      proof: { kind: 'tactical-choice', scenarioIds: scenarios.map((item) => item.id), answers, difficulty },
     })
     if (error) {
       setRewardStatus('error')
@@ -87,12 +101,13 @@ export function TacticalLab() {
     if (!alreadyCompleted) await refreshProfile()
   }
 
-  if (!scenario) {
+  if (!ready || !scenario) {
     return <div className="flex min-h-64 items-center justify-center gap-3 rounded-3xl border border-white/10 bg-slate-900/75 text-sm text-slate-300"><Loader2 className="size-4 animate-spin text-cyan-300" />Building a fresh Tactical Lab round…</div>
   }
 
   return (
     <div className="mx-auto max-w-4xl space-y-5">
+      <QuizDifficultyPicker value={difficulty} onChange={changeDifficulty} counts={difficultyCounts} disabled={index > 0 || selected !== null} />
       <div className="rounded-3xl border border-white/10 bg-slate-900/75 p-5 sm:p-6">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div><p className="text-xs font-bold uppercase tracking-[.2em] text-cyan-300">{scenario.category} · {scenario.difficulty}</p><h2 className="mt-2 text-2xl font-black text-white">{scenario.prompt}</h2></div>

@@ -7,6 +7,7 @@ import { clearQuizProgress, loadQuizProgress, saveQuizProgress } from '@/lib/qui
 import { getRankProgress } from '@/lib/progression'
 import { buildCompletionKey, createCompletionRunId, saveQuizResult } from '@/lib/quiz-save'
 import type { QuizProof } from '@/lib/quiz-proof'
+import { quizDifficultyMeta, quizXp, type QuizDifficulty } from '@/lib/quiz-difficulty'
 
 type Item = { prompt: string; options: string[]; answer: number; explanation: string }
 type RewardStatus = 'idle' | 'saving' | 'saved' | 'already' | 'error'
@@ -18,7 +19,7 @@ type ChoiceQuizLabels = {
   restartAction?: string
 }
 
-export function ChoiceQuiz({ quizId, title, items, labels, answerProof, onRestart }: { quizId: string; title: string; items: Item[]; labels?: ChoiceQuizLabels; answerProof?: (answers: number[]) => QuizProof; onRestart?: () => void }) {
+export function ChoiceQuiz({ quizId, title, items, labels, answerProof, onRestart, difficulty }: { quizId: string; title: string; items: Item[]; labels?: ChoiceQuizLabels; answerProof?: (answers: number[]) => QuizProof; onRestart?: () => void; difficulty?: QuizDifficulty }) {
   const { user, profile, refreshProfile } = useAuth()
   const unitSingular = labels?.unitSingular ?? 'Question'
   const nextAction = labels?.nextAction ?? 'Next question'
@@ -37,9 +38,10 @@ export function ChoiceQuiz({ quizId, title, items, labels, answerProof, onRestar
   const item = items[index]
   const finished = selected !== null && index === items.length - 1
   const accuracy = Math.round((score / items.length) * 100)
-  const baseXp = 20 + score * 10 + (score === items.length ? 40 : 0)
+  const baseXp = quizXp(20 + score * 10 + (score === items.length ? 40 : 0), difficulty ?? 'normal')
   const creditedXp = rewardStatus === 'saved' ? baseXp : 0
   const rank = getRankProgress((profile?.xp ?? 0) + creditedXp)
+  const progressQuizId = difficulty ? `${quizId}:${difficulty}` : quizId
 
   useEffect(() => {
     let active = true
@@ -58,7 +60,7 @@ export function ChoiceQuiz({ quizId, title, items, labels, answerProof, onRestar
 
     setCheckingProgress(true)
     void (async () => {
-      const progress = await loadQuizProgress(quizId)
+      const progress = await loadQuizProgress(progressQuizId)
       if (!active) return
       const savedState = progress?.progress as { index?: number; selected?: number | null; score?: number; answers?: number[] } | undefined
       const savedIndex = typeof savedState?.index === 'number' && Number.isInteger(savedState.index) ? savedState.index : null
@@ -78,7 +80,7 @@ export function ChoiceQuiz({ quizId, title, items, labels, answerProof, onRestar
     return () => {
       active = false
     }
-  }, [items.length, quizId, user])
+  }, [items.length, progressQuizId, user])
 
   function choose(i: number) {
     // Prevent a fast first answer from racing the saved-progress lookup and
@@ -90,7 +92,7 @@ export function ChoiceQuiz({ quizId, title, items, labels, answerProof, onRestar
     setScore(nextScore)
     setAnswers(nextAnswers)
     void saveQuizProgress({
-      quizId,
+      quizId: progressQuizId,
       currentIndex: index,
       score: nextScore,
       total: items.length,
@@ -106,7 +108,7 @@ export function ChoiceQuiz({ quizId, title, items, labels, answerProof, onRestar
     if (!error) {
       setSaved(true)
       setRewardStatus(alreadyCompleted ? 'already' : 'saved')
-      void clearQuizProgress(quizId)
+      void clearQuizProgress(progressQuizId)
       if (!alreadyCompleted) await refreshProfile()
     } else {
       setRewardStatus('error')
@@ -119,7 +121,7 @@ export function ChoiceQuiz({ quizId, title, items, labels, answerProof, onRestar
     setIndex(nextIndex)
     setSelected(null)
     void saveQuizProgress({
-      quizId,
+      quizId: progressQuizId,
       currentIndex: nextIndex,
       score,
       total: items.length,
@@ -136,7 +138,7 @@ export function ChoiceQuiz({ quizId, title, items, labels, answerProof, onRestar
     setRewardStatus('idle')
     setRunKey(createCompletionRunId())
     setResumeState(null)
-    void clearQuizProgress(quizId)
+    void clearQuizProgress(progressQuizId)
     onRestart?.()
   }
 
@@ -151,7 +153,7 @@ export function ChoiceQuiz({ quizId, title, items, labels, answerProof, onRestar
 
   return <div className="rounded-3xl border border-border bg-card p-5 sm:p-8">
     {checkingProgress ? <div className="mb-5 rounded-2xl border border-border bg-secondary/30 p-4 text-sm text-muted-foreground">Checking saved progress…</div> : resumeState && !saved ? <div className="mb-5"><QuizProgressBanner title="Resume your quiz?" copy={`You left off at ${unitSingular.toLowerCase()} ${resumeState.index + 1} of ${items.length}.`} onContinue={continueProgress} onStartAgain={restart} /></div> : null}
-    <div className="flex items-center justify-between gap-4 border-b border-border pb-5"><div><p className="text-sm text-muted-foreground">{unitSingular} {index + 1} of {items.length}</p><h2 className="mt-1 text-2xl font-semibold">{title}</h2></div><div className="rounded-xl bg-secondary px-4 py-2">Score <strong className="ml-2 text-primary">{score}</strong></div></div>
+    <div className="flex items-center justify-between gap-4 border-b border-border pb-5"><div><p className="text-sm text-muted-foreground">{unitSingular} {index + 1} of {items.length}</p><h2 className="mt-1 text-2xl font-semibold">{title}</h2>{difficulty ? <p className="mt-1 text-xs font-bold text-primary">{quizDifficultyMeta[difficulty].label} · {quizDifficultyMeta[difficulty].xpMultiplier}× XP</p> : null}</div><div className="rounded-xl bg-secondary px-4 py-2">Score <strong className="ml-2 text-primary">{score}</strong></div></div>
     <h3 className="mt-7 text-xl font-semibold leading-relaxed">{item.prompt}</h3>
     <div className="mt-5 grid gap-3">{item.options.map((option, i) => {
       const correct = selected !== null && i === item.answer

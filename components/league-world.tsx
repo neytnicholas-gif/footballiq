@@ -4,16 +4,23 @@ import Link from 'next/link'
 import { useMemo, useState } from 'react'
 import { ArrowRight, BookOpenCheck, Globe2, Search, ShieldCheck, Users } from 'lucide-react'
 import { ChoiceQuiz } from '@/components/choice-quiz'
+import { QuizDifficultyPicker, useQuizDifficulty } from '@/components/quiz-difficulty-picker'
 import { footballLeagues, getLeagueWorldQuestions } from '@/lib/football-leagues'
+import { quizDifficulties, type QuizDifficulty } from '@/lib/quiz-difficulty'
 
 const regions = ['All', 'UEFA', 'CONCACAF', 'CONMEBOL', 'AFC'] as const
 
 export function LeagueWorld() {
+  const { difficulty, setDifficulty, ready } = useQuizDifficulty('league-world')
   const [selectedKey, setSelectedKey] = useState('premier-league')
   const [region, setRegion] = useState<(typeof regions)[number]>('All')
   const [search, setSearch] = useState('')
   const selected = footballLeagues.find((league) => league.key === selectedKey) ?? footballLeagues[0]!
-  const questions = useMemo(() => getLeagueWorldQuestions(selected.key), [selected.key])
+  const allQuestions = useMemo(() => getLeagueWorldQuestions(selected.key), [selected.key])
+  const difficultyNumber = quizDifficulties.indexOf(difficulty)
+  const questionIndexes = useMemo(() => Array.from({ length: 3 }, (_, offset) => difficultyNumber * 3 + offset), [difficultyNumber])
+  const questions = useMemo(() => questionIndexes.map((questionIndex) => allQuestions[questionIndex]!), [allQuestions, questionIndexes])
+  const difficultyCounts = useMemo(() => Object.fromEntries(quizDifficulties.map((level) => [level, 3])) as Record<QuizDifficulty, number>, [])
   const filtered = useMemo(() => footballLeagues.filter((league) => {
     const regionMatch = region === 'All' || league.confederation === region
     const query = search.trim().toLowerCase()
@@ -28,11 +35,11 @@ export function LeagueWorld() {
           <div>
             <p className="text-xs font-black uppercase tracking-[.2em] text-cyan-300">Now playing</p>
             <h2 className="mt-2 text-3xl font-black text-white">{selected.name}</h2>
-            <p className="mt-2 text-sm text-slate-300">Fifteen quick questions. Learn where the league sits, then remember the clues.</p>
+            <p className="mt-2 text-sm text-slate-300">Choose a level and answer three focused questions. Play every level to master all fifteen clues.</p>
           </div>
           <span className="inline-flex w-fit items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-2 text-xs font-bold text-slate-200"><span className="rounded-md bg-cyan-300 px-2 py-1 text-slate-950">{selected.countryCode}</span>{selected.country} · Tier {selected.tier}</span>
         </div>
-        <ChoiceQuiz key={selected.key} quizId={`league-world-${selected.key}`} title={`${selected.shortName} room`} items={questions} labels={{ nextAction: 'Next question', finishAction: 'Finish and save XP', restartAction: 'Play this room again' }} />
+        {ready ? <div className="space-y-5"><QuizDifficultyPicker value={difficulty} onChange={setDifficulty} counts={difficultyCounts} /><ChoiceQuiz key={`${selected.key}:${difficulty}`} quizId={`league-world-${selected.key}`} title={`${selected.shortName} room`} items={questions} labels={{ nextAction: 'Next question', finishAction: 'Finish and save XP', restartAction: 'Play this room again' }} difficulty={difficulty} answerProof={(answers) => ({ kind: 'choice', answers, questionIndexes, difficulty })} /></div> : <div className="min-h-64 rounded-3xl border border-white/10 bg-slate-900/60" />}
       </section>
 
       <section className="rounded-[1.75rem] border border-slate-700/70 bg-slate-900/60 p-5 sm:p-7">

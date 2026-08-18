@@ -6,7 +6,7 @@ import { careerQuestionBank, whoAmIQuestionBank } from './player-knowledge-bank'
 export type HigherLowerItem = { name: string; value: number; detail: string }
 export type WhoAmIQuestion = { answer: string; aliases?: string[]; clues: string[] }
 export type CareerQuestion = { answer: string; aliases?: string[]; clubs: string[]; hint: string }
-export type RefereeQuestion = { id?: string; scenario: string; options: string[]; answer: number; explanation: string }
+export type RefereeQuestion = { id?: string; scenario: string; options: string[]; answer: number; explanation: string; difficulty?: 'Easy' | 'Medium' | 'Hard' }
 export type ScoutDecision = 'Strongly follow' | 'Follow' | 'Monitor' | 'Do not pursue'
 export type ScoutQaVerdict = 'launch-ready' | 'needs improvement' | 'replace'
 
@@ -31,6 +31,7 @@ export type ScoutQuestion = {
   qaVerdict: ScoutQaVerdict
   qaConcern: string
   qaRevision: string
+  difficulty?: 'Starter' | 'Sharp' | 'Expert'
 }
 
 const legacyHigherLowerItems: HigherLowerItem[] = [
@@ -104,6 +105,7 @@ export const refereeQuestions: RefereeQuestion[] = refereeScenarios.map((scenari
   options: scenario.options,
   answer: scenario.options.indexOf(scenario.answer),
   explanation: `${scenario.explanation} Principle: ${scenario.principle}`,
+  difficulty: scenario.difficulty,
 }))
 
 const baseScoutQuestions: ScoutQuestion[] = [
@@ -358,5 +360,6 @@ export const scoutQuestions: ScoutQuestion[] = [
     qaVerdict: 'launch-ready' as const,
     qaConcern: 'Synthetic fictional dossier; never present it as a real player report.',
     qaRevision: 'Retain context, uncertainty and missing-evidence language in every version.',
+    difficulty: scenario.difficulty,
   })),
 ]

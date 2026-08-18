@@ -5,9 +5,17 @@ import { calculateDuelXp } from '@/lib/progression'
 import type { QuizProof } from '@/lib/quiz-proof'
 import { expandedScoutScenarios } from '@/lib/scout-scenario-expansion'
 import { getLeagueWorldQuestions } from '@/lib/football-leagues'
-import { getQuizLabRound, quizLabCorrectAnswer, type QuizLabFormat } from '@/lib/quiz-lab'
+import { getQuizLabRound, quizLabCorrectAnswer, quizLabQuestionBank, type QuizLabFormat } from '@/lib/quiz-lab'
 import { getCareerRound, getWhoAmIRound, playerGuessMatches } from '@/lib/player-knowledge-bank'
 import { tacticalScenarios } from '@/lib/tactical-scenarios'
+import {
+  assertQuizDifficultySelection,
+  buildQuizDifficultyIndex,
+  isQuizDifficulty,
+  quizDifficulties,
+  quizXp,
+  type QuizDifficulty,
+} from '@/lib/quiz-difficulty'
 
 export type QuizCompletionClaim = {
   quizId: string
@@ -31,6 +39,34 @@ const QUIZ_LAB_ID = /^quiz-lab-(odd-one-out|truth-trap|order-the-play|link-up|fo
 const CAREER_PATH_ID = /^career-path-(\d+)$/
 const WHO_AM_I_ID = /^who-am-i-(\d+)$/
 const HIGHER_LOWER_ID = /^higher-lower-([a-z0-9-]+)$/
+const REFEREE_SESSION_SIZE = 10
+const TACTICAL_SESSION_SIZE = 10
+const SCOUT_SESSION_SIZE = 10
+const QUIZ_LAB_SESSION_SIZE = 12
+
+const refereeDifficultyIndex = buildQuizDifficultyIndex(refereeQuestions, {
+  id: (question) => question.id!,
+  authored: (question) => question.difficulty ?? 'Medium',
+  text: (question) => `${question.scenario} ${question.options.join(' ')} ${question.explanation}`,
+})
+const tacticalDifficultyIndex = buildQuizDifficultyIndex(tacticalScenarios, {
+  id: (scenario) => scenario.id,
+  authored: (scenario) => scenario.difficulty,
+  text: (scenario) => `${scenario.prompt} ${scenario.context} ${scenario.options.join(' ')} ${scenario.explanation}`,
+})
+const scoutDifficultyIndex = buildQuizDifficultyIndex(scoutQuestions, {
+  id: (question) => question.id,
+  authored: (question) => question.difficulty ?? 'Sharp',
+  text: (question) => `${question.title} ${question.summary} ${question.profile.join(' ')} ${question.concerns} ${question.missingInformation}`,
+})
+const quizLabDifficultyIndexes = Object.fromEntries(Object.entries(quizLabQuestionBank).map(([format, questions]) => [
+  format,
+  buildQuizDifficultyIndex(questions, {
+    id: (question) => question.id,
+    authored: (question) => question.difficulty,
+    text: (question) => `${question.prompt} ${question.explanation} ${question.takeaway}`,
+  }),
+])) as Record<QuizLabFormat, Map<string, QuizDifficulty>>
 
 function integer(value: unknown, label: string) {
   if (typeof value !== 'number' || !Number.isSafeInteger(value)) {
@@ -46,6 +82,17 @@ function assertResult(score: number, total: number, expectedTotal: number) {
 
 function standardXp(score: number, total: number) {
   return 20 + score * 10 + (score === total ? 40 : 0)
+}
+
+function selectedDifficulty(proof: QuizProof): QuizDifficulty | null {
+  if (proof.difficulty === undefined) return null
+  if (!isQuizDifficulty(proof.difficulty)) throw new Error('Quiz difficulty is invalid.')
+  return proof.difficulty
+}
+
+function difficultyXp(baseXp: number, proof: QuizProof) {
+  const difficulty = selectedDifficulty(proof)
+  return difficulty ? quizXp(baseXp, difficulty) : baseXp
 }
 
 function requireProof<K extends QuizProof['kind']>(proof: QuizProof, kind: K) {
@@ -99,15 +146,17 @@ export function verifyQuizReward(claim: QuizCompletionClaim): VerifiedQuizReward
   if (quizId === 'referee-decisions-1') {
     if (claim.proof.kind === 'scenario-choice') {
       const proof = requireProof(claim.proof, 'scenario-choice')
-      if (proof.scenarioIds.length < 1 || proof.scenarioIds.length > 20 || new Set(proof.scenarioIds).size !== proof.scenarioIds.length) throw new Error('Referee session proof is invalid.')
+      if (proof.scenarioIds.length !== REFEREE_SESSION_SIZE || new Set(proof.scenarioIds).size !== proof.scenarioIds.length) throw new Error('Referee session proof is invalid.')
       assertResult(score, total, proof.scenarioIds.length)
       const correct = proof.scenarioIds.map((scenarioId) => {
         const question = refereeQuestions.find((item) => item.id === scenarioId)
         if (!question) throw new Error('Referee session contains an unknown scenario.')
         return question.answer
       })
+      const difficulty = selectedDifficulty(proof)
+      if (difficulty) assertQuizDifficultySelection(proof.scenarioIds, difficulty, refereeDifficultyIndex)
       const verifiedScore = assertClaimedScore(score, scoreChoiceAnswers(proof.answers, correct))
-      return { ...claim, quizId, score: verifiedScore, total, xp: standardXp(verifiedScore, total) }
+      return { ...claim, quizId, score: verifiedScore, total, xp: difficultyXp(standardXp(verifiedScore, total), proof) }
     }
     const proof = requireProof(claim.proof, 'choice')
     assertResult(score, total, refereeQuestions.length)
@@ -117,7 +166,7 @@ export function verifyQuizReward(claim: QuizCompletionClaim): VerifiedQuizReward
 
   if (quizId === 'tactical-lab-1') {
     const proof = requireProof(claim.proof, 'tactical-choice')
-    if (proof.scenarioIds.length !== 10 || new Set(proof.scenarioIds).size !== proof.scenarioIds.length) {
+    if (proof.scenarioIds.length !== TACTICAL_SESSION_SIZE || new Set(proof.scenarioIds).size !== proof.scenarioIds.length) {
       throw new Error('Tactical session proof is invalid.')
     }
     assertResult(score, total, proof.scenarioIds.length)
@@ -126,8 +175,10 @@ export function verifyQuizReward(claim: QuizCompletionClaim): VerifiedQuizReward
       if (!scenario) throw new Error('Tactical session contains an unknown scenario.')
       return scenario.answer
     })
+    const difficulty = selectedDifficulty(proof)
+    if (difficulty) assertQuizDifficultySelection(proof.scenarioIds, difficulty, tacticalDifficultyIndex)
     const verifiedScore = assertClaimedScore(score, scoreChoiceAnswers(proof.answers, correct))
-    return { ...claim, quizId, score: verifiedScore, total, xp: standardXp(verifiedScore, total) }
+    return { ...claim, quizId, score: verifiedScore, total, xp: difficultyXp(standardXp(verifiedScore, total), proof) }
   }
 
   const dailyMatch = DAILY_QUIZ_ID.exec(quizId)
@@ -195,13 +246,21 @@ export function verifyQuizReward(claim: QuizCompletionClaim): VerifiedQuizReward
 
   if (quizId === 'would-you-scout-1') {
     const proof = requireProof(claim.proof, 'scout-dossier')
-    assertResult(score, total, scoutQuestions.length * 2)
-    if (proof.answers.length !== scoutQuestions.length) throw new Error('Quiz answer proof is incomplete.')
+    const questions = proof.scenarioIds?.map((scenarioId) => {
+      const question = scoutQuestions.find((item) => item.id === scenarioId)
+      if (!question) throw new Error('Scout session contains an unknown dossier.')
+      return question
+    }) ?? scoutQuestions
+    if (new Set(questions.map((question) => question.id)).size !== questions.length || (proof.scenarioIds && questions.length !== SCOUT_SESSION_SIZE)) throw new Error('Scout session proof is invalid.')
+    assertResult(score, total, questions.length * 2)
+    if (proof.answers.length !== questions.length) throw new Error('Quiz answer proof is incomplete.')
+    const difficulty = selectedDifficulty(proof)
+    if (difficulty) assertQuizDifficultySelection(questions.map((question) => question.id), difficulty, scoutDifficultyIndex)
     const verifiedScore = assertClaimedScore(score, proof.answers.reduce((sum, answer, index) => {
-      const question = scoutQuestions[index]!
+      const question = questions[index]!
       return sum + (answer === question.strongestDecision ? 2 : answer === question.defensibleAlternative ? 1 : 0)
     }, 0))
-    return { ...claim, quizId, score: verifiedScore, total, xp: 30 + verifiedScore * 6 }
+    return { ...claim, quizId, score: verifiedScore, total, xp: difficultyXp(30 + verifiedScore * 6, proof) }
   }
 
   if (quizId === 'would-you-scout-v1') {
@@ -214,12 +273,24 @@ export function verifyQuizReward(claim: QuizCompletionClaim): VerifiedQuizReward
 
   const leagueWorldMatch = LEAGUE_WORLD_QUIZ_ID.exec(quizId)
   if (leagueWorldMatch) {
-    const questions = getLeagueWorldQuestions(leagueWorldMatch[1]!)
-    if (!questions.length) throw new Error('Unknown league room.')
+    const allQuestions = getLeagueWorldQuestions(leagueWorldMatch[1]!)
+    if (!allQuestions.length) throw new Error('Unknown league room.')
     const proof = requireProof(claim.proof, 'choice')
+    const questions = proof.questionIndexes?.map((questionIndex) => {
+      const index = integer(questionIndex, 'Question index')
+      const question = allQuestions[index]
+      if (!question) throw new Error('League World session contains an unknown question.')
+      return question
+    }) ?? allQuestions
+    if (proof.questionIndexes && (new Set(proof.questionIndexes).size !== proof.questionIndexes.length || proof.questionIndexes.length !== 3)) throw new Error('League World session proof is invalid.')
+    const difficulty = selectedDifficulty(proof)
+    if (difficulty) {
+      const expectedStart = quizDifficulties.indexOf(difficulty) * 3
+      if (!proof.questionIndexes || proof.questionIndexes.some((index) => index < expectedStart || index >= expectedStart + 3)) throw new Error('Quiz answer proof contains a question outside the chosen difficulty.')
+    }
     assertResult(score, total, questions.length)
     const verifiedScore = assertClaimedScore(score, scoreChoiceAnswers(proof.answers, questions.map((question) => question.answer)))
-    return { ...claim, quizId, score: verifiedScore, total, xp: standardXp(verifiedScore, total) }
+    return { ...claim, quizId, score: verifiedScore, total, xp: difficultyXp(standardXp(verifiedScore, total), proof) }
   }
 
   const quizLabMatch = QUIZ_LAB_ID.exec(quizId)
@@ -227,15 +298,21 @@ export function verifyQuizReward(claim: QuizCompletionClaim): VerifiedQuizReward
     const format = quizLabMatch[1] as QuizLabFormat
     const proof = requireProof(claim.proof, 'quiz-lab')
     const round = proof.round ?? 1
-    const questions = getQuizLabRound(format, round)
+    const questions = proof.questionIds?.map((questionId) => {
+      const question = quizLabQuestionBank[format].find((item) => item.id === questionId)
+      if (!question) throw new Error('Quiz Lab session contains an unknown question.')
+      return question
+    }) ?? getQuizLabRound(format, round)
     assertResult(score, total, questions.length)
-    if (proof.format !== format || proof.answers.length !== questions.length || proof.answers.some((answer) => typeof answer !== 'string')) {
+    if (proof.format !== format || questions.length !== QUIZ_LAB_SESSION_SIZE || new Set(questions.map((question) => question.id)).size !== questions.length || proof.answers.length !== questions.length || proof.answers.some((answer) => typeof answer !== 'string')) {
       throw new Error('Quiz Lab answer proof is incomplete.')
     }
+    const difficulty = selectedDifficulty(proof)
+    if (difficulty) assertQuizDifficultySelection(questions.map((question) => question.id), difficulty, quizLabDifficultyIndexes[format])
     const verifiedScore = assertClaimedScore(score, proof.answers.reduce((sum, answer, index) => (
       sum + (answer === quizLabCorrectAnswer(questions[index]!) ? 1 : 0)
     ), 0))
-    return { ...claim, quizId, score: verifiedScore, total, xp: standardXp(verifiedScore, total) }
+    return { ...claim, quizId, score: verifiedScore, total, xp: difficultyXp(standardXp(verifiedScore, total), proof) }
   }
 
   const duel = duelPacks.find((pack) => pack.id === quizId)

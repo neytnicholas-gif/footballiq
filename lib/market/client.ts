@@ -260,30 +260,14 @@ export async function loadMarketSettings() {
 }
 
 export async function loadPlayerSeasonStats(playerId: number) {
-  const { data: playerRow, error: playerError } = await supabase
-    .from('market_players')
-    .select('id')
-    // The checked-in generated types predate the normalized provider schema deployed to staging.
-    // @ts-expect-error app_player_id exists in the verified staging schema.
-    .eq('app_player_id', playerId)
-    .maybeSingle()
-
-  if (playerError || !playerRow) {
-    return {
-      data: [],
-      error: isMarketBackendUnavailable(playerError) || isPermissionDenied(playerError) ? null : playerError as Error | null,
-    }
-  }
-
-  const { data, error } = await supabase
-    .from('player_season_stats')
-    .select('player_id,season_id,appearances,starts,minutes_played,goals,assists,clean_sheets,yellow_cards,red_cards,average_rating_milli,source_through_at,updated_at')
-    .eq('player_id', playerRow.id)
-    .order('season_id', { ascending: false })
+  const { data, error } = await (supabase as any).rpc('market_public_player_detail_v1', {
+    p_app_player_id: playerId,
+  })
+  const detail = data as { season_stats?: unknown } | null
 
   return {
-    data: mapNormalizedSeasonStats(data, playerId),
-    error: isMarketBackendUnavailable(error) ? null : error as Error | null,
+    data: mapNormalizedSeasonStats(detail?.season_stats, playerId),
+    error: isMarketBackendUnavailable(error) || isPermissionDenied(error) ? null : error as Error | null,
   }
 }
 
@@ -836,15 +820,13 @@ function parseOpeningPriceExplanation(row: OpeningPriceRow): MarketOpeningPriceE
 }
 
 export async function loadPlayerOpeningPriceExplanation(playerId: number) {
-  const { data, error } = await supabase
-    .from('market_players')
-    .select('initial_price_minor,opening_price_method_version,opening_price_confidence,opening_price_evidence')
-    // @ts-expect-error app_player_id exists in the normalized production schema.
-    .eq('app_player_id', playerId)
-    .maybeSingle()
-  if (error || !data) return { data: null, error: error as Error | null }
+  const { data, error } = await (supabase as any).rpc('market_public_player_detail_v1', {
+    p_app_player_id: playerId,
+  })
+  const row = (data as { opening_price?: OpeningPriceRow | null } | null)?.opening_price
+  if (error || !row) return { data: null, error: error as Error | null }
 
-  const explanation = parseOpeningPriceExplanation(data as unknown as OpeningPriceRow)
+  const explanation = parseOpeningPriceExplanation(row)
   return {
     data: explanation,
     error: explanation ? null : new Error('The opening-price explanation did not pass its integrity check.'),

@@ -193,7 +193,7 @@ export function PlayerMarketDetail({
             <div className="mt-4 space-y-4">
               {stats.slice(0, 2).map((row) => (
                 <div key={row.id} className="rounded-2xl border border-white/10 bg-black/15 p-4">
-                  <p className="font-semibold">{row.season} · {row.competition_label}</p>
+                  <p className="font-semibold">{player.competition_name ?? 'Current league'} · Current season</p>
                   <div className="mt-3 grid grid-cols-2 gap-2 text-sm sm:grid-cols-3">
                     <Stat label="Appearances" value={row.appearances} />
                     <Stat label="Starts" value={row.starts} />

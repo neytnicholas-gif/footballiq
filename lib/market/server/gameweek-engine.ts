@@ -20,6 +20,24 @@ async function processBatch(admin: ReturnType<typeof adminClient>, gameweek: Spo
     started_at: new Date().toISOString(), finished_at: null, report: null, error_message: null,
   }, { onConflict: 'run_key' })
 
+  const { data: correctionData, error: correctionError } = await admin.rpc('market_apply_verified_rating_corrections', {
+    p_gameweek_key: gameweek.gameweekKey,
+    p_updates: gameweek.updates,
+  })
+  if (correctionError) {
+    await admin.from('market_processing_runs').update({ status: 'failed', finished_at: new Date().toISOString(), error_message: correctionError.message }).eq('run_key', runKey)
+    throw new Error(`Verified rating correction failed: ${correctionError.message}`)
+  }
+  const correctionReport = (correctionData ?? {}) as Record<string, unknown>
+  const failedCorrections = Array.isArray(correctionReport.failed_items) ? correctionReport.failed_items : []
+  if (failedCorrections.length > 0) {
+    const message = `${failedCorrections.length} corrected player rating(s) failed and will be retried.`
+    await admin.from('market_processing_runs').update({
+      status: 'failed', finished_at: new Date().toISOString(), report: { correctionReport }, error_message: message,
+    }).eq('run_key', runKey)
+    throw new Error(message)
+  }
+
   const { data, error } = await admin.rpc('market_apply_verified_gameweek', {
     p_gameweek_key: gameweek.gameweekKey,
     p_week_label: gameweek.label,
@@ -32,7 +50,8 @@ async function processBatch(admin: ReturnType<typeof adminClient>, gameweek: Spo
     await admin.from('market_processing_runs').update({ status: 'failed', finished_at: new Date().toISOString(), error_message: error.message }).eq('run_key', runKey)
     throw new Error(`Verified gameweek processing failed: ${error.message}`)
   }
-  const report = (data ?? {}) as Record<string, unknown>
+  const report: Record<string, unknown> = { ...((data ?? {}) as Record<string, unknown>), correctionReport }
+  if (Number(correctionReport.corrected_players ?? 0) > 0) report.unchanged = false
   const failedItems = Array.isArray(report.failed_items) ? report.failed_items : []
   if (failedItems.length > 0) {
     const message = `${failedItems.length} player update(s) failed and will be retried.`
@@ -67,12 +86,27 @@ async function processBatch(admin: ReturnType<typeof adminClient>, gameweek: Spo
   return { unchanged: false, ...report }
 }
 
-export async function processLatestVerifiedGameweek() {
+export async function processLatestVerifiedGameweek(options: { skipIfCompletedToday?: boolean } = {}) {
   const startedAt = Date.now()
   let providerTelemetry: SportmonksRequestTelemetry = { requestsMade: 0, rateLimits: [] }
   let predictionTelemetry: SportmonksRequestTelemetry = { requestsMade: 0, rateLimits: [] }
   const admin = adminClient()
   const heartbeatRunKey = `verified-gameweek-heartbeat:${new Date().toISOString().slice(0, 10)}`
+  if (options.skipIfCompletedToday) {
+    const { data: completedRun, error: completedRunError } = await admin
+      .from('market_processing_runs')
+      .select('status,report,finished_at')
+      .eq('run_key', heartbeatRunKey)
+      .maybeSingle()
+    if (completedRunError) throw new Error(`Gameweek retry state is unavailable: ${completedRunError.message}`)
+    if (completedRun?.status === 'completed') {
+      return {
+        alreadyCompleted: true,
+        finishedAt: completedRun.finished_at,
+        previousReport: completedRun.report ?? null,
+      }
+    }
+  }
   const { error: heartbeatError } = await admin.from('market_processing_runs').upsert({
     run_key: heartbeatRunKey, run_type: 'verified_gameweek', status: 'processing', dry_run: false,
     started_at: new Date().toISOString(), finished_at: null, report: null, error_message: null,
@@ -112,12 +146,19 @@ export async function processLatestVerifiedGameweek() {
     if (predictionScoringError) throw new Error(`Prediction scoring failed: ${predictionScoringError.message}`)
 
     const cutoff = new Date(Math.max(Date.now() - 28 * 86_400_000, Date.parse(valuationEligibleFrom))).toISOString()
+    // Sportmonks can correct a completed rating shortly after full time. Recent
+    // rows are deliberately re-fetched; only settled rows older than 72 hours
+    // are skipped by provider fixture/player identity.
+    const correctionWindowCutoff = new Date(Date.now() - 72 * 60 * 60_000).toISOString()
     const processedPerformanceKeys = new Set<string>()
     for (let from = 0; ; from += 1_000) {
       const { data: processedRows, error: processedError } = await admin
         .from('market_player_match_stats')
-        .select('provider_fixture_id,player:market_players!inner(provider_player_id)')
+        .select('id,provider_fixture_id,player:market_players!inner(provider_player_id)')
         .gte('fixture_date', cutoff)
+        .lte('fixture_date', correctionWindowCutoff)
+        .order('fixture_date', { ascending: true })
+        .order('id', { ascending: true })
         .range(from, from + 999)
       if (processedError) throw new Error(`Processed-performance lookup failed: ${processedError.message}`)
       for (const row of processedRows ?? []) {
@@ -150,6 +191,14 @@ export async function processLatestVerifiedGameweek() {
       status: 'failed', finished_at: new Date().toISOString(),
       report: { durationMs: Date.now() - startedAt, providerTelemetry, predictionTelemetry }, error_message: message,
     }).eq('run_key', heartbeatRunKey)
+    console.error(JSON.stringify({
+      event: 'market.gameweek.failed',
+      heartbeatRunKey,
+      durationMs: Date.now() - startedAt,
+      providerTelemetry,
+      predictionTelemetry,
+      error: message,
+    }))
     throw error
   }
 }
