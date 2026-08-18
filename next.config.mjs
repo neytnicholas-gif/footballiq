@@ -9,6 +9,8 @@ const nextConfig = {
     unoptimized: true,
   },
   async headers() {
+    const scriptSources = ["'self'", "'unsafe-inline'", 'https://va.vercel-scripts.com']
+    if (process.env.NODE_ENV !== 'production') scriptSources.push("'unsafe-eval'")
     const contentSecurityPolicy = [
       "default-src 'self'",
       "base-uri 'self'",
@@ -18,7 +20,7 @@ const nextConfig = {
       "img-src 'self' data: blob: https:",
       "font-src 'self' data: https://fonts.gstatic.com",
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-      "script-src 'self' 'unsafe-inline' https://va.vercel-scripts.com",
+      `script-src ${scriptSources.join(' ')}`,
       "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://vitals.vercel-insights.com https://*.vercel-insights.com",
       "upgrade-insecure-requests",
     ].join('; ')

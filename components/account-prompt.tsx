@@ -9,6 +9,7 @@ import { useAuth } from '@/components/auth-provider'
 const DISMISS_KEY = 'footballiq-account-prompt-dismissed-v1'
 
 const blockedPaths = ['/login', '/signup', '/auth/callback', '/username', '/profile']
+const playPaths = ['/quizzes', '/daily', '/predictions']
 
 export function AccountPrompt() {
   const { user, loading } = useAuth()
@@ -31,13 +32,14 @@ export function AccountPrompt() {
 
   useEffect(() => {
     if (!mounted || loading || user || dismissed) return
-    const timer = window.setTimeout(() => setReadyToShow(true), 8000)
+    const timer = window.setTimeout(() => setReadyToShow(true), 30000)
     return () => window.clearTimeout(timer)
   }, [dismissed, loading, mounted, user])
 
   const hidden = useMemo(() => {
     if (!pathname) return true
-    return blockedPaths.some((path) => pathname === path || pathname.startsWith(`${path}/`))
+    if (pathname === '/') return true
+    return [...blockedPaths, ...playPaths].some((path) => pathname === path || pathname.startsWith(`${path}/`))
   }, [pathname])
 
   function dismiss() {

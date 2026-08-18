@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { ArrowRight, CalendarDays, Flag, Radar, ShieldCheck, Smartphone, Sparkles, Trophy, Workflow } from 'lucide-react'
+import { ArrowRight, CalendarDays, Flag, Gamepad2, Play, Radar, ShieldCheck, Smartphone, Sparkles, Trophy, UserPlus, Workflow, Zap } from 'lucide-react'
 import { SiteHeader } from '@/components/site-header'
 import { SponsorPlacement } from '@/components/sponsor-placement'
 import { useAuth } from '@/components/auth-provider'
@@ -82,15 +82,61 @@ export default function HomePage() {
                 See it early. Make the call. Build your football eye through quick decisions, challenges and the Player Market.
               </p>
 
-              <div className="mt-7 flex flex-wrap items-center gap-3">
-                <Link href="/quizzes/referee-decisions" className="inline-flex h-11 items-center gap-2 rounded-xl bg-emerald-400 px-6 text-sm font-semibold text-slate-950 shadow-[0_18px_46px_-20px_rgba(16,185,129,.55)] transition hover:-translate-y-0.5 hover:bg-emerald-300">
-                  Make a decision
-                  <ArrowRight className="size-4" />
+              <div className="mt-7 overflow-hidden rounded-[1.6rem] border border-emerald-300/30 bg-[linear-gradient(135deg,rgba(16,185,129,.16),rgba(14,116,144,.1),rgba(255,255,255,.03))] p-4 shadow-[0_24px_70px_-38px_rgba(52,211,153,.8)] sm:p-5">
+                <div className="flex items-start gap-3">
+                  <span className="relative mt-0.5 grid size-11 shrink-0 place-items-center rounded-2xl bg-emerald-300 text-slate-950 shadow-[0_10px_32px_-12px_rgba(110,231,183,.95)]">
+                    <span aria-hidden="true" className="absolute inset-0 rounded-2xl ring-4 ring-emerald-300/15 motion-safe:animate-pulse" />
+                    <Gamepad2 className="size-5" aria-hidden="true" />
+                  </span>
+                  <div>
+                    <p className="text-[11px] font-black uppercase tracking-[0.2em] text-emerald-200">Best first game</p>
+                    <h2 className="mt-1 text-xl font-black tracking-tight text-white">One stat. Two players. Your shout.</h2>
+                    <p className="mt-1 text-sm leading-5 text-slate-300">Ten quick Football Duels with the answer shown straight away.</p>
+                  </div>
+                </div>
+                <div className="mt-4 flex flex-wrap gap-2 text-[11px] font-bold text-emerald-100/85">
+                  <span className="rounded-full border border-white/10 bg-black/15 px-2.5 py-1">No sign-up</span>
+                  <span className="rounded-full border border-white/10 bg-black/15 px-2.5 py-1">Instant answers</span>
+                  <span className="rounded-full border border-white/10 bg-black/15 px-2.5 py-1">About 2 minutes</span>
+                </div>
+                <Link href="/quizzes/football-duels" aria-label="Play Football Duels now" className="group mt-4 flex min-h-16 w-full items-center justify-between gap-4 rounded-2xl bg-emerald-300 px-4 py-3 text-left text-slate-950 shadow-[0_18px_42px_-20px_rgba(110,231,183,.95)] outline-none transition hover:-translate-y-0.5 hover:bg-emerald-200 focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-[#0a111e] sm:px-5">
+                  <span className="flex min-w-0 items-center gap-3">
+                    <span className="grid size-10 shrink-0 place-items-center rounded-full bg-slate-950 text-emerald-200 transition group-hover:scale-105">
+                      <Play className="ml-0.5 size-4 fill-current" aria-hidden="true" />
+                    </span>
+                    <span>
+                      <span className="block text-lg font-black tracking-tight">PLAY NOW</span>
+                      <span className="block text-xs font-semibold text-slate-800/75">Your first duel is ready</span>
+                    </span>
+                  </span>
+                  <ArrowRight className="size-5 shrink-0 transition group-hover:translate-x-1" aria-hidden="true" />
                 </Link>
-                <Link href="/quizzes" className="inline-flex h-11 items-center rounded-xl border border-white/15 bg-white/5 px-5 text-sm font-semibold text-slate-200 transition hover:border-emerald-300/45 hover:bg-white/10">
-                  Explore games
+                <Link href="/quizzes" className="mt-3 inline-flex min-h-10 items-center gap-2 text-sm font-semibold text-slate-200 outline-none transition hover:text-emerald-200 focus-visible:rounded-lg focus-visible:ring-2 focus-visible:ring-emerald-300">
+                  I want to choose a different game
+                  <ArrowRight className="size-4" aria-hidden="true" />
                 </Link>
               </div>
+
+              {!user ? (
+                <div className="mt-4 flex flex-col gap-3 rounded-2xl border border-sky-300/20 bg-sky-400/[0.07] p-4 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="flex items-start gap-3">
+                    <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-sky-300/10 text-sky-200"><UserPlus className="size-4" aria-hidden="true" /></span>
+                    <div>
+                      <p className="text-sm font-black text-white">Like your score? Keep it.</p>
+                      <p className="mt-1 text-xs leading-5 text-slate-400">Create a free profile to save XP, levels and streaks—and claim your Founder Beta place.</p>
+                    </div>
+                  </div>
+                  <Link href="/beta" className="inline-flex min-h-10 shrink-0 items-center justify-center rounded-xl border border-sky-200/20 bg-sky-200/10 px-4 text-xs font-black text-sky-100 outline-none transition hover:bg-sky-200/15 focus-visible:ring-2 focus-visible:ring-sky-200">Save my progress</Link>
+                </div>
+              ) : (
+                <div className="mt-4 flex items-center justify-between gap-4 rounded-2xl border border-violet-300/20 bg-violet-400/[0.07] p-4">
+                  <div>
+                    <p className="text-xs font-bold uppercase tracking-[0.17em] text-violet-200">Welcome back</p>
+                    <p className="mt-1 text-sm font-black text-white">Level {level.level.toLocaleString()} · {level.xpToNextLevel.toLocaleString()} XP to level {level.level + 1}</p>
+                  </div>
+                  <Zap className="size-5 shrink-0 text-violet-200" aria-hidden="true" />
+                </div>
+              )}
               <div className="mt-5 inline-flex max-w-full items-center gap-3 rounded-2xl border border-sky-300/20 bg-sky-400/[0.07] px-3.5 py-2.5 text-left shadow-[inset_0_1px_0_rgba(255,255,255,.04)]">
                 <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-sky-300/10 text-sky-200">
                   <Smartphone className="size-4.5" aria-hidden="true" />
@@ -166,9 +212,9 @@ export default function HomePage() {
             <div className="flex flex-wrap items-center justify-between gap-4">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-[0.2em] text-emerald-300">Ready to start?</p>
-                <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-100">Make your first decision now.</h2>
+                <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-100">Ten quick duels. Start with one tap.</h2>
               </div>
-              <Link href="/quizzes/referee-decisions" className="inline-flex h-11 items-center gap-2 rounded-xl bg-emerald-400 px-5 text-sm font-semibold text-slate-950 transition hover:-translate-y-0.5 hover:bg-emerald-300">
+              <Link href="/quizzes/football-duels" className="inline-flex h-11 items-center gap-2 rounded-xl bg-emerald-400 px-5 text-sm font-semibold text-slate-950 transition hover:-translate-y-0.5 hover:bg-emerald-300">
                 Play now
                 <ArrowRight className="size-4" />
               </Link>

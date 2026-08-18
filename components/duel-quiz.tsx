@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Check, Clock3, Copy, Flame, RotateCcw, Sparkles, Trophy, X, Zap } from 'lucide-react'
 import type { DuelPack, DuelQuestion } from '@/lib/duel-packs'
@@ -417,7 +418,7 @@ export function DuelQuiz({ pack, onComplete }: { pack: DuelPack; onComplete?: (p
             <ResultStat icon={<Sparkles className="size-5" />} label="Points" value={points.toLocaleString()} />
             <ResultStat icon={<Flame className="size-5" />} label="Best combo" value={`${bestCombo}x`} />
             <ResultStat icon={<Trophy className="size-5" />} label="Personal best" value={`${personalBest?.score ?? score}/${questions.length}`} />
-            <ResultStat icon={<Zap className="size-5" />} label="XP credited" value={user ? `+${creditedXp}` : `+${xpEarned}`} />
+            <ResultStat icon={<Zap className="size-5" />} label={user ? 'XP credited' : 'XP available'} value={user ? `+${creditedXp}` : `+${xpEarned}`} />
           </div>
           {isNewBest && <div className="mt-4 rounded-2xl border border-primary/30 bg-primary/10 px-5 py-4 text-sm text-primary">New personal best recorded on this device.</div>}
           {user && (
@@ -438,7 +439,16 @@ export function DuelQuiz({ pack, onComplete }: { pack: DuelPack; onComplete?: (p
             <button onClick={restart} className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-primary px-5 py-3 font-semibold text-primary-foreground"><RotateCcw className="size-4" /> Play again</button>
             <button onClick={() => void shareResult()} className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl border border-border px-5 py-3 font-semibold"><Copy className="size-4" /> {copied ? 'Copied!' : 'Share score'}</button>
           </div>
-          <p className="mt-4 text-center text-xs text-muted-foreground">{!user ? 'Create an account to save this progress, earn XP and build your Early Shout profile.' : rewardStatus === 'saving' ? 'Saving your result…' : rewardStatus === 'saved' ? 'XP, rating and streak updates saved to your profile.' : rewardStatus === 'already' ? 'This duel reward was already credited for your account.' : rewardStatus === 'error' ? 'Result save failed. You can retry by replaying this duel.' : 'Checking reward status…'}</p>
+          {!user ? (
+            <div className="mt-5 rounded-2xl border border-emerald-300/25 bg-emerald-300/10 p-4 text-center">
+              <p className="font-black text-foreground">Keep your score and {xpEarned} XP</p>
+              <p className="mx-auto mt-1 max-w-lg text-sm leading-5 text-muted-foreground">Create a free profile now to save future scores, levels and streaks on every device.</p>
+              <div className="mt-4 flex flex-wrap justify-center gap-2">
+                <Link href="/signup" className="inline-flex min-h-11 items-center rounded-xl bg-primary px-4 py-2 text-sm font-black text-primary-foreground">Create free profile</Link>
+                <Link href="/beta" className="inline-flex min-h-11 items-center rounded-xl border border-border bg-background px-4 py-2 text-sm font-bold text-foreground">See Founder Beta benefit</Link>
+              </div>
+            </div>
+          ) : <p className="mt-4 text-center text-xs text-muted-foreground">{rewardStatus === 'saving' ? 'Saving your result…' : rewardStatus === 'saved' ? 'XP, rating and streak updates saved to your profile.' : rewardStatus === 'already' ? 'This duel reward was already credited for your account.' : rewardStatus === 'error' ? 'Result save failed. You can retry by replaying this duel.' : 'Checking reward status…'}</p>}
         </div>
       </div>
     )
