@@ -309,16 +309,17 @@ describe('Player Market launch gates', () => {
     expect(daily).toContain('updateClock()')
   })
 
-  it('shows the live 1-4-3-3 holdings roster immediately above market controls', () => {
+  it('shows the live chosen-formation roster immediately above market controls', () => {
     const browser = read('components/market/player-market-browser.tsx')
-    expect(browser).toContain('Your roster · 1-4-3-3')
-    expect(browser).toContain("{ position: 'GK', label: 'Goalkeeper', slots: 1 }")
-    expect(browser).toContain("{ position: 'DEF', label: 'Defenders', slots: 4 }")
-    expect(browser).toContain("{ position: 'MID', label: 'Midfielders', slots: 3 }")
-    expect(browser).toContain("{ position: 'FWD', label: 'Forwards', slots: 3 }")
+    expect(browser).toContain('Your roster · {activeFormation}')
+    expect(browser).toContain('const limits = MARKET_FORMATIONS[activeFormation]')
+    expect(browser).toContain("{ position: 'GK', slots: limits.GK }")
+    expect(browser).toContain("{ position: 'DEF', slots: limits.DEF }")
+    expect(browser).toContain("{ position: 'MID', slots: limits.MID }")
+    expect(browser).toContain("{ position: 'FWD', slots: limits.FWD }")
     expect(browser).toContain('min-w-[880px] grid-cols-11')
     expect(browser).toContain('id="live-roster"')
-    expect(browser).toContain('formatFiqCompact(player.current_value)')
+    expect(browser).toContain('formatFiqCompact(row.holding.current_value_snapshot)')
     expect(browser).toContain('Squad value')
     expect(browser).toContain('Total spent')
     expect(browser).toContain('Budget left')
@@ -445,6 +446,16 @@ describe('Player Market launch gates', () => {
     expect(hub).toContain('Your new prices are ready')
     expect(hub).toContain('No player or budget change is being guessed')
     expect(hub).toContain('aria-live="polite"')
+  })
+
+  it('treats a missing auth session as the expected guest formation state', () => {
+    const client = read('lib/market/client.ts')
+    const formationStart = client.indexOf('export async function setMarketFormation')
+    const formationSource = client.slice(formationStart, formationStart + 1800)
+
+    expect(formationSource).toContain("!/auth session missing/i.test(authError.message)")
+    expect(formationSource.indexOf('if (!authData.user)')).toBeLessThan(formationSource.indexOf('loadMarketPlayers()'))
+    expect(formationSource).toContain('setAnonymousFormation(formation, playersResult.data)')
   })
 
   it('offers privacy-safe contextual beta feedback without hydration drift', () => {

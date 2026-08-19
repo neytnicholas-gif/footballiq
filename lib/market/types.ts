@@ -158,6 +158,34 @@ export type MarketGameweekStatus = {
   maximum_signings: 11
 }
 
+export type MarketGameweekChipKey = 'triple_shout' | 'power_pair' | 'position_pulse' | 'full_xi_surge' | 'lockdown'
+
+export type MarketGameweekChipTarget = {
+  holding_id: string
+  player_id: number
+  player_name: string
+  position: MarketPosition
+}
+
+export type MarketGameweekChipStatus = {
+  gameweek_id: string
+  gameweek_key: string
+  label: string
+  deadline_at: string
+  can_play: boolean
+  chip_used: boolean
+  active_chip: null | {
+    id: string
+    chip_key: MarketGameweekChipKey
+    target_position: Exclude<MarketPosition, 'GK'> | null
+    targets: MarketGameweekChipTarget[]
+    state: 'armed' | 'applied' | 'void'
+    activated_at: string
+    first_applied_at: string | null
+    total_adjustment_minor: number
+  }
+}
+
 export type MarketValueHistoryPoint = {
   id: number
   player_id: number
@@ -263,6 +291,9 @@ export type MarketRevealHoldingMovement = {
   previous_value: number
   current_value: number
   delta: number
+  market_delta?: number
+  chip_adjustment?: number
+  chip_key?: MarketGameweekChipKey | null
   return_pct: number
   explanation: string
 }
@@ -304,6 +335,7 @@ export type MarketRevealSummary = {
 
 export type MarketAnonymousState = {
   version: 1
+  active_formation: '4-3-3' | '4-4-2'
   cash: number
   watchlist: number[]
   holdings: Array<{

@@ -1,8 +1,9 @@
 'use client'
 
 import Link from 'next/link'
-import { ArrowRight, Minus, TrendingDown, TrendingUp } from 'lucide-react'
+import { ArrowRight, Minus, Sparkles, TrendingDown, TrendingUp } from 'lucide-react'
 import { ClubColourDot } from '@/components/market/club-colour-dot'
+import { marketChipDefinition } from '@/lib/market/chips'
 import { formatFiqCompact } from '@/lib/market/format'
 import type { MarketPlayer, MarketRevealSummary } from '@/lib/market/types'
 
@@ -86,6 +87,13 @@ export function PlayerMarketReveal({ latest, history, players }: { latest: Marke
                 </p>
               </div>
               <p className="mt-1 text-xs text-muted-foreground">Purchase {formatFiqCompact(holding.purchase_price)} · Previous {formatFiqCompact(holding.previous_value)} · Current {formatFiqCompact(holding.current_value)} · Return {formatSignedPercent(holding.return_pct)}</p>
+              {holding.chip_key ? (
+                <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 rounded-lg border border-cyan-300/20 bg-cyan-300/10 px-3 py-2 text-xs">
+                  <span className="inline-flex items-center gap-1 font-black text-cyan-800"><Sparkles className="size-3.5" />{marketChipDefinition(holding.chip_key).name}</span>
+                  <span className="text-muted-foreground">Normal move {formatSignedFiq(holding.market_delta ?? 0)}</span>
+                  <span className="font-bold text-cyan-800">Chip effect {formatSignedFiq(holding.chip_adjustment ?? 0)}</span>
+                </div>
+              ) : null}
               <p className="mt-1 text-xs text-muted-foreground">{holding.delta === 0 ? 'No full price step was reached this gameweek. If a small verified movement was calculated, it stays banked and carries into the next update.' : holding.explanation}</p>
             </article>
           ))}

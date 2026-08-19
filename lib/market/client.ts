@@ -16,12 +16,15 @@ import {
   buildAnonymousPortfolio,
   clearAnonymousState,
   readAnonymousState,
+  setAnonymousFormation,
 } from '@/lib/market/anonymous-state'
 import { loadRevealHistory } from '@/lib/market/reveal'
 import type {
   MarketFriendLeague,
   MarketFriendLeagueLeaderboardRow,
   MarketFriendLeagueMember,
+  MarketGameweekChipKey,
+  MarketGameweekChipStatus,
   MarketGameweekStatus,
   MarketHolding,
   MarketLeaderboardRow,
@@ -37,6 +40,7 @@ import type {
 } from '@/lib/market/types'
 import { EMPTY_MARKET_ARENA, type MarketArenaState } from '@/lib/market/arena'
 import { EMPTY_MARKET_PROGRESSION, type MarketProgression } from '@/lib/market/progression'
+import type { MarketFormationKey } from '@/lib/market/formation'
 
 function isMarketBackendUnavailable(error: unknown) {
   if (!error || typeof error !== 'object') return false
@@ -68,6 +72,8 @@ function normalizeMarketMutationError(error: unknown): Error | null {
     [/ALREADY_OWNED/i, 'That player is already in your roster.'],
     [/MAX_HOLDINGS|PORTFOLIO_LIMIT/i, 'Your 11-player roster is full. Sell a player before adding another.'],
     [/FORMATION_LIMIT/i, 'That position is full in your current formation.'],
+    [/FORMATION_SQUAD_CONFLICT/i, 'Your current players do not fit that shape. Sell the extra player in the full position first.'],
+    [/FORMATION_NOT_UNLOCKED/i, 'Earn and unlock the 3-4-3 formation in Rewards first.'],
     [/INSUFFICIENT_(BALANCE|FUNDS)/i, 'You do not have enough Market Credits for that player.'],
     [/GAMEWEEK_TRANSFER_LIMIT/i, 'You have used all 11 signings for this gameweek.'],
     [/GAMEWEEK_LOCKED/i, 'Trading is closed while this gameweek is being processed. Nothing changed.'],
@@ -77,6 +83,12 @@ function normalizeMarketMutationError(error: unknown): Error | null {
     [/WATCHLIST_FULL/i, 'Your watchlist is full. Remove one player before adding another.'],
     [/NOT_OWNED/i, 'That player is not currently in your roster.'],
     [/PLAYER_NOT_FOUND|PLAYER_NOT_FOUND_OR_UNAVAILABLE/i, 'That player is no longer available. Refresh the market and choose another.'],
+    [/CHIP_ALREADY_PLAYED/i, 'You have already used your chip for this gameweek.'],
+    [/CHIP_DEADLINE_PASSED|CHIP_GAMEWEEK_LOCKED/i, 'The weekly chip deadline has passed. Your roster is unchanged.'],
+    [/CHIP_TARGET_COUNT|CHIP_TARGET_INVALID|CHIP_POSITION_INVALID/i, 'Choose the exact players or position shown for this chip.'],
+    [/CHIP_TARGET_NOT_OWNED/i, 'One of those players is no longer in your roster. Refresh and choose again.'],
+    [/CHIP_POSITION_EMPTY/i, 'You do not hold a player in that position yet.'],
+    [/CHIP_FULL_XI_REQUIRED|CHIP_VALID_FORMATION_REQUIRED/i, 'Complete a valid 11-player formation before using Full XI Surge.'],
   ]
   const friendly = friendlyErrors.find(([pattern]) => pattern.test(message))?.[1]
   return new Error(friendly ?? 'That action could not be completed. Nothing changed—please try again.')
@@ -184,6 +196,11 @@ export async function importAnonymousMarketStateToAccount() {
 
   const result = (data as GuestMarketImportResult | null) ?? null
   if (result?.ok) {
+    if (state.active_formation === '4-4-2') {
+      const formationResult = await (supabase as any).rpc('market_set_formation', { p_formation: '4-4-2' })
+      if (formationResult.error) return { data: null, error: normalizeMarketMutationError(formationResult.error) }
+      publishMarketFormation('4-4-2')
+    }
     clearAnonymousState()
     try {
       window.sessionStorage.setItem('fiq-market-account-import-result-v1', JSON.stringify(result))
@@ -473,6 +490,37 @@ export async function loadMyGameweekStatus(): Promise<{ data: MarketGameweekStat
   return { data: (data as MarketGameweekStatus | null) ?? null, error: error as Error | null }
 }
 
+export async function loadMyGameweekChip(): Promise<{ data: MarketGameweekChipStatus | null; error: Error | null }> {
+  const { data: authData, error: authError } = await supabase.auth.getUser()
+  if (authError) return { data: null, error: authError as Error }
+  if (!authData.user) return { data: null, error: null }
+  const { data, error } = await (supabase as any).rpc('market_my_gameweek_chip', {})
+  return {
+    data: (data as MarketGameweekChipStatus | null) ?? null,
+    error: normalizeMarketMutationError(error),
+  }
+}
+
+export async function playMarketGameweekChip({
+  chipKey,
+  playerIds = [],
+  position = null,
+}: {
+  chipKey: MarketGameweekChipKey
+  playerIds?: number[]
+  position?: 'DEF' | 'MID' | 'FWD' | null
+}) {
+  const { data, error } = await (supabase as any).rpc('market_play_gameweek_chip', {
+    p_chip_key: chipKey,
+    p_target_player_ids: playerIds.length ? playerIds : null,
+    p_target_position: position,
+  })
+  return {
+    data: (data as MarketGameweekChipStatus | null) ?? null,
+    error: normalizeMarketMutationError(error),
+  }
+}
+
 export async function buyMarketPlayer(slug: string, playerId?: number, requestKey?: string) {
   const idempotencyKey = requestKey ?? createMarketRequestKey(`buy-${slug}`)
 
@@ -716,9 +764,20 @@ export async function deleteFriendLeague(leagueId: number) {
   }
 }
 
-export async function loadMyMarketProgression(refresh = true) {
+export async function loadMyMarketProgression(refresh = true): Promise<{ data: MarketProgression; error: Error | null }> {
   const { data: authData } = await supabase.auth.getUser()
-  if (!authData.user) return { data: EMPTY_MARKET_PROGRESSION, error: null }
+  if (!authData.user) {
+    return {
+      data: {
+        ...EMPTY_MARKET_PROGRESSION,
+        preferences: {
+          ...EMPTY_MARKET_PROGRESSION.preferences,
+          active_formation: readAnonymousState().active_formation,
+        },
+      },
+      error: null,
+    }
+  }
   const { data, error } = await (supabase as any).rpc(refresh ? 'market_refresh_my_progression' : 'market_my_progression', {})
   const row = data as Partial<MarketProgression> | null
   const normalized: MarketProgression = {
@@ -742,9 +801,33 @@ export async function equipMarketReward(itemKey: string) {
   return { data: data as Record<string, unknown> | null, error: normalizeMarketMutationError(error) }
 }
 
-export async function setMarketFormation(formation: '4-3-3' | '3-4-3') {
+export const MARKET_FORMATION_CHANGED_EVENT = 'early-shout-market-formation-changed'
+
+function publishMarketFormation(formation: MarketFormationKey) {
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent<MarketFormationKey>(MARKET_FORMATION_CHANGED_EVENT, { detail: formation }))
+  }
+}
+
+export async function setMarketFormation(formation: MarketFormationKey) {
+  const { data: authData, error: authError } = await supabase.auth.getUser()
+  if (!authData.user) {
+    // Supabase reports AuthSessionMissingError for a normal signed-out visitor.
+    // That is the expected guest state, so keep their formation on this device.
+    // Other auth failures must still surface instead of silently becoming local.
+    if (authError && !/auth session missing/i.test(authError.message)) {
+      return { data: null, error: authError as Error }
+    }
+    const playersResult = await loadMarketPlayers()
+    if (playersResult.error) return { data: null, error: playersResult.error }
+    const result = setAnonymousFormation(formation, playersResult.data)
+    if (!result.error) publishMarketFormation(formation)
+    return { data: result.error ? null : { ok: true, active_formation: formation }, error: result.error }
+  }
   const { data, error } = await (supabase as any).rpc('market_set_formation', { p_formation: formation })
-  return { data: data as Record<string, unknown> | null, error: normalizeMarketMutationError(error) }
+  const normalizedError = normalizeMarketMutationError(error)
+  if (!normalizedError) publishMarketFormation(formation)
+  return { data: data as Record<string, unknown> | null, error: normalizedError }
 }
 
 export async function updateMarketProfilePreferences(preferences: Pick<MarketProgression['preferences'], 'show_badges' | 'show_market_stats' | 'show_roster' | 'show_activity'>) {

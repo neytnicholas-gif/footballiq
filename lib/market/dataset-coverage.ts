@@ -21,7 +21,9 @@ export function auditMarketCoverage(players: CoveragePlayer[]) {
     providerIds.add(player.providerPlayerId)
   }
   const underCoveredClubs = [...clubs.entries()].filter(([, count]) => count < 11).map(([clubId, count]) => ({ clubId, count }))
-  const formationReady = positions.GK >= 1 && positions.DEF >= 4 && positions.MID >= 3 && positions.FWD >= 3
+  // Cover every freely selectable shape: 4-3-3 needs three forwards, while
+  // 4-4-2 needs four midfielders. A catalogue must comfortably support both.
+  const formationReady = positions.GK >= 1 && positions.DEF >= 4 && positions.MID >= 4 && positions.FWD >= 3
   return {
     totalRows: players.length,
     usablePlayers: usable.length,

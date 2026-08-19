@@ -1,5 +1,6 @@
 import { MARKET_CREDITS_STARTING_BALANCE, MARKET_MAX_PORTFOLIO_SIZE, MARKET_WEEKLY_SIGNING_LIMIT, toUtcDateKey, toUtcIsoWeekKey } from '@/lib/market/format'
-import { countFormation } from '@/lib/market/formation'
+import { canBuyPosition, countFormation, isValidFormation, MARKET_FORMATIONS } from '@/lib/market/formation'
+import type { MarketFormationKey } from '@/lib/market/formation'
 import type {
   MarketAnonymousState,
   MarketHolding,
@@ -30,6 +31,7 @@ function nextHoldingId(state: MarketAnonymousState) {
 export function createDefaultAnonymousState(): MarketAnonymousState {
   return {
     version: 1,
+    active_formation: '4-3-3',
     cash: MARKET_CREDITS_STARTING_BALANCE,
     watchlist: [],
     holdings: [],
@@ -50,7 +52,7 @@ function safeStorage() {
   }
 }
 
-export function readAnonymousState() {
+export function readAnonymousState(): MarketAnonymousState {
   const storage = safeStorage()
   if (!storage) return createDefaultAnonymousState()
 
@@ -63,6 +65,7 @@ export function readAnonymousState() {
     return {
       ...createDefaultAnonymousState(),
       ...parsed,
+      active_formation: parsed.active_formation === '4-4-2' ? '4-4-2' : '4-3-3',
       watchlist: Array.isArray(parsed.watchlist) ? parsed.watchlist.filter((id) => Number.isFinite(id)) : [],
       holdings: Array.isArray(parsed.holdings) ? parsed.holdings : [],
       transactions: Array.isArray(parsed.transactions) ? parsed.transactions : [],
@@ -85,6 +88,22 @@ export function clearAnonymousState() {
   const storage = safeStorage()
   if (!storage) return
   storage.removeItem(STORAGE_KEY)
+}
+
+export function setAnonymousFormation(formation: MarketFormationKey, players: MarketPlayer[]): { error: Error | null } {
+  if (formation === '3-4-3') return { error: new Error('Unlock the 3-4-3 reward after creating an account.') }
+  const state = readAnonymousState()
+  const playersById = new Map(players.map((player) => [player.id, player]))
+  const counts = countFormation(
+    state.holdings.map((holding) => ({ ...holding, user_id: 'anon-user' })) as MarketHolding[],
+    playersById,
+  )
+  const limits = MARKET_FORMATIONS[formation]
+  const conflict = (Object.keys(limits) as Array<keyof typeof limits>).find((position) => counts[position] > limits[position])
+  if (conflict) return { error: new Error(`Sell one ${conflict} player before switching to ${formation}.`) }
+  state.active_formation = formation
+  writeAnonymousState(state)
+  return { error: null }
 }
 
 export function applyAnonymousOverrides(players: MarketPlayer[], state: MarketAnonymousState) {
@@ -169,10 +188,9 @@ function ensureCanBuy(players: MarketPlayer[], state: MarketAnonymousState, play
     playersById,
   )
 
-  if (player.position === 'GK' && formation.GK >= 1) return 'Goalkeeper allocation is already complete (1/1).'
-  if (player.position === 'DEF' && formation.DEF >= 4) return 'Defender allocation is already complete (4/4).'
-  if (player.position === 'MID' && formation.MID >= 3) return 'Midfielder allocation is already complete (3/3).'
-  if (player.position === 'FWD' && formation.FWD >= 3) return 'Forward allocation is already complete (3/3).'
+  if (!canBuyPosition(player.position, formation, state.active_formation)) {
+    return `${player.position} is already full in your ${state.active_formation} formation.`
+  }
 
   return null
 }
@@ -340,13 +358,10 @@ export function anonymousApplySimulatedMatchweek(
   const holdingsView = state.holdings.map((row) => ({ ...row, user_id: 'anon-user' })) as MarketHolding[]
   const formation = countFormation(holdingsView, playersById)
   const isValid = state.holdings.length === MARKET_MAX_PORTFOLIO_SIZE
-    && formation.GK === 1
-    && formation.DEF === 4
-    && formation.MID === 3
-    && formation.FWD === 3
+    && isValidFormation(formation, state.active_formation)
 
   if (!isValid) {
-    return { data: null, error: new Error('Complete a valid 1-4-3-3 portfolio before simulating.') }
+    return { data: null, error: new Error(`Complete a valid ${state.active_formation} roster before simulating.`) }
   }
 
   const weekNumber = currentWeekNumber(state)

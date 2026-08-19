@@ -35,7 +35,7 @@ export type MarketProfilePreferences = {
   active_avatar: string | null
   active_frame: string | null
   active_title: string | null
-  active_formation: '4-3-3' | '3-4-3'
+  active_formation: '4-3-3' | '4-4-2' | '3-4-3'
 }
 
 export type MarketProgression = {

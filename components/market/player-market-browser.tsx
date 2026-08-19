@@ -9,7 +9,7 @@ import { ClubColourDot } from '@/components/market/club-colour-dot'
 import { MarketTradeDialog } from '@/components/market/market-trade-dialog'
 import { useMarketFormation } from '@/components/market/use-market-formation'
 import { buyMarketPlayer, sellMarketPlayer, toggleMarketWatchlist } from '@/lib/market/client'
-import { canBuyPosition, countFormation } from '@/lib/market/formation'
+import { canBuyPosition, countFormation, MARKET_FORMATIONS } from '@/lib/market/formation'
 import { createMarketRequestKey, formatFiqCompact, MARKET_MAX_PORTFOLIO_SIZE } from '@/lib/market/format'
 import type { MarketHolding, MarketPlayer, MarketSeasonStats } from '@/lib/market/types'
 import { matchesPlayerSearch } from '@/lib/market/player-search'
@@ -91,7 +91,7 @@ export function PlayerMarketBrowser({
   const playersById = useMemo(() => new Map(players.map((player) => [player.id, player])), [players])
   const formation = useMemo(() => countFormation(holdings, playersById), [holdings, playersById])
   const openSlots = MARKET_MAX_PORTFOLIO_SIZE - holdings.length
-  const limits = activeFormation === '3-4-3' ? { GK: 1, DEF: 3, MID: 4, FWD: 3 } : { GK: 1, DEF: 4, MID: 3, FWD: 3 }
+  const limits = MARKET_FORMATIONS[activeFormation]
   const nextPosition = formation.GK < limits.GK ? 'GK' : formation.DEF < limits.DEF ? 'DEF' : formation.MID < limits.MID ? 'MID' : formation.FWD < limits.FWD ? 'FWD' : null
   const marketHasMoved = useMemo(() => players.some((player) => player.current_value !== player.opening_season_value), [players])
   const previewExperimentActive = useMemo(() => players.some((player) => player.data_source_label?.includes('preview valuation experiment')), [players])
@@ -259,10 +259,10 @@ export function PlayerMarketBrowser({
         </section>
 
         <div className="relative mt-4 grid gap-3 rounded-2xl border border-white/10 bg-black/15 p-3 text-sm backdrop-blur sm:grid-cols-2 lg:grid-cols-6">
-          <FormationPill label="GK" value={`${formation.GK}/1`} />
-          <FormationPill label="DEF" value={`${formation.DEF}/4`} />
-          <FormationPill label="MID" value={`${formation.MID}/3`} />
-          <FormationPill label="FWD" value={`${formation.FWD}/3`} />
+          <FormationPill label="GK" value={`${formation.GK}/${limits.GK}`} />
+          <FormationPill label="DEF" value={`${formation.DEF}/${limits.DEF}`} />
+          <FormationPill label="MID" value={`${formation.MID}/${limits.MID}`} />
+          <FormationPill label="FWD" value={`${formation.FWD}/${limits.FWD}`} />
           <FormationPill label="Gameweek signings" value={`${buysRemaining} of 11`} subtle="left this gameweek" />
           <FormationPill label="Sales" value="No limit" subtle="sell to open a squad slot" />
         </div>
@@ -349,6 +349,7 @@ export function PlayerMarketBrowser({
           playersById={playersById}
           userSignedIn={userSignedIn}
           availableCash={availableCash}
+          activeFormation={activeFormation}
         />
 
         <div className="relative mt-3 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-white/10 bg-white/[.06] px-4 py-3 shadow-sm">
@@ -527,7 +528,8 @@ export function PlayerMarketBrowser({
               ]
             : [
                 { label: 'Purchase price', value: formatFiqCompact(holdings.find((row) => row.player_id === tradeIntent.player.id)?.acquisition_value ?? tradeIntent.player.current_value) },
-                { label: 'Current value', value: formatFiqCompact(tradeIntent.player.current_value) },
+                { label: 'Your sale value', value: formatFiqCompact(holdings.find((row) => row.player_id === tradeIntent.player.id)?.current_value_snapshot ?? tradeIntent.player.current_value) },
+                { label: 'Public market price', value: formatFiqCompact(tradeIntent.player.current_value) },
                 { label: 'Position reopened', value: tradeIntent.player.position },
               ]}
           onCancel={() => setTradeIntent(null)}
@@ -544,44 +546,46 @@ export function PlayerMarketBrowser({
   )
 }
 
-const ROSTER_ROWS = [
-  { position: 'GK', label: 'Goalkeeper', slots: 1 },
-  { position: 'DEF', label: 'Defenders', slots: 4 },
-  { position: 'MID', label: 'Midfielders', slots: 3 },
-  { position: 'FWD', label: 'Forwards', slots: 3 },
-] as const
-
 function MarketRosterBoard({
   holdings,
   playersById,
   userSignedIn,
   availableCash,
+  activeFormation,
 }: {
   holdings: MarketHolding[]
   playersById: Map<number, MarketPlayer>
   userSignedIn: boolean
   availableCash: number
+  activeFormation: keyof typeof MARKET_FORMATIONS
 }) {
+  const rosterRows = useMemo(() => {
+    const limits = MARKET_FORMATIONS[activeFormation]
+    return ([
+      { position: 'GK', slots: limits.GK },
+      { position: 'DEF', slots: limits.DEF },
+      { position: 'MID', slots: limits.MID },
+      { position: 'FWD', slots: limits.FWD },
+    ] as const)
+  }, [activeFormation])
   const holdingsByPosition = useMemo(() => {
-    const grouped: Record<MarketPlayer['position'], MarketPlayer[]> = { GK: [], DEF: [], MID: [], FWD: [] }
+    const grouped: Record<MarketPlayer['position'], Array<{ player: MarketPlayer; holding: MarketHolding }>> = { GK: [], DEF: [], MID: [], FWD: [] }
     for (const holding of holdings) {
       const player = playersById.get(holding.player_id)
-      if (player) grouped[player.position].push(player)
+      if (player) grouped[player.position].push({ player, holding })
     }
     return grouped
   }, [holdings, playersById])
 
-  const orderedSlots = useMemo(() => ROSTER_ROWS.flatMap((row) => {
+  const orderedSlots = useMemo(() => rosterRows.flatMap((row) => {
     const selected = holdingsByPosition[row.position]
     return Array.from({ length: row.slots }, (_, index) => ({
       position: row.position,
-      player: selected[index] ?? null,
+      row: selected[index] ?? null,
     }))
-  }), [holdingsByPosition])
+  }), [holdingsByPosition, rosterRows])
   const totalSpent = useMemo(() => holdings.reduce((total, holding) => total + holding.acquisition_value, 0), [holdings])
-  const currentRosterValue = useMemo(() => holdings.reduce((total, holding) => {
-    return total + (playersById.get(holding.player_id)?.current_value ?? holding.current_value_snapshot)
-  }, 0), [holdings, playersById])
+  const currentRosterValue = useMemo(() => holdings.reduce((total, holding) => total + holding.current_value_snapshot, 0), [holdings])
 
   return (
     <section id="live-roster" aria-labelledby="live-roster-title" className="relative mt-5 scroll-mt-24 overflow-hidden rounded-2xl border border-emerald-900/15 bg-emerald-950 p-3 text-white shadow-[0_18px_45px_-35px_rgba(6,78,59,.9)]">
@@ -589,7 +593,7 @@ function MarketRosterBoard({
         <div className="flex items-center gap-2">
           <Users className="size-4 text-emerald-200" aria-hidden="true" />
           <div>
-            <h2 id="live-roster-title" className="text-sm font-black">Your roster · 1-4-3-3</h2>
+            <h2 id="live-roster-title" className="text-sm font-black">Your roster · {activeFormation}</h2>
             <p className="mt-0.5 text-[10px] font-semibold text-emerald-100/65">{holdings.length}/11 selected</p>
           </div>
         </div>
@@ -598,6 +602,7 @@ function MarketRosterBoard({
           <RosterTotal label="Total spent" value={totalSpent} />
           <RosterTotal label="Budget left" value={availableCash} />
           <Link href="/market/roster" className="rounded-lg border border-white/20 bg-white/10 px-2.5 py-1.5 font-black text-white transition hover:bg-white/20 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white">View full roster</Link>
+          <Link href="/market/roster#gameweek-strategy" className="rounded-lg border border-cyan-200/25 bg-cyan-300/10 px-2.5 py-1.5 font-black text-cyan-100 transition hover:bg-cyan-300/20 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white">Formation &amp; chip</Link>
         </div>
       </div>
 
@@ -612,16 +617,16 @@ function MarketRosterBoard({
         aria-label="Current roster players"
       >
         <div className="grid min-w-[880px] grid-cols-11 gap-1.5">
-          {orderedSlots.map(({ position, player }, index) => player ? (
+          {orderedSlots.map(({ position, row }, index) => row ? (
             <Link
-              key={player.id}
-              href={`/market/player/${encodeURIComponent(player.slug)}`}
-              aria-label={`Open ${player.display_name}'s player card`}
+              key={row.player.id}
+              href={`/market/player/${encodeURIComponent(row.player.slug)}`}
+              aria-label={`Open ${row.player.display_name}'s player card`}
               className="min-w-0 rounded-xl border border-white/15 bg-white/10 px-2 py-2 text-center transition hover:bg-white/15 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
             >
               <span className="block text-[9px] font-black uppercase tracking-wide text-emerald-200">{position}</span>
-              <span className="mt-1 flex min-w-0 items-center justify-center gap-1.5 text-[11px] font-bold text-white"><ClubColourDot clubName={player.club_name} className="size-2.5 shadow-[0_0_0_1px_rgba(255,255,255,.7)]" /><span className="truncate">{player.display_name}</span></span>
-              <span className="mt-1 block truncate text-[9px] font-black text-emerald-100">{formatFiqCompact(player.current_value)}</span>
+              <span className="mt-1 flex min-w-0 items-center justify-center gap-1.5 text-[11px] font-bold text-white"><ClubColourDot clubName={row.player.club_name} className="size-2.5 shadow-[0_0_0_1px_rgba(255,255,255,.7)]" /><span className="truncate">{row.player.display_name}</span></span>
+              <span className="mt-1 block truncate text-[9px] font-black text-emerald-100">{formatFiqCompact(row.holding.current_value_snapshot)}</span>
             </Link>
           ) : (
             <div key={`${position}-${index}`} className="min-w-0 rounded-xl border border-dashed border-white/15 bg-black/10 px-2 py-2 text-center">

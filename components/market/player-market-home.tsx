@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
 import { ArrowRight, Award, BarChart3, Coins, DatabaseZap, Lock, Trophy, TrendingDown, TrendingUp, Users, Wallet } from 'lucide-react'
-import { countFormation } from '@/lib/market/formation'
+import { countFormation, MARKET_FORMATIONS } from '@/lib/market/formation'
 import { useAuth } from '@/components/auth-provider'
 import { MarketDisclaimer } from '@/components/market/market-disclaimer'
 import { MarketPlayerChip } from '@/components/market/market-player-chip'
@@ -34,7 +34,7 @@ import { getMarketPriceStatus, hasVerifiedPriceMovement } from '@/lib/market/pri
 
 export function PlayerMarketHome() {
   const activeFormation = useMarketFormation()
-  const formationLimits = activeFormation === '3-4-3' ? { GK: 1, DEF: 3, MID: 4, FWD: 3 } : { GK: 1, DEF: 4, MID: 3, FWD: 3 }
+  const formationLimits = MARKET_FORMATIONS[activeFormation]
   const { user } = useAuth()
   const [players, setPlayers] = useState<MarketPlayer[]>([])
   const [portfolio, setPortfolio] = useState<MarketPortfolio | null>(null)
@@ -233,7 +233,7 @@ export function PlayerMarketHome() {
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
               <p className="text-xs font-black uppercase tracking-[.2em] text-amber-800">Isolated engine proof · not your account</p>
-              <h2 className="mt-1 text-2xl font-black">Complete 1-4-3-3 valuation trial</h2>
+              <h2 className="mt-1 text-2xl font-black">Complete your chosen starting XI</h2>
               <p className="mt-2 max-w-3xl text-sm text-slate-300">Eleven controlled ratings have been processed by the production valuation formula. Test players are trade-locked, so this proof cannot alter your balance, holdings, leaderboard rank or transaction history.</p>
             </div>
             <span className="rounded-xl border border-emerald-700/20 bg-emerald-700/10 px-4 py-2 text-sm font-bold text-emerald-900">{previewPlayers.length}/11 players processed</span>

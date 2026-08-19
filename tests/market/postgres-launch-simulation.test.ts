@@ -13,6 +13,7 @@ const isolatedFailures = readFileSync('supabase/migrations/20260814180347_isolat
 const fixtureSafety = readFileSync('supabase/migrations/20260816210000_beta_fixture_trade_safety.sql', 'utf8')
 const valuationCutoff = readFileSync('supabase/migrations/20260816210500_enforce_valuation_cutoff.sql', 'utf8')
 const launchHardening = readFileSync('supabase/migrations/20260818080145_harden_beta_launch_gates.sql', 'utf8')
+const gameweekChips = readFileSync('supabase/migrations/20260819133816_add_gameweek_chips_and_formation_choice.sql', 'utf8')
 
 function functionSql(source: string, signature: string) {
   const start = source.indexOf(`create or replace function ${signature}`)
@@ -61,7 +62,7 @@ create table public.market_holdings(
   id uuid primary key default gen_random_uuid(),portfolio_id uuid not null references public.market_portfolios(id) on delete cascade,
   player_id uuid not null references public.market_players(id),quantity integer not null default 1,
   purchase_price_minor integer not null,current_value_minor integer not null,unrealised_profit_minor integer not null default 0,
-  acquired_at timestamptz not null default now(),updated_at timestamptz not null default now(),unique(portfolio_id,player_id)
+  purchased_at timestamptz not null default now(),updated_at timestamptz not null default now(),unique(portfolio_id,player_id)
 );
 create table public.market_transactions(
   id uuid primary key default gen_random_uuid(),portfolio_id uuid not null references public.market_portfolios(id) on delete cascade,
@@ -70,7 +71,9 @@ create table public.market_transactions(
   holding_value_before_minor integer not null,holding_value_after_minor integer not null,idempotency_key text not null,
   created_at timestamptz not null default now(),unique(portfolio_id,idempotency_key)
 );
-create table public.market_profile_preferences(user_id uuid primary key,active_formation text not null default '4-3-3');
+create table public.market_profile_preferences(user_id uuid primary key,active_formation text not null default '4-3-3',updated_at timestamptz not null default now());
+create table public.market_user_items(user_id uuid not null,item_key text not null,purchased_at timestamptz not null default now(),primary key(user_id,item_key));
+create table public.market_watchlist(user_id uuid not null,player_id uuid not null references public.market_players(id),created_at timestamptz not null default now(),primary key(user_id,player_id));
 create table public.market_gameweeks(
   id uuid primary key default gen_random_uuid(),gameweek_key text not null unique,week_number integer not null,label text not null,
   state text not null,opens_at timestamptz not null,closes_at timestamptz not null,processed_at timestamptz,
@@ -160,6 +163,7 @@ describe('executed PostgreSQL launch simulation', () => {
     const triggerStart = unattended.indexOf('create or replace function public.market_enforce_trading_open()')
     const triggerEnd = unattended.indexOf('-- Keep hot user requests', triggerStart)
     await db.exec(unattended.slice(triggerStart, triggerEnd))
+    await db.exec(gameweekChips)
     await db.query('insert into public.market_settings values(1,$1,11,$2,$3)', [seasonId, 'open', '2026-01-01T00:00:00Z'])
     await db.query("insert into public.market_catalogues values($1,$2,'active')", [catalogueId, seasonId])
     await db.query('insert into public.market_active_catalogues values($1,$2)', [catalogueId, seasonId])
@@ -238,6 +242,94 @@ describe('executed PostgreSQL launch simulation', () => {
       select p.cash_balance_minor cash,p.current_holdings_value_minor invested,p.total_portfolio_value_minor total,a.signings_used signings
       from public.market_portfolios p join public.market_gameweek_allowances a on a.portfolio_id=p.id where p.user_id=$1`, [userA])
     expect(snapshot.rows[0]).toEqual({ cash: 45_000_000, invested: 55_000_000, total: 100_000_000, signings: 11 })
+  })
+
+  it('executes a private Triple Shout up-move, keeps the public price normal and settles the held value', async () => {
+    const chipUser = '30000000-0000-0000-0000-000000000099'
+    await db.query(`insert into public.market_portfolios(user_id,season_id,starting_balance_minor,cash_balance_minor,total_portfolio_value_minor)
+      values($1,$2,100000000,100000000,100000000)`, [chipUser, seasonId])
+    await asUser(chipUser)
+    await db.query('select public.market_buy_player($1,$2)', ['player-2', 'chip-user-buy'])
+
+    const formation = await db.query<{ result: { active_formation: string } }>("select public.market_set_formation('4-4-2') result")
+    expect(formation.rows[0]!.result.active_formation).toBe('4-4-2')
+
+    const deadline = await db.query<{ safe: boolean }>(`select public.market_gameweek_chip_deadline(id) < closes_at as safe
+      from public.market_gameweeks where gameweek_type='transfer' order by opens_at desc limit 1`)
+    expect(deadline.rows[0]!.safe).toBe(true)
+
+    const play = await db.query<{ result: { chip_used: boolean; active_chip: { chip_key: string; targets: Array<{ player_name: string }> } } }>(
+      "select public.market_play_gameweek_chip('triple_shout',array[2]::bigint[],null) result",
+    )
+    expect(play.rows[0]!.result).toMatchObject({ chip_used: true, active_chip: { chip_key: 'triple_shout' } })
+    expect(play.rows[0]!.result.active_chip.targets).toEqual([expect.objectContaining({ player_name: 'Player 2' })])
+    await expect(db.query("select public.market_play_gameweek_chip('lockdown',array[2,2]::bigint[],null)"))
+      .rejects.toThrow('CHIP_ALREADY_PLAYED')
+
+    const playerRow = await db.query<{ id: string }>("select id from public.market_players where app_player_id=2")
+    const playerId = playerRow.rows[0]!.id
+    const statId = '71000000-0000-0000-0000-000000000001'
+    const eventId = '72000000-0000-0000-0000-000000000001'
+    await db.query(`insert into public.market_player_match_stats(
+      id,player_id,provider_fixture_id,fixture_date,started,minutes_played,provider_rating_milli,raw_provider_payload,provider_updated_at
+    ) values($1,$2,'chip-fixture',now(),true,90,8000,'{}',now())`, [statId, playerId])
+    await db.query(`insert into public.market_valuation_events(
+      id,player_id,match_stat_id,event_type,previous_price_minor,new_price_minor,previous_bank_milli,rating_milli,
+      baseline_rating_milli,rating_delta_milli,bank_after_event_milli,price_change_minor,reason,calculation_version,effective_at,idempotency_key
+    ) values($1,$2,$3,'verified_rating',5000000,5100000,0,8000,6800,1200,0,100000,'chip test','chip-test-v1',now(),'chip-test-event')`,
+    [eventId, playerId, statId])
+    await db.query('update public.market_players set current_price_minor=5100000 where id=$1', [playerId])
+    await db.query(`update public.market_holdings holding set current_value_minor=player.current_price_minor,
+      unrealised_profit_minor=player.current_price_minor-holding.purchase_price_minor
+      from public.market_players player where player.id=holding.player_id and holding.portfolio_id in (
+        select id from public.market_portfolios where user_id=$1
+      )`, [chipUser])
+
+    const held = await db.query<{ held: number; public_price: number; adjustment: number }>(`
+      select holding.current_value_minor held,player.current_price_minor public_price,
+        (select sum(adjustment_minor)::integer from public.market_holding_value_adjustments where holding_id=holding.id) adjustment
+      from public.market_holdings holding join public.market_players player on player.id=holding.player_id
+      join public.market_portfolios portfolio on portfolio.id=holding.portfolio_id where portfolio.user_id=$1`, [chipUser])
+    expect(held.rows[0]).toEqual({ held: 5_300_000, public_price: 5_100_000, adjustment: 200_000 })
+
+    const resultGameweekId = '73000000-0000-0000-0000-000000000001'
+    await db.query(`insert into public.market_gameweeks(
+      id,gameweek_key,week_number,label,state,opens_at,closes_at,gameweek_type
+    ) values($1,'chip-results',99,'Chip results','processing',now()-interval '1 day',now()+interval '1 day','results')`, [resultGameweekId])
+    await db.query('update public.market_player_match_stats set gameweek_id=$1 where id=$2', [resultGameweekId, statId])
+    await db.query(`insert into public.market_gameweek_reveals(
+      portfolio_id,gameweek_id,previous_portfolio_value_minor,new_portfolio_value_minor,cash_after_minor,
+      invested_after_minor,weekly_change_minor,holding_movements
+    ) select id,$1,100000000,100300000,cash_balance_minor,5300000,300000,'[]'::jsonb
+      from public.market_portfolios where user_id=$2`, [resultGameweekId, chipUser])
+    const reveal = await db.query<{ movement: { market_delta: number; chip_adjustment: number; chip_key: string; current_value: number; delta: number } }>(`
+      select holding_movements->0 movement from public.market_gameweek_reveals
+      where gameweek_id=$1`, [resultGameweekId])
+    expect(reveal.rows[0]!.movement).toMatchObject({
+      market_delta: 100_000,
+      chip_adjustment: 200_000,
+      chip_key: 'triple_shout',
+      current_value: 5_300_000,
+      delta: 300_000,
+    })
+
+    const sale = await db.query<{ result: { execution_value: number; public_market_value: number } }>(
+      "select public.market_sell_player('player-2','chip-user-sell') result",
+    )
+    expect(sale.rows[0]!.result).toMatchObject({ execution_value: 5_300_000, public_market_value: 5_100_000 })
+    const statusAfterSale = await db.query<{ result: { active_chip: { targets: Array<{ player_name: string }> } } }>('select public.market_my_gameweek_chip() result')
+    expect(statusAfterSale.rows[0]!.result.active_chip.targets).toEqual([expect.objectContaining({ player_name: 'Player 2' })])
+
+    await asUser('')
+    await db.query('delete from public.market_gameweek_reveals where gameweek_id=$1', [resultGameweekId])
+    await db.query('delete from public.market_gameweek_chip_plays where portfolio_id in (select id from public.market_portfolios where user_id=$1)', [chipUser])
+    await db.query('delete from public.market_transactions where portfolio_id in (select id from public.market_portfolios where user_id=$1)', [chipUser])
+    await db.query('delete from public.market_gameweek_allowances where portfolio_id in (select id from public.market_portfolios where user_id=$1)', [chipUser])
+    await db.query('delete from public.market_portfolios where user_id=$1', [chipUser])
+    await db.query('delete from public.market_valuation_events where id=$1', [eventId])
+    await db.query('delete from public.market_player_match_stats where id=$1', [statId])
+    await db.query('delete from public.market_gameweeks where id=$1', [resultGameweekId])
+    await db.query('update public.market_players set current_price_minor=5000000 where id=$1', [playerId])
   })
 
   it('rolls back formation, transfer-limit and paused-market failures completely', async () => {

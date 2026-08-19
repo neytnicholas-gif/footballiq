@@ -6,8 +6,9 @@ import type { ReactNode } from 'react'
 import { ArrowUpRight, Award, CircleDollarSign, Minus, ShieldCheck, Sparkles, TrendingDown, TrendingUp, Users, Wallet } from 'lucide-react'
 import { MarketPlayerChip } from '@/components/market/market-player-chip'
 import { ClubColourDot } from '@/components/market/club-colour-dot'
+import { MarketGameweekStrategy } from '@/components/market/market-gameweek-strategy'
 import { useMarketFormation } from '@/components/market/use-market-formation'
-import { countFormation } from '@/lib/market/formation'
+import { countFormation, MARKET_FORMATIONS } from '@/lib/market/formation'
 import { formatFiqCompact, formatMarketDateTime, MARKET_MAX_PORTFOLIO_SIZE } from '@/lib/market/format'
 import type { MarketHolding, MarketMatchweekRun, MarketPlayer, MarketPortfolio, MarketRevealSummary, MarketTransaction } from '@/lib/market/types'
 
@@ -33,7 +34,7 @@ export function PlayerMarketPortfolio({
   buysRemaining: number
 }) {
   const activeFormation = useMarketFormation()
-  const limits = activeFormation === '3-4-3' ? { GK: 1, DEF: 3, MID: 4, FWD: 3 } : { GK: 1, DEF: 4, MID: 3, FWD: 3 }
+  const limits = MARKET_FORMATIONS[activeFormation]
   const playersById = useMemo(() => new Map(players.map((player) => [player.id, player])), [players])
   const formation = useMemo(() => countFormation(holdings, playersById), [holdings, playersById])
   const watchedPlayers = useMemo(() => watchlist.map((playerId) => playersById.get(playerId)).filter((player): player is MarketPlayer => Boolean(player)), [watchlist, playersById])
@@ -108,6 +109,8 @@ export function PlayerMarketPortfolio({
           </div>
         </div>
       </section>
+
+      <MarketGameweekStrategy players={players} holdings={holdings} userSignedIn={userSignedIn} />
 
       <RosterPitch holdings={holdings} playersById={playersById} limits={limits} activeFormation={activeFormation} />
 
@@ -306,7 +309,8 @@ function RosterPlayerCard({ player, holding }: { player: MarketPlayer; holding?:
       <span className="mx-auto block w-fit"><MarketPlayerChip player={player} /></span>
       <span className="mt-2 flex min-w-0 items-center justify-center gap-1.5 text-xs font-black" title={player.display_name}><ClubColourDot clubName={player.club_name} className="size-2.5 shadow-[0_0_0_1px_rgba(255,255,255,.8)]" /><span className="truncate">{player.short_name || player.display_name}</span></span>
       <span className="mt-0.5 block truncate text-[9px] text-emerald-50/55">{player.club_name}</span>
-      <span className="mt-1.5 block text-[11px] font-black text-emerald-200">{formatFiqCompact(player.current_value)}</span>
+      <span className="mt-1.5 block text-[11px] font-black text-emerald-200">{formatFiqCompact(holding?.current_value_snapshot ?? player.current_value)}</span>
+      {holding && holding.current_value_snapshot !== player.current_value ? <span className="mt-0.5 block text-[8px] font-semibold text-emerald-50/45">Market {formatFiqCompact(player.current_value)}</span> : null}
       <span className={`mt-0.5 flex items-center justify-center gap-1 text-[9px] font-bold ${movement > 0 ? 'text-emerald-300' : movement < 0 ? 'text-rose-300' : 'text-emerald-50/55'}`}><MovementIcon className="size-3" aria-hidden="true" />{movement === 0 ? 'No change' : `${movement > 0 ? '+' : '-'}${formatFiqCompact(Math.abs(movement))}`}</span>
       <span className="mt-1 block text-[9px] text-emerald-50/50">Owned by {(player.ownership_percentage ?? 0).toFixed(1)}%</span>
     </Link></div>

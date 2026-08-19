@@ -10,7 +10,7 @@ import { ClubColourDot, getClubHomeColour } from '@/components/market/club-colou
 import { MarketTradeDialog } from '@/components/market/market-trade-dialog'
 import { useMarketFormation } from '@/components/market/use-market-formation'
 import { buyMarketPlayer, sellMarketPlayer, toggleMarketWatchlist } from '@/lib/market/client'
-import { canBuyPosition, countFormation } from '@/lib/market/formation'
+import { canBuyPosition, countFormation, MARKET_FORMATIONS } from '@/lib/market/formation'
 import { createMarketRequestKey, formatFiqCompact, formatMarketDateTime, formatMarketInteger, MARKET_MAX_PORTFOLIO_SIZE } from '@/lib/market/format'
 import type { MarketHolding, MarketOpeningPriceExplanation, MarketPlayer, MarketSeasonStats, MarketValueHistoryPoint } from '@/lib/market/types'
 
@@ -53,6 +53,8 @@ export function PlayerMarketDetail({
   const lockReason = player.trade_lock_reason ?? 'market review in progress'
   const playersById = useMemo(() => new Map(players.map((entry) => [entry.id, entry])), [players])
   const formation = useMemo(() => countFormation(holdings, playersById), [holdings, playersById])
+  const formationLimits = MARKET_FORMATIONS[activeFormation]
+  const heldValue = holding?.current_value_snapshot ?? player.current_value
   const hasPositionSlot = canBuyPosition(player.position, formation, activeFormation)
   const canBuy = player.active
     && !owned
@@ -124,8 +126,9 @@ export function PlayerMarketDetail({
           <Link href="/market/roster" className="inline-flex items-center gap-2 rounded-xl border border-emerald-800 bg-emerald-950 px-4 py-2.5 text-sm font-bold text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-emerald-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-700"><ArrowLeft className="size-4" />Back to full roster</Link>
         </div>
 
-        <div className="relative mt-6 grid overflow-hidden rounded-2xl bg-[#082f2a] text-white shadow-lg sm:grid-cols-2 lg:grid-cols-5">
-          <Metric label="Current value" value={formatFiqCompact(player.current_value)} icon={<Sparkles className="size-4" />} featured />
+        <div className="relative mt-6 grid overflow-hidden rounded-2xl bg-[#082f2a] text-white shadow-lg sm:grid-cols-2 lg:grid-cols-6">
+          <Metric label={owned ? 'Your held value' : 'Current value'} value={formatFiqCompact(heldValue)} icon={<Sparkles className="size-4" />} featured />
+          <Metric label="Public market price" value={formatFiqCompact(player.current_value)} icon={<BarChart3 className="size-4" />} />
           <Metric label="Picked by" value={`${(player.ownership_percentage ?? 0).toFixed(1)}% of teams`} icon={<Users className="size-4" />} />
           <Metric label="Previous value" value={formatFiqCompact(player.previous_value)} icon={<Clock3 className="size-4" />} />
           <Metric label="Opening value" value={formatFiqCompact(player.opening_season_value)} icon={<BarChart3 className="size-4" />} />
@@ -169,7 +172,8 @@ export function PlayerMarketDetail({
             <p className="mt-3 text-xs leading-5 text-emerald-50/70">
               You can buy {buysRemaining} more players this gameweek. Selling opens a place in your team and does not use a signing. Your team can have {MARKET_MAX_PORTFOLIO_SIZE} players.
             </p>
-            <p className="mt-2 text-xs text-emerald-50/70">Your team: GK {formation.GK}/1 · DEF {formation.DEF}/4 · MID {formation.MID}/3 · FWD {formation.FWD}/3</p>
+            <p className="mt-2 text-xs text-emerald-50/70">Your {activeFormation}: GK {formation.GK}/{formationLimits.GK} · DEF {formation.DEF}/{formationLimits.DEF} · MID {formation.MID}/{formationLimits.MID} · FWD {formation.FWD}/{formationLimits.FWD}</p>
+            {owned && heldValue !== player.current_value ? <p className="mt-2 rounded-lg border border-cyan-300/20 bg-cyan-300/10 px-2.5 py-2 text-xs text-cyan-100">Your weekly chip changed this held copy. Selling pays {formatFiqCompact(heldValue)}; the public buy price remains {formatFiqCompact(player.current_value)}.</p> : null}
             {!owned && !hasPositionSlot ? <p className="mt-2 text-xs text-amber-200">No {player.position} slots left. Sell an existing {player.position} first to replace.</p> : null}
             {!owned && availableCash < player.current_value ? <p className="mt-2 text-xs text-amber-200">Insufficient cash for this purchase.</p> : null}
             {!owned && holdings.length >= MARKET_MAX_PORTFOLIO_SIZE ? <p className="mt-2 text-xs text-amber-200">Portfolio is full. Sell one player before buying another.</p> : null}
@@ -243,8 +247,8 @@ export function PlayerMarketDetail({
               ]
             : [
                 { label: 'Purchase price', value: formatFiqCompact(holding?.acquisition_value ?? player.current_value) },
-                { label: 'Current value', value: formatFiqCompact(player.current_value) },
-                { label: 'Game profit/loss', value: `${player.current_value - (holding?.acquisition_value ?? player.current_value) >= 0 ? '+' : '-'}${formatFiqCompact(Math.abs(player.current_value - (holding?.acquisition_value ?? player.current_value)))}` },
+                { label: 'Your sale value', value: formatFiqCompact(heldValue) },
+                { label: 'Game profit/loss', value: `${heldValue - (holding?.acquisition_value ?? player.current_value) >= 0 ? '+' : '-'}${formatFiqCompact(Math.abs(heldValue - (holding?.acquisition_value ?? player.current_value)))}` },
               ]}
           onCancel={() => setTradeIntent(null)}
           onConfirm={() => {

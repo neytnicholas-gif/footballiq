@@ -73,7 +73,7 @@ export default function HomePage() {
             <span className="text-left"><span className="block text-2xl font-black tracking-tight sm:text-3xl">PLAY PLAYER MARKET</span><span className="mt-1 block text-xs font-bold text-slate-800/75 sm:text-sm">Free beta · no payment · first signing in minutes</span></span>
             <ArrowRight className="hidden size-6 shrink-0 transition group-hover:translate-x-1 sm:block" aria-hidden="true" />
           </Link>
-          <div className="mt-4 flex flex-wrap justify-center gap-2 text-[11px] font-bold text-slate-300"><span className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5">100m budget</span><span className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5">Build 1-4-3-3</span><span className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5">Real match ratings</span></div>
+          <div className="mt-4 flex flex-wrap justify-center gap-2 text-[11px] font-bold text-slate-300"><span className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5">100m budget</span><span className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5">Choose your formation</span><span className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5">Real match ratings</span></div>
         </section>
         <section className="mx-auto grid max-w-7xl gap-6 px-4 pb-8 pt-8 sm:px-6 sm:pt-10 lg:grid-cols-[1.18fr_.82fr] lg:items-stretch">
           <div className="relative overflow-hidden rounded-3xl border border-white/12 bg-[linear-gradient(155deg,rgba(10,17,30,.96),rgba(7,13,23,.88))] p-6 shadow-[0_30px_90px_-52px_rgba(16,185,129,.4)] sm:p-8">
