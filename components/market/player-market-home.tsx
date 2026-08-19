@@ -29,6 +29,7 @@ import type { MarketGameweekStatus } from '@/lib/market/types'
 import { MarketFirstMission } from '@/components/market/market-first-mission'
 import { MarketMatchdayHub } from '@/components/market/market-matchday-hub'
 import { MARKET_JOURNEY_EVENT, MarketJourneyTracker, marketJourneyKey } from '@/components/market/market-journey-tracker'
+import { friendlyMarketLoadError } from '@/lib/market/user-errors'
 
 export function PlayerMarketHome() {
   const activeFormation = useMarketFormation()
@@ -62,15 +63,15 @@ export function PlayerMarketHome() {
     ])
 
     if (playerError) {
-      setError(playerError.message)
+      setError(friendlyMarketLoadError(playerError))
     }
 
     if (portfolioData.error) {
-      setError(portfolioData.error.message)
+      setError(friendlyMarketLoadError(portfolioData.error))
     }
 
     if (latestRunData.error) {
-      setError(latestRunData.error.message)
+      setError(friendlyMarketLoadError(latestRunData.error))
     }
 
     setPlayers(playerRows)

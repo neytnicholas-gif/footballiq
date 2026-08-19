@@ -178,7 +178,8 @@ export function CompetitiveLeaderboard({ initialBoard = 'overall' }: { initialBo
       }
     } catch (caught) {
       setPlayers([])
-      setError(caught instanceof Error ? caught.message : 'Could not load this leaderboard.')
+      console.error('Leaderboard load failed', caught)
+      setError('That leaderboard could not load. Your saved scores are safe—refresh and try again.')
     } finally {
       setLoading(false)
     }

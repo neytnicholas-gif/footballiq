@@ -6,6 +6,7 @@ import { useAuth } from '@/components/auth-provider'
 import { PlayerMarketLeagues } from '@/components/market/player-market-leagues'
 import { loadMyFriendLeagues } from '@/lib/market/client'
 import type { MarketFriendLeague, MarketFriendLeagueLeaderboardRow, MarketFriendLeagueMember } from '@/lib/market/types'
+import { friendlyMarketLeagueError } from '@/lib/market/user-errors'
 
 export default function PlayerMarketLeaguesPage() {
   const { user } = useAuth()
@@ -29,7 +30,7 @@ export default function PlayerMarketLeaguesPage() {
 
     const { leagues: leagueRows, members: memberRows, leaderboard: leaderboardRows, error: loadError } = await loadMyFriendLeagues()
     if (loadError) {
-      setError(loadError.message)
+      setError(friendlyMarketLeagueError(loadError, 'load'))
     }
 
     setLeagues(leagueRows)

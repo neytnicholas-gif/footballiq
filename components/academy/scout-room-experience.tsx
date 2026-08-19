@@ -159,7 +159,7 @@ export function ScoutRoomExperience() {
 
             <label className="mt-3 block text-sm font-semibold">
               Potential level
-              <select value={potential} onChange={(event) => setPotential(event.target.value)} className="mt-1.5 h-12 w-full rounded-xl border border-white/15 bg-slate-950/55 px-3 text-sm text-white outline-none focus:border-emerald-300/60">
+              <select value={potential} onChange={(event) => setPotential(event.target.value)} className="mt-1.5 h-12 w-full rounded-xl border border-white/15 bg-slate-950/55 px-3 text-sm text-white outline-none focus:border-emerald-300/60 focus-visible:ring-2 focus-visible:ring-emerald-300/70 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950">
                 <option value="">Choose how good they could become</option>
                 <option value="rotation-top-flight">Top-flight rotation potential</option>
                 <option value="starter-top-flight">Top-flight starter potential</option>
@@ -169,7 +169,7 @@ export function ScoutRoomExperience() {
 
             <label className="mt-3 block text-sm font-semibold">
               Recommendation
-              <select value={recommendation} onChange={(event) => setRecommendation(event.target.value)} className="mt-1.5 h-12 w-full rounded-xl border border-white/15 bg-slate-950/55 px-3 text-sm text-white outline-none focus:border-emerald-300/60">
+              <select value={recommendation} onChange={(event) => setRecommendation(event.target.value)} className="mt-1.5 h-12 w-full rounded-xl border border-white/15 bg-slate-950/55 px-3 text-sm text-white outline-none focus:border-emerald-300/60 focus-visible:ring-2 focus-visible:ring-emerald-300/70 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950">
                 <option value="">Choose what the club should do</option>
                 <option value="recommend-now">Recommend now</option>
                 <option value="recommend-follow-up">Recommend with follow-up live check</option>
@@ -179,7 +179,7 @@ export function ScoutRoomExperience() {
 
             <label className="mt-3 block text-sm font-semibold">
               Confidence level
-              <select value={confidence} onChange={(event) => setConfidence(event.target.value as Confidence | '')} className="mt-1.5 h-12 w-full rounded-xl border border-white/15 bg-slate-950/55 px-3 text-sm text-white outline-none focus:border-emerald-300/60">
+              <select value={confidence} onChange={(event) => setConfidence(event.target.value as Confidence | '')} className="mt-1.5 h-12 w-full rounded-xl border border-white/15 bg-slate-950/55 px-3 text-sm text-white outline-none focus:border-emerald-300/60 focus-visible:ring-2 focus-visible:ring-emerald-300/70 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950">
                 <option value="">Select confidence</option>
                 <option value="Low">Low</option>
                 <option value="Medium">Medium</option>
@@ -189,7 +189,7 @@ export function ScoutRoomExperience() {
 
             <label className="mt-3 block text-sm font-semibold">
               Structured report (concise)
-              <textarea value={report} onChange={(event) => setReport(event.target.value)} rows={5} placeholder="What did you notice? What looks good? What is the risk? What should the club do next?" className="mt-1.5 w-full resize-y rounded-xl border border-white/15 bg-slate-950/55 px-3 py-3 text-sm leading-6 text-white outline-none placeholder:text-slate-500 focus:border-emerald-300/60" />
+              <textarea value={report} onChange={(event) => setReport(event.target.value)} rows={5} placeholder="What did you notice? What looks good? What is the risk? What should the club do next?" className="mt-1.5 w-full resize-y rounded-xl border border-white/15 bg-slate-950/55 px-3 py-3 text-sm leading-6 text-white outline-none placeholder:text-slate-500 focus:border-emerald-300/60 focus-visible:ring-2 focus-visible:ring-emerald-300/70 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950" />
             </label>
 
             <button onClick={() => void submit()} disabled={!completionReady || submitted || saving} className="mt-4 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-emerald-300 px-5 text-sm font-black text-emerald-950 shadow-[0_16px_36px_-18px_rgba(52,211,153,.8)] transition hover:bg-emerald-200 disabled:cursor-not-allowed disabled:bg-slate-700 disabled:text-slate-400">

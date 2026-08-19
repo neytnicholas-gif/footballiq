@@ -10,10 +10,10 @@ import { SITE_ONBOARDING_VERSION, START_SITE_TOUR_EVENT, isOnboardingRoute, onbo
 const steps = [
   {
     eyebrow: 'Welcome',
-    title: 'Fancy a quick football game?',
-    copy: 'One stat. Two players. Pick the winner and see the answer straight away—or take the short tour first.',
-    tip: 'No account needed. Your first ten duels are ready.',
-    icon: Gamepad2,
+    title: 'Ready to build your team?',
+    copy: 'Start with 100m free game credits. Pick players from England, Spain and France, then follow how their game values move—or take the short tour first.',
+    tip: 'Market Credits are only for the game. They are not real money.',
+    icon: LineChart,
     colours: 'from-emerald-400 to-cyan-400',
   },
   {
@@ -110,7 +110,7 @@ export function OnboardingTour() {
 
   function startPlaying() {
     dismiss()
-    router.push('/quizzes/football-duels')
+    router.push('/market')
   }
 
   const step = steps[stepIndex]
@@ -158,12 +158,12 @@ export function OnboardingTour() {
             {stepIndex === 0 ? (
               <div className="flex flex-wrap gap-2">
                 <button onClick={() => setStepIndex(1)} className="min-h-12 rounded-xl border border-white/15 px-4 font-bold text-white transition hover:bg-white/10">Show me around</button>
-                <button autoFocus onClick={startPlaying} className="inline-flex min-h-12 items-center gap-2 rounded-xl bg-emerald-400 px-5 font-black text-slate-950 shadow-[0_16px_36px_-18px_rgba(52,211,153,.95)] transition hover:-translate-y-0.5 hover:bg-emerald-300"><Gamepad2 className="size-4" /> Play now <ArrowRight className="size-4" /></button>
+                <button autoFocus onClick={startPlaying} className="inline-flex min-h-12 items-center gap-2 rounded-xl bg-emerald-400 px-5 font-black text-slate-950 shadow-[0_16px_36px_-18px_rgba(52,211,153,.95)] transition hover:-translate-y-0.5 hover:bg-emerald-300"><LineChart className="size-4" /> Open Player Market <ArrowRight className="size-4" /></button>
               </div>
             ) : isLast ? (
               <div className="flex flex-wrap gap-2">
                 <button onClick={() => { dismiss(); router.push('/how-to-play') }} className="min-h-12 rounded-xl border border-white/15 px-4 font-bold text-white transition hover:bg-white/10">See all instructions</button>
-                <button autoFocus onClick={startPlaying} className="inline-flex min-h-12 items-center gap-2 rounded-xl bg-emerald-400 px-5 font-black text-slate-950 transition hover:bg-emerald-300">Start playing <ArrowRight className="size-4" /></button>
+                <button autoFocus onClick={startPlaying} className="inline-flex min-h-12 items-center gap-2 rounded-xl bg-emerald-400 px-5 font-black text-slate-950 transition hover:bg-emerald-300">Build my team <ArrowRight className="size-4" /></button>
               </div>
             ) : (
               <button autoFocus onClick={() => setStepIndex((current) => Math.min(steps.length - 1, current + 1))} className="inline-flex min-h-12 items-center gap-2 rounded-xl bg-emerald-400 px-5 font-black text-slate-950 transition hover:bg-emerald-300">Next <ArrowRight className="size-4" /></button>

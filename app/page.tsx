@@ -6,6 +6,7 @@ import { SiteHeader } from '@/components/site-header'
 import { SponsorPlacement } from '@/components/sponsor-placement'
 import { useAuth } from '@/components/auth-provider'
 import { getLevelInfo, getRankProgress } from '@/lib/progression'
+import { HomePlayJourney } from '@/components/home-play-journey'
 
 const featuredModes = [
   {
@@ -63,6 +64,17 @@ export default function HomePage() {
             <span className="font-semibold text-emerald-300">Join beta →</span>
           </Link>
         </section>
+        <section className="mx-auto max-w-5xl px-4 pt-8 text-center sm:px-6 sm:pt-10" aria-labelledby="home-primary-play-title">
+          <p className="text-xs font-black uppercase tracking-[.28em] text-emerald-300">Your first move</p>
+          <h2 id="home-primary-play-title" className="mt-2 text-3xl font-black tracking-tight text-white sm:text-5xl">Build the XI you believe in.</h2>
+          <p className="mx-auto mt-3 max-w-2xl text-sm leading-6 text-slate-300 sm:text-base">Start with 100m free game credits. Choose players from England, Spain and France, then watch their game values move.</p>
+          <Link href="/market" aria-label="Play the Player Market now" className="group mx-auto mt-6 flex min-h-24 w-full max-w-2xl items-center justify-center gap-4 rounded-[2rem] border border-emerald-100/30 bg-[linear-gradient(135deg,#6ee7b7,#34d399)] px-5 py-4 text-slate-950 shadow-[0_24px_80px_-28px_rgba(52,211,153,.95)] outline-none transition hover:-translate-y-1 hover:shadow-[0_30px_90px_-24px_rgba(52,211,153,1)] focus-visible:ring-4 focus-visible:ring-white focus-visible:ring-offset-4 focus-visible:ring-offset-[#060b13] sm:min-h-28">
+            <span className="grid size-14 shrink-0 place-items-center rounded-full bg-slate-950 text-emerald-200 shadow-lg transition group-hover:scale-105 sm:size-16"><Play className="ml-1 size-6 fill-current sm:size-7" aria-hidden="true" /></span>
+            <span className="text-left"><span className="block text-2xl font-black tracking-tight sm:text-3xl">PLAY PLAYER MARKET</span><span className="mt-1 block text-xs font-bold text-slate-800/75 sm:text-sm">Free beta · no payment · first signing in minutes</span></span>
+            <ArrowRight className="hidden size-6 shrink-0 transition group-hover:translate-x-1 sm:block" aria-hidden="true" />
+          </Link>
+          <div className="mt-4 flex flex-wrap justify-center gap-2 text-[11px] font-bold text-slate-300"><span className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5">100m budget</span><span className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5">Build 1-4-3-3</span><span className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5">Real match ratings</span></div>
+        </section>
         <section className="mx-auto grid max-w-7xl gap-6 px-4 pb-8 pt-8 sm:px-6 sm:pt-10 lg:grid-cols-[1.18fr_.82fr] lg:items-stretch">
           <div className="relative overflow-hidden rounded-3xl border border-white/12 bg-[linear-gradient(155deg,rgba(10,17,30,.96),rgba(7,13,23,.88))] p-6 shadow-[0_30px_90px_-52px_rgba(16,185,129,.4)] sm:p-8">
             <div aria-hidden="true" className="absolute inset-0 bg-[radial-gradient(circle_at_16%_18%,rgba(16,185,129,.18),transparent_32%),radial-gradient(circle_at_90%_8%,rgba(56,189,248,.12),transparent_28%)]" />
@@ -89,7 +101,7 @@ export default function HomePage() {
                     <Gamepad2 className="size-5" aria-hidden="true" />
                   </span>
                   <div>
-                    <p className="text-[11px] font-black uppercase tracking-[0.2em] text-emerald-200">Best first game</p>
+                    <p className="text-[11px] font-black uppercase tracking-[0.2em] text-emerald-200">Quick warm-up</p>
                     <h2 className="mt-1 text-xl font-black tracking-tight text-white">One stat. Two players. Your shout.</h2>
                     <p className="mt-1 text-sm leading-5 text-slate-300">Ten quick Football Duels with the answer shown straight away.</p>
                   </div>
@@ -105,7 +117,7 @@ export default function HomePage() {
                       <Play className="ml-0.5 size-4 fill-current" aria-hidden="true" />
                     </span>
                     <span>
-                      <span className="block text-lg font-black tracking-tight">PLAY NOW</span>
+                      <span className="block text-lg font-black tracking-tight">PLAY A QUICK DUEL</span>
                       <span className="block text-xs font-semibold text-slate-800/75">Your first duel is ready</span>
                     </span>
                   </span>
@@ -155,6 +167,8 @@ export default function HomePage() {
             <HeroMetric label="Your progress" value="Level + rank" hint="See yourself improve" />
           </div>
         </section>
+
+        <HomePlayJourney />
 
         <section className="mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-8">
           <div className="flex flex-wrap items-end justify-between gap-3">

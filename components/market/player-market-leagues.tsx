@@ -6,6 +6,7 @@ import { Check, Copy, Share2, Trash2, Users } from 'lucide-react'
 import { createFriendLeague, deleteFriendLeague, joinFriendLeague, leaveFriendLeague } from '@/lib/market/client'
 import { formatFiqCompact } from '@/lib/market/format'
 import type { MarketFriendLeague, MarketFriendLeagueLeaderboardRow, MarketFriendLeagueMember } from '@/lib/market/types'
+import { friendlyMarketLeagueError } from '@/lib/market/user-errors'
 
 export function PlayerMarketLeagues({
   leagues,
@@ -115,7 +116,7 @@ export function PlayerMarketLeagues({
     setNotice('')
     const { data, error: createError } = await createFriendLeague(createName, scoreMode)
     if (createError) {
-      setError(createError.message)
+      setError(friendlyMarketLeagueError(createError, 'create'))
       setBusy(null)
       return
     }
@@ -131,7 +132,7 @@ export function PlayerMarketLeagues({
     setNotice('')
     const { data, error: joinError } = await joinFriendLeague(joinCode)
     if (joinError) {
-      setError(joinError.message)
+      setError(friendlyMarketLeagueError(joinError, 'join'))
       setBusy(null)
       return
     }
@@ -147,7 +148,7 @@ export function PlayerMarketLeagues({
     setNotice('')
     const { error: leaveError } = await leaveFriendLeague(leagueId)
     if (leaveError) {
-      setError(leaveError.message)
+      setError(friendlyMarketLeagueError(leaveError, 'leave'))
       setBusy(null)
       return
     }
@@ -164,7 +165,7 @@ export function PlayerMarketLeagues({
     const leagueName = deleteIntent.name
     const { error: deleteError } = await deleteFriendLeague(deleteIntent.id)
     if (deleteError) {
-      setError(deleteError.message)
+      setError(friendlyMarketLeagueError(deleteError, 'delete'))
       setBusy(null)
       return
     }

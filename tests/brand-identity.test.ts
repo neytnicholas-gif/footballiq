@@ -27,21 +27,21 @@ describe('Early Shout identity', () => {
     expect(read('components/predictions-game.tsx')).toContain("'footballiq-prediction-history'")
   })
 
-  it('offers an honest one-click game before asking visitors to create an account', () => {
+  it('offers the flagship Player Market first and keeps a quick guest game available', () => {
     const home = read('app/page.tsx')
     const duels = read('app/quizzes/football-duels/page.tsx')
     const duelPacks = read('lib/duel-packs.ts')
     const tour = read('components/onboarding-tour.tsx')
 
     expect(home).toContain('href="/quizzes/football-duels"')
-    expect(home).toContain('PLAY NOW')
+    expect(home).toContain('PLAY PLAYER MARKET')
     expect(home).toContain('No sign-up')
     expect(home).toContain('href="/beta"')
     expect(home).not.toContain('first 100')
     expect(duelPacks).toContain("title: 'Daily Quick Play'")
     expect(duels).toContain('setSelected(dailyPack())')
-    expect(tour).toContain("router.push('/quizzes/football-duels')")
-    expect(tour).toContain('Play now')
+    expect(tour).toContain("router.push('/market')")
+    expect(tour).toContain('Open Player Market')
     expect(tour).toContain('Show me around')
     expect(read('components/account-prompt.tsx')).toContain("const playPaths = ['/quizzes', '/daily', '/predictions']")
     expect(read('components/duel-quiz.tsx')).toContain('Keep your score and {xpEarned} XP')

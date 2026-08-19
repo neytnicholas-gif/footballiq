@@ -10,8 +10,8 @@ export const metadata: Metadata = {
 }
 
 const waysToPlay = [
-  { number: '1', title: 'Play a football game', copy: 'Open Games. Pick a challenge. Choose your answers and learn as you go.', href: '/quizzes', cta: 'Choose a game', icon: Gamepad2, colour: 'from-sky-400 to-indigo-500' },
-  { number: '2', title: 'Build your Market team', copy: 'Use your free Market Credits to choose 11 players. Sell and change your team when you want.', href: '/market', cta: 'Open the Market', icon: LineChart, colour: 'from-emerald-400 to-teal-600' },
+  { number: '1', title: 'Build your Market team', copy: 'Use your free Market Credits to choose 11 players. Sell and change your team when you want.', href: '/market', cta: 'Open the Market', icon: LineChart, colour: 'from-emerald-400 to-teal-600' },
+  { number: '2', title: 'Play a football game', copy: 'Open Games. Pick a challenge. Choose your answers and learn as you go.', href: '/quizzes', cta: 'Choose a game', icon: Gamepad2, colour: 'from-sky-400 to-indigo-500' },
   { number: '3', title: 'Predict the matches', copy: 'Choose what you think will happen before kick-off. Correct picks score points.', href: '/predictions', cta: 'Make a prediction', icon: BarChart3, colour: 'from-amber-400 to-orange-500' },
   { number: '4', title: 'Grow your profile', copy: 'Earn XP, raise your level, reach new ranks and collect badges as you play.', href: '/profile', cta: 'See my profile', icon: Trophy, colour: 'from-violet-500 to-fuchsia-500' },
 ]
@@ -28,7 +28,7 @@ export default function HowToPlayPage() {
             <p className="mt-5 text-lg leading-relaxed text-muted-foreground">Start with one thing. You do not need to learn everything at once, and you can always come back here.</p>
             <div className="mt-7 flex flex-wrap gap-3">
               <StartTourButton />
-              <Link href="/quizzes" className="inline-flex min-h-12 items-center justify-center rounded-xl border border-border bg-card px-5 font-bold text-foreground transition hover:border-primary/40">Start with a game</Link>
+              <Link href="/market" className="inline-flex min-h-12 items-center justify-center rounded-xl border border-primary/35 bg-primary/10 px-5 font-bold text-foreground transition hover:border-primary/60 hover:bg-primary/15">Start with Player Market</Link>
             </div>
           </div>
         </div>
@@ -68,7 +68,7 @@ export default function HowToPlayPage() {
         <div className="mt-10 grid gap-4 lg:grid-cols-3">
           <InfoCard icon={<ShieldCheck className="size-5" />} title="Can I lose real money?" copy="No. There are no deposits, cash prizes or withdrawals. Market Credits only work inside the game." />
           <InfoCard icon={<Users className="size-5" />} title="Can I play with friends?" copy="Yes. Market, quiz and prediction friend leagues let you compare with people you know." />
-          <InfoCard icon={<Sparkles className="size-5" />} title="What should I try first?" copy="Try one quick Game. It is the easiest way to earn your first XP and see how feedback works." />
+          <InfoCard icon={<Sparkles className="size-5" />} title="What should I try first?" copy="Start in the Player Market. Use your free game budget to choose the first player for your XI." />
         </div>
 
         <div className="mt-10 rounded-3xl border border-border bg-card p-6 sm:flex sm:items-center sm:justify-between sm:gap-6">

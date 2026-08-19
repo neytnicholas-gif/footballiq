@@ -7,6 +7,7 @@ import { SiteFooter } from '@/components/site-footer'
 import { MarketRewardCelebration } from '@/components/market/market-reward-celebration'
 import { BetaFeedbackButton } from '@/components/beta-feedback-button'
 import { OnboardingTour } from '@/components/onboarding-tour'
+import { PlayPathTracker } from '@/components/play-path-tracker'
 import { BRAND } from '@/lib/brand'
 import './globals.css'
 
@@ -72,6 +73,7 @@ export default function RootLayout({
           Skip to main content
         </a>
         <AuthProvider>
+          <PlayPathTracker />
           <div id="main-content" tabIndex={-1}>{children}</div>
           <OnboardingTour />
           <MarketRewardCelebration />
