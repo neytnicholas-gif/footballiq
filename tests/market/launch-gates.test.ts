@@ -323,7 +323,13 @@ describe('Player Market launch gates', () => {
     expect(browser).toContain('Total spent')
     expect(browser).toContain('Budget left')
     expect(browser).toContain('href="/market/roster"')
-    expect(browser.indexOf('<MarketRosterBoard')).toBeLessThan(browser.indexOf('placeholder="Player or club"'))
+    const finderIndex = browser.indexOf('aria-labelledby="player-finder-title"')
+    const rosterIndex = browser.indexOf('<MarketRosterBoard')
+    const resultsIndex = browser.indexOf('id="player-results"')
+    expect(finderIndex).toBeGreaterThan(-1)
+    expect(rosterIndex).toBeGreaterThan(finderIndex)
+    expect(resultsIndex).toBeGreaterThan(rosterIndex)
+    expect(browser).toContain('placeholder="Type a player name, e.g. Lamine Yamal"')
   })
 
   it('returns from a player card directly to the live roster', () => {

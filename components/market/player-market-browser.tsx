@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { useEffect, useMemo, useState } from 'react'
+import { useDeferredValue, useEffect, useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
 import { ArrowDownRight, ArrowUpDown, ArrowUpRight, CheckCircle2, Clock3, Minus, Search, Shield, Sparkles, Star, UserPlus, Users, WalletCards, X } from 'lucide-react'
 import { MarketPlayerChip } from '@/components/market/market-player-chip'
@@ -12,6 +12,7 @@ import { buyMarketPlayer, sellMarketPlayer, toggleMarketWatchlist } from '@/lib/
 import { canBuyPosition, countFormation } from '@/lib/market/formation'
 import { createMarketRequestKey, formatFiqCompact, MARKET_MAX_PORTFOLIO_SIZE } from '@/lib/market/format'
 import type { MarketHolding, MarketPlayer, MarketSeasonStats } from '@/lib/market/types'
+import { matchesPlayerSearch } from '@/lib/market/player-search'
 
 type SortKey = 'value-desc' | 'value-asc' | 'change-desc' | 'change-asc' | 'form-desc' | 'name-asc'
 type CatalogueScope = 'all' | 'squad' | 'watchlist' | 'affordable'
@@ -77,6 +78,7 @@ export function PlayerMarketBrowser({
   const [notice, setNotice] = useState<{ kind: 'success' | 'error' | 'info'; message: string } | null>(null)
   const [tradeIntent, setTradeIntent] = useState<{ action: 'buy' | 'sell'; player: MarketPlayer; requestKey: string } | null>(null)
   const [renderedAt] = useState(() => Date.now())
+  const deferredSearch = useDeferredValue(search)
   const activeFormation = useMarketFormation()
 
   const clubs = useMemo(() => ['ALL', ...new Set(players
@@ -96,14 +98,7 @@ export function PlayerMarketBrowser({
   const filtered = useMemo(() => {
     let rows = [...players]
 
-    const q = search.trim().toLowerCase()
-    if (q) {
-      rows = rows.filter((player) =>
-        player.display_name.toLowerCase().includes(q)
-        || player.short_name?.toLowerCase().includes(q)
-        || player.club_name.toLowerCase().includes(q),
-      )
-    }
+    if (deferredSearch.trim()) rows = rows.filter((player) => matchesPlayerSearch(player, deferredSearch))
 
     if (position !== 'ALL') {
       rows = rows.filter((player) => player.position === position)
@@ -150,11 +145,29 @@ export function PlayerMarketBrowser({
     })
 
     return rows
-  }, [players, search, position, competition, club, trend, priceRange, scope, sortKey, holdingsSet, watchSet, availableCash, formation, activeFormation])
+  }, [players, deferredSearch, position, competition, club, trend, priceRange, scope, sortKey, holdingsSet, watchSet, availableCash, formation, activeFormation])
   const visiblePlayers = useMemo(() => filtered.slice(0, visibleCount), [filtered, visibleCount])
+  const activeFilterCount = Number(position !== 'ALL')
+    + Number(competition !== 'ALL')
+    + Number(club !== 'ALL')
+    + Number(trend !== 'all')
+    + Number(priceRange !== 'all')
+  const hasChangedCatalogueView = Boolean(search.trim()) || activeFilterCount > 0 || scope !== 'all' || sortKey !== 'value-desc'
 
   function resetCatalogueWindow() {
     setVisibleCount(PLAYER_PAGE_SIZE)
+  }
+
+  function clearCatalogueFilters() {
+    setSearch('')
+    setPosition('ALL')
+    setCompetition('ALL')
+    setClub('ALL')
+    setTrend('all')
+    setPriceRange('all')
+    setSortKey('value-desc')
+    setScope('all')
+    resetCatalogueWindow()
   }
 
   useEffect(() => {
@@ -212,7 +225,7 @@ export function PlayerMarketBrowser({
           <div>
             <p className="mb-2 inline-flex items-center gap-2 rounded-full border border-emerald-300/20 bg-emerald-300/10 px-3 py-1 text-[10px] font-black uppercase tracking-[.2em] text-emerald-200"><Sparkles className="size-3" /> Early Shout Exchange</p>
             <h1 className="text-3xl font-black tracking-tight text-white sm:text-4xl">Player market</h1>
-            <p className="mt-2 max-w-2xl text-sm text-slate-300">Pick 11 players: 1 goalkeeper, 4 defenders, 3 midfielders and 3 forwards. Their game prices can change after they play.</p>
+            <p className="mt-2 max-w-2xl text-sm text-slate-300">Build an 11-player team and back the players you think will perform. Their Early Shout game prices can rise, fall or stay the same after they play.</p>
           </div>
           <div className="rounded-2xl border border-white/10 bg-white/[.07] px-4 py-3 shadow-sm backdrop-blur">
             <p className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[.16em] text-slate-400"><WalletCards className="size-3.5 text-emerald-300" /> Available cash</p>
@@ -233,6 +246,18 @@ export function PlayerMarketBrowser({
           <MarketStatus label="Missing match data" value="Price stays the same" note="We never guess a player’s result" />
         </div>
 
+        <section aria-labelledby="market-explainer-title" className="relative mt-4 rounded-2xl border border-cyan-200/15 bg-[linear-gradient(135deg,rgba(14,116,144,.16),rgba(16,185,129,.08))] p-4 shadow-sm">
+          <p className="text-[10px] font-black uppercase tracking-[.2em] text-cyan-200">How the game works</p>
+          <h2 id="market-explainer-title" className="mt-1 text-xl font-black text-white">Football stocks—only inside the game.</h2>
+          <p className="mt-1 max-w-4xl text-xs leading-relaxed text-slate-300"><strong className="text-white">Think of every player as a football stock inside Early Shout.</strong> You use free game credits to add them to your team. You are not buying the real footballer, and this is not a financial product.</p>
+          <div className="mt-3 grid gap-2 sm:grid-cols-3">
+            <GameStep number="1" title="Buy a player" text="Use your 100m free game budget to choose someone you believe will play well." />
+            <GameStep number="2" title="Their match changes the price" text="After a finished league match, verified rating and minutes can move their game price up, down or not at all." />
+            <GameStep number="3" title="Keep or sell" text="If the price rises, your team gains game value. Sell when you want and use the credits on another player." />
+          </div>
+          <p className="mt-3 text-[10px] font-semibold text-cyan-100/70">No real money. No ownership of footballers. No withdrawals. Just a football prediction game.</p>
+        </section>
+
         <div className="relative mt-4 grid gap-3 rounded-2xl border border-white/10 bg-black/15 p-3 text-sm backdrop-blur sm:grid-cols-2 lg:grid-cols-6">
           <FormationPill label="GK" value={`${formation.GK}/1`} />
           <FormationPill label="DEF" value={`${formation.DEF}/4`} />
@@ -241,6 +266,83 @@ export function PlayerMarketBrowser({
           <FormationPill label="Gameweek signings" value={`${buysRemaining} of 11`} subtle="left this gameweek" />
           <FormationPill label="Sales" value="No limit" subtle="sell to open a squad slot" />
         </div>
+
+        <section aria-labelledby="player-finder-title" className="relative mt-5 rounded-2xl border border-emerald-300/20 bg-[#071f28]/95 p-4 shadow-[0_18px_50px_-34px_rgba(16,185,129,.65)] sm:p-5">
+          <div className="flex flex-wrap items-end justify-between gap-3">
+            <div>
+              <p className="text-[10px] font-black uppercase tracking-[.2em] text-emerald-300">Player finder</p>
+              <h2 id="player-finder-title" className="mt-1 text-xl font-black text-white">Find any player in seconds.</h2>
+              <p id="player-search-help" className="mt-1 text-xs text-slate-400">Type a player’s name. Use the filters only when you want to narrow the list further.</p>
+            </div>
+            <p id="player-search-results" aria-live="polite" className="rounded-full border border-white/10 bg-white/[.06] px-3 py-1.5 text-xs font-bold text-emerald-200">
+              {filtered.length} {filtered.length === 1 ? 'player found' : 'players found'}
+            </p>
+          </div>
+
+          <label className="mt-4 block">
+            <span className="sr-only">Search for a player by name</span>
+            <div className="flex min-h-14 items-center rounded-2xl border border-emerald-300/30 bg-white/[.08] px-4 shadow-inner transition focus-within:border-emerald-300/70 focus-within:ring-2 focus-within:ring-emerald-300/25">
+              <Search className="size-5 shrink-0 text-emerald-300" aria-hidden="true" />
+              <input
+                type="search"
+                value={search}
+                onChange={(event) => { setSearch(event.target.value); resetCatalogueWindow() }}
+                placeholder="Type a player name, e.g. Lamine Yamal"
+                autoComplete="off"
+                spellCheck={false}
+                aria-describedby="player-search-help player-search-results"
+                aria-controls="player-results"
+                className="min-h-14 w-full bg-transparent px-3 py-3 text-base font-semibold text-white outline-none placeholder:text-slate-500"
+              />
+              {search ? (
+                <button type="button" onClick={() => { setSearch(''); resetCatalogueWindow() }} aria-label="Clear player search" className="rounded-lg p-2 text-slate-300 transition hover:bg-white/10 hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-300">
+                  <X className="size-4" aria-hidden="true" />
+                </button>
+              ) : null}
+            </div>
+          </label>
+
+          <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+            <FilterSelect label="Position" value={position} onChange={(value) => { setPosition(value as typeof position); resetCatalogueWindow() }} options={['ALL', 'GK', 'DEF', 'MID', 'FWD']} />
+            <FilterSelect label="League" value={competition} onChange={(value) => { setCompetition(value); setClub('ALL'); resetCatalogueWindow() }} options={competitions} />
+            <FilterSelect label="Club" value={club} onChange={(value) => { setClub(value); resetCatalogueWindow() }} options={clubs} />
+            <FilterSelect label="Price" value={priceRange} onChange={(value) => { setPriceRange(value as typeof priceRange); resetCatalogueWindow() }} options={['all', 'low', 'mid', 'high']} />
+            <FilterSelect label="Price movement" value={trend} onChange={(value) => { setTrend(value as typeof trend); resetCatalogueWindow() }} options={['all', 'rising', 'falling']} />
+          </div>
+
+          <div className="mt-4 flex flex-wrap items-center gap-2" role="group" aria-label="Quick player views">
+            <span className="mr-1 text-[10px] font-black uppercase tracking-[.16em] text-slate-500">Quick views</span>
+            <ScopeButton active={scope === 'all'} onClick={() => { setScope('all'); resetCatalogueWindow() }}>All players</ScopeButton>
+            <ScopeButton active={scope === 'squad'} onClick={() => { setScope('squad'); resetCatalogueWindow() }}>My squad · {holdings.length}</ScopeButton>
+            <ScopeButton active={scope === 'watchlist'} onClick={() => { setScope('watchlist'); resetCatalogueWindow() }}>Watchlist · {watchlist.length}</ScopeButton>
+            <ScopeButton active={scope === 'affordable'} onClick={() => { setScope('affordable'); resetCatalogueWindow() }}>Affordable fits</ScopeButton>
+          </div>
+
+          <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-white/10 pt-4">
+            <label className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-white/15 bg-white/[.06] px-3 py-2 text-sm text-slate-200">
+              <ArrowUpDown className="size-4 text-emerald-300" aria-hidden="true" />
+              <span className="sr-only">Sort players</span>
+              <select aria-label="Sort players" value={sortKey} onChange={(event) => { setSortKey(event.target.value as SortKey); resetCatalogueWindow() }} className="bg-transparent font-semibold text-white outline-none focus-visible:ring-2 focus-visible:ring-emerald-300">
+                <option value="value-desc">Highest value</option>
+                <option value="value-asc">Lowest value</option>
+                <option value="change-desc">Biggest risers</option>
+                <option value="change-asc">Biggest fallers</option>
+                <option value="form-desc">Strongest form</option>
+                <option value="name-asc">Name A–Z</option>
+              </select>
+            </label>
+            <div className="flex flex-wrap items-center gap-2">
+              {hasChangedCatalogueView ? (
+                <button type="button" onClick={clearCatalogueFilters} className="min-h-11 rounded-xl border border-white/15 bg-white/[.06] px-4 py-2 text-sm font-bold text-slate-200 transition hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-300">
+                  Clear search & filters{activeFilterCount ? ` · ${activeFilterCount}` : ''}
+                </button>
+              ) : null}
+              <a href="#player-results" className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-emerald-300 px-4 py-2 text-sm font-black text-emerald-950 transition hover:bg-emerald-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-300">
+                Show {filtered.length} {filtered.length === 1 ? 'player' : 'players'} <ArrowDownRight className="size-4" aria-hidden="true" />
+              </a>
+            </div>
+          </div>
+        </section>
 
         <MarketRosterBoard
           holdings={holdings}
@@ -260,63 +362,17 @@ export function PlayerMarketBrowser({
           <Link href="/market/roster" className="text-xs font-black text-emerald-300 underline decoration-emerald-300/40 underline-offset-4">Open full roster</Link>
         </div>
 
-        <div className="mt-5 flex flex-wrap gap-2" role="group" aria-label="Catalogue views">
-          <ScopeButton active={scope === 'all'} onClick={() => { setScope('all'); resetCatalogueWindow() }}>All players</ScopeButton>
-          <ScopeButton active={scope === 'squad'} onClick={() => { setScope('squad'); resetCatalogueWindow() }}>My squad · {holdings.length}</ScopeButton>
-          <ScopeButton active={scope === 'watchlist'} onClick={() => { setScope('watchlist'); resetCatalogueWindow() }}>Watchlist · {watchlist.length}</ScopeButton>
-          <ScopeButton active={scope === 'affordable'} onClick={() => { setScope('affordable'); resetCatalogueWindow() }}>Affordable fits</ScopeButton>
-        </div>
-
-        <div className="mt-3 grid gap-3 md:grid-cols-2 lg:grid-cols-7">
-          <label className="lg:col-span-2">
-            <span className="mb-1 block text-xs text-muted-foreground">Search</span>
-            <div className="flex items-center rounded-xl border border-border bg-background px-3">
-              <Search className="size-4 text-muted-foreground" />
-              <input value={search} onChange={(event) => { setSearch(event.target.value); resetCatalogueWindow() }} placeholder="Player or club" className="min-h-11 w-full bg-transparent px-2 py-2 text-base outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-offset-2 sm:text-sm" />
-            </div>
-          </label>
-
-          <FilterSelect label="Position" value={position} onChange={(value) => { setPosition(value as typeof position); resetCatalogueWindow() }} options={['ALL', 'GK', 'DEF', 'MID', 'FWD']} />
-          <FilterSelect label="League" value={competition} onChange={(value) => { setCompetition(value); setClub('ALL'); resetCatalogueWindow() }} options={competitions} />
-          <FilterSelect label="Club" value={club} onChange={(value) => { setClub(value); resetCatalogueWindow() }} options={clubs} />
-          <FilterSelect label="Trend" value={trend} onChange={(value) => { setTrend(value as typeof trend); resetCatalogueWindow() }} options={['all', 'rising', 'falling']} />
-          <FilterSelect label="Price" value={priceRange} onChange={(value) => { setPriceRange(value as typeof priceRange); resetCatalogueWindow() }} options={['all', 'low', 'mid', 'high']} />
-        </div>
-
-        <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
-          <p className="text-sm text-muted-foreground">Showing {Math.min(visibleCount, filtered.length)} of {filtered.length} players</p>
-          <label className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-border bg-background px-3 py-2 text-sm">
-            <ArrowUpDown className="size-4 text-muted-foreground" />
-            <select aria-label="Sort players" value={sortKey} onChange={(event) => { setSortKey(event.target.value as SortKey); resetCatalogueWindow() }} className="bg-transparent outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-offset-2">
-              <option value="value-desc">Highest value</option>
-              <option value="value-asc">Lowest value</option>
-              <option value="change-desc">Biggest risers</option>
-              <option value="change-asc">Biggest fallers</option>
-              <option value="form-desc">Strongest form</option>
-              <option value="name-asc">Name A-Z</option>
-            </select>
-          </label>
-          <button
-            onClick={() => {
-              setSearch('')
-              setPosition('ALL')
-              setCompetition('ALL')
-              setClub('ALL')
-              setTrend('all')
-              setPriceRange('all')
-              setSortKey('value-desc')
-              setScope('all')
-              resetCatalogueWindow()
-            }}
-            className="min-h-11 rounded-xl border border-border px-3 py-2 text-sm font-semibold"
-          >
-            Clear filters
-          </button>
-        </div>
-        <p className="mt-2 text-xs text-muted-foreground">Your team has {holdings.length} of {MARKET_MAX_PORTFOLIO_SIZE} players.</p>
+        <p className="mt-3 text-xs text-slate-400">Your team has {holdings.length} of {MARKET_MAX_PORTFOLIO_SIZE} players. The filtered player cards appear directly below.</p>
       </section>
 
-      <section className="rounded-[2rem] border border-emerald-300/15 bg-black/15 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,.05)] sm:p-6">
+      <section id="player-results" aria-label="Player search results" className="scroll-mt-24 rounded-[2rem] border border-emerald-300/15 bg-black/15 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,.05)] sm:p-6">
+        <div className="mb-4 flex flex-wrap items-end justify-between gap-2">
+          <div>
+            <p className="text-[10px] font-black uppercase tracking-[.18em] text-emerald-300">Search results</p>
+            <h2 className="mt-1 text-xl font-black text-white">{filtered.length === players.length ? 'All available players' : `${filtered.length} matching ${filtered.length === 1 ? 'player' : 'players'}`}</h2>
+          </div>
+          <p className="text-xs font-semibold text-slate-400">Showing {Math.min(visibleCount, filtered.length)} now</p>
+        </div>
         {filtered.length === 0 ? (
           <div className="rounded-2xl border border-border bg-background/60 p-5 text-sm text-muted-foreground">
             No players match these filters. Clear filters or adjust your search to find other squad options.
@@ -641,12 +697,37 @@ function ScopeButton({ active, onClick, children }: { active: boolean; onClick: 
   return <button type="button" aria-pressed={active} onClick={onClick} className={`min-h-11 rounded-full border px-3 py-2 text-xs font-black transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-300 ${active ? 'border-emerald-300/50 bg-emerald-300 text-emerald-950 shadow-sm' : 'border-white/15 bg-white/[.055] text-slate-200 hover:bg-white/10'}`}>{children}</button>
 }
 
+function GameStep({ number, title, text }: { number: string; title: string; text: string }) {
+  return (
+    <div className="flex gap-3 rounded-xl border border-white/10 bg-black/15 p-3">
+      <span className="inline-flex size-7 shrink-0 items-center justify-center rounded-full bg-emerald-300 text-xs font-black text-emerald-950">{number}</span>
+      <div>
+        <p className="text-xs font-black text-white">{title}</p>
+        <p className="mt-1 text-[10px] leading-relaxed text-slate-400">{text}</p>
+      </div>
+    </div>
+  )
+}
+
 function FilterSelect({ label, value, onChange, options }: { label: string; value: string; onChange: (value: string) => void; options: string[] }) {
+  const optionLabels: Record<string, string> = {
+    ALL: label === 'Position' ? 'Any position' : label === 'Club' ? 'All clubs' : 'All leagues',
+    all: label === 'Price' ? 'Any price' : 'Any movement',
+    GK: 'Goalkeeper',
+    DEF: 'Defender',
+    MID: 'Midfielder',
+    FWD: 'Forward',
+    low: 'Under 7m credits',
+    mid: '7m–9.9m credits',
+    high: '10m+ credits',
+    rising: 'Price rising',
+    falling: 'Price falling',
+  }
   return (
     <label>
-      <span className="mb-1 block text-xs text-muted-foreground">{label}</span>
-      <select value={value} onChange={(event) => onChange(event.target.value)} className="min-h-11 w-full rounded-xl border border-border bg-background px-3 py-2 text-base outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-offset-2 sm:text-sm">
-        {options.map((option) => <option key={option} value={option}>{option}</option>)}
+      <span className="mb-1 block text-[10px] font-black uppercase tracking-[.14em] text-slate-500">{label}</span>
+      <select value={value} onChange={(event) => onChange(event.target.value)} className="min-h-11 w-full rounded-xl border border-white/15 bg-[#0b2932] px-3 py-2 text-base font-semibold text-white outline-none focus-visible:ring-2 focus-visible:ring-emerald-300 focus-visible:ring-offset-2 focus-visible:ring-offset-[#071f28] sm:text-sm">
+        {options.map((option) => <option key={option} value={option}>{optionLabels[option] ?? option}</option>)}
       </select>
     </label>
   )
