@@ -30,6 +30,7 @@ import { MarketFirstMission } from '@/components/market/market-first-mission'
 import { MarketMatchdayHub } from '@/components/market/market-matchday-hub'
 import { MARKET_JOURNEY_EVENT, MarketJourneyTracker, marketJourneyKey } from '@/components/market/market-journey-tracker'
 import { friendlyMarketLoadError } from '@/lib/market/user-errors'
+import { getMarketPriceStatus, hasVerifiedPriceMovement } from '@/lib/market/price-status'
 
 export function PlayerMarketHome() {
   const activeFormation = useMarketFormation()
@@ -50,6 +51,8 @@ export function PlayerMarketHome() {
   const previewPlayers = useMemo(() => players.filter((player) => player.data_source_label?.includes('preview valuation experiment')), [players])
   const previewBefore = useMemo(() => previewPlayers.reduce((total, player) => total + player.previous_value, 0), [previewPlayers])
   const previewAfter = useMemo(() => previewPlayers.reduce((total, player) => total + player.current_value, 0), [previewPlayers])
+  const hasVerifiedMovement = useMemo(() => hasVerifiedPriceMovement(players), [players])
+  const priceStatus = getMarketPriceStatus({ previewExperimentActive, latestRevealWeek, hasVerifiedMovement })
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -203,8 +206,8 @@ export function PlayerMarketHome() {
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[.2em] text-emerald-800">Price update status</p>
-              <h2 className="mt-1 text-2xl font-black">{previewExperimentActive ? '11-player price test is live' : latestRevealWeek ? `The ${latestRevealWeek} update is ready` : 'Opening prices are set'}</h2>
-              <p className="mt-2 max-w-3xl text-sm text-muted-foreground">{previewExperimentActive ? 'We are testing 11 players with the same rules the full game uses. Test results stay clearly marked and never pretend to be a real match.' : latestRevealWeek ? 'Finished-match ratings and minutes have been processed. Open The Reveal to see what changed in your team.' : 'Build your team now. Prices stay at their opening value until finished matches provide trusted player ratings and minutes.'}</p>
+              <h2 className="mt-1 text-2xl font-black">{priceStatus.title}</h2>
+              <p className="mt-2 max-w-3xl text-sm text-muted-foreground">{priceStatus.description}</p>
             </div>
             <div className="flex flex-wrap gap-2">
               <span className="inline-flex items-center gap-2 rounded-xl border border-emerald-700/20 bg-emerald-700/10 px-4 py-2.5 text-sm font-semibold text-emerald-900"><DatabaseZap className="size-4" /> {previewExperimentActive ? 'Clearly marked test data' : 'Live squad data'}</span>
@@ -220,8 +223,8 @@ export function PlayerMarketHome() {
             <div className="mt-4 rounded-xl border border-border bg-background/60 px-4 py-3 text-sm text-muted-foreground">
               Preview history: {lastRun.week_label} · Weekly {lastRun.weekly_portfolio_gain >= 0 ? '+' : ''}{formatFiqCompact(Math.abs(lastRun.weekly_portfolio_gain))} · game return {lastRun.current_roi_pct.toFixed(2)}%. This is not a verified real-performance update.
             </div>
-          ) : !latestRevealWeek ? (
-            <div className="mt-4 rounded-xl border border-border bg-background/60 px-4 py-3 text-sm text-muted-foreground">The season has not produced a price update yet. Prices will start moving after finished matches give us player ratings and minutes.</div>
+          ) : priceStatus.notice ? (
+            <div className="mt-4 rounded-xl border border-border bg-background/60 px-4 py-3 text-sm text-muted-foreground">{priceStatus.notice}</div>
           ) : null}
       </section>
 
