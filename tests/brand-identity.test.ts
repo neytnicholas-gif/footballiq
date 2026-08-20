@@ -47,6 +47,16 @@ describe('Early Shout identity', () => {
     expect(read('components/duel-quiz.tsx')).toContain('Keep your score and {xpEarned} XP')
   })
 
+  it('presents profile frames as a reversible player choice', () => {
+    const rewards = read('components/market/market-progression-hub.tsx')
+
+    expect(rewards).toContain('Frames are your choice.')
+    expect(rewards).toContain('Preview the styles below')
+    expect(rewards).toContain('Choose this frame')
+    expect(rewards).toContain('You can swap at any time.')
+    expect(rewards).not.toContain('It puts a new frame around your public profile card.')
+  })
+
   it('removes the retired identity from public application source', () => {
     const publicSource = [
       'app/layout.tsx',
