@@ -20,14 +20,12 @@ describe('450-each judgement content contract', () => {
     expect(validateScoutScenarios(expandedScoutScenarios)).toEqual([])
   })
 
-  it('never reveals the scouting recommendation before the player answers', () => {
-    const generatedQuestionIds = new Set(expandedScoutScenarios.map((scenario) => scenario.playerCode))
-    const generatedQuestions = scoutQuestions.filter((question) => generatedQuestionIds.has(question.id))
-
-    expect(generatedQuestions).toHaveLength(expandedScoutScenarios.length)
-    for (const question of generatedQuestions) {
-      expect(question.summary).not.toMatch(/strong(?:ly)? follow|do not pursue|\bmonitor\b/i)
-      expect(question.summary).not.toContain(question.strongestDecision)
+  it('never reveals the scouting recommendation in any pre-answer evidence', () => {
+    expect(scoutQuestions).toHaveLength(450)
+    for (const question of scoutQuestions) {
+      const preAnswerEvidence = [question.summary, ...question.profile].join(' ')
+      expect(preAnswerEvidence).not.toMatch(/strong(?:ly)? follow|do not pursue|\bmonitor\b/i)
+      expect(preAnswerEvidence).not.toContain(question.strongestDecision)
     }
   })
 

@@ -6,7 +6,6 @@ import {
   toUtcIsoWeekKey,
 } from '@/lib/market/format'
 import {
-  anonymousApplySimulatedMatchweek,
   anonymousBuyPlayer,
   anonymousLatestRun,
   anonymousRuns,
@@ -28,7 +27,6 @@ import type {
   MarketGameweekStatus,
   MarketHolding,
   MarketLeaderboardRow,
-  MarketMatchweekApplyResult,
   MarketMatchweekRun,
   MarketOpeningPriceExplanation,
   MarketPlayer,
@@ -633,33 +631,6 @@ export async function leaveFriendLeague(leagueId: number) {
 
   return {
     data: (data as Record<string, unknown> | null) ?? null,
-    error: error as Error | null,
-  }
-}
-
-export async function applySimulatedMatchweek(weekLabel: string, playerUpdates: Array<Record<string, unknown>>) {
-  if (process.env.NODE_ENV !== 'development') {
-    return {
-      data: null,
-      error: new Error('Simulated matchweeks are development-only and cannot run in production.'),
-    }
-  }
-
-  const { data: authData } = await supabase.auth.getUser()
-
-  if (!authData.user) {
-    const { data: players } = await loadMarketPlayers()
-    return anonymousApplySimulatedMatchweek(players, weekLabel, playerUpdates)
-  }
-
-  const { data, error } = await (supabase as any).rpc('market_apply_simulated_matchweek', {
-    p_week_label: weekLabel,
-    p_player_updates: playerUpdates,
-    p_methodology_version: 'v1.0.0-sim-v1',
-  })
-
-  return {
-    data: (data as MarketMatchweekApplyResult | null) ?? null,
     error: error as Error | null,
   }
 }

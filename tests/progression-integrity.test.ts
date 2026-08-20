@@ -9,6 +9,7 @@ const migrationPath = path.join(repoRoot, 'supabase', 'migrations', '20260802000
 const simulatedMarketCleanupPath = path.join(repoRoot, 'supabase', 'migrations', '20260818221500_drop_legacy_simulated_market_rpc.sql')
 const replayXpMigrationPath = path.join(repoRoot, 'supabase', 'migrations', '20260818223000_diminish_quiz_replay_xp.sql')
 const usernamePagePath = path.join(repoRoot, 'app', 'username', 'page.tsx')
+const marketClientPath = path.join(repoRoot, 'lib', 'market', 'client.ts')
 
 async function migration() {
   return readFile(migrationPath, 'utf8')
@@ -33,9 +34,11 @@ async function collectSqlFiles(dir: string, acc: string[] = []) {
 describe('progression integrity SQL guards', () => {
   it('permanently removes the legacy simulated market-price RPC from deployed schemas', async () => {
     const cleanupSql = await readFile(simulatedMarketCleanupPath, 'utf8')
+    const marketClient = await readFile(marketClientPath, 'utf8')
     const migrationFiles = await collectSqlFiles(path.join(repoRoot, 'supabase', 'migrations'))
 
     expect(cleanupSql).toMatch(/drop function if exists public\.market_apply_simulated_matchweek\(text,\s*jsonb,\s*text\)/i)
+    expect(marketClient).not.toMatch(/market_apply_simulated_matchweek|applySimulatedMatchweek/i)
 
     for (const filePath of migrationFiles) {
       const sql = await readFile(filePath, 'utf8')
