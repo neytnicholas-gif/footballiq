@@ -44,7 +44,7 @@ export function HigherLowerGame() {
   const [saving, setSaving] = useState(false)
   const [runKey, setRunKey] = useState(() => createCompletionRunId())
   const [resumeState, setResumeState] = useState<{ index: number; streak: number; deckSeed: number; answers: boolean[] } | null>(null)
-  const [checkingProgress, setCheckingProgress] = useState(Boolean(user))
+  const [checkingProgress, setCheckingProgress] = useState(true)
 
   const left = deck[index - 1]!
   const right = deck[index]!
@@ -58,15 +58,6 @@ export function HigherLowerGame() {
 
   useEffect(() => {
     let active = true
-    if (!user) {
-      const timeout = window.setTimeout(() => {
-        if (!active) return
-        setResumeState(null)
-        setCheckingProgress(false)
-      }, 0)
-      return () => { active = false; window.clearTimeout(timeout) }
-    }
-
     setCheckingProgress(true)
     void (async () => {
       const progress = await loadQuizProgress(progressQuizId)

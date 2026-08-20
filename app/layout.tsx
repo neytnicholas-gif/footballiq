@@ -8,6 +8,8 @@ import { MarketRewardCelebration } from '@/components/market/market-reward-celeb
 import { BetaFeedbackButton } from '@/components/beta-feedback-button'
 import { OnboardingTour } from '@/components/onboarding-tour'
 import { PlayPathTracker } from '@/components/play-path-tracker'
+import { MobileBottomNavigation } from '@/components/mobile-bottom-navigation'
+import { MobileExperience } from '@/components/mobile-experience'
 import { BRAND } from '@/lib/brand'
 import './globals.css'
 
@@ -32,6 +34,20 @@ export const metadata: Metadata = {
   },
   description: BRAND.description,
   manifest: '/manifest.webmanifest',
+  applicationName: BRAND.name,
+  appleWebApp: {
+    capable: true,
+    title: BRAND.shortName,
+    statusBarStyle: 'black-translucent',
+  },
+  formatDetection: { telephone: false },
+  icons: {
+    icon: [
+      { url: '/icons/icon-192.png', sizes: '192x192', type: 'image/png' },
+      { url: '/icons/icon-512.png', sizes: '512x512', type: 'image/png' },
+    ],
+    apple: [{ url: '/icons/apple-touch-icon.png', sizes: '180x180', type: 'image/png' }],
+  },
   openGraph: {
     title: `${BRAND.name} — ${BRAND.tagline}`,
     description: BRAND.description,
@@ -57,6 +73,9 @@ export const metadata: Metadata = {
 }
 
 export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  viewportFit: 'cover',
   colorScheme: 'dark',
   themeColor: BRAND.themeColor,
 }
@@ -74,11 +93,13 @@ export default function RootLayout({
         </a>
         <AuthProvider>
           <PlayPathTracker />
+          <MobileExperience />
           <div id="main-content" tabIndex={-1}>{children}</div>
           <OnboardingTour />
           <MarketRewardCelebration />
           <BetaFeedbackButton />
           <AccountPrompt />
+          <MobileBottomNavigation />
           <SiteFooter />
         </AuthProvider>
         {process.env.NODE_ENV === 'production' && <Analytics />}

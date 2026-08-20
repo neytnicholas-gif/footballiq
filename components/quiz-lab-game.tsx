@@ -19,6 +19,8 @@ import {
 import { buildQuizDifficultyIndex, filterQuizDifficulty, quizDifficultyCounts, quizXp } from '@/lib/quiz-difficulty'
 import { buildCompletionKey, createCompletionRunId, saveQuizResult } from '@/lib/quiz-save'
 import { createQuizSessionSeed, sampleUniqueQuizFamilies } from '@/lib/quiz-session'
+import { clearQuizProgress, loadQuizProgress, saveQuizProgress } from '@/lib/quiz-progress'
+import { readResilientSessionNumber, writeResilientSessionNumber } from '@/lib/resilient-session'
 
 const accentClasses: Record<QuizLabFormat, { badge: string; button: string; soft: string }> = {
   'odd-one-out': { badge: 'border-cyan-300/30 bg-cyan-300/10 text-cyan-200', button: 'bg-cyan-300 text-slate-950', soft: 'border-cyan-300/25 bg-cyan-300/5' },
@@ -112,11 +114,11 @@ export function QuizLabGame({ format }: { format: QuizLabFormat }) {
   const { difficulty, setDifficulty, ready } = useQuizDifficulty(`quiz-lab-${format}`)
   const meta = quizLabFormatById(format)!
   const colors = accentClasses[format]
-  const [sessionSeed, setSessionSeed] = useState(1)
+  const [sessionSeed, setSessionSeed] = useState<number | null>(null)
   const bankSize = quizLabQuestionBank[format].length
   const difficultyIndex = difficultyIndexes[format]
   const difficultyCounts = useMemo(() => quizDifficultyCounts(difficultyIndex), [difficultyIndex])
-  const questions = useMemo(() => sampleUniqueQuizFamilies(
+  const questions = useMemo(() => sessionSeed === null ? [] : sampleUniqueQuizFamilies(
     filterQuizDifficulty(quizLabQuestionBank[format], difficulty, difficultyIndex, (question) => question.id),
     SESSION_SIZE,
     sessionSeed,
@@ -133,40 +135,68 @@ export function QuizLabGame({ format }: { format: QuizLabFormat }) {
   const [saveError, setSaveError] = useState(false)
   const [runKey, setRunKey] = useState(() => createCompletionRunId())
   const question = questions[index]!
-  const right = selected === quizLabCorrectAnswer(question)
-  const last = index === questions.length - 1
+  const right = Boolean(question) && selected === quizLabCorrectAnswer(question)
+  const last = Boolean(question) && index === questions.length - 1
   const xp = quizXp(20 + score * 10 + (score === questions.length ? 40 : 0), difficulty)
-  const progress = Math.round(((index + (answered ? 1 : 0)) / questions.length) * 100)
+  const progress = questions.length ? Math.round(((index + (answered ? 1 : 0)) / questions.length) * 100) : 0
   const FormatIcon = useMemo(() => format === 'order-the-play' ? ListOrdered : format === 'link-up' ? Link2 : format === 'formation-fix' ? Target : ShieldCheck, [format])
+  const progressId = `quiz-lab-progress:${format}:${difficulty}`
 
   useEffect(() => {
-    const timeout = window.setTimeout(() => {
+    let active = true
+    const timeout = window.setTimeout(async () => {
       const key = `early-shout:quiz-lab-seed:${format}:${difficulty}`
-      const stored = Number(window.sessionStorage.getItem(key))
-      const nextSeed = Number.isSafeInteger(stored) && stored > 0 ? stored : createQuizSessionSeed()
-      window.sessionStorage.setItem(key, String(nextSeed))
+      const stored = await loadQuizProgress(`quiz-lab-progress:${format}:${difficulty}`)
+      if (!active) return
+      const saved = stored?.status === 'in_progress' ? stored.progress : null
+      const savedSeed = typeof saved?.sessionSeed === 'number' && Number.isFinite(saved.sessionSeed) ? saved.sessionSeed : null
+      const savedIndex = stored && Number.isInteger(stored.current_index) && stored.current_index >= 0 && stored.current_index < SESSION_SIZE ? stored.current_index : null
+      const savedAnswers = Array.isArray(saved?.answers) && saved.answers.every((answer) => typeof answer === 'string') ? saved.answers : null
+      const savedSelected = typeof saved?.selected === 'string' ? saved.selected : null
+      const savedAnswered = saved?.answered === true
+
+      if (savedSeed !== null && savedIndex !== null && savedAnswers) {
+        writeResilientSessionNumber(key, savedSeed)
+        setSessionSeed(savedSeed)
+        setIndex(savedIndex)
+        setScore(Math.max(0, Math.min(SESSION_SIZE, stored?.score ?? 0)))
+        setAnswers(savedAnswers.slice(0, SESSION_SIZE))
+        setSelected(savedSelected)
+        setAnswered(savedAnswered && savedSelected !== null)
+        return
+      }
+
+      const nextSeed = readResilientSessionNumber(key) ?? createQuizSessionSeed()
+      writeResilientSessionNumber(key, nextSeed)
       setSessionSeed(nextSeed)
     })
-    return () => window.clearTimeout(timeout)
+    return () => { active = false; window.clearTimeout(timeout) }
   }, [difficulty, format])
 
   function answer(value: string) {
-    if (answered) return
+    if (answered || sessionSeed === null) return
+    const nextAnswers = [...answers, value]
+    const nextScore = score + (value === quizLabCorrectAnswer(question) ? 1 : 0)
     setSelected(value)
-    setAnswers((current) => [...current, value])
-    if (value === quizLabCorrectAnswer(question)) setScore((current) => current + 1)
+    setAnswers(nextAnswers)
+    setScore(nextScore)
     setAnswered(true)
+    void saveQuizProgress({ quizId: progressId, currentIndex: index, score: nextScore, total: questions.length, progress: { sessionSeed, answers: nextAnswers, selected: value, answered: true } })
   }
 
   function next() {
-    setIndex((current) => current + 1)
+    if (sessionSeed === null) return
+    const nextIndex = index + 1
+    setIndex(nextIndex)
     setSelected(null)
     setAnswered(false)
+    void saveQuizProgress({ quizId: progressId, currentIndex: nextIndex, score, total: questions.length, progress: { sessionSeed, answers, selected: null, answered: false } })
   }
 
   function startRound() {
+    void clearQuizProgress(progressId)
     const nextSeed = createQuizSessionSeed()
-    window.sessionStorage.setItem(`early-shout:quiz-lab-seed:${format}:${difficulty}`, String(nextSeed))
+    writeResilientSessionNumber(`early-shout:quiz-lab-seed:${format}:${difficulty}`, nextSeed)
     setSessionSeed(nextSeed); setIndex(0); setScore(0); setAnswers([]); setSelected(null); setAnswered(false); setSaved(false); setAwardedXp(0); setSaving(false); setSaveError(false); setRunKey(createCompletionRunId())
   }
 
@@ -175,8 +205,9 @@ export function QuizLabGame({ format }: { format: QuizLabFormat }) {
   }
 
   function changeDifficulty(nextDifficulty: typeof difficulty) {
+    void clearQuizProgress(progressId)
     setDifficulty(nextDifficulty)
-    setIndex(0); setScore(0); setAnswers([]); setSelected(null); setAnswered(false); setSaved(false); setAwardedXp(0); setSaving(false); setSaveError(false); setRunKey(createCompletionRunId())
+    setSessionSeed(null); setIndex(0); setScore(0); setAnswers([]); setSelected(null); setAnswered(false); setSaved(false); setAwardedXp(0); setSaving(false); setSaveError(false); setRunKey(createCompletionRunId())
   }
 
   async function save() {
@@ -185,7 +216,7 @@ export function QuizLabGame({ format }: { format: QuizLabFormat }) {
     const quizId = `quiz-lab-${format}`
     const { error, alreadyCompleted, xpAwarded } = await saveQuizResult({ quizId, score, total: questions.length, xp, completionKey: buildCompletionKey(quizId, runKey), proof: { kind: 'quiz-lab', format, questionIds: questions.map((item) => item.id), answers, difficulty } })
     if (error) setSaveError(true)
-    else { setSaved(true); setAwardedXp(alreadyCompleted ? 0 : (xpAwarded ?? xp)); if (!alreadyCompleted) await refreshProfile() }
+    else { setSaved(true); setAwardedXp(alreadyCompleted ? 0 : (xpAwarded ?? xp)); await clearQuizProgress(progressId); if (!alreadyCompleted) await refreshProfile() }
     setSaving(false)
   }
 

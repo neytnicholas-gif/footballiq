@@ -35,7 +35,7 @@ export function ChoiceQuiz({ quizId, title, items, labels, answerProof, onRestar
   const [rewardStatus, setRewardStatus] = useState<RewardStatus>('idle')
   const [creditedXp, setCreditedXp] = useState(0)
   const [resumeState, setResumeState] = useState<{ index: number; selected: number | null; score: number; answers: number[] } | null>(null)
-  const [checkingProgress, setCheckingProgress] = useState(Boolean(user))
+  const [checkingProgress, setCheckingProgress] = useState(true)
   const item = items[index]
   const finished = selected !== null && index === items.length - 1
   const accuracy = Math.round((score / items.length) * 100)
@@ -45,18 +45,6 @@ export function ChoiceQuiz({ quizId, title, items, labels, answerProof, onRestar
 
   useEffect(() => {
     let active = true
-
-    if (!user) {
-      const timeout = window.setTimeout(() => {
-        if (!active) return
-        setResumeState(null)
-        setCheckingProgress(false)
-      }, 0)
-      return () => {
-        active = false
-        window.clearTimeout(timeout)
-      }
-    }
 
     setCheckingProgress(true)
     void (async () => {

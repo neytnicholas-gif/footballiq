@@ -69,7 +69,7 @@ export function DailyChallenge() {
   const [copied, setCopied] = useState(false)
   const [history, setHistory] = useState<Record<string, DailyHistoryEntry>>({})
   const [resumeState, setResumeState] = useState<{ dailyKey: string; index: number; selected: number | null; score: number; completed: boolean; answers: number[] } | null>(null)
-  const [checkingProgress, setCheckingProgress] = useState(Boolean(user))
+  const [checkingProgress, setCheckingProgress] = useState(true)
 
   const items = useMemo(() => {
     const seed = getDailySeedFromKey(dailyKey)
@@ -99,18 +99,6 @@ export function DailyChallenge() {
       setResumeState(null)
       setCheckingProgress(false)
       return () => { active = false }
-    }
-
-    if (!user) {
-      const timeout = window.setTimeout(() => {
-        if (!active) return
-        setResumeState(null)
-        setCheckingProgress(false)
-      }, 0)
-      return () => {
-        active = false
-        window.clearTimeout(timeout)
-      }
     }
 
     setCheckingProgress(true)

@@ -10,6 +10,7 @@ import { buildCompletionKey, createCompletionRunId, saveQuizResult } from '@/lib
 import { scoutQuestions, type ScoutDecision } from '@/lib/game-data'
 import { buildQuizDifficultyIndex, filterQuizDifficulty, quizDifficultyCounts, quizXp } from '@/lib/quiz-difficulty'
 import { createQuizSessionSeed, sampleQuizSession } from '@/lib/quiz-session'
+import { readResilientSessionNumber, writeResilientSessionNumber } from '@/lib/resilient-session'
 
 const decisionOptions: ScoutDecision[] = ['Strongly follow', 'Follow', 'Monitor', 'Do not pursue']
 const SESSION_SIZE = 10
@@ -34,7 +35,7 @@ export function ScoutGame() {
   const [creditedXp, setCreditedXp] = useState(0)
   const [runKey, setRunKey] = useState(() => createCompletionRunId())
   const [resumeState, setResumeState] = useState<{ index: number; selected: ScoutDecision | null; score: number; answers: ScoutDecision[] } | null>(null)
-  const [checkingProgress, setCheckingProgress] = useState(Boolean(user))
+  const [checkingProgress, setCheckingProgress] = useState(true)
 
   const sessionQuestions = useMemo(() => sessionSeed === null ? [] : sampleQuizSession(
     filterQuizDifficulty(scoutQuestions, difficulty, difficultyIndex, (question) => question.id),
@@ -63,9 +64,8 @@ export function ScoutGame() {
   useEffect(() => {
     const timeout = window.setTimeout(() => {
       const key = `early-shout:scout-session-seed:${difficulty}`
-      const stored = Number(window.sessionStorage.getItem(key))
-      const nextSeed = Number.isSafeInteger(stored) && stored > 0 ? stored : createQuizSessionSeed()
-      window.sessionStorage.setItem(key, String(nextSeed))
+      const nextSeed = readResilientSessionNumber(key) ?? createQuizSessionSeed()
+      writeResilientSessionNumber(key, nextSeed)
       setSessionSeed(nextSeed)
     })
     return () => window.clearTimeout(timeout)
@@ -75,18 +75,6 @@ export function ScoutGame() {
     let active = true
 
     if (sessionSeed === null) return () => { active = false }
-
-    if (!user) {
-      const timeout = window.setTimeout(() => {
-        if (!active) return
-        setResumeState(null)
-        setCheckingProgress(false)
-      }, 0)
-      return () => {
-        active = false
-        window.clearTimeout(timeout)
-      }
-    }
 
     setCheckingProgress(true)
     void (async () => {
@@ -157,7 +145,7 @@ export function ScoutGame() {
 
   function restart() {
     const nextSeed = createQuizSessionSeed()
-    window.sessionStorage.setItem(`early-shout:scout-session-seed:${difficulty}`, String(nextSeed))
+    writeResilientSessionNumber(`early-shout:scout-session-seed:${difficulty}`, nextSeed)
     setSessionSeed(nextSeed)
     setIndex(0)
     setSelected(null)

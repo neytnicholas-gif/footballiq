@@ -32,7 +32,7 @@ export function WhoAmIGame() {
   const [saving, setSaving] = useState(false)
   const [runKey, setRunKey] = useState(() => createCompletionRunId())
   const [resumeState, setResumeState] = useState<ResumeState | null>(null)
-  const [checkingProgress, setCheckingProgress] = useState(Boolean(user))
+  const [checkingProgress, setCheckingProgress] = useState(true)
   const questions = useMemo(() => getWhoAmIDifficultyRound(difficulty, round), [difficulty, round])
   const quizId = `who-am-i-${difficulty}-${round}`
   const q = questions[index]!
@@ -42,15 +42,6 @@ export function WhoAmIGame() {
 
   useEffect(() => {
     let active = true
-    if (!user) {
-      const timeout = window.setTimeout(() => {
-        if (!active) return
-        setResumeState(null)
-        setCheckingProgress(false)
-      }, 0)
-      return () => { active = false; window.clearTimeout(timeout) }
-    }
-
     setCheckingProgress(true)
     void (async () => {
       const progress = await loadQuizProgress(quizId)

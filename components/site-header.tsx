@@ -1,13 +1,14 @@
 'use client'
 
 import Link from 'next/link'
-import { Menu, X } from 'lucide-react'
+import { Download, Menu, X } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { usePathname } from 'next/navigation'
 import { Logo } from '@/components/logo'
 import { useAuth } from '@/components/auth-provider'
 import { LevelBadge } from '@/components/level-progress'
 import { cn } from '@/lib/utils'
+import { OPEN_INSTALL_EXPERIENCE_EVENT } from '@/components/mobile-experience'
 
 const links = [
   ['Home', '/'],
@@ -55,7 +56,7 @@ export function SiteHeader() {
       )
 
   return (
-    <header className="sticky top-0 z-40 border-b border-border/60 bg-background/92 backdrop-blur-xl">
+    <header className="sticky top-0 z-40 border-b border-border/60 bg-background/92 pt-[env(safe-area-inset-top)] backdrop-blur-xl">
       <div className="mx-auto flex max-w-7xl items-center justify-between gap-2 px-3 py-3 sm:gap-4 sm:px-6">
         <Logo className="shrink-0 max-[389px]:[&>span:last-child]:hidden" />
 
@@ -92,6 +93,10 @@ export function SiteHeader() {
               </Link>
             ))}
             {authResolved && user && !profile?.username ? <Link href="/username" onClick={closeMobile} className="rounded-lg px-3 py-2 text-sm font-semibold text-emerald-300 transition hover:bg-emerald-400/10">Finish profile</Link> : null}
+            <button onClick={() => { closeMobile(); window.dispatchEvent(new Event(OPEN_INSTALL_EXPERIENCE_EVENT)) }} className="flex min-h-11 items-center gap-2 rounded-lg border border-border px-3 py-2 text-left text-sm font-bold text-foreground transition hover:border-primary/35 hover:bg-secondary/60">
+              <Download className="size-4 text-primary" aria-hidden="true" />
+              Add to home screen
+            </button>
             {!showSignedOutCta && user ? (
               <button onClick={() => { closeMobile(); void signOut() }} className="min-h-11 rounded-lg border border-border px-3 py-2 text-left text-sm text-muted-foreground transition hover:text-foreground">
                 Log out

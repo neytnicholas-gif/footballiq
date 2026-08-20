@@ -11,6 +11,7 @@ import { clearQuizProgress, loadQuizProgress, saveQuizProgress } from '@/lib/qui
 import { buildCompletionKey, createCompletionRunId, saveQuizResult } from '@/lib/quiz-save'
 import { shouldIgnoreGlobalShortcut } from '@/lib/keyboard-shortcuts'
 import { quizDifficultyMeta, quizXp, type QuizDifficulty } from '@/lib/quiz-difficulty'
+import { APP_PAUSING_EVENT, APP_RESUMED_EVENT } from '@/components/mobile-experience'
 
 type Choice = 'left' | 'right' | 'same'
 type Speed = 'relaxed' | 'timed'
@@ -98,9 +99,10 @@ export function DuelQuiz({ pack, difficulty, onComplete, nextPackLabel, onNextPa
   const [personalBest, setPersonalBest] = useState<StoredBest | null>(null)
   const [runKey, setRunKey] = useState(() => createCompletionRunId())
   const [resumeState, setResumeState] = useState<SavedDuelProgress | null>(null)
-  const [checkingProgress, setCheckingProgress] = useState(Boolean(user))
+  const [checkingProgress, setCheckingProgress] = useState(true)
   const [rewardStatus, setRewardStatus] = useState<RewardStatus>('idle')
   const [creditedXp, setCreditedXp] = useState(0)
+  const [interrupted, setInterrupted] = useState(false)
 
   const question = questions[index]
   const answer = correctChoice(question)
@@ -119,18 +121,6 @@ export function DuelQuiz({ pack, difficulty, onComplete, nextPackLabel, onNextPa
 
   useEffect(() => {
     let active = true
-
-    if (!user) {
-      const timeout = window.setTimeout(() => {
-        if (!active) return
-        setResumeState(null)
-        setCheckingProgress(false)
-      }, 0)
-      return () => {
-        active = false
-        window.clearTimeout(timeout)
-      }
-    }
 
     setCheckingProgress(true)
     void (async () => {
@@ -223,7 +213,18 @@ export function DuelQuiz({ pack, difficulty, onComplete, nextPackLabel, onNextPa
   }, [answer, answered, bestCombo, checkingProgress, combo, currentStatLabel, difficulty, index, pack.id, persistProgress, points, proofAnswers, question.left.name, question.right.name, questions, resumeState, score, speed, started, timeLeft])
 
   useEffect(() => {
-    if (!started || speed !== 'timed' || checkingProgress || resumeState || answered || showResults) return
+    const pause = () => setInterrupted(true)
+    const resume = () => setInterrupted(false)
+    window.addEventListener(APP_PAUSING_EVENT, pause)
+    window.addEventListener(APP_RESUMED_EVENT, resume)
+    return () => {
+      window.removeEventListener(APP_PAUSING_EVENT, pause)
+      window.removeEventListener(APP_RESUMED_EVENT, resume)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (interrupted || !started || speed !== 'timed' || checkingProgress || resumeState || answered || showResults) return
     const timer = window.setTimeout(() => {
       if (timeLeft <= 0) {
         lockAnswer('timeout')
@@ -232,7 +233,7 @@ export function DuelQuiz({ pack, difficulty, onComplete, nextPackLabel, onNextPa
       }
     }, timeLeft <= 0 ? 0 : 1000)
     return () => window.clearTimeout(timer)
-  }, [answered, checkingProgress, lockAnswer, resumeState, showResults, speed, started, timeLeft])
+  }, [answered, checkingProgress, interrupted, lockAnswer, resumeState, showResults, speed, started, timeLeft])
 
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {

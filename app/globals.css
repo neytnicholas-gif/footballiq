@@ -170,8 +170,16 @@ select.field option { background: rgb(8 27 39); color: rgb(248 250 252); }
   * {
     @apply border-border outline-ring/50;
   }
+  html {
+    min-height: 100%;
+    overflow-x: clip;
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
   body {
     @apply bg-background text-foreground;
+    min-height: 100dvh;
+    overflow-x: clip;
     background-image:
       radial-gradient(circle at 12% -10%, rgb(54 206 163 / 0.16), transparent 28rem),
       radial-gradient(circle at 88% 8%, rgb(56 123 255 / 0.10), transparent 30rem),
@@ -239,6 +247,7 @@ select.field option { background: rgb(8 27 39); color: rgb(248 250 252); }
 
 button, a {
   -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
 }
 
 :focus-visible {
@@ -365,3 +374,38 @@ button, a {
   100% { opacity: 1; transform: scale(1) rotate(0); }
 }
 @media (prefers-reduced-motion: reduce){.mode-atmosphere span{animation:none}}
+
+/* Phone and installable-web-app hardening. Keep controls usable around notches,
+   the iOS home indicator and Android browser chrome without disabling zoom. */
+@media (max-width: 767px) {
+  body {
+    background-attachment: scroll;
+    padding-bottom: calc(4rem + env(safe-area-inset-bottom));
+  }
+
+  input:not([type='checkbox']):not([type='radio']):not([type='range']),
+  select,
+  textarea {
+    font-size: 16px;
+  }
+}
+
+@media (pointer: coarse) {
+  button,
+  input:not([type='checkbox']):not([type='radio']):not([type='range']),
+  select,
+  textarea,
+  [role='button'] {
+    min-height: 44px;
+  }
+
+  button[aria-label],
+  [role='button'][aria-label] {
+    min-width: 44px;
+  }
+}
+
+html.app-is-backgrounded *,
+html[data-save-data='true'] .mode-atmosphere span {
+  animation-play-state: paused !important;
+}

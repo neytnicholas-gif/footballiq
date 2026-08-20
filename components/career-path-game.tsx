@@ -43,7 +43,7 @@ export function CareerPathGame() {
   const [shuffleSeed, setShuffleSeed] = useState(92731)
   const initialShuffleSeed = useRef(shuffleSeed)
   const [resumeState, setResumeState] = useState<ResumeState | null>(null)
-  const [checkingProgress, setCheckingProgress] = useState(Boolean(user))
+  const [checkingProgress, setCheckingProgress] = useState(true)
   const questions = useMemo(() => getCareerDifficultyRound(difficulty, round), [difficulty, round])
   const difficultyPool = useMemo(() => getCareerDifficultyPool(difficulty), [difficulty])
   const quizId = `career-path-${difficulty}-${round}`
@@ -58,15 +58,6 @@ export function CareerPathGame() {
 
   useEffect(() => {
     let active = true
-    if (!user) {
-      const timeout = window.setTimeout(() => {
-        if (!active) return
-        setResumeState(null)
-        setCheckingProgress(false)
-      }, 0)
-      return () => { active = false; window.clearTimeout(timeout) }
-    }
-
     setCheckingProgress(true)
     void (async () => {
       const progress = await loadQuizProgress(quizId)

@@ -6,6 +6,7 @@ import { QuizDifficultyPicker, useQuizDifficulty } from '@/components/quiz-diffi
 import { refereeQuestions } from '@/lib/game-data'
 import { buildQuizDifficultyIndex, filterQuizDifficulty, quizDifficultyCounts } from '@/lib/quiz-difficulty'
 import { createQuizSessionSeed, sampleQuizSession } from '@/lib/quiz-session'
+import { readResilientSessionNumber, writeResilientSessionNumber } from '@/lib/resilient-session'
 
 const SESSION_SIZE = 10
 const SESSION_STORAGE_KEY = 'early-shout:referee-session-seed'
@@ -27,9 +28,8 @@ export function RefereeGame() {
 
   useEffect(() => {
     const timeout = window.setTimeout(() => {
-      const stored = Number(window.sessionStorage.getItem(SESSION_STORAGE_KEY))
-      const nextSeed = Number.isSafeInteger(stored) && stored > 0 ? stored : createQuizSessionSeed()
-      window.sessionStorage.setItem(SESSION_STORAGE_KEY, String(nextSeed))
+      const nextSeed = readResilientSessionNumber(SESSION_STORAGE_KEY) ?? createQuizSessionSeed()
+      writeResilientSessionNumber(SESSION_STORAGE_KEY, nextSeed)
       setSessionSeed(nextSeed)
     })
     return () => window.clearTimeout(timeout)
@@ -37,7 +37,7 @@ export function RefereeGame() {
 
   function newSession() {
     const nextSeed = createQuizSessionSeed()
-    window.sessionStorage.setItem(SESSION_STORAGE_KEY, String(nextSeed))
+    writeResilientSessionNumber(SESSION_STORAGE_KEY, nextSeed)
     setSessionSeed(nextSeed)
   }
 

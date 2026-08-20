@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { BarChart3, BookOpenCheck, Gamepad2, LineChart, ShieldCheck, Sparkles, Trophy, Users } from 'lucide-react'
 import { SiteHeader } from '@/components/site-header'
 import { StartTourButton } from '@/components/start-tour-button'
+import { InstallEarlyShoutButton } from '@/components/install-early-shout-button'
 
 export const metadata: Metadata = {
   title: 'How to Play',
@@ -29,6 +30,7 @@ export default function HowToPlayPage() {
             <div className="mt-7 flex flex-wrap gap-3">
               <StartTourButton />
               <Link href="/market" className="inline-flex min-h-12 items-center justify-center rounded-xl border border-primary/35 bg-primary/10 px-5 font-bold text-foreground transition hover:border-primary/60 hover:bg-primary/15">Start with Player Market</Link>
+              <InstallEarlyShoutButton className="bg-sky-300 hover:bg-sky-200" />
             </div>
           </div>
         </div>
@@ -70,6 +72,14 @@ export default function HowToPlayPage() {
           <InfoCard icon={<Users className="size-5" />} title="Can I play with friends?" copy="Yes. Market, quiz and prediction friend leagues let you compare with people you know." />
           <InfoCard icon={<Sparkles className="size-5" />} title="What should I try first?" copy="Start in the Player Market. Use your free game budget to choose the first player for your XI." />
         </div>
+
+        <section className="mt-10 overflow-hidden rounded-[2rem] border border-sky-300/20 bg-[linear-gradient(145deg,#082634,#071a23)] p-6 text-white shadow-xl sm:p-8">
+          <p className="text-xs font-black uppercase tracking-[0.22em] text-sky-300">Play like an app</p>
+          <div className="mt-3 grid gap-6 md:grid-cols-[1fr_auto] md:items-end">
+            <div><h2 className="text-2xl font-black">One tap from your phone’s home screen.</h2><p className="mt-2 max-w-2xl leading-7 text-slate-300">Add Early Shout to your home screen for a full-screen view and faster return visits. Your signed-in team and XP stay with your account. A quiz in progress is also saved on this phone if the screen locks or the browser closes.</p></div>
+            <InstallEarlyShoutButton />
+          </div>
+        </section>
 
         <div className="mt-10 rounded-3xl border border-border bg-card p-6 sm:flex sm:items-center sm:justify-between sm:gap-6">
           <div><p className="font-black text-foreground">Need the detailed Market rules?</p><p className="mt-1 text-sm text-muted-foreground">See how teams, trades and price updates work.</p></div>

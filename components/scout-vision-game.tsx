@@ -7,6 +7,8 @@ import { buildCompletionKey, createCompletionRunId, saveQuizResult } from '@/lib
 import { cn } from '@/lib/utils'
 import { expandedScoutScenarios, type ExpandedScoutScenario } from '@/lib/scout-scenario-expansion'
 import { createQuizSessionSeed, sampleQuizSession } from '@/lib/quiz-session'
+import { clearQuizProgress, loadQuizProgress, saveQuizProgress } from '@/lib/quiz-progress'
+import { readResilientSessionNumber, writeResilientSessionNumber } from '@/lib/resilient-session'
 
 type ScoutDecision = 'strong-follow' | 'follow' | 'monitor' | 'do-not-pursue'
 
@@ -212,6 +214,7 @@ const allScenarios: ExpandedScoutScenario[] = [
 ]
 
 const SCOUT_SESSION_STORAGE_KEY = 'early-shout:scout-vision-session-seed'
+const SCOUT_PROGRESS_ID = 'scout-vision-session'
 
 export function ScoutVisionGame() {
   const { user, refreshProfile } = useAuth()
@@ -232,33 +235,58 @@ export function ScoutVisionGame() {
   )
 
   useEffect(() => {
-    const timeout = window.setTimeout(() => {
-      const stored = Number(window.sessionStorage.getItem(SCOUT_SESSION_STORAGE_KEY))
-      const nextSeed = Number.isSafeInteger(stored) && stored > 0 ? stored : createQuizSessionSeed()
-      window.sessionStorage.setItem(SCOUT_SESSION_STORAGE_KEY, String(nextSeed))
+    let active = true
+    const timeout = window.setTimeout(async () => {
+      const stored = await loadQuizProgress(SCOUT_PROGRESS_ID)
+      if (!active) return
+      const savedProgress = stored?.status === 'in_progress' ? stored.progress : null
+      const savedSeed = typeof savedProgress?.sessionSeed === 'number' && Number.isFinite(savedProgress.sessionSeed) ? savedProgress.sessionSeed : null
+      const savedIndex = stored && Number.isInteger(stored.current_index) && stored.current_index >= 0 && stored.current_index < 10 ? stored.current_index : null
+      const savedAnswers = Array.isArray(savedProgress?.answers)
+        && savedProgress.answers.every((answer) => typeof answer === 'object' && answer !== null && typeof (answer as { scenarioId?: unknown }).scenarioId === 'string' && decisionOrder.includes((answer as { decision?: ScoutDecision }).decision as ScoutDecision))
+        ? savedProgress.answers as Array<{ scenarioId: string; decision: ScoutDecision }>
+        : null
+      const savedSelected = typeof savedProgress?.selected === 'string' && decisionOrder.includes(savedProgress.selected as ScoutDecision) ? savedProgress.selected as ScoutDecision : null
+
+      if (savedSeed !== null && savedIndex !== null && savedAnswers) {
+        writeResilientSessionNumber(SCOUT_SESSION_STORAGE_KEY, savedSeed)
+        setSessionSeed(savedSeed)
+        setIndex(savedIndex)
+        setSelected(savedSelected)
+        setScore(Math.max(0, Math.min(10, stored?.score ?? 0)))
+        setAnswers(savedAnswers.slice(0, 10))
+        return
+      }
+
+      const nextSeed = readResilientSessionNumber(SCOUT_SESSION_STORAGE_KEY) ?? createQuizSessionSeed()
+      writeResilientSessionNumber(SCOUT_SESSION_STORAGE_KEY, nextSeed)
       setSessionSeed(nextSeed)
     })
-    return () => window.clearTimeout(timeout)
-  }, [])
+    return () => { active = false; window.clearTimeout(timeout) }
+  }, [decisionOrder])
 
   function choose(decision: ScoutDecision) {
-    if (selected) return
+    if (selected || sessionSeed === null) return
+    const nextAnswers = [...answers, { scenarioId: scenario.id, decision }]
+    const nextScore = score + (decision === scenario.recommended ? 1 : 0)
     setSelected(decision)
-    setAnswers((current) => [...current, { scenarioId: scenario.id, decision }])
-    if (decision === scenario.recommended) {
-      setScore((current) => current + 1)
-    }
+    setAnswers(nextAnswers)
+    setScore(nextScore)
+    void saveQuizProgress({ quizId: SCOUT_PROGRESS_ID, currentIndex: index, score: nextScore, total: scenarios.length, progress: { sessionSeed, answers: nextAnswers, selected: decision } })
   }
 
   function next() {
-    if (index === scenarios.length - 1) return
-    setIndex((current) => current + 1)
+    if (index === scenarios.length - 1 || sessionSeed === null) return
+    const nextIndex = index + 1
+    setIndex(nextIndex)
     setSelected(null)
+    void saveQuizProgress({ quizId: SCOUT_PROGRESS_ID, currentIndex: nextIndex, score, total: scenarios.length, progress: { sessionSeed, answers, selected: null } })
   }
 
   function restart() {
+    void clearQuizProgress(SCOUT_PROGRESS_ID)
     const nextSeed = createQuizSessionSeed()
-    window.sessionStorage.setItem(SCOUT_SESSION_STORAGE_KEY, String(nextSeed))
+    writeResilientSessionNumber(SCOUT_SESSION_STORAGE_KEY, nextSeed)
     setSessionSeed(nextSeed)
     setIndex(0)
     setSelected(null)
@@ -285,6 +313,7 @@ export function ScoutVisionGame() {
     })
     if (!error) {
       setSaved(true)
+      await clearQuizProgress(SCOUT_PROGRESS_ID)
       await refreshProfile()
     }
   }

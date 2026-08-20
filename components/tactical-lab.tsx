@@ -8,7 +8,9 @@ import { tacticalScenarios } from '@/lib/tactical-scenarios'
 import { buildQuizDifficultyIndex, filterQuizDifficulty, quizDifficultyCounts, quizXp } from '@/lib/quiz-difficulty'
 import { buildCompletionKey, createCompletionRunId, saveQuizResult } from '@/lib/quiz-save'
 import { createQuizSessionSeed, sampleBalancedQuizSession } from '@/lib/quiz-session'
+import { clearQuizProgress, loadQuizProgress, saveQuizProgress } from '@/lib/quiz-progress'
 import { cn } from '@/lib/utils'
+import { readResilientSessionNumber, writeResilientSessionNumber } from '@/lib/resilient-session'
 
 const SESSION_SIZE = 10
 const SESSION_STORAGE_KEY = 'early-shout:tactical-session-seed'
@@ -43,32 +45,59 @@ export function TacticalLab() {
   const scenario = scenarios[index]
   const complete = Boolean(scenario) && index === scenarios.length - 1 && selected !== null
   const xp = quizXp(20 + score * 10 + (score === scenarios.length ? 40 : 0), difficulty)
+  const progressId = `tactical-lab-progress:${difficulty}`
 
   useEffect(() => {
-    const timeout = window.setTimeout(() => {
-      const stored = Number(window.sessionStorage.getItem(SESSION_STORAGE_KEY))
-      const nextSeed = Number.isSafeInteger(stored) && stored > 0 ? stored : createQuizSessionSeed()
-      window.sessionStorage.setItem(SESSION_STORAGE_KEY, String(nextSeed))
+    let active = true
+    const timeout = window.setTimeout(async () => {
+      const key = `${SESSION_STORAGE_KEY}:${difficulty}`
+      const stored = await loadQuizProgress(`tactical-lab-progress:${difficulty}`)
+      if (!active) return
+      const saved = stored?.status === 'in_progress' ? stored.progress : null
+      const savedSeed = typeof saved?.sessionSeed === 'number' && Number.isFinite(saved.sessionSeed) ? saved.sessionSeed : null
+      const savedIndex = stored && Number.isInteger(stored.current_index) && stored.current_index >= 0 && stored.current_index < SESSION_SIZE ? stored.current_index : null
+      const savedAnswers = Array.isArray(saved?.answers) && saved.answers.every((answer) => Number.isInteger(answer)) ? saved.answers as number[] : null
+      const savedSelected = typeof saved?.selected === 'number' && Number.isInteger(saved.selected) ? saved.selected : null
+
+      if (savedSeed !== null && savedIndex !== null && savedAnswers) {
+        writeResilientSessionNumber(key, savedSeed)
+        setSessionSeed(savedSeed)
+        setIndex(savedIndex)
+        setSelected(savedSelected)
+        setScore(Math.max(0, Math.min(SESSION_SIZE, stored?.score ?? 0)))
+        setAnswers(savedAnswers.slice(0, SESSION_SIZE))
+        return
+      }
+
+      const nextSeed = readResilientSessionNumber(key) ?? createQuizSessionSeed()
+      writeResilientSessionNumber(key, nextSeed)
       setSessionSeed(nextSeed)
     })
-    return () => window.clearTimeout(timeout)
-  }, [])
+    return () => { active = false; window.clearTimeout(timeout) }
+  }, [difficulty])
 
   function choose(option: number) {
-    if (!scenario || selected !== null) return
+    if (!scenario || selected !== null || sessionSeed === null) return
+    const nextAnswers = [...answers, option]
+    const nextScore = score + (option === scenario.answer ? 1 : 0)
     setSelected(option)
-    setAnswers((current) => [...current, option])
-    if (option === scenario.answer) setScore((value) => value + 1)
+    setAnswers(nextAnswers)
+    setScore(nextScore)
+    void saveQuizProgress({ quizId: progressId, currentIndex: index, score: nextScore, total: scenarios.length, progress: { sessionSeed, answers: nextAnswers, selected: option } })
   }
 
   function next() {
-    setIndex((value) => value + 1)
+    if (sessionSeed === null) return
+    const nextIndex = index + 1
+    setIndex(nextIndex)
     setSelected(null)
+    void saveQuizProgress({ quizId: progressId, currentIndex: nextIndex, score, total: scenarios.length, progress: { sessionSeed, answers, selected: null } })
   }
 
   function restart() {
+    void clearQuizProgress(progressId)
     const nextSeed = createQuizSessionSeed()
-    window.sessionStorage.setItem(SESSION_STORAGE_KEY, String(nextSeed))
+    writeResilientSessionNumber(`${SESSION_STORAGE_KEY}:${difficulty}`, nextSeed)
     setSessionSeed(nextSeed)
     setIndex(0)
     setSelected(null)
@@ -80,8 +109,16 @@ export function TacticalLab() {
   }
 
   function changeDifficulty(nextDifficulty: typeof difficulty) {
+    void clearQuizProgress(progressId)
     setDifficulty(nextDifficulty)
-    restart()
+    setSessionSeed(null)
+    setIndex(0)
+    setSelected(null)
+    setScore(0)
+    setAnswers([])
+    setRunKey(createCompletionRunId())
+    setRewardStatus('idle')
+    setAwardedXp(0)
   }
 
   async function save() {
@@ -101,6 +138,7 @@ export function TacticalLab() {
     }
     setAwardedXp(alreadyCompleted ? 0 : (xpAwarded ?? xp))
     setRewardStatus(alreadyCompleted ? 'already' : 'saved')
+    await clearQuizProgress(progressId)
     if (!alreadyCompleted) await refreshProfile()
   }
 

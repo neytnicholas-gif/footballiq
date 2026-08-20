@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { usePathname } from 'next/navigation'
 import { X, Sparkles } from 'lucide-react'
 import { useAuth } from '@/components/auth-provider'
+import { INSTALL_VISIBILITY_EVENT } from '@/components/mobile-experience'
 
 const DISMISS_KEY = 'footballiq-account-prompt-dismissed-v1'
 
@@ -17,6 +18,13 @@ export function AccountPrompt() {
   const [mounted, setMounted] = useState(false)
   const [dismissed, setDismissed] = useState(false)
   const [readyToShow, setReadyToShow] = useState(false)
+  const [installOpen, setInstallOpen] = useState(false)
+
+  useEffect(() => {
+    const onInstallVisibility = (event: Event) => setInstallOpen(Boolean((event as CustomEvent<{ open?: boolean }>).detail?.open))
+    window.addEventListener(INSTALL_VISIBILITY_EVENT, onInstallVisibility)
+    return () => window.removeEventListener(INSTALL_VISIBILITY_EVENT, onInstallVisibility)
+  }, [])
 
   useEffect(() => {
     const timeout = window.setTimeout(() => {
@@ -61,10 +69,10 @@ export function AccountPrompt() {
     return () => window.removeEventListener('keydown', onKeyDown)
   }, [readyToShow])
 
-  if (!mounted || loading || user || dismissed || hidden || !readyToShow) return null
+  if (!mounted || loading || user || dismissed || hidden || installOpen || !readyToShow) return null
 
   return (
-    <div className="pointer-events-none fixed inset-x-0 bottom-3 z-40 px-3 sm:bottom-5 sm:px-6">
+    <div className="pointer-events-none fixed inset-x-0 bottom-[calc(5.25rem+env(safe-area-inset-bottom))] z-40 px-3 sm:px-6 md:bottom-5">
       <div className="pointer-events-auto mx-auto flex w-full max-w-xl items-start gap-2.5 rounded-2xl border border-primary/20 bg-card/96 p-3 shadow-2xl shadow-black/15 backdrop-blur-xl sm:gap-3 sm:rounded-3xl sm:p-4" role="region" aria-label="Create account prompt">
         <div className="hidden size-10 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary sm:flex">
           <Sparkles className="size-5" />
