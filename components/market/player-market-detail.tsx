@@ -11,8 +11,9 @@ import { MarketTradeDialog } from '@/components/market/market-trade-dialog'
 import { useMarketFormation } from '@/components/market/use-market-formation'
 import { buyMarketPlayer, sellMarketPlayer, toggleMarketWatchlist } from '@/lib/market/client'
 import { canBuyPosition, countFormation, MARKET_FORMATIONS } from '@/lib/market/formation'
+import { marketChipName } from '@/lib/market/chips'
 import { createMarketRequestKey, formatFiqCompact, formatMarketDateTime, formatMarketInteger, MARKET_MAX_PORTFOLIO_SIZE } from '@/lib/market/format'
-import type { MarketHolding, MarketOpeningPriceExplanation, MarketPlayer, MarketSeasonStats, MarketValueHistoryPoint } from '@/lib/market/types'
+import type { MarketGameweekChipStatus, MarketHolding, MarketOpeningPriceExplanation, MarketPlayer, MarketSeasonStats, MarketValueHistoryPoint } from '@/lib/market/types'
 
 export function PlayerMarketDetail({
   players,
@@ -24,6 +25,7 @@ export function PlayerMarketDetail({
   watchlist,
   availableCash,
   buysRemaining,
+  chipStatus,
   onRefresh,
 }: {
   players: MarketPlayer[]
@@ -35,6 +37,7 @@ export function PlayerMarketDetail({
   watchlist: number[]
   availableCash: number
   buysRemaining: number
+  chipStatus: MarketGameweekChipStatus | null
   onRefresh: () => Promise<void>
 }) {
   const { user, refreshProfile } = useAuth()
@@ -64,6 +67,10 @@ export function PlayerMarketDetail({
     && holdings.length < MARKET_MAX_PORTFOLIO_SIZE
     && availableCash >= player.current_value
     && hasPositionSlot
+  const pendingChipTarget = chipStatus?.active_chip?.targets.find((target) => target.player_id === player.id && target.still_held)
+  const chipSaleWarning = pendingChipTarget && pendingChipTarget.events_applied === 0 && chipStatus?.active_chip?.state !== 'void'
+    ? `Selling this held copy before its match result removes ${player.display_name} from your ${chipStatus?.active_chip ? marketChipName(chipStatus.active_chip.chip_key) : 'weekly chip'}. The weekly chip cannot be changed or returned.`
+    : undefined
 
   async function handleBuy(requestKey: string) {
     setBusy('buy')
@@ -250,6 +257,7 @@ export function PlayerMarketDetail({
                 { label: 'Your sale value', value: formatFiqCompact(heldValue) },
                 { label: 'Game profit/loss', value: `${heldValue - (holding?.acquisition_value ?? player.current_value) >= 0 ? '+' : '-'}${formatFiqCompact(Math.abs(heldValue - (holding?.acquisition_value ?? player.current_value)))}` },
               ]}
+          warning={tradeIntent.action === 'sell' ? chipSaleWarning : undefined}
           onCancel={() => setTradeIntent(null)}
           onConfirm={() => {
             const intent = tradeIntent

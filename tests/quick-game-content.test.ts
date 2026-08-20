@@ -1,5 +1,14 @@
 import { describe, expect, it } from 'vitest'
-import { duelPacks, getDuelPackDifficulty } from '@/lib/duel-packs'
+import {
+  coreDuelPacks,
+  duelPacks,
+  DUEL_CORE_PACKS_PER_THEME,
+  DUEL_RESERVE_PACKS_PER_THEME,
+  getDuelPackDifficulty,
+  getDuelThemeId,
+  isDuelReservePack,
+  reserveDuelPacks,
+} from '@/lib/duel-packs'
 import { higherLowerDecks, higherLowerItems } from '@/lib/game-data'
 import { getCareerRound, getWhoAmIRound, playerGuessMatches, playerKnowledgeProfiles } from '@/lib/player-knowledge-bank'
 import { verifyQuizReward } from '@/lib/quiz-rules'
@@ -8,9 +17,11 @@ const completionKey='cqk:quick-game-test:run-123456789012345678901234'
 function seededShuffle<T>(items:T[],seed:number){const copy=[...items];let value=seed||1;for(let index=copy.length-1;index>0;index-=1){value=(value*9301+49297)%233280;const randomIndex=Math.floor((value/233280)*(index+1));[copy[index],copy[randomIndex]]=[copy[randomIndex]!,copy[index]!]}return copy}
 
 describe('expanded quick-game libraries',()=>{
-  it('ships exactly ten times the original playable volume',()=>{
-    expect(duelPacks).toHaveLength(100)
-    expect(new Set(duelPacks.map(pack=>pack.id)).size).toBe(100)
+  it('ships ten core and three reserve packs for every duel theme',()=>{
+    expect(coreDuelPacks).toHaveLength(100)
+    expect(reserveDuelPacks).toHaveLength(30)
+    expect(duelPacks).toHaveLength(130)
+    expect(new Set(duelPacks.map(pack=>pack.id)).size).toBe(130)
     expect(duelPacks.every(pack=>pack.questions.length===10)).toBe(true)
     expect(higherLowerDecks).toHaveLength(10)
     expect(higherLowerDecks.every(deck=>deck.items.length===14)).toBe(true)
@@ -22,14 +33,15 @@ describe('expanded quick-game libraries',()=>{
   it('does not pad the larger libraries with repeated cards or pairings',()=>{
     const packsByTheme=new Map<string,typeof duelPacks>()
     for(const pack of duelPacks){
-      const theme=pack.title.split(' · Set ')[0]!
+      const theme=getDuelThemeId(pack.id)
       packsByTheme.set(theme,[...(packsByTheme.get(theme)??[]),pack])
     }
     expect(packsByTheme.size).toBe(10)
     for(const packs of packsByTheme.values()){
-      expect(packs).toHaveLength(10)
+      expect(packs).toHaveLength(DUEL_CORE_PACKS_PER_THEME+DUEL_RESERVE_PACKS_PER_THEME)
+      expect(packs.filter(pack=>isDuelReservePack(pack.id))).toHaveLength(DUEL_RESERVE_PACKS_PER_THEME)
       const pairings=packs.flatMap(pack=>pack.questions.map(question=>[question.left.name,question.right.name].sort().join(' :: ')))
-      expect(new Set(pairings).size).toBe(100)
+      expect(new Set(pairings).size).toBe(130)
     }
     for(const deck of higherLowerDecks){
       expect(new Set(deck.items.map(item=>item.name)).size).toBe(14)
@@ -42,7 +54,7 @@ describe('expanded quick-game libraries',()=>{
     const themesByDifficulty=new Map<string,Set<string>>()
     for(const pack of duelPacks){
       const difficulty=getDuelPackDifficulty(pack.id)
-      const theme=pack.id.replace(/-\d+$/,'')
+      const theme=getDuelThemeId(pack.id)
       const themes=themesByDifficulty.get(difficulty)??new Set<string>()
       themes.add(theme)
       themesByDifficulty.set(difficulty,themes)

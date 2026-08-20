@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Check, Clock3, Copy, Flame, RotateCcw, Sparkles, Trophy, X, Zap } from 'lucide-react'
+import { ArrowRight, Check, Clock3, Copy, Flame, RotateCcw, Sparkles, Trophy, X, Zap } from 'lucide-react'
 import type { DuelPack, DuelQuestion } from '@/lib/duel-packs'
 import { useAuth } from '@/components/auth-provider'
 import { QuizProgressBanner } from '@/components/quiz-progress-banner'
@@ -68,12 +68,19 @@ function gradeFor(score: number, total: number) {
   return { title: 'Back to the Analysis Room', copy: 'This pack got you. The rematch is waiting.', emoji: '🎥' }
 }
 
-export function DuelQuiz({ pack, difficulty, onComplete }: { pack: DuelPack; difficulty: QuizDifficulty; onComplete?: (packId: string, score: number) => void }) {
+export function DuelQuiz({ pack, difficulty, onComplete, nextPackLabel, onNextPack }: {
+  pack: DuelPack
+  difficulty: QuizDifficulty
+  onComplete?: (packId: string, score: number) => void
+  nextPackLabel?: string
+  onNextPack?: () => void
+}) {
   const { user, profile, refreshProfile } = useAuth()
   const progressQuizId = `duel-progress-${pack.id}-${difficulty}`
   // A deterministic first deck prevents a server/client hydration mismatch.
   // Restart actions below still produce a fresh randomized deck.
   const [questions, setQuestions] = useState(() => shuffledQuestions(pack.questions, stableSeed(pack.id)))
+  const [started, setStarted] = useState(false)
   const [index, setIndex] = useState(0)
   const [selected, setSelected] = useState<Choice | 'timeout' | null>(null)
   const [score, setScore] = useState(0)
@@ -166,7 +173,7 @@ export function DuelQuiz({ pack, difficulty, onComplete }: { pack: DuelPack; dif
   }, [progressQuizId])
 
   const lockAnswer = useCallback((choice: Choice | 'timeout') => {
-    if (checkingProgress || resumeState || answered) return
+    if (!started || checkingProgress || resumeState || answered) return
     setSelected(choice)
     const nextProofAnswers = [...proofAnswers, { left: question.left.name, right: question.right.name, statLabel: currentStatLabel, choice, speed, timeLeft }]
     setProofAnswers(nextProofAnswers)
@@ -213,10 +220,10 @@ export function DuelQuiz({ pack, difficulty, onComplete }: { pack: DuelPack; dif
         answers: nextProofAnswers,
       })
     }
-  }, [answer, answered, bestCombo, checkingProgress, combo, currentStatLabel, difficulty, index, pack.id, persistProgress, points, proofAnswers, question.left.name, question.right.name, questions, resumeState, score, speed, timeLeft])
+  }, [answer, answered, bestCombo, checkingProgress, combo, currentStatLabel, difficulty, index, pack.id, persistProgress, points, proofAnswers, question.left.name, question.right.name, questions, resumeState, score, speed, started, timeLeft])
 
   useEffect(() => {
-    if (speed !== 'timed' || checkingProgress || resumeState || answered || showResults) return
+    if (!started || speed !== 'timed' || checkingProgress || resumeState || answered || showResults) return
     const timer = window.setTimeout(() => {
       if (timeLeft <= 0) {
         lockAnswer('timeout')
@@ -225,18 +232,18 @@ export function DuelQuiz({ pack, difficulty, onComplete }: { pack: DuelPack; dif
       }
     }, timeLeft <= 0 ? 0 : 1000)
     return () => window.clearTimeout(timer)
-  }, [answered, checkingProgress, lockAnswer, resumeState, showResults, speed, timeLeft])
+  }, [answered, checkingProgress, lockAnswer, resumeState, showResults, speed, started, timeLeft])
 
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
-      if (showResults || checkingProgress || resumeState || answered || shouldIgnoreGlobalShortcut(event)) return
+      if (!started || showResults || checkingProgress || resumeState || answered || shouldIgnoreGlobalShortcut(event)) return
       if (event.key === '1') lockAnswer('left')
       if (event.key === '2') lockAnswer('same')
       if (event.key === '3') lockAnswer('right')
     }
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
-  }, [answered, checkingProgress, lockAnswer, resumeState, showResults])
+  }, [answered, checkingProgress, lockAnswer, resumeState, showResults, started])
 
   async function saveResult() {
     if (!user || !profile || saved || saving) return
@@ -333,6 +340,7 @@ export function DuelQuiz({ pack, difficulty, onComplete }: { pack: DuelPack; dif
 
   function restart() {
     setQuestions(shuffledQuestions(pack.questions))
+    setStarted(false)
     setIndex(0)
     setSelected(null)
     setScore(0)
@@ -354,6 +362,7 @@ export function DuelQuiz({ pack, difficulty, onComplete }: { pack: DuelPack; dif
   function continueProgress() {
     if (!resumeState) return
     setQuestions(resumeState.questions)
+    setStarted(true)
     setIndex(resumeState.index)
     setSelected(resumeState.selected)
     setScore(resumeState.score)
@@ -372,6 +381,7 @@ export function DuelQuiz({ pack, difficulty, onComplete }: { pack: DuelPack; dif
 
   function startAgainFromResume() {
     setQuestions(shuffledQuestions(pack.questions))
+    setStarted(false)
     setIndex(0)
     setSelected(null)
     setScore(0)
@@ -447,9 +457,11 @@ export function DuelQuiz({ pack, difficulty, onComplete }: { pack: DuelPack; dif
             </div>
           )}
           <div className="mt-6 flex flex-wrap gap-3">
-            <button onClick={restart} className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-primary px-5 py-3 font-semibold text-primary-foreground"><RotateCcw className="size-4" /> Play again</button>
-            <button onClick={() => void shareResult()} className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl border border-border px-5 py-3 font-semibold"><Copy className="size-4" /> {copied ? 'Copied!' : 'Share score'}</button>
+            <button type="button" onClick={restart} className="inline-flex min-w-40 flex-1 items-center justify-center gap-2 rounded-xl border border-border bg-background px-5 py-3 font-semibold"><RotateCcw className="size-4" /> Play again</button>
+            {onNextPack && nextPackLabel && <button type="button" onClick={onNextPack} disabled={rewardStatus === 'saving'} className="inline-flex min-w-52 flex-[1.3] items-center justify-center gap-2 rounded-xl bg-primary px-5 py-3 font-black text-primary-foreground disabled:cursor-wait disabled:opacity-60">Next new pack <ArrowRight className="size-4" /><span className="sr-only">{nextPackLabel}</span></button>}
+            <button type="button" onClick={() => void shareResult()} className="inline-flex min-w-40 flex-1 items-center justify-center gap-2 rounded-xl border border-border bg-background px-5 py-3 font-semibold"><Copy className="size-4" /> {copied ? 'Copied!' : 'Share score'}</button>
           </div>
+          {onNextPack && nextPackLabel && <p className="mt-2 text-center text-xs text-muted-foreground">Up next: {nextPackLabel}</p>}
           {!user ? (
             <div className="mt-5 rounded-2xl border border-emerald-300/25 bg-emerald-300/10 p-4 text-center">
               <p className="font-black text-foreground">Keep your score and {xpEarned} XP</p>
@@ -478,22 +490,28 @@ export function DuelQuiz({ pack, difficulty, onComplete }: { pack: DuelPack; dif
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <button onClick={() => setSpeed(speed === 'timed' ? 'relaxed' : 'timed')} disabled={index > 0 || answered} className="rounded-xl border border-border px-3 py-2 text-xs text-muted-foreground disabled:opacity-50">{speed === 'timed' ? '⏱ Timed' : '☕ Relaxed'}</button>
+            <button onClick={() => setSpeed(speed === 'timed' ? 'relaxed' : 'timed')} disabled={index > 0 || answered} className="min-h-11 rounded-xl border border-border px-3 py-2 text-xs text-muted-foreground disabled:opacity-50">{speed === 'timed' ? '⏱ Timed' : '☕ Relaxed'}</button>
             <div className="rounded-xl bg-secondary px-4 py-2 text-sm"><span className="text-muted-foreground">Score</span> <strong className="ml-2 text-primary">{score}</strong></div>
           </div>
         </div>
         <div className="mt-5 h-2 overflow-hidden rounded-full bg-secondary"><div className="h-full rounded-full bg-primary transition-all duration-500" style={{ width: `${progress}%` }} /></div>
-        {speed === 'timed' && !answered && <div className="mt-3 flex items-center gap-2 text-xs text-muted-foreground"><Clock3 className="size-3.5" /><div className="h-1.5 flex-1 overflow-hidden rounded-full bg-secondary"><div className={`h-full transition-all duration-1000 ${timeLeft <= 5 ? 'bg-destructive' : 'bg-primary'}`} style={{ width: `${timeLeft / 15 * 100}%` }} /></div><span className={timeLeft <= 5 ? 'text-destructive' : ''}>{timeLeft}s</span></div>}
+        {started && speed === 'timed' && !answered && <div className="mt-3 flex items-center gap-2 text-xs text-muted-foreground"><Clock3 className="size-3.5" /><div className="h-1.5 flex-1 overflow-hidden rounded-full bg-secondary"><div className={`h-full transition-all duration-1000 ${timeLeft <= 5 ? 'bg-destructive' : 'bg-primary'}`} style={{ width: `${timeLeft / 15 * 100}%` }} /></div><span className={timeLeft <= 5 ? 'text-destructive' : ''}>{timeLeft}s</span></div>}
       </div>
 
       <div className="p-5 sm:p-7">
+        {!started && !checkingProgress && !resumeState && (
+          <div className="mb-5 flex flex-col gap-4 rounded-2xl border border-cyan-300/25 bg-[linear-gradient(120deg,rgba(34,211,238,.1),rgba(16,185,129,.08))] p-5 sm:flex-row sm:items-center sm:justify-between">
+            <div><p className="text-xs font-black uppercase tracking-[.18em] text-cyan-300">Ready when you are</p><h3 className="mt-1 text-xl font-black text-white">Ten duels. Your clock starts after you press Start.</h3><p className="mt-1 text-sm text-slate-400">Use Timed for speed points, or switch to Relaxed above if you want no countdown.</p></div>
+            <button type="button" onClick={() => setStarted(true)} className="inline-flex min-h-12 shrink-0 items-center justify-center gap-2 rounded-xl bg-primary px-5 font-black text-primary-foreground"><Zap className="size-4" /> Start {speed === 'timed' ? 'timed' : 'relaxed'} pack</button>
+          </div>
+        )}
         <div className="grid items-stretch gap-4 md:grid-cols-[1fr_auto_1fr]">
-          <PlayerChoice side="left" option={question.left} selected={selected} answer={answer} answered={answered || checkingProgress || Boolean(resumeState)} statLabel={currentStatLabel} onChoose={lockAnswer} />
-          <button onClick={() => lockAnswer('same')} disabled={answered || checkingProgress || Boolean(resumeState)} className={`self-center rounded-2xl border px-5 py-3 text-sm font-bold transition disabled:cursor-not-allowed disabled:opacity-65 md:px-4 ${answered && answer === 'same' ? 'border-primary bg-primary text-primary-foreground' : answered && selected === 'same' ? 'border-destructive bg-destructive/10 text-destructive' : 'border-border bg-secondary hover:border-primary hover:text-primary'}`}><span className="md:hidden">Same total</span><span className="hidden md:block">SAME</span><span className="ml-2 text-[10px] opacity-60">2</span></button>
-          <PlayerChoice side="right" option={question.right} selected={selected} answer={answer} answered={answered || checkingProgress || Boolean(resumeState)} statLabel={currentStatLabel} onChoose={lockAnswer} />
+          <PlayerChoice side="left" option={question.left} selected={selected} answer={answer} answered={answered} disabled={!started || answered || checkingProgress || Boolean(resumeState)} statLabel={currentStatLabel} onChoose={lockAnswer} />
+          <button type="button" onClick={() => lockAnswer('same')} disabled={!started || answered || checkingProgress || Boolean(resumeState)} className={`self-center rounded-2xl border px-5 py-3 text-sm font-bold transition disabled:cursor-not-allowed disabled:opacity-65 md:px-4 ${answered && answer === 'same' ? 'border-primary bg-primary text-primary-foreground' : answered && selected === 'same' ? 'border-destructive bg-destructive/10 text-destructive' : 'border-border bg-secondary hover:border-primary hover:text-primary'}`}><span className="md:hidden">Same total</span><span className="hidden md:block">SAME</span><span className="ml-2 text-[10px] opacity-60">2</span></button>
+          <PlayerChoice side="right" option={question.right} selected={selected} answer={answer} answered={answered} disabled={!started || answered || checkingProgress || Boolean(resumeState)} statLabel={currentStatLabel} onChoose={lockAnswer} />
         </div>
 
-        {!answered && <p className="mt-5 text-center text-xs text-muted-foreground">Click a player, choose Same, or use keyboard keys 1 • 2 • 3</p>}
+        {started && !answered && <p className="mt-5 text-center text-xs text-muted-foreground">Click a player, choose Same, or use keyboard keys 1 • 2 • 3</p>}
         {rewardFlash !== null && <div className="pointer-events-none fixed left-1/2 top-28 z-50 -translate-x-1/2 animate-bounce rounded-full border border-primary/30 bg-background/95 px-5 py-2 font-bold text-primary shadow-2xl">⚡ +{rewardFlash} XP</div>}
         {answered && (
           <div className={`mt-6 rounded-2xl border p-5 ${isCorrect ? 'border-primary/35 bg-primary/10' : 'border-destructive/35 bg-destructive/10'}`}>
@@ -511,24 +529,25 @@ export function DuelQuiz({ pack, difficulty, onComplete }: { pack: DuelPack; dif
   )
 }
 
-function PlayerChoice({ side, option, selected, answer, answered, statLabel, onChoose }: {
+function PlayerChoice({ side, option, selected, answer, answered, disabled, statLabel, onChoose }: {
   side: 'left' | 'right'
   option: DuelQuestion['left']
   selected: Choice | 'timeout' | null
   answer: Choice
   answered: boolean
+  disabled: boolean
   statLabel: string
   onChoose: (choice: Choice) => void
 }) {
   const correct = answered && answer === side
   const wrong = answered && selected === side && answer !== side
   return (
-    <button disabled={answered} onClick={() => onChoose(side)} className={`group relative min-h-64 overflow-hidden rounded-3xl border p-6 text-left transition duration-300 sm:p-8 ${correct ? 'border-primary bg-primary/10 ring-1 ring-primary/40' : wrong ? 'border-destructive bg-destructive/10' : 'border-border bg-background hover:-translate-y-1 hover:border-primary/60 hover:shadow-xl hover:shadow-primary/5'}`}>
+    <button disabled={disabled} onClick={() => onChoose(side)} className={`group relative min-h-64 overflow-hidden rounded-3xl border p-6 text-left transition duration-300 disabled:cursor-not-allowed sm:p-8 ${correct ? 'border-primary bg-primary/10 ring-1 ring-primary/40' : wrong ? 'border-destructive bg-destructive/10' : 'border-border bg-background enabled:hover:-translate-y-1 enabled:hover:border-primary/60 enabled:hover:shadow-xl enabled:hover:shadow-primary/5'}`}>
       <span className="absolute right-5 top-5 rounded-lg border border-border bg-card/80 px-2 py-1 text-[10px] text-muted-foreground">{side === 'left' ? '1' : '3'}</span>
       <p className="text-xs font-semibold uppercase tracking-[.2em] text-primary">Pick this player</p>
       <h3 className="mt-5 max-w-sm text-3xl font-bold tracking-tight sm:text-4xl">{option.name}</h3>
       <p className="mt-3 max-w-sm text-sm leading-relaxed text-muted-foreground">{option.detail}</p>
-      {answered ? <div className="mt-10"><span className="text-5xl font-bold text-primary">{option.value}</span><span className="ml-2 text-sm text-muted-foreground">{statLabel}</span></div> : <div className="mt-10 text-sm font-medium text-muted-foreground transition group-hover:text-primary">Lock in answer →</div>}
+      {answered ? <div className="mt-10"><span className="text-5xl font-bold text-primary">{option.value}</span><span className="ml-2 text-sm text-muted-foreground">{statLabel}</span></div> : <div className={`mt-10 text-sm font-medium text-muted-foreground transition ${disabled ? '' : 'group-hover:text-primary'}`}>{disabled ? 'Start the pack above' : 'Lock in answer →'}</div>}
     </button>
   )
 }

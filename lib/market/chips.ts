@@ -36,9 +36,9 @@ export const MARKET_GAMEWEEK_CHIPS: MarketChipDefinition[] = [
     key: 'position_pulse',
     name: 'Position Pulse',
     shortName: 'Pulse',
-    summary: 'Every held player in one outfield position gets a 50% stronger move.',
+    summary: 'Boost one outfield position. The multiplier balances itself to keep every formation fair.',
     targetHelp: 'Choose defenders, midfielders or forwards.',
-    multiplierLabel: '1 position · 1.5× up or down',
+    multiplierLabel: '1 position · auto-balanced up or down',
     targetCount: 'position',
     tone: 'violet',
   },
@@ -74,16 +74,37 @@ export function marketChipDefinition(key: MarketGameweekChipKey) {
   return MARKET_GAMEWEEK_CHIPS.find((chip) => chip.key === key) ?? MARKET_GAMEWEEK_CHIPS[0]
 }
 
-export function marketChipMultiplierBasisPoints(key: MarketGameweekChipKey) {
+export function marketChipName(key: MarketGameweekChipKey) {
+  return marketChipDefinition(key).name
+}
+
+export function marketPositionPulseMultiplierBasisPoints(targetCount: number) {
+  const safeTargetCount = Math.max(1, Math.min(11, Math.round(targetCount)))
+  return Math.min(30_000, 10_000 + Math.round(20_000 / safeTargetCount))
+}
+
+export function marketChipMultiplierBasisPoints(key: MarketGameweekChipKey, targetCount?: number) {
   switch (key) {
     case 'triple_shout': return 30_000
     case 'power_pair': return 20_000
-    case 'position_pulse': return 15_000
+    case 'position_pulse': return marketPositionPulseMultiplierBasisPoints(targetCount ?? 4)
     case 'full_xi_surge': return 12_000
     case 'lockdown': return 0
   }
 }
 
-export function marketChipAdjustedMovement(key: MarketGameweekChipKey, normalMovement: number) {
-  return Math.round(normalMovement * marketChipMultiplierBasisPoints(key) / 10_000)
+export function marketChipAdjustedMovement(key: MarketGameweekChipKey, normalMovement: number, targetCount?: number) {
+  return Math.round(normalMovement * marketChipMultiplierBasisPoints(key, targetCount) / 10_000)
+}
+
+export function formatMarketChipMultiplier(multiplierBasisPoints: number) {
+  return `${(multiplierBasisPoints / 10_000).toFixed(2).replace(/\.00$/, '').replace(/0$/, '')}×`
+}
+
+export function marketChipMovementExample(multiplierBasisPoints: number) {
+  if (multiplierBasisPoints === 0) {
+    return 'Example: a normal +0.2m or −0.2m move becomes no movement.'
+  }
+  const adjusted = (0.2 * multiplierBasisPoints / 10_000).toFixed(2).replace(/0$/, '')
+  return `Example: a normal +0.2m move becomes +${adjusted}m; −0.2m becomes −${adjusted}m.`
 }

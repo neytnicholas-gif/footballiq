@@ -10,8 +10,9 @@ import { MarketTradeDialog } from '@/components/market/market-trade-dialog'
 import { useMarketFormation } from '@/components/market/use-market-formation'
 import { buyMarketPlayer, sellMarketPlayer, toggleMarketWatchlist } from '@/lib/market/client'
 import { canBuyPosition, countFormation, MARKET_FORMATIONS } from '@/lib/market/formation'
+import { marketChipName } from '@/lib/market/chips'
 import { createMarketRequestKey, formatFiqCompact, MARKET_MAX_PORTFOLIO_SIZE } from '@/lib/market/format'
-import type { MarketHolding, MarketPlayer, MarketSeasonStats } from '@/lib/market/types'
+import type { MarketGameweekChipStatus, MarketHolding, MarketPlayer, MarketSeasonStats } from '@/lib/market/types'
 import { matchesPlayerSearch } from '@/lib/market/player-search'
 
 type SortKey = 'value-desc' | 'value-asc' | 'change-desc' | 'change-asc' | 'form-desc' | 'name-asc'
@@ -54,6 +55,9 @@ export function PlayerMarketBrowser({
   userSignedIn,
   buysRemaining,
   availableCash,
+  chipStatus,
+  search,
+  onSearchChange,
   onTradeAction,
 }: {
   players: MarketPlayer[]
@@ -63,9 +67,11 @@ export function PlayerMarketBrowser({
   userSignedIn: boolean
   buysRemaining: number
   availableCash: number
+  chipStatus: MarketGameweekChipStatus | null
+  search: string
+  onSearchChange: (value: string) => void
   onTradeAction: () => Promise<void>
 }) {
-  const [search, setSearch] = useState('')
   const [position, setPosition] = useState<'ALL' | 'GK' | 'DEF' | 'MID' | 'FWD'>('ALL')
   const [competition, setCompetition] = useState('ALL')
   const [club, setClub] = useState('ALL')
@@ -153,13 +159,19 @@ export function PlayerMarketBrowser({
     + Number(trend !== 'all')
     + Number(priceRange !== 'all')
   const hasChangedCatalogueView = Boolean(search.trim()) || activeFilterCount > 0 || scope !== 'all' || sortKey !== 'value-desc'
+  const pendingChipTarget = tradeIntent?.action === 'sell'
+    ? chipStatus?.active_chip?.targets.find((target) => target.player_id === tradeIntent.player.id && target.still_held)
+    : null
+  const chipSaleWarning = pendingChipTarget && pendingChipTarget.events_applied === 0 && chipStatus?.active_chip?.state !== 'void'
+    ? `Selling this held copy before its match result removes ${tradeIntent?.player.display_name} from ${chipStatus?.active_chip ? marketChipName(chipStatus.active_chip.chip_key) : 'your chip'}. The weekly chip cannot be changed or returned.`
+    : undefined
 
   function resetCatalogueWindow() {
     setVisibleCount(PLAYER_PAGE_SIZE)
   }
 
   function clearCatalogueFilters() {
-    setSearch('')
+    onSearchChange('')
     setPosition('ALL')
     setCompetition('ALL')
     setClub('ALL')
@@ -286,7 +298,7 @@ export function PlayerMarketBrowser({
               <input
                 type="search"
                 value={search}
-                onChange={(event) => { setSearch(event.target.value); resetCatalogueWindow() }}
+                onChange={(event) => { onSearchChange(event.target.value); resetCatalogueWindow() }}
                 placeholder="Type a player name, e.g. Lamine Yamal"
                 autoComplete="off"
                 spellCheck={false}
@@ -295,7 +307,7 @@ export function PlayerMarketBrowser({
                 className="min-h-14 w-full bg-transparent px-3 py-3 text-base font-semibold text-white outline-none placeholder:text-slate-500"
               />
               {search ? (
-                <button type="button" onClick={() => { setSearch(''); resetCatalogueWindow() }} aria-label="Clear player search" className="rounded-lg p-2 text-slate-300 transition hover:bg-white/10 hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-300">
+                <button type="button" onClick={() => { onSearchChange(''); resetCatalogueWindow() }} aria-label="Clear player search" className="rounded-lg p-2 text-slate-300 transition hover:bg-white/10 hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-300">
                   <X className="size-4" aria-hidden="true" />
                 </button>
               ) : null}
@@ -532,6 +544,7 @@ export function PlayerMarketBrowser({
                 { label: 'Public market price', value: formatFiqCompact(tradeIntent.player.current_value) },
                 { label: 'Position reopened', value: tradeIntent.player.position },
               ]}
+          warning={chipSaleWarning}
           onCancel={() => setTradeIntent(null)}
           onConfirm={() => {
             const intent = tradeIntent

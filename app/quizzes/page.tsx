@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { ArrowRight, Brain, CircleDotDashed, Flag, Gamepad2, GitBranch, Globe2, Link2, ListOrdered, Search, ShieldQuestion, Sparkles, Target, TrendingUp, Trophy, Users, Workflow } from 'lucide-react'
 import { SiteHeader } from '@/components/site-header'
-import { duelPacks } from '@/lib/duel-packs'
+import { coreDuelPacks, reserveDuelPacks } from '@/lib/duel-packs'
 import { careerQuestions, higherLowerItems, whoAmIQuestions } from '@/lib/game-data'
 import { tacticalScenarios } from '@/lib/tactical-scenarios'
 import { refereeScenarios } from '@/lib/referee-scenarios'
@@ -21,7 +21,7 @@ const modes = [
   { kind: 'quiz', title: 'Tactical Lab', description: 'Look at the match and pick what your team should do next.', href: '/quizzes/tactical-lab', icon: Workflow, accent: 'cyan', count: `${tacticalScenarios.length} scenarios`, duration: '8–12 min', skill: 'Tactics' },
   { kind: 'quiz', title: 'Scout Vision', description: 'Read about a player and decide if your club should follow them.', href: '/quizzes/would-you-scout-him', icon: Brain, accent: 'emerald', count: `${scoutQuestions.length} dossiers`, duration: '10–15 min', skill: 'Scouting' },
   { kind: 'quiz', title: 'Referee Arena', description: 'Choose the foul, card or restart. Then learn the rule.', href: '/quizzes/referee-decisions', icon: Flag, accent: 'amber', count: `${refereeQuestions.length} scenarios`, duration: '8–12 min', skill: 'Laws' },
-  { kind: 'game', title: 'Football Duels', description: 'Pick winners in fast stat battles across leagues, trophies and records.', href: '/quizzes/football-duels', icon: Trophy, accent: 'blue', count: `${duelPacks.length} packs`, duration: '5–10 min', skill: 'Knowledge' },
+  { kind: 'game', title: 'Football Duels', description: 'Pick winners in fast stat battles, master a theme and unlock its Extra Time packs.', href: '/quizzes/football-duels', icon: Trophy, accent: 'blue', count: `${coreDuelPacks.length} core + ${reserveDuelPacks.length} Extra Time`, duration: '5–10 min', skill: 'Knowledge' },
   { kind: 'quiz', title: 'Daily Challenge', description: 'Answer today’s five questions and keep your streak going.', href: '/daily', icon: Sparkles, accent: 'amber', count: '5 questions', duration: 'Daily', skill: 'Mixed' },
   { kind: 'quiz', title: 'League World', description: 'Travel through 24 leagues, including all four nationwide English divisions.', href: '/quizzes/league-world', icon: Globe2, accent: 'blue', count: '24 league rooms', duration: '15 questions each', skill: 'World football' },
   { kind: 'quiz', title: 'Odd One Out', description: 'Spot the role, rule or football idea that does not belong.', href: '/quizzes/quiz-lab/odd-one-out', icon: CircleDotDashed, accent: 'cyan', count: `${quizLabQuestionBank['odd-one-out'].length} challenges`, duration: '12 per round', skill: 'Patterns' },

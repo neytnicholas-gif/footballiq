@@ -165,6 +165,8 @@ export type MarketGameweekChipTarget = {
   player_id: number
   player_name: string
   position: MarketPosition
+  still_held: boolean
+  events_applied: number
 }
 
 export type MarketGameweekChipStatus = {
@@ -179,6 +181,7 @@ export type MarketGameweekChipStatus = {
     chip_key: MarketGameweekChipKey
     target_position: Exclude<MarketPosition, 'GK'> | null
     targets: MarketGameweekChipTarget[]
+    multiplier_basis_points: number
     state: 'armed' | 'applied' | 'void'
     activated_at: string
     first_applied_at: string | null

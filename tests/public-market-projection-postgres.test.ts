@@ -3,9 +3,9 @@ import { readFileSync } from 'node:fs'
 import { PGlite } from '@electric-sql/pglite'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
-const migration = readFileSync('supabase/migrations/20260818080145_harden_beta_launch_gates.sql', 'utf8')
+const movementMigration = readFileSync('supabase/migrations/20260819224214_preserve_real_movement_after_opening_recalibration.sql', 'utf8')
 
-function functionSql(name: string) {
+function functionSql(migration: string, name: string) {
   const start = [
     migration.indexOf(`create function public.${name}`),
     migration.indexOf(`create or replace function public.${name}`),
@@ -36,7 +36,18 @@ describe('privacy-safe public market projections', () => {
       );
       create table public.market_portfolios(id uuid primary key,user_id uuid);
       create table public.market_holdings(portfolio_id uuid,player_id uuid);
-      create table public.market_valuation_events(player_id uuid,previous_price_minor integer,effective_at timestamptz,created_at timestamptz);
+      create table public.market_valuation_events(
+        id bigint generated always as identity primary key,
+        player_id uuid,
+        event_type text not null default 'match-performance',
+        previous_price_minor integer,
+        new_price_minor integer,
+        price_change_minor integer,
+        reason text,
+        calculation_version text not null default 'test-v1',
+        effective_at timestamptz,
+        created_at timestamptz
+      );
       create table public.player_season_stats(
         player_id uuid,season_id text,appearances integer,starts integer,minutes_played integer,
         goals integer,assists integer,clean_sheets integer,yellow_cards integer,red_cards integer,
@@ -46,8 +57,8 @@ describe('privacy-safe public market projections', () => {
       returns table(is_locked boolean,lock_reason text,lock_started_at timestamptz,lock_ends_at timestamptz)
       language sql stable as $$ select false,null::text,null::timestamptz,null::timestamptz $$;
     `)
-    await db.exec(functionSql('market_public_catalogue_v1'))
-    await db.exec(functionSql('market_public_player_detail_v1'))
+    await db.exec(functionSql(movementMigration, 'market_public_catalogue_v1'))
+    await db.exec(functionSql(movementMigration, 'market_public_player_detail_v1'))
     await db.query("insert into public.market_catalogues values($1,'season-1','active')", [catalogueId])
     await db.query("insert into public.market_seasons values('season-1','2026/27','premier-league')")
     await db.query("insert into public.market_clubs values($1,'Example FC')", [clubId])
@@ -72,18 +83,49 @@ describe('privacy-safe public market projections', () => {
   it('returns the catalogue needed by the UI without provider or model-state columns', async () => {
     const result = await db.query<Record<string, unknown>>("select * from public.market_public_catalogue_v1('premier-league')")
     expect(result.rows).toHaveLength(1)
-    expect(result.rows[0]).toMatchObject({ app_player_id: 9, display_name: 'Example Player', current_price_minor: 8200000 })
+    expect(result.rows[0]).toMatchObject({
+      app_player_id: 9,
+      display_name: 'Example Player',
+      current_price_minor: 8200000,
+      previous_price_minor: 8200000,
+    })
     expect(result.rows[0]).not.toHaveProperty('provider_player_id')
     expect(result.rows[0]).not.toHaveProperty('source_reference')
     expect(result.rows[0]).not.toHaveProperty('performance_bank_milli')
   })
 
+  it('preserves real signed movement when an opening-price recalibration breaks the old absolute chain', async () => {
+    await db.query(`insert into public.market_valuation_events(
+      player_id,previous_price_minor,new_price_minor,price_change_minor,effective_at,created_at
+    ) values($1,5000000,5200000,200000,'2026-08-15T17:30:00Z','2026-08-16T02:44:15Z')`, [playerId])
+    const result = await db.query<Record<string, unknown>>("select * from public.market_public_catalogue_v1('premier-league')")
+    expect(result.rows[0]).toMatchObject({
+      current_price_minor: 8200000,
+      previous_price_minor: 8000000,
+    })
+  })
+
+  it('uses the recorded previous price when the latest event still matches the current chain', async () => {
+    await db.query(`update public.market_valuation_events
+      set previous_price_minor=8000000,new_price_minor=8200000,price_change_minor=200000
+      where player_id=$1`, [playerId])
+    const result = await db.query<Record<string, unknown>>("select * from public.market_public_catalogue_v1('premier-league')")
+    expect(result.rows[0]).toMatchObject({
+      current_price_minor: 8200000,
+      previous_price_minor: 8000000,
+    })
+  })
+
   it('returns only the reviewed player-detail payload', async () => {
-    const result = await db.query<{ detail: { season_stats: unknown[]; opening_price: Record<string, unknown> } }>(
+    const result = await db.query<{ detail: { season_stats: unknown[]; opening_price: Record<string, unknown>; value_history: Array<Record<string, unknown>> } }>(
       'select public.market_public_player_detail_v1($1) detail', [9],
     )
     expect(result.rows[0]!.detail.season_stats).toHaveLength(1)
     expect(result.rows[0]!.detail.opening_price).toMatchObject({ initial_price_minor: 8000000, opening_price_confidence: 'high' })
+    expect(result.rows[0]!.detail.value_history).toEqual([
+      expect.objectContaining({ id: 1, player_id: 9, value: 8000000, reason_category: 'opening-price' }),
+      expect.objectContaining({ id: 2, player_id: 9, value: 8200000, reason_category: 'match-performance' }),
+    ])
     expect(JSON.stringify(result.rows[0]!.detail)).not.toContain('provider-secret')
     expect(JSON.stringify(result.rows[0]!.detail)).not.toContain('private-provider-reference')
   })

@@ -2,22 +2,23 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useParams } from 'next/navigation'
+import { useAuth } from '@/components/auth-provider'
 import { SiteHeader } from '@/components/site-header'
 import { PlayerMarketDetail } from '@/components/market/player-market-detail'
 import { MarketDisclaimer } from '@/components/market/market-disclaimer'
 import {
   calculateTradesRemaining,
   loadMarketPlayers,
+  loadMyGameweekChip,
   loadMyGameweekStatus,
   loadMyPortfolioData,
-  loadPlayerSeasonStats,
-  loadPlayerOpeningPriceExplanation,
-  loadPlayerValueHistory,
+  loadPlayerDetailData,
 } from '@/lib/market/client'
-import type { MarketHolding, MarketOpeningPriceExplanation, MarketPlayer, MarketSeasonStats, MarketValueHistoryPoint } from '@/lib/market/types'
+import type { MarketGameweekChipStatus, MarketHolding, MarketOpeningPriceExplanation, MarketPlayer, MarketSeasonStats, MarketValueHistoryPoint } from '@/lib/market/types'
 import { friendlyMarketLoadError } from '@/lib/market/user-errors'
 
 export default function PlayerMarketDetailPage() {
+  const { user } = useAuth()
   const params = useParams<{ slug: string }>()
   const slug = decodeURIComponent(params.slug)
 
@@ -29,6 +30,7 @@ export default function PlayerMarketDetailPage() {
   const [watchlist, setWatchlist] = useState<number[]>([])
   const [availableCash, setAvailableCash] = useState(100_000_000)
   const [buysRemaining, setBuysRemaining] = useState(11)
+  const [chipStatus, setChipStatus] = useState<MarketGameweekChipStatus | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
@@ -52,30 +54,29 @@ export default function PlayerMarketDetailPage() {
       return
     }
 
-    const [statsResult, openingResult, historyResult, portfolioResult, gameweekStatus] = await Promise.all([
-      loadPlayerSeasonStats(currentPlayer.id),
-      loadPlayerOpeningPriceExplanation(currentPlayer.id),
-      loadPlayerValueHistory(currentPlayer.id),
+    const [detailResult, portfolioResult, gameweekStatus, chipResult] = await Promise.all([
+      loadPlayerDetailData(currentPlayer.id),
       loadMyPortfolioData(),
       loadMyGameweekStatus(),
+      user ? loadMyGameweekChip() : Promise.resolve({ data: null, error: null }),
     ])
 
-    if (statsResult.error) setError(friendlyMarketLoadError(statsResult.error))
-    if (historyResult.error) setError(friendlyMarketLoadError(historyResult.error))
+    if (detailResult.error) setError(friendlyMarketLoadError(detailResult.error))
     if (portfolioResult.error) setError(friendlyMarketLoadError(portfolioResult.error))
 
-    setStats(statsResult.data)
-    setOpeningExplanation(openingResult.data)
-    setHistory(historyResult.data)
+    setStats(detailResult.data.stats)
+    setOpeningExplanation(detailResult.data.openingExplanation)
+    setHistory(detailResult.data.history)
     setHoldings(portfolioResult.holdings)
     setWatchlist(portfolioResult.watchlist)
     setAvailableCash(portfolioResult.portfolio?.available_balance ?? 100_000_000)
+    setChipStatus(chipResult.data)
 
     const remaining = calculateTradesRemaining(portfolioResult.transactions)
     setBuysRemaining(gameweekStatus.data?.signings_remaining ?? remaining.buysRemaining)
 
     setLoading(false)
-  }, [slug])
+  }, [slug, user])
 
   useEffect(() => {
     const timer = window.setTimeout(() => void load(), 0)
@@ -99,6 +100,7 @@ export default function PlayerMarketDetailPage() {
             watchlist={watchlist}
             availableCash={availableCash}
             buysRemaining={buysRemaining}
+            chipStatus={chipStatus}
             onRefresh={load}
           />
         )}

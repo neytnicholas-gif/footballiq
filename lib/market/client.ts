@@ -277,14 +277,10 @@ export async function loadMarketSettings() {
 }
 
 export async function loadPlayerSeasonStats(playerId: number) {
-  const { data, error } = await (supabase as any).rpc('market_public_player_detail_v1', {
-    p_app_player_id: playerId,
-  })
-  const detail = data as { season_stats?: unknown } | null
-
+  const detail = await loadPlayerDetailData(playerId)
   return {
-    data: mapNormalizedSeasonStats(detail?.season_stats, playerId),
-    error: isMarketBackendUnavailable(error) || isPermissionDenied(error) ? null : error as Error | null,
+    data: detail.data.stats,
+    error: detail.error,
   }
 }
 
@@ -345,16 +341,10 @@ function mapNormalizedSeasonStats(data: unknown, appPlayerId?: number): MarketSe
 }
 
 export async function loadPlayerValueHistory(playerId: number) {
-  const { data, error } = await supabase
-    .from('market_value_history')
-    .select('*')
-    .eq('player_id', playerId)
-    .order('recorded_at', { ascending: true })
-    .limit(60)
-
+  const detail = await loadPlayerDetailData(playerId)
   return {
-    data: (data as MarketValueHistoryPoint[] | null) ?? [],
-    error: isMarketBackendUnavailable(error) ? null : error as Error | null,
+    data: detail.data.history,
+    error: detail.error,
   }
 }
 
@@ -902,17 +892,64 @@ function parseOpeningPriceExplanation(row: OpeningPriceRow): MarketOpeningPriceE
   }
 }
 
-export async function loadPlayerOpeningPriceExplanation(playerId: number) {
+type PublicPlayerDetailPayload = {
+  season_stats?: unknown
+  opening_price?: OpeningPriceRow | null
+  value_history?: unknown
+}
+
+type PublicValueHistoryRow = {
+  id?: unknown
+  player_id?: unknown
+  value?: unknown
+  recorded_at?: unknown
+  reason_category?: unknown
+  methodology_version?: unknown
+  created_at?: unknown
+}
+
+function mapPublicValueHistory(data: unknown, appPlayerId: number): MarketValueHistoryPoint[] {
+  if (!Array.isArray(data)) return []
+
+  return (data as PublicValueHistoryRow[]).flatMap((row, index) => {
+    const value = finiteNumber(row.value)
+    const recordedAt = typeof row.recorded_at === 'string' ? row.recorded_at : null
+    if (value === null || recordedAt === null) return []
+
+    return [{
+      id: finiteNumber(row.id) ?? index + 1,
+      player_id: finiteNumber(row.player_id) ?? appPlayerId,
+      value,
+      recorded_at: recordedAt,
+      reason_category: typeof row.reason_category === 'string' ? row.reason_category : 'verified-update',
+      methodology_version: typeof row.methodology_version === 'string' ? row.methodology_version : 'fiq-real-performance-v2.0.0',
+      created_at: typeof row.created_at === 'string' ? row.created_at : recordedAt,
+    }]
+  })
+}
+
+export async function loadPlayerDetailData(playerId: number) {
   const { data, error } = await (supabase as any).rpc('market_public_player_detail_v1', {
     p_app_player_id: playerId,
   })
-  const row = (data as { opening_price?: OpeningPriceRow | null } | null)?.opening_price
-  if (error || !row) return { data: null, error: error as Error | null }
+  const detail = data as PublicPlayerDetailPayload | null
 
-  const explanation = parseOpeningPriceExplanation(row)
+  return {
+    data: {
+      stats: mapNormalizedSeasonStats(detail?.season_stats, playerId),
+      openingExplanation: detail?.opening_price ? parseOpeningPriceExplanation(detail.opening_price) : null,
+      history: mapPublicValueHistory(detail?.value_history, playerId),
+    },
+    error: isMarketBackendUnavailable(error) || isPermissionDenied(error) ? null : error as Error | null,
+  }
+}
+
+export async function loadPlayerOpeningPriceExplanation(playerId: number) {
+  const detail = await loadPlayerDetailData(playerId)
+  const explanation = detail.data.openingExplanation
   return {
     data: explanation,
-    error: explanation ? null : new Error('The opening-price explanation did not pass its integrity check.'),
+    error: detail.error ?? (explanation ? null : new Error('The opening-price explanation did not pass its integrity check.')),
   }
 }
 

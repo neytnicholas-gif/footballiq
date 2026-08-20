@@ -6,12 +6,14 @@ export function MarketTradeDialog({
   action,
   playerName,
   details,
+  warning,
   onCancel,
   onConfirm,
 }: {
   action: 'buy' | 'sell'
   playerName: string
   details: Array<{ label: string; value: string }>
+  warning?: string
   onCancel: () => void
   onConfirm: () => void
 }) {
@@ -75,6 +77,13 @@ export function MarketTradeDialog({
             </div>
           ))}
         </dl>
+
+        {warning ? (
+          <div role="note" className="mt-4 rounded-2xl border border-amber-300/25 bg-amber-300/10 p-4 text-sm leading-6 text-amber-50">
+            <p className="font-black text-amber-200">Weekly chip target</p>
+            <p className="mt-1">{warning}</p>
+          </div>
+        ) : null}
 
         <div className="mt-5 grid grid-cols-2 gap-3">
           <button type="button" onClick={onCancel} className="min-h-11 rounded-xl border border-white/20 px-4 py-2.5 text-sm font-bold text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-300">

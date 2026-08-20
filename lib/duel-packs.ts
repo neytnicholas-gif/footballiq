@@ -16,6 +16,9 @@ export type DuelPack = {
   questions: DuelQuestion[]
 }
 
+export const DUEL_CORE_PACKS_PER_THEME = 10
+export const DUEL_RESERVE_PACKS_PER_THEME = 3
+
 const q = (a: string, av: number, ad: string, b: string, bv: number, bd: string): DuelQuestion => ({
   left: { name: a, value: av, detail: ad },
   right: { name: b, value: bv, detail: bd },
@@ -62,8 +65,9 @@ function expandedQuestions(pack: DuelPack) {
       pairings.push({ left: { ...left }, right: { ...right } })
     }
   }
-  if (pairings.length < 100) throw new Error(`${pack.id} needs more distinct players for ten duel sets.`)
-  return pairings.slice(0, 100)
+  const requiredPairings = (DUEL_CORE_PACKS_PER_THEME + DUEL_RESERVE_PACKS_PER_THEME) * 10
+  if (pairings.length < requiredPairings) throw new Error(`${pack.id} needs more distinct players for its core and Extra Time sets.`)
+  return pairings.slice(0, requiredPairings)
 }
 
 const duelThemeDifficulties: Record<string, QuizDifficulty> = {
@@ -79,21 +83,30 @@ const duelThemeDifficulties: Record<string, QuizDifficulty> = {
   'pl-clean-sheets': 'expert',
 }
 
-function duelThemeId(packId: string) {
-  return packId.replace(/-\d+$/, '')
+export function getDuelThemeId(packId: string) {
+  return packId.replace(/-reserve-\d+$/, '').replace(/-\d+$/, '')
+}
+
+export function isDuelReservePack(packId: string) {
+  return /-reserve-\d+$/.test(packId)
+}
+
+export function getDuelReserveNumber(packId: string) {
+  const match = packId.match(/-reserve-(\d+)$/)
+  return match ? Number(match[1]) : null
 }
 
 export function getDuelPackDifficulty(packId: string): QuizDifficulty {
   if (packId.startsWith('daily-duel-')) return 'normal'
-  const difficulty = duelThemeDifficulties[duelThemeId(packId)]
+  const difficulty = duelThemeDifficulties[getDuelThemeId(packId)]
   if (!difficulty) throw new Error(`Unknown Football Duels pack: ${packId}`)
   return difficulty
 }
 
-/** Ten distinct ten-question sets for every stat theme: 100 playable packs. */
+/** Ten core sets plus three unlockable Extra Time sets for every stat theme. */
 export const duelPacks: DuelPack[] = baseDuelPacks.flatMap((pack) => {
   const questions = expandedQuestions(pack)
-  return Array.from({ length: 10 }, (_, edition) => ({
+  const corePacks = Array.from({ length: DUEL_CORE_PACKS_PER_THEME }, (_, edition) => ({
     ...pack,
     id: edition === 0 ? pack.id : `${pack.id}-${edition + 1}`,
     title: edition === 0 ? pack.title : `${pack.title} · Set ${edition + 1}`,
@@ -101,7 +114,23 @@ export const duelPacks: DuelPack[] = baseDuelPacks.flatMap((pack) => {
     description: edition === 0 ? pack.description : `${pack.description} A fresh set of ten match-ups.`,
     questions: questions.slice(edition * 10, edition * 10 + 10),
   }))
+  const reservePacks = Array.from({ length: DUEL_RESERVE_PACKS_PER_THEME }, (_, reserveIndex) => {
+    const questionOffset = (DUEL_CORE_PACKS_PER_THEME + reserveIndex) * 10
+    const reserveNumber = reserveIndex + 1
+    return {
+      ...pack,
+      id: `${pack.id}-reserve-${reserveNumber}`,
+      title: `${pack.title} · Extra Time ${reserveNumber}`,
+      shortTitle: `${pack.shortTitle} ET${reserveNumber}`,
+      description: `A mastery pack with ten new ${pack.statLabel.toLowerCase()} match-ups. Unlock it by completing this theme's ten core sets.`,
+      questions: questions.slice(questionOffset, questionOffset + 10),
+    }
+  })
+  return [...corePacks, ...reservePacks]
 })
+
+export const coreDuelPacks = duelPacks.filter((pack) => !isDuelReservePack(pack.id))
+export const reserveDuelPacks = duelPacks.filter((pack) => isDuelReservePack(pack.id))
 
 export const higherLowerDecks = baseDuelPacks.map((pack) => {
   const players = new Map<string, DuelOption>()
@@ -132,7 +161,7 @@ function seededShuffle<T>(items: T[], seed: number) {
 export function buildDailyDuelPack(dateKey: string): DuelPack {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(dateKey)) throw new Error('Daily duel date is invalid.')
   const seed = Number(dateKey.replaceAll('-', ''))
-  const pool: DuelQuestion[] = duelPacks.flatMap((pack) => (
+  const pool: DuelQuestion[] = coreDuelPacks.flatMap((pack) => (
     pack.questions.map((question) => ({ ...question, statLabel: pack.statLabel }))
   ))
   return {

@@ -14,6 +14,9 @@ const fixtureSafety = readFileSync('supabase/migrations/20260816210000_beta_fixt
 const valuationCutoff = readFileSync('supabase/migrations/20260816210500_enforce_valuation_cutoff.sql', 'utf8')
 const launchHardening = readFileSync('supabase/migrations/20260818080145_harden_beta_launch_gates.sql', 'utf8')
 const gameweekChips = readFileSync('supabase/migrations/20260819133816_add_gameweek_chips_and_formation_choice.sql', 'utf8')
+const chipDeadline = readFileSync('supabase/migrations/20260819162000_harden_gameweek_chip_deadline.sql', 'utf8')
+const chipReveal = readFileSync('supabase/migrations/20260819164000_show_chip_effect_in_reveals.sql', 'utf8')
+const chipTargetLifecycle = readFileSync('supabase/migrations/20260819195045_rebalance_gameweek_chips_and_track_targets.sql', 'utf8')
 
 function functionSql(source: string, signature: string) {
   const start = source.indexOf(`create or replace function ${signature}`)
@@ -164,6 +167,9 @@ describe('executed PostgreSQL launch simulation', () => {
     const triggerEnd = unattended.indexOf('-- Keep hot user requests', triggerStart)
     await db.exec(unattended.slice(triggerStart, triggerEnd))
     await db.exec(gameweekChips)
+    await db.exec(chipDeadline)
+    await db.exec(chipReveal)
+    await db.exec(chipTargetLifecycle)
     await db.query('insert into public.market_settings values(1,$1,11,$2,$3)', [seasonId, 'open', '2026-01-01T00:00:00Z'])
     await db.query("insert into public.market_catalogues values($1,$2,'active')", [catalogueId, seasonId])
     await db.query('insert into public.market_active_catalogues values($1,$2)', [catalogueId, seasonId])
@@ -244,6 +250,43 @@ describe('executed PostgreSQL launch simulation', () => {
     expect(snapshot.rows[0]).toEqual({ cash: 45_000_000, invested: 55_000_000, total: 100_000_000, signings: 11 })
   })
 
+  it('balances Position Pulse and clearly ends it after every confirmed target is sold', async () => {
+    const pulseUser = '30000000-0000-0000-0000-000000000098'
+    await db.query(`insert into public.market_portfolios(user_id,season_id,starting_balance_minor,cash_balance_minor,total_portfolio_value_minor)
+      values($1,$2,100000000,100000000,100000000)`, [pulseUser, seasonId])
+    await asUser(pulseUser)
+    await db.query('select public.market_buy_player($1,$2)', ['player-12', 'pulse-user-buy-1'])
+    await db.query('select public.market_buy_player($1,$2)', ['player-13', 'pulse-user-buy-2'])
+
+    const play = await db.query<{ result: { active_chip: { multiplier_basis_points: number; state: string; targets: Array<{ player_name: string; still_held: boolean; events_applied: number }> } } }>(
+      "select public.market_play_gameweek_chip('position_pulse',null,'FWD') result",
+    )
+    expect(play.rows[0]!.result.active_chip).toMatchObject({ multiplier_basis_points: 20_000, state: 'armed' })
+    expect(play.rows[0]!.result.active_chip.targets).toHaveLength(2)
+    expect(play.rows[0]!.result.active_chip.targets).toEqual(expect.arrayContaining([
+      expect.objectContaining({ still_held: true, events_applied: 0 }),
+    ]))
+
+    await db.query("select public.market_sell_player('player-12','pulse-user-sell-1')")
+    const afterOneSale = await db.query<{ result: { active_chip: { state: string; targets: Array<{ player_name: string; still_held: boolean }> } } }>('select public.market_my_gameweek_chip() result')
+    expect(afterOneSale.rows[0]!.result.active_chip.state).toBe('armed')
+    expect(afterOneSale.rows[0]!.result.active_chip.targets).toEqual(expect.arrayContaining([
+      expect.objectContaining({ player_name: 'Player 12', still_held: false }),
+      expect.objectContaining({ player_name: 'Player 13', still_held: true }),
+    ]))
+
+    await db.query("select public.market_sell_player('player-13','pulse-user-sell-2')")
+    const afterAllSold = await db.query<{ result: { active_chip: { state: string; targets: Array<{ still_held: boolean }> } } }>('select public.market_my_gameweek_chip() result')
+    expect(afterAllSold.rows[0]!.result.active_chip.state).toBe('void')
+    expect(afterAllSold.rows[0]!.result.active_chip.targets.every((target) => !target.still_held)).toBe(true)
+
+    await asUser('')
+    await db.query('delete from public.market_gameweek_chip_plays where portfolio_id in (select id from public.market_portfolios where user_id=$1)', [pulseUser])
+    await db.query('delete from public.market_transactions where portfolio_id in (select id from public.market_portfolios where user_id=$1)', [pulseUser])
+    await db.query('delete from public.market_gameweek_allowances where portfolio_id in (select id from public.market_portfolios where user_id=$1)', [pulseUser])
+    await db.query('delete from public.market_portfolios where user_id=$1', [pulseUser])
+  })
+
   it('executes a private Triple Shout up-move, keeps the public price normal and settles the held value', async () => {
     const chipUser = '30000000-0000-0000-0000-000000000099'
     await db.query(`insert into public.market_portfolios(user_id,season_id,starting_balance_minor,cash_balance_minor,total_portfolio_value_minor)
@@ -317,8 +360,11 @@ describe('executed PostgreSQL launch simulation', () => {
       "select public.market_sell_player('player-2','chip-user-sell') result",
     )
     expect(sale.rows[0]!.result).toMatchObject({ execution_value: 5_300_000, public_market_value: 5_100_000 })
-    const statusAfterSale = await db.query<{ result: { active_chip: { targets: Array<{ player_name: string }> } } }>('select public.market_my_gameweek_chip() result')
-    expect(statusAfterSale.rows[0]!.result.active_chip.targets).toEqual([expect.objectContaining({ player_name: 'Player 2' })])
+    const statusAfterSale = await db.query<{ result: { active_chip: { state: string; targets: Array<{ player_name: string; still_held: boolean; events_applied: number }> } } }>('select public.market_my_gameweek_chip() result')
+    expect(statusAfterSale.rows[0]!.result.active_chip.state).toBe('applied')
+    expect(statusAfterSale.rows[0]!.result.active_chip.targets).toEqual([
+      expect.objectContaining({ player_name: 'Player 2', still_held: false, events_applied: 1 }),
+    ])
 
     await asUser('')
     await db.query('delete from public.market_gameweek_reveals where gameweek_id=$1', [resultGameweekId])
