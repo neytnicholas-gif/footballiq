@@ -343,6 +343,12 @@ class SportmonksRateLimitError extends Error {}
 
 function assertLicensedRuntime() {
   const vercelEnvironment = process.env.VERCEL_ENV
+  if (!vercelEnvironment) {
+    if (process.env.SPORTMONKS_ALLOW_LOCAL_API !== 'true') {
+      throw new Error('Sportmonks API calls require an explicit local opt-in outside Vercel Production.')
+    }
+    return
+  }
   if (vercelEnvironment && vercelEnvironment !== 'production') {
     throw new Error('Sportmonks API calls are disabled outside the licensed Production environment.')
   }

@@ -9,7 +9,7 @@ import {
   playerKnowledgeProfiles,
 } from '@/lib/player-knowledge-bank'
 import { calculateDuelXp } from '@/lib/progression'
-import { quizLabQuestionBank, quizLabCorrectAnswer, quizLabDifficultyText } from '@/lib/quiz-lab'
+import { quizLabQuestionBank, quizLabCorrectAnswer, quizLabDifficultyText, quizLabQuestionFamilyId } from '@/lib/quiz-lab'
 import {
   buildQuizDifficultyIndex,
   filterQuizDifficulty,
@@ -70,11 +70,24 @@ describe('five-level quiz difficulty', () => {
         id: (question) => question.id,
         authored: (question) => question.difficulty,
         text: quizLabDifficultyText,
+        family: quizLabQuestionFamilyId,
       }))),
     ]
 
     for (const counts of pools) {
       for (const difficulty of quizDifficulties) expect(counts[difficulty]).toBeGreaterThanOrEqual(12)
+    }
+  })
+
+  it('never uses post-answer Quiz Lab explanations to decide question difficulty', () => {
+    for (const questions of Object.values(quizLabQuestionBank)) {
+      for (const question of questions) {
+        const changedExplanation = {
+          ...question,
+          explanation: `${question.explanation} ${'advanced '.repeat(250)}`,
+        }
+        expect(quizLabDifficultyText(changedExplanation)).toBe(quizLabDifficultyText(question))
+      }
     }
   })
 
@@ -111,6 +124,7 @@ describe('five-level quiz difficulty', () => {
       id: (question) => question.id,
       authored: (question) => question.difficulty,
       text: quizLabDifficultyText,
+      family: quizLabQuestionFamilyId,
     })
     const hard = filterQuizDifficulty(questions, 'hard', index, (question) => question.id).slice(0, 12)
     const result = verifyQuizReward({

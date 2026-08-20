@@ -3,19 +3,14 @@ import { revalidateTag } from 'next/cache'
 import { processLatestVerifiedGameweek } from '@/lib/market/server/gameweek-engine'
 import { recoverLatestFailedCatalogueSync } from '@/lib/market/server/catalogue-sync'
 import { MARKET_CATALOGUE_CACHE_TAG } from '@/lib/market/cache'
+import { isCronRequest } from '@/lib/market/server/admin-auth'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 export const maxDuration = 300
 
-function authorized(request: Request) {
-  const supplied = request.headers.get('authorization')
-  const secrets = [process.env.CRON_SECRET, process.env.MARKET_ADMIN_SECRET].filter(Boolean)
-  return secrets.some((secret) => supplied === `Bearer ${secret}`)
-}
-
 async function run(request: Request) {
-  if (!authorized(request)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  if (!isCronRequest(request)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   try {
     const result = await processLatestVerifiedGameweek()
     const catalogueRecovery = await recoverLatestFailedCatalogueSync()

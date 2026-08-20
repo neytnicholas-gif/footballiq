@@ -60,6 +60,7 @@ type DifficultyIndexOptions<T> = {
   id: (item: T) => string
   authored: (item: T) => AuthoredDifficulty
   text: (item: T) => string
+  family?: (item: T) => string
 }
 
 function authoredBand(difficulty: AuthoredDifficulty) {
@@ -94,12 +95,26 @@ export function buildQuizDifficultyIndex<T>(items: readonly T[], options: Diffic
   }
 
   function rank(group: T[], lower: QuizDifficulty, upper: QuizDifficulty) {
-    const ordered = [...group].sort((left, right) => {
-      const difference = complexity(options.text(left)) - complexity(options.text(right))
-      return difference || options.id(left).localeCompare(options.id(right))
-    })
-    const split = Math.ceil(ordered.length / 2)
-    ordered.forEach((item, itemIndex) => index.set(options.id(item), itemIndex < split ? lower : upper))
+    const rankItems = (items: T[]) => {
+      const ordered = [...items].sort((left, right) => {
+        const difference = complexity(options.text(left)) - complexity(options.text(right))
+        return difference || options.id(left).localeCompare(options.id(right))
+      })
+      const split = Math.ceil(ordered.length / 2)
+      ordered.forEach((item, itemIndex) => index.set(options.id(item), itemIndex < split ? lower : upper))
+    }
+
+    if (!options.family) {
+      rankItems(group)
+      return
+    }
+
+    const families = new Map<string, T[]>()
+    for (const item of group) {
+      const family = options.family(item)
+      families.set(family, [...(families.get(family) ?? []), item])
+    }
+    for (const family of families.values()) rankItems(family)
   }
 
   rank(foundations, 'beginner', 'easy')

@@ -131,7 +131,6 @@ export function getLevelPalette(level: number) {
   return {
     accent: `hsl(${hue} 76% 42%)`,
     badge: `linear-gradient(135deg, hsl(${hue} 72% 19%), hsl(${secondHue} 72% 25%))`,
-    soft: `hsl(${hue} 72% 92%)`,
     ring: `hsl(${hue} 78% 55%)`,
     foreground: '#ffffff',
   }

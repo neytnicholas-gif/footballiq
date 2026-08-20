@@ -92,8 +92,9 @@ describe('prediction competition database boundary', () => {
     await db.exec(`select set_config('request.jwt.claim.sub','${owner}',false)`)
     const deleted = await db.query<{ result: { deleted: boolean } }>(`select public.prediction_delete_league($1) result`, [league.id])
     expect(deleted.rows[0]?.result.deleted).toBe(true)
-    const remaining = await db.query<{ count: number }>(`select count(*)::int count from public.prediction_leagues where id=$1`, [league.id])
-    expect(remaining.rows[0]?.count).toBe(0)
+    const remaining = await db.query<{ count: number; active: boolean }>(`select count(*)::int count,bool_or(is_active) active from public.prediction_leagues where id=$1`, [league.id])
+    expect(remaining.rows[0]?.count).toBe(1)
+    expect(remaining.rows[0]?.active).toBe(false)
   })
 
   it('accepts every licensed prediction competition instead of the old three-league prototype', async () => {

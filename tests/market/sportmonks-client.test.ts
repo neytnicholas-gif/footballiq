@@ -1,13 +1,39 @@
 // @vitest-environment node
 
-import { describe, expect, it, vi } from 'vitest'
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 import { buildSportmonksBundesligaCatalogue, buildSportmonksLaLigaCatalogue, buildSportmonksLigue1Catalogue, buildSportmonksPremierLeagueCatalogue, buildSportmonksSerieACatalogue, createSportmonksClient, fetchSportmonksCompletedGameweeks, fetchSportmonksPredictionFixtures, isCatalogueReady, runSportmonksCoverageTrial } from '@/lib/market/server/sportmonks-client'
 
 const response = (data: unknown) => new Response(JSON.stringify({ data }), { status: 200 })
 
+const previousLocalOptIn = process.env.SPORTMONKS_ALLOW_LOCAL_API
+
+beforeAll(() => {
+  process.env.SPORTMONKS_ALLOW_LOCAL_API = 'true'
+})
+
+afterAll(() => {
+  if (previousLocalOptIn === undefined) delete process.env.SPORTMONKS_ALLOW_LOCAL_API
+  else process.env.SPORTMONKS_ALLOW_LOCAL_API = previousLocalOptIn
+})
+
 describe('Sportmonks coverage trial client', () => {
   it('requires a server-only token', () => {
     expect(() => createSportmonksClient('')).toThrow('SPORTMONKS_API_TOKEN is not configured')
+  })
+
+  it('fails closed when the runtime is neither licensed Production nor explicitly local', () => {
+    const previousEnvironment = process.env.VERCEL_ENV
+    const previousOptIn = process.env.SPORTMONKS_ALLOW_LOCAL_API
+    delete process.env.VERCEL_ENV
+    delete process.env.SPORTMONKS_ALLOW_LOCAL_API
+    try {
+      expect(() => createSportmonksClient('private-token')).toThrow('explicit local opt-in')
+    } finally {
+      if (previousEnvironment === undefined) delete process.env.VERCEL_ENV
+      else process.env.VERCEL_ENV = previousEnvironment
+      if (previousOptIn === undefined) delete process.env.SPORTMONKS_ALLOW_LOCAL_API
+      else process.env.SPORTMONKS_ALLOW_LOCAL_API = previousOptIn
+    }
   })
 
   it('blocks every Sportmonks request from a Vercel Preview deployment', () => {

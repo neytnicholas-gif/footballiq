@@ -6,6 +6,7 @@ import {
   quizLabCorrectAnswer,
   quizLabFormats,
   quizLabQuestionBank,
+  quizLabDifficultyText,
   quizLabRoundCount,
   quizLabRoundName,
   type QuizLabChoiceQuestion,
@@ -13,6 +14,7 @@ import {
 } from '@/lib/quiz-lab'
 import { sampleUniqueQuizFamilies } from '@/lib/quiz-session'
 import { verifyQuizReward } from '@/lib/quiz-rules'
+import { buildQuizDifficultyIndex, filterQuizDifficulty, quizDifficulties } from '@/lib/quiz-difficulty'
 
 const completionKey = 'cqk:quiz-lab-test:run-123456789012345678901234'
 
@@ -56,6 +58,24 @@ describe('Quiz Lab', () => {
       const session = sampleUniqueQuizFamilies(quizLabQuestionBank[format.id], 12, 48157, quizLabQuestionFamilyId)
       expect(session).toHaveLength(12)
       expect(new Set(session.map(quizLabQuestionFamilyId)).size).toBe(12)
+    }
+  })
+
+  it('can build a 12-family session at every level in every format', () => {
+    for (const format of quizLabFormats) {
+      const bank = quizLabQuestionBank[format.id]
+      const difficultyIndex = buildQuizDifficultyIndex(bank, {
+        id: (question) => question.id,
+        authored: (question) => question.difficulty,
+        text: quizLabDifficultyText,
+        family: quizLabQuestionFamilyId,
+      })
+      for (const difficulty of quizDifficulties) {
+        const pool = filterQuizDifficulty(bank, difficulty, difficultyIndex, (question) => question.id)
+        const session = sampleUniqueQuizFamilies(pool, 12, 48157, quizLabQuestionFamilyId)
+        expect(session, `${format.id}/${difficulty}`).toHaveLength(12)
+        expect(new Set(session.map(quizLabQuestionFamilyId)).size, `${format.id}/${difficulty}`).toBe(12)
+      }
     }
   })
 

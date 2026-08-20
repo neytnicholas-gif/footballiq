@@ -1,6 +1,6 @@
 -- Give prediction and quiz mini-league owners a safe, explicit way to close a
--- league. Members already have leave functions; owners delete the parent row
--- and the existing ON DELETE CASCADE constraints remove memberships/fixtures.
+-- league. The public action is intentionally recoverable: it archives the
+-- league instead of cascading a physical delete through membership/history.
 
 create or replace function public.prediction_delete_league(p_league_id uuid)
 returns jsonb
@@ -14,8 +14,9 @@ declare
 begin
   if uid is null then raise exception 'AUTH_REQUIRED'; end if;
 
-  delete from public.prediction_leagues
-  where id = p_league_id and owner_user_id = uid
+  update public.prediction_leagues
+  set is_active = false
+  where id = p_league_id and owner_user_id = uid and is_active
   returning name into deleted_name;
 
   if not found then raise exception 'LEAGUE_NOT_FOUND_OR_NOT_OWNER'; end if;
@@ -35,8 +36,9 @@ declare
 begin
   if uid is null then raise exception 'AUTH_REQUIRED'; end if;
 
-  delete from public.quiz_friend_leagues
-  where id = p_league_id and owner_user_id = uid
+  update public.quiz_friend_leagues
+  set is_active = false
+  where id = p_league_id and owner_user_id = uid and is_active
   returning name into deleted_name;
 
   if not found then raise exception 'LEAGUE_NOT_FOUND_OR_NOT_OWNER'; end if;

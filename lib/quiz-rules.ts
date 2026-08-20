@@ -5,7 +5,7 @@ import { calculateDuelXp } from '@/lib/progression'
 import type { QuizProof } from '@/lib/quiz-proof'
 import { expandedScoutScenarios } from '@/lib/scout-scenario-expansion'
 import { getLeagueWorldQuestions } from '@/lib/football-leagues'
-import { getQuizLabRound, quizLabCorrectAnswer, quizLabDifficultyText, quizLabQuestionBank, type QuizLabFormat } from '@/lib/quiz-lab'
+import { getQuizLabRound, quizLabCorrectAnswer, quizLabDifficultyText, quizLabQuestionBank, quizLabQuestionFamilyId, type QuizLabFormat } from '@/lib/quiz-lab'
 import {
   getCareerDifficultyRound,
   getCareerRound,
@@ -75,6 +75,7 @@ const quizLabDifficultyIndexes = Object.fromEntries(Object.entries(quizLabQuesti
     id: (question) => question.id,
     authored: (question) => question.difficulty,
     text: quizLabDifficultyText,
+    family: quizLabQuestionFamilyId,
   }),
 ])) as Record<QuizLabFormat, Map<string, QuizDifficulty>>
 

@@ -37,6 +37,7 @@ const difficultyIndexes = Object.fromEntries(Object.entries(quizLabQuestionBank)
     id: (question) => question.id,
     authored: (question) => question.difficulty,
     text: quizLabDifficultyText,
+    family: quizLabQuestionFamilyId,
   }),
 ])) as Record<QuizLabFormat, Map<string, import('@/lib/quiz-difficulty').QuizDifficulty>>
 

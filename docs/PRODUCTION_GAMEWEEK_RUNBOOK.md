@@ -17,6 +17,7 @@ Never put service-role, Sportmonks or cron secrets in a `NEXT_PUBLIC_` variable.
 Sportmonks confirmed a Football Starter allowance of **2,000 calls per entity per hour** on 14 August 2026. Every successful provider response includes `rate_limit` metadata. Early Shout stores a safe summary in the processing-run report: total requests made plus the lowest remaining allowance observed for each requested entity and its reset time. It never stores the token or raw provider response. A remaining allowance at or below 200 emits one structured warning per entity per run. Usage can also be checked at `https://my.sportmonks.com/api/usage/current`.
 
 Sportmonks API access is production-only. Temporary Vercel Preview deployments are licensed without an extra domain only because they make no provider requests; `SPORTMONKS_API_TOKEN` must therefore not be configured for Preview.
+Non-Vercel scripts also fail closed. A deliberate licensed local import must set `SPORTMONKS_ALLOW_LOCAL_API=true` for that process only; never configure this override in Vercel.
 
 ## First proof
 

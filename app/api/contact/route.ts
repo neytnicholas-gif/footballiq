@@ -24,7 +24,12 @@ function clientAddress(request: Request) {
 
 export async function POST(request: Request) {
   const apiKey = process.env.RESEND_API_KEY?.trim()
-  if (!apiKey) return NextResponse.json({ error: 'Messages are not available yet. Please try again shortly.' }, { status: 503 })
+  const fromEmail = process.env.CONTACT_FROM_EMAIL?.trim()
+  const toEmail = process.env.CONTACT_TO_EMAIL?.trim()
+  if (!apiKey || !fromEmail || !toEmail) {
+    console.error('Contact email is missing required Production configuration.')
+    return NextResponse.json({ error: 'Messages are not available yet. Please try again shortly.' }, { status: 503 })
+  }
 
   const body = await request.json().catch(() => ({})) as Record<string, unknown>
   const name = clean(body.name, 80)
@@ -58,8 +63,8 @@ export async function POST(request: Request) {
     method: 'POST',
     headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      from: process.env.CONTACT_FROM_EMAIL?.trim() || 'Early Shout <onboarding@resend.dev>',
-      to: [process.env.CONTACT_TO_EMAIL?.trim() || 'earlyshout@gmail.com'],
+      from: fromEmail,
+      to: [toEmail],
       reply_to: email,
       subject: `[Early Shout · ${topic}] ${subject}`,
       text: `From: ${name} <${email}>\nTopic: ${topic}\n\n${message}`,

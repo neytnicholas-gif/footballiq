@@ -30,4 +30,11 @@ describe('beta launch security hardening', () => {
     expect(contactRoute).not.toContain('new Map')
     expect(quizRoute).toContain("scope: 'quiz-completion'")
   })
+
+  it('fails closed instead of silently using Resend fallback addresses', () => {
+    expect(contactRoute).toContain('CONTACT_FROM_EMAIL')
+    expect(contactRoute).toContain('CONTACT_TO_EMAIL')
+    expect(contactRoute).not.toContain('onboarding@resend.dev')
+    expect(contactRoute).not.toContain("|| 'earlyshout@gmail.com'")
+  })
 })

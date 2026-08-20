@@ -81,9 +81,8 @@ describe('verified gameweek engine', () => {
   })
 
   it('requires a server secret at the cron boundary', () => {
-    expect(route).toContain('process.env.CRON_SECRET')
-    expect(route).toContain('process.env.MARKET_ADMIN_SECRET')
-    expect(route).toContain("supplied === `Bearer ${secret}`")
+    expect(route).toContain('isCronRequest(request)')
+    expect(route).not.toContain('MARKET_ADMIN_SECRET')
   })
 
   it('records provider request and per-entity rate-limit telemetry in every run', () => {
