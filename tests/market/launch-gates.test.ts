@@ -432,6 +432,8 @@ describe('Player Market launch gates', () => {
     expect(home).toContain('hasFullTeam={isValidSquad}')
     expect(mission).toContain('Build your first team.')
     expect(mission).toContain('Your progress saves automatically.')
+    expect(mission).toContain('const hasExploredMarket = visitedMarket || hasFirstPlayer')
+    expect(mission).toContain('complete: hasExploredMarket')
     expect(mission).toContain('aria-label={`${completeCount} of 4 first mission steps complete`}')
     expect(tracker).toContain('window.localStorage.setItem')
     expect(tracker).toContain("pathname === '/market/roster'")

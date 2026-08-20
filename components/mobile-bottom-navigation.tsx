@@ -7,7 +7,7 @@ import { cn } from '@/lib/utils'
 
 const mobileLinks = [
   { label: 'Home', href: '/', icon: Home },
-  { label: 'Games', href: '/quizzes', icon: Gamepad2 },
+  { label: 'Quizzes', href: '/quizzes', icon: Gamepad2 },
   { label: 'Market', href: '/market', icon: LineChart },
   { label: 'Daily', href: '/daily', icon: CalendarDays },
   { label: 'Profile', href: '/profile', icon: UserRound },

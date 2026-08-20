@@ -16,7 +16,17 @@ const themeMeta: Record<ModeTheme, { label: string; icon: React.ElementType; cla
   predictions: { label: 'Prediction Centre', icon: BarChart3, className: 'mode-predictions', leaderboard: 'overall' },
 }
 
-export function ModePage({ eyebrow, title, description, theme, children, compact = false }: { eyebrow: string; title: string; description: string; theme: ModeTheme; children: React.ReactNode; compact?: boolean }) {
+type ModePageProps = {
+  eyebrow: string
+  title: string
+  description: string
+  theme: ModeTheme
+  children: React.ReactNode
+  compact?: boolean
+  primaryActionLabel?: string
+}
+
+export function ModePage({ eyebrow, title, description, theme, children, compact = false, primaryActionLabel }: ModePageProps) {
   const meta = themeMeta[theme]
   return <main className={`mode-shell min-h-screen ${meta.className}`}>
     <SiteHeader />
@@ -33,7 +43,10 @@ export function ModePage({ eyebrow, title, description, theme, children, compact
             <h1 className={`mt-2 font-black tracking-tight text-slate-50 ${compact ? 'text-3xl sm:text-5xl' : 'text-4xl sm:text-6xl'}`}>{title}</h1>
             <p className="mt-4 max-w-2xl text-base leading-relaxed text-slate-300 sm:text-lg">{description}</p>
           </div>
-          <Link href={`/leaderboard?board=${meta.leaderboard}`} className="mode-action inline-flex h-11 items-center justify-center rounded-xl border px-5 text-sm font-bold outline-none transition hover:-translate-y-0.5 focus-visible:ring-2 focus-visible:ring-white/60">View ranking →</Link>
+          <div className="flex flex-wrap gap-3">
+            {primaryActionLabel ? <Link href="#play" className="mode-action-primary inline-flex min-h-11 items-center justify-center rounded-xl border px-5 text-sm font-black outline-none transition hover:-translate-y-0.5 focus-visible:ring-2 focus-visible:ring-white/70">{primaryActionLabel} →</Link> : null}
+            <Link href={`/leaderboard?board=${meta.leaderboard}`} className="mode-action inline-flex min-h-11 items-center justify-center rounded-xl border px-5 text-sm font-bold outline-none transition hover:-translate-y-0.5 focus-visible:ring-2 focus-visible:ring-white/60">View ranking →</Link>
+          </div>
         </div>
       </SurfaceCard>
       {!compact ? <div className="mt-6 grid gap-4 sm:grid-cols-3">
@@ -41,7 +54,7 @@ export function ModePage({ eyebrow, title, description, theme, children, compact
         <StatCard label="Session style" value={theme === 'daily' ? 'Daily key' : theme === 'duels' ? 'Pack play' : theme === 'referee' ? 'Incident review' : 'Decision flow'} hint="Immediate feedback and replay" />
         <StatCard label="Progress link" value="Leaderboard" hint="Track rating and XP afterwards" />
       </div> : null}
-      <div className="mode-game mt-5 rounded-[1.75rem] border p-2 sm:p-4">{children}</div>
+      <div id="play" className="mode-game mt-5 scroll-mt-24 rounded-[1.75rem] border p-2 sm:p-4">{children}</div>
     </section>
   </main>
 }

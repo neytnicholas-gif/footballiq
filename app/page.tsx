@@ -141,13 +141,13 @@ export default function HomePage() {
                   <Link href="/beta" className="inline-flex min-h-10 shrink-0 items-center justify-center rounded-xl border border-sky-200/20 bg-sky-200/10 px-4 text-xs font-black text-sky-100 outline-none transition hover:bg-sky-200/15 focus-visible:ring-2 focus-visible:ring-sky-200">Save my progress</Link>
                 </div>
               ) : (
-                <div className="mt-4 flex items-center justify-between gap-4 rounded-2xl border border-violet-300/20 bg-violet-400/[0.07] p-4">
+                <Link href="/profile" aria-label={`Open your level ${level.level.toLocaleString()} profile progress`} className="mt-4 flex min-h-16 items-center justify-between gap-4 rounded-2xl border border-violet-300/20 bg-violet-400/[0.07] p-4 outline-none transition hover:border-violet-200/40 hover:bg-violet-400/[0.11] focus-visible:ring-2 focus-visible:ring-violet-200">
                   <div>
                     <p className="text-xs font-bold uppercase tracking-[0.17em] text-violet-200">Welcome back</p>
                     <p className="mt-1 text-sm font-black text-white">Level {level.level.toLocaleString()} · {level.xpToNextLevel.toLocaleString()} XP to level {level.level + 1}</p>
                   </div>
                   <Zap className="size-5 shrink-0 text-violet-200" aria-hidden="true" />
-                </div>
+                </Link>
               )}
               <div className="mt-5 inline-flex max-w-full items-center gap-3 rounded-2xl border border-sky-300/20 bg-sky-400/[0.07] px-3.5 py-2.5 text-left shadow-[inset_0_1px_0_rgba(255,255,255,.04)]">
                 <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-sky-300/10 text-sky-200">
@@ -215,7 +215,7 @@ export default function HomePage() {
                 <StripStat label="Level" value={user ? level.level.toLocaleString() : 'Track it'} />
                 <StripStat label="XP" value={user ? (profile?.xp ?? 0).toLocaleString() : 'Track it'} />
                 <StripStat label="Streak" value={streakLabel} />
-                <StripStat label="Accuracy" value={user ? accuracy : 'Track it'} />
+                <StripStat label="Quiz accuracy" value={user ? accuracy : 'Track it'} />
               </div>
             </div>
           </div>
@@ -265,8 +265,8 @@ function StripStat({ label, value }: { label: string; value: string }) {
 }
 
 function formatAccuracy(correct: number, total: number): string {
-  if (!total) {
-    return '—'
+  if (total < 20) {
+    return total > 0 ? 'Building…' : '—'
   }
   return `${Math.round((correct / total) * 100)}%`
 }

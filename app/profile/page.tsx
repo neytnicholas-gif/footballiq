@@ -21,7 +21,7 @@ export default function ProfilePage() {
   const { user, profile, membership, loading, signOut } = useAuth()
   const [academyLoading, setAcademyLoading] = useState(true)
   const [completions, setCompletions] = useState<AcademyCompletion[]>([])
-  const [derivedQuizStats, setDerivedQuizStats] = useState<{ accuracy: number | null; quizzes: number; perfect: number } | null>(null)
+  const [derivedQuizStats, setDerivedQuizStats] = useState<{ accuracy: number | null; quizzes: number; perfect: number; correct: number; answers: number } | null>(null)
 
   useEffect(() => {
     if (!loading && !user) router.replace('/login')
@@ -66,6 +66,8 @@ export default function ProfilePage() {
         accuracy: totals.total > 0 ? Math.round((totals.correct / totals.total) * 100) : null,
         quizzes: data?.length ?? 0,
         perfect: (data ?? []).filter((row) => row.total > 0 && row.score === row.total).length,
+        correct: totals.correct,
+        answers: totals.total,
       })
     })()
 
@@ -78,6 +80,8 @@ export default function ProfilePage() {
   const accuracy = derivedQuizStats?.accuracy ?? (profile?.total_answers ? Math.round((profile.correct_answers / profile.total_answers) * 100) : null)
   const quizCount = derivedQuizStats?.quizzes ?? profile?.quizzes_completed ?? 0
   const perfectCount = derivedQuizStats?.perfect ?? profile?.perfect_quizzes ?? 0
+  const correctAnswerCount = derivedQuizStats?.correct ?? profile?.correct_answers ?? 0
+  const answerCount = derivedQuizStats?.answers ?? profile?.total_answers ?? 0
   const academy = computeAcademyProgress(completions)
   const advancedCompleted = completions.filter((item) => item.experience_key.includes('scout-room') || item.experience_key.includes('referee-debrief')).length
 
@@ -122,11 +126,11 @@ export default function ProfilePage() {
 
             <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               <StatCard label="Rating" value={profile.rating.toLocaleString()} />
-              <StatCard label="Accuracy" value={accuracy === null ? '—' : `${accuracy}%`} hint={accuracy === null ? 'No completed answers yet' : 'Based on completed quiz results'} />
+              <StatCard label="Quiz accuracy" value={accuracy === null ? '—' : `${accuracy}%`} hint={accuracy === null ? 'No completed answers yet' : `${correctAnswerCount.toLocaleString()} correct from ${answerCount.toLocaleString()} answers across ${quizCount.toLocaleString()} completed ${quizCount === 1 ? 'quiz' : 'quizzes'}`} />
               <StatCard label="Current streak" value={formatDays(profile.current_streak)} />
               <StatCard label="Longest streak" value={formatDays(profile.longest_streak)} />
               <StatCard label="Quizzes completed" value={quizCount.toLocaleString()} />
-              <StatCard label="Perfect quizzes" value={perfectCount.toLocaleString()} />
+              <StatCard label="Perfect quizzes" value={perfectCount.toLocaleString()} hint="Rounds where every answer was right" />
             </div>
 
             <div className="mt-6 grid gap-4 lg:grid-cols-2">

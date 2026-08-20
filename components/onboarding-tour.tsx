@@ -17,9 +17,9 @@ const steps = [
     colours: 'from-emerald-400 to-cyan-400',
   },
   {
-    eyebrow: 'Games and quizzes',
+    eyebrow: 'Quizzes',
     title: 'Choose an answer. Learn straight away.',
-    copy: 'Tap Games, pick a challenge and answer the questions. You see the answer after each choice, so every game teaches you something.',
+    copy: 'Tap Quizzes, pick a challenge and answer the questions. You see the answer after each choice, so every quiz teaches you something.',
     tip: 'Finishing games earns XP.',
     icon: Gamepad2,
     colours: 'from-sky-400 to-indigo-500',

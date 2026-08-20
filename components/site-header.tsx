@@ -12,7 +12,7 @@ import { OPEN_INSTALL_EXPERIENCE_EVENT } from '@/components/mobile-experience'
 
 const links = [
   ['Home', '/'],
-  ['Games', '/quizzes'],
+  ['Quizzes', '/quizzes'],
   ['Market', '/market'],
   ['Daily', '/daily'],
   ['Predictions', '/predictions'],

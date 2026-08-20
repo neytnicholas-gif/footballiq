@@ -22,8 +22,11 @@ export function MarketFirstMission({
   hasFullTeam: boolean
   visitedRoster: boolean
 }) {
+  // A saved signing is stronger evidence than the browser-only visit marker.
+  // This also repairs progress for players whose storage was cleared or blocked.
+  const hasExploredMarket = visitedMarket || hasFirstPlayer
   const steps: MissionStep[] = [
-    { label: 'Explore the Market', detail: 'Find a player you believe in.', href: '/market/players', action: 'Open Market', complete: visitedMarket },
+    { label: 'Explore the Market', detail: 'Find a player you believe in.', href: '/market/players', action: 'Open Market', complete: hasExploredMarket },
     { label: 'Make your first signing', detail: 'Buy one player for your team.', href: '/market/players', action: 'Choose a player', complete: hasFirstPlayer },
     { label: 'Build your starting XI', detail: 'Fill every place in your formation.', href: '/market/players', action: 'Finish my XI', complete: hasFullTeam },
     { label: 'Check your roster', detail: 'See your full team and budget.', href: '/market/roster', action: 'Open roster', complete: visitedRoster },

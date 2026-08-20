@@ -47,6 +47,41 @@ describe('Early Shout identity', () => {
     expect(read('components/duel-quiz.tsx')).toContain('Keep your score and {xpEarned} XP')
   })
 
+  it('uses Quizzes consistently for the /quizzes destination', () => {
+    const header = read('components/site-header.tsx')
+    const mobileNavigation = read('components/mobile-bottom-navigation.tsx')
+    const tour = read('components/onboarding-tour.tsx')
+    const howToPlay = read('app/how-to-play/page.tsx')
+
+    expect(header).toContain("['Quizzes', '/quizzes']")
+    expect(header).not.toContain("['Games', '/quizzes']")
+    expect(mobileNavigation).toContain("label: 'Quizzes', href: '/quizzes'")
+    expect(mobileNavigation).not.toContain("label: 'Games', href: '/quizzes'")
+    expect(tour).toContain('Tap Quizzes')
+    expect(howToPlay).toContain('Open Quizzes')
+  })
+
+  it('puts a primary play action in Daily and Predictions heroes', () => {
+    const modePage = read('components/mode-page.tsx')
+    const daily = read('app/daily/page.tsx')
+    const predictions = read('app/predictions/page.tsx')
+
+    expect(modePage).toContain('href="#play"')
+    expect(modePage).toContain('id="play"')
+    expect(daily).toContain('primaryActionLabel="Start today’s Shout"')
+    expect(predictions).toContain('primaryActionLabel="Start predicting"')
+  })
+
+  it('explains profile accuracy with its complete answer sample', () => {
+    const profile = read('app/profile/page.tsx')
+    const home = read('app/page.tsx')
+
+    expect(profile).toContain('correct from ${answerCount.toLocaleString()} answers across')
+    expect(profile).toContain('Rounds where every answer was right')
+    expect(home).toContain("total > 0 ? 'Building…' : '—'")
+    expect(home).toContain('href="/profile" aria-label={`Open your level')
+  })
+
   it('presents profile frames as a reversible player choice', () => {
     const rewards = read('components/market/market-progression-hub.tsx')
 
