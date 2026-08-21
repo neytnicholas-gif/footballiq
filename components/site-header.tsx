@@ -9,6 +9,7 @@ import { useAuth } from '@/components/auth-provider'
 import { LevelBadge } from '@/components/level-progress'
 import { cn } from '@/lib/utils'
 import { OPEN_INSTALL_EXPERIENCE_EVENT } from '@/components/mobile-experience'
+import { primaryNavigationLinkIsActive } from '@/lib/play-navigation'
 
 const links = [
   ['Home', '/'],
@@ -21,22 +22,6 @@ const links = [
   ['Profile', '/profile'],
   ['How to play', '/how-to-play'],
 ]
-
-const gameRoutes = [
-  '/quizzes/start-bench-sell',
-  '/quizzes/football-duels',
-  '/quizzes/higher-or-lower',
-  '/quizzes/who-am-i',
-  '/quizzes/career-path',
-]
-
-function linkIsActive(pathname: string, href: string) {
-  const isGameRoute = gameRoutes.some((route) => pathname.startsWith(route))
-  if (href === '/games') return pathname.startsWith('/games') || isGameRoute
-  if (href === '/quizzes') return pathname.startsWith('/quizzes') && !isGameRoute
-  if (href === '/market') return pathname.startsWith('/market')
-  return pathname === href
-}
 
 export function SiteHeader() {
   const { user, profile, loading, profileLoading, signOut } = useAuth()
@@ -82,10 +67,10 @@ export function SiteHeader() {
             <Link
               key={href}
               href={href}
-              aria-current={linkIsActive(pathname, href) ? 'page' : undefined}
+              aria-current={primaryNavigationLinkIsActive(pathname, href) ? 'page' : undefined}
               className={cn(
                 'rounded-lg px-2.5 py-1.5 text-sm transition',
-                linkIsActive(pathname, href) ? 'bg-[#087f68] text-white shadow-[0_12px_28px_-16px_rgba(16,185,129,.7)]' : 'text-muted-foreground hover:bg-secondary/70 hover:text-foreground',
+                primaryNavigationLinkIsActive(pathname, href) ? 'bg-[#087f68] text-white shadow-[0_12px_28px_-16px_rgba(16,185,129,.7)]' : 'text-muted-foreground hover:bg-secondary/70 hover:text-foreground',
               )}
             >
               {label}
@@ -105,7 +90,7 @@ export function SiteHeader() {
         <nav id="mobile-primary-navigation" aria-label="Mobile primary navigation" className="border-t border-border bg-background/98 p-3 xl:hidden">
           <div className="grid gap-1">
             {links.map(([label, href]) => (
-              <Link key={href} href={href} onClick={closeMobile} className={cn('flex min-h-11 items-center rounded-lg px-3 py-2 text-sm transition', linkIsActive(pathname, href) ? 'bg-primary/15 font-semibold text-primary' : 'text-muted-foreground hover:bg-secondary/70 hover:text-foreground')}>
+              <Link key={href} href={href} onClick={closeMobile} aria-current={primaryNavigationLinkIsActive(pathname, href) ? 'page' : undefined} className={cn('flex min-h-11 items-center rounded-lg px-3 py-2 text-sm transition', primaryNavigationLinkIsActive(pathname, href) ? 'bg-primary/15 font-semibold text-primary' : 'text-muted-foreground hover:bg-secondary/70 hover:text-foreground')}>
                 {label}
               </Link>
             ))}

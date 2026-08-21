@@ -47,7 +47,7 @@ describe('Early Shout identity', () => {
     expect(read('components/duel-quiz.tsx')).toContain('Keep your score and {xpEarned} XP')
   })
 
-  it('uses Quizzes consistently for the /quizzes destination', () => {
+  it('uses Games and Quizzes consistently for their destinations', () => {
     const header = read('components/site-header.tsx')
     const mobileNavigation = read('components/mobile-bottom-navigation.tsx')
     const tour = read('components/onboarding-tour.tsx')
@@ -55,8 +55,10 @@ describe('Early Shout identity', () => {
 
     expect(header).toContain("['Quizzes', '/quizzes']")
     expect(header).not.toContain("['Games', '/quizzes']")
+    expect(mobileNavigation).toContain("label: 'Games', href: '/games'")
     expect(mobileNavigation).toContain("label: 'Quizzes', href: '/quizzes'")
     expect(mobileNavigation).not.toContain("label: 'Games', href: '/quizzes'")
+    expect(mobileNavigation).toContain('grid-cols-6')
     expect(tour).toContain('Tap Quizzes')
     expect(howToPlay).toContain('Open Quizzes')
   })
