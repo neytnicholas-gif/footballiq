@@ -9,6 +9,7 @@ import { resolveCataloguePlayerSlugs } from '@/lib/market/catalogue-slugs'
 import { resolveOpeningPricePersistence } from '@/lib/market/opening-price-persistence'
 import { validateOpeningPriceBook } from '@/lib/market/opening-price-validation'
 import type { OpeningPriceConfidence } from '@/lib/market/real-valuation'
+import { syncMakeCallCatalogueToSupabase } from '@/lib/market/server/make-call-catalogue-sync'
 
 const BATCH_SIZE = 100
 
@@ -323,6 +324,7 @@ export async function syncSportmonksCatalogueToSupabase() {
     }
     const { data: portfolioRefresh, error: refreshError } = await admin.rpc('market_refresh_all_portfolios_after_catalogue_sync')
     if (refreshError) throw new Error(`Portfolio refresh after catalogue sync failed: ${refreshError.message}`)
+    const makeCallCatalogue = await syncMakeCallCatalogueToSupabase(admin)
     const result = {
       synced: results.reduce((total, item) => total + item.synced, 0),
       repriced: results.reduce((total, item) => total + item.repriced, 0),
@@ -330,6 +332,7 @@ export async function syncSportmonksCatalogueToSupabase() {
       generatedAt: combined.generatedAt,
       pricingAudit,
       portfolioRefresh,
+      makeCallCatalogue,
       competitions: results,
     }
     await admin.from('market_processing_runs').update({

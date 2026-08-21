@@ -6,6 +6,10 @@ export function onboardingStorageKey(userId?: string | null) {
 }
 
 export function isOnboardingRoute(pathname: string) {
+  // A shared quick-game link must open straight into play. The tour remains
+  // available from How to Play, but it should never cover the first decision.
+  if (pathname === '/quizzes/start-bench-sell') return false
+
   return pathname === '/'
     || pathname.startsWith('/quizzes')
     || pathname.startsWith('/academy')

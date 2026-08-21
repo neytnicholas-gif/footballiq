@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { ArrowRight, CalendarDays, Flag, Gamepad2, Play, Radar, ShieldCheck, Smartphone, Sparkles, Trophy, UserPlus, Workflow, Zap } from 'lucide-react'
+import { ArrowRight, CalendarDays, Flag, Gamepad2, ListChecks, Play, Radar, ShieldCheck, Smartphone, Sparkles, Trophy, UserPlus, Workflow, Zap } from 'lucide-react'
 import { SiteHeader } from '@/components/site-header'
 import { SponsorPlacement } from '@/components/sponsor-placement'
 import { useAuth } from '@/components/auth-provider'
@@ -9,6 +9,13 @@ import { getLevelInfo, getRankProgress } from '@/lib/progression'
 import { HomePlayJourney } from '@/components/home-play-journey'
 
 const featuredModes = [
+  {
+    title: 'Make the Call',
+    description: 'Start one, bench one and sell one. Then reveal the real community vote.',
+    href: '/quizzes/start-bench-sell',
+    icon: ListChecks,
+    tag: '10-second decision',
+  },
   {
     title: 'Tactical Lab',
     description: 'Look at what is happening in the match. Pick what your team should do next.',

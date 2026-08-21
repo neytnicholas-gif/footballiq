@@ -852,6 +852,26 @@ export type Database = {
       }
     }
     Functions: {
+      get_make_call_game_private: {
+        Args: {
+          p_matchup_slug?: string | null
+          p_user_id?: string | null
+          p_guest_session_hash?: string | null
+          p_exclude_matchup_id?: string | null
+        }
+        Returns: Record<string, unknown>
+      }
+      submit_make_call_vote_private: {
+        Args: {
+          p_matchup_id: string
+          p_start_player_id: string
+          p_bench_player_id: string
+          p_sell_player_id: string
+          p_user_id?: string | null
+          p_guest_session_hash?: string | null
+        }
+        Returns: Record<string, unknown>
+      }
       complete_site_onboarding: {
         Args: {
           p_version: number

@@ -12,6 +12,7 @@ import { OPEN_INSTALL_EXPERIENCE_EVENT } from '@/components/mobile-experience'
 
 const links = [
   ['Home', '/'],
+  ['Games', '/games'],
   ['Quizzes', '/quizzes'],
   ['Market', '/market'],
   ['Daily', '/daily'],
@@ -20,6 +21,22 @@ const links = [
   ['Profile', '/profile'],
   ['How to play', '/how-to-play'],
 ]
+
+const gameRoutes = [
+  '/quizzes/start-bench-sell',
+  '/quizzes/football-duels',
+  '/quizzes/higher-or-lower',
+  '/quizzes/who-am-i',
+  '/quizzes/career-path',
+]
+
+function linkIsActive(pathname: string, href: string) {
+  const isGameRoute = gameRoutes.some((route) => pathname.startsWith(route))
+  if (href === '/games') return pathname.startsWith('/games') || isGameRoute
+  if (href === '/quizzes') return pathname.startsWith('/quizzes') && !isGameRoute
+  if (href === '/market') return pathname.startsWith('/market')
+  return pathname === href
+}
 
 export function SiteHeader() {
   const { user, profile, loading, profileLoading, signOut } = useAuth()
@@ -60,15 +77,15 @@ export function SiteHeader() {
       <div className="mx-auto flex max-w-7xl items-center justify-between gap-2 px-3 py-3 sm:gap-4 sm:px-6">
         <Logo className="shrink-0 max-[389px]:[&>span:last-child]:hidden" />
 
-        <nav className="hidden items-center gap-1 rounded-xl border border-border/80 bg-card/50 p-1 lg:flex">
+        <nav className="hidden items-center gap-1 rounded-xl border border-border/80 bg-card/50 p-1 xl:flex">
           {links.map(([label, href]) => (
             <Link
               key={href}
               href={href}
-              aria-current={pathname === href ? 'page' : undefined}
+              aria-current={linkIsActive(pathname, href) ? 'page' : undefined}
               className={cn(
                 'rounded-lg px-2.5 py-1.5 text-sm transition',
-                pathname === href || (href === '/market' && pathname.startsWith('/market')) || (href === '/quizzes' && pathname.startsWith('/quizzes')) ? 'bg-[#087f68] text-white shadow-[0_12px_28px_-16px_rgba(16,185,129,.7)]' : 'text-muted-foreground hover:bg-secondary/70 hover:text-foreground',
+                linkIsActive(pathname, href) ? 'bg-[#087f68] text-white shadow-[0_12px_28px_-16px_rgba(16,185,129,.7)]' : 'text-muted-foreground hover:bg-secondary/70 hover:text-foreground',
               )}
             >
               {label}
@@ -78,17 +95,17 @@ export function SiteHeader() {
 
         <div className="flex items-center gap-2">
           {authBlock}
-          <button onClick={() => setMobileOpen((value) => !value)} className="inline-flex size-11 items-center justify-center rounded-lg border border-border bg-secondary/30 text-foreground outline-none focus-visible:ring-2 focus-visible:ring-primary lg:hidden" aria-label={mobileOpen ? 'Close menu' : 'Open menu'} aria-expanded={mobileOpen} aria-controls="mobile-primary-navigation">
+          <button onClick={() => setMobileOpen((value) => !value)} className="inline-flex size-11 items-center justify-center rounded-lg border border-border bg-secondary/30 text-foreground outline-none focus-visible:ring-2 focus-visible:ring-primary xl:hidden" aria-label={mobileOpen ? 'Close menu' : 'Open menu'} aria-expanded={mobileOpen} aria-controls="mobile-primary-navigation">
             {mobileOpen ? <X className="size-5" /> : <Menu className="size-5" />}
           </button>
         </div>
       </div>
 
       {mobileOpen ? (
-        <nav id="mobile-primary-navigation" aria-label="Mobile primary navigation" className="border-t border-border bg-background/98 p-3 lg:hidden">
+        <nav id="mobile-primary-navigation" aria-label="Mobile primary navigation" className="border-t border-border bg-background/98 p-3 xl:hidden">
           <div className="grid gap-1">
             {links.map(([label, href]) => (
-              <Link key={href} href={href} onClick={closeMobile} className={cn('flex min-h-11 items-center rounded-lg px-3 py-2 text-sm transition', pathname === href || (href === '/market' && pathname.startsWith('/market')) || (href === '/quizzes' && pathname.startsWith('/quizzes')) ? 'bg-primary/15 font-semibold text-primary' : 'text-muted-foreground hover:bg-secondary/70 hover:text-foreground')}>
+              <Link key={href} href={href} onClick={closeMobile} className={cn('flex min-h-11 items-center rounded-lg px-3 py-2 text-sm transition', linkIsActive(pathname, href) ? 'bg-primary/15 font-semibold text-primary' : 'text-muted-foreground hover:bg-secondary/70 hover:text-foreground')}>
                 {label}
               </Link>
             ))}

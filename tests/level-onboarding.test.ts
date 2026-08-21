@@ -62,6 +62,7 @@ describe('first-time guide', () => {
     expect(isOnboardingRoute('/')).toBe(true)
     expect(isOnboardingRoute('/market/players')).toBe(true)
     expect(isOnboardingRoute('/quizzes/tactical-lab')).toBe(true)
+    expect(isOnboardingRoute('/quizzes/start-bench-sell')).toBe(false)
     expect(isOnboardingRoute('/how-to-play')).toBe(true)
     expect(isOnboardingRoute('/terms')).toBe(false)
     expect(isOnboardingRoute('/auth/callback')).toBe(false)
