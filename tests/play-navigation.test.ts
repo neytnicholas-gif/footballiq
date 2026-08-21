@@ -4,6 +4,8 @@ import { primaryNavigationLinkIsActive } from '@/lib/play-navigation'
 describe('primary play navigation', () => {
   it('keeps the Games and Quizzes sections distinct', () => {
     expect(primaryNavigationLinkIsActive('/games', '/games')).toBe(true)
+    expect(primaryNavigationLinkIsActive('/quizzes', '/games')).toBe(false)
+    expect(primaryNavigationLinkIsActive('/quizzes', '/quizzes')).toBe(true)
     expect(primaryNavigationLinkIsActive('/quizzes/football-duels', '/games')).toBe(true)
     expect(primaryNavigationLinkIsActive('/quizzes/football-duels', '/quizzes')).toBe(false)
     expect(primaryNavigationLinkIsActive('/quizzes/tactical-lab', '/games')).toBe(false)
