@@ -1,6 +1,8 @@
 # Production gameweek proof and recovery runbook
 
-The valuation engine is implemented, but zero imported performances and zero valuation events means it has **not yet been proven against a real completed fixture**. Preview deployments do not execute Vercel Cron jobs. The proof must be run from a Production deployment.
+The valuation engine has been proven in Production against completed, rated fixtures. The launch-gate evidence captured on 21 August 2026 is recorded in [LAUNCH_EVIDENCE_2026-08-21.md](./LAUNCH_EVIDENCE_2026-08-21.md). Keep using this runbook after each gameweek so a past success never hides a future failed import or settlement.
+
+Preview deployments do not execute Vercel Cron jobs and are deliberately blocked from calling Sportmonks. Production remains the only licensed automatic-import environment.
 
 ## Required production configuration
 
@@ -19,7 +21,7 @@ Sportmonks confirmed a Football Starter allowance of **2,000 calls per entity pe
 Sportmonks API access is production-only. Temporary Vercel Preview deployments are licensed without an extra domain only because they make no provider requests; `SPORTMONKS_API_TOKEN` must therefore not be configured for Preview.
 Non-Vercel scripts also fail closed. A deliberate licensed local import must set `SPORTMONKS_ALLOW_LOCAL_API=true` for that process only; never configure this override in Vercel.
 
-## First proof
+## Repeatable gameweek proof
 
 1. Confirm the production variables point to the Supabase project containing the current market migrations and player catalogue.
 2. Deploy the reviewed commit to Production.

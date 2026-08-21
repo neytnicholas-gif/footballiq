@@ -84,6 +84,18 @@ describe('Early Shout identity', () => {
     expect(predictions).toContain('className="h-11 w-full cursor-pointer accent-sky-300"')
   })
 
+  it('keeps Make the Call inside the Early Shout game identity', () => {
+    const page = read('app/quizzes/start-bench-sell/page.tsx')
+    const games = read('app/games/page.tsx')
+    const catalogue = read('lib/make-call-catalogue.ts')
+
+    expect(page).toContain('Make the Call: Start One, Bench One, Sell One | Early Shout')
+    expect(page).toContain('before the Early Shout crowd appears')
+    expect(games).toContain('MAKE_CALL_TOTAL_ROUNDS')
+    expect(games).toContain('Play Make the Call now')
+    expect(catalogue).toContain('MAKE_CALL_TOTAL_ROUNDS = 500')
+  })
+
   it('explains profile accuracy with its complete answer sample', () => {
     const profile = read('app/profile/page.tsx')
     const home = read('app/page.tsx')

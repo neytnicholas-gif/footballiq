@@ -43,6 +43,19 @@ describe('legal and market trust guards', () => {
     expect(terms).toContain('Early Shout independently creates its fictional prices, game rules and rewards')
   })
 
+  it('keeps Make the Call on the licensed catalogue path with honest result copy', () => {
+    const page = read('app/quizzes/start-bench-sell/page.tsx')
+    const catalogueSync = read('lib/market/server/make-call-catalogue-sync.ts')
+    const route = read('app/api/quizzes/start-bench-sell/route.ts')
+
+    expect(page).toContain('Community percentages use completed calls only.')
+    expect(page).toContain('No player photographs are used in this beta treatment.')
+    expect(catalogueSync).toContain("admin.rpc('market_public_catalogue_v1'")
+    expect(catalogueSync).toContain('sourceId: `${player.competition_key}:${player.app_player_id}`')
+    expect(route).toContain("'Cache-Control': 'private, no-store, max-age=0'")
+    expect(route).toContain("Vary: 'Authorization, Cookie'")
+  })
+
   it('does not expose simulated player data or financial-promotion copy in routed market UI', () => {
     const detailRoute = read('app/market/player/[slug]/page.tsx')
     const visibleMarket = [
