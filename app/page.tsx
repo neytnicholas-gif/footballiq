@@ -7,6 +7,7 @@ import { SponsorPlacement } from '@/components/sponsor-placement'
 import { useAuth } from '@/components/auth-provider'
 import { getLevelInfo, getRankProgress } from '@/lib/progression'
 import { HomePlayJourney } from '@/components/home-play-journey'
+import { StartTourButton } from '@/components/start-tour-button'
 
 const featuredModes = [
   {
@@ -74,13 +75,18 @@ export default function HomePage() {
         <section className="mx-auto max-w-5xl px-4 pt-8 text-center sm:px-6 sm:pt-10" aria-labelledby="home-primary-play-title">
           <p className="text-xs font-black uppercase tracking-[.28em] text-emerald-300">Your first move</p>
           <h2 id="home-primary-play-title" className="mt-2 text-3xl font-black tracking-tight text-white sm:text-5xl">Build the XI you believe in.</h2>
-          <p className="mx-auto mt-3 max-w-2xl text-sm leading-6 text-slate-300 sm:text-base">Start with 100m free game credits. Choose players from England, Spain and France, then watch their game values move.</p>
-          <Link href="/market" aria-label="Play the Player Market now" className="group mx-auto mt-6 flex min-h-24 w-full max-w-2xl items-center justify-center gap-4 rounded-[2rem] border border-emerald-100/30 bg-[linear-gradient(135deg,#6ee7b7,#34d399)] px-5 py-4 text-slate-950 shadow-[0_24px_80px_-28px_rgba(52,211,153,.95)] outline-none transition hover:-translate-y-1 hover:shadow-[0_30px_90px_-24px_rgba(52,211,153,1)] focus-visible:ring-4 focus-visible:ring-white focus-visible:ring-offset-4 focus-visible:ring-offset-[#060b13] sm:min-h-28">
+          <p className="mx-auto mt-3 max-w-2xl text-sm leading-6 text-slate-300 sm:text-base">Start with 100m free game credits. Choose the players you believe in, then watch their Early Shout game values move after eligible matches.</p>
+          <div className="mx-auto mt-4 flex max-w-2xl flex-wrap justify-center gap-2" aria-label="Player Market leagues">
+            <LeaguePill country="England" league="Premier League" colour="bg-sky-300" />
+            <LeaguePill country="Spain" league="La Liga" colour="bg-amber-300" />
+            <LeaguePill country="France" league="Ligue 1" colour="bg-indigo-300" />
+          </div>
+          <Link href="/market?guide=1" aria-label="Build your Player Market team now" className="group mx-auto mt-6 flex min-h-24 w-full max-w-2xl items-center justify-center gap-4 rounded-[2rem] border border-emerald-100/30 bg-[linear-gradient(135deg,#6ee7b7,#34d399)] px-5 py-4 text-slate-950 shadow-[0_24px_80px_-28px_rgba(52,211,153,.95)] outline-none transition hover:-translate-y-1 hover:shadow-[0_30px_90px_-24px_rgba(52,211,153,1)] focus-visible:ring-4 focus-visible:ring-white focus-visible:ring-offset-4 focus-visible:ring-offset-[#060b13] sm:min-h-28">
             <span className="grid size-14 shrink-0 place-items-center rounded-full bg-slate-950 text-emerald-200 shadow-lg transition group-hover:scale-105 sm:size-16"><Play className="ml-1 size-6 fill-current sm:size-7" aria-hidden="true" /></span>
-            <span className="text-left"><span className="block text-2xl font-black tracking-tight sm:text-3xl">PLAY PLAYER MARKET</span><span className="mt-1 block text-xs font-bold text-slate-800/75 sm:text-sm">Free beta · no payment · first signing in minutes</span></span>
+            <span className="text-left"><span className="block text-2xl font-black tracking-tight sm:text-3xl">BUILD YOUR TEAM</span><span className="mt-1 block text-xs font-bold text-slate-800/75 sm:text-sm">Free beta · guided first signing · no payment</span></span>
             <ArrowRight className="hidden size-6 shrink-0 transition group-hover:translate-x-1 sm:block" aria-hidden="true" />
           </Link>
-          <div className="mt-4 flex flex-wrap justify-center gap-2 text-[11px] font-bold text-slate-300"><span className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5">100m budget</span><span className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5">Choose your formation</span><span className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5">Real match ratings</span></div>
+          <div className="mt-4 flex flex-wrap items-center justify-center gap-2 text-[11px] font-bold text-slate-300"><span className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5">100m budget</span><span className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5">Choose your formation</span><span className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5">Real match ratings</span><StartTourButton className="min-h-9 border border-white/10 bg-white/5 px-3 py-1.5 text-[11px] text-slate-200 shadow-none hover:bg-white/10" /></div>
         </section>
         <section className="mx-auto grid max-w-7xl gap-6 px-4 pb-8 pt-8 sm:px-6 sm:pt-10 lg:grid-cols-[1.18fr_.82fr] lg:items-stretch">
           <div className="relative overflow-hidden rounded-3xl border border-white/12 bg-[linear-gradient(155deg,rgba(10,17,30,.96),rgba(7,13,23,.88))] p-6 shadow-[0_30px_90px_-52px_rgba(16,185,129,.4)] sm:p-8">
@@ -268,6 +274,15 @@ function StripStat({ label, value }: { label: string; value: string }) {
       <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">{label}</p>
       <p className="mt-1 text-sm font-semibold text-slate-100">{value}</p>
     </div>
+  )
+}
+
+function LeaguePill({ country, league, colour }: { country: string; league: string; colour: string }) {
+  return (
+    <span className="inline-flex min-h-10 items-center gap-2 rounded-full border border-white/12 bg-[#0d1a2b] px-3.5 py-2 text-left shadow-sm">
+      <span aria-hidden="true" className={`size-2.5 rounded-full ${colour} shadow-[0_0_14px_currentColor]`} />
+      <span><span className="block text-xs font-black text-white">{league}</span><span className="block text-[9px] font-bold uppercase tracking-[.14em] text-slate-500">{country}</span></span>
+    </span>
   )
 }
 

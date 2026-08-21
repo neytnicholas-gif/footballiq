@@ -202,10 +202,14 @@ export function MobileExperience() {
     } catch {
       visits = 1
     }
-    if (visits < 2) return
+    // The install prompt is useful, but the first job is helping a newcomer
+    // understand and play. Wait until a later visit and never stack it over a
+    // guide or another modal.
+    if (visits < 3) return
     const timer = window.setTimeout(() => {
-      if (window.matchMedia('(max-width: 900px)').matches && !isStandalone()) setInstallOpen(true)
-    }, 18000)
+      const anotherDialogIsOpen = Boolean(document.querySelector('dialog[open], [role="dialog"][aria-modal="true"]'))
+      if (window.matchMedia('(max-width: 900px)').matches && !isStandalone() && !anotherDialogIsOpen) setInstallOpen(true)
+    }, 45000)
     return () => window.clearTimeout(timer)
   }, [installed])
 

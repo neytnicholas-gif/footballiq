@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import fs from 'node:fs'
 import path from 'node:path'
 import { DISTINCT_LEVEL_COLOUR_COUNT, getLevelColor, getLevelInfo, getLevelPalette, getRank, getRankProgress, getXpAtStartOfLevel, xpNeededForLevelUp } from '@/lib/progression'
-import { SITE_ONBOARDING_VERSION, isOnboardingRoute, onboardingStorageKey } from '@/lib/onboarding'
+import { SITE_ONBOARDING_VERSION, isOnboardingRoute, onboardingSessionKey, onboardingStorageKey } from '@/lib/onboarding'
 
 describe('overall level progression', () => {
   it('starts quickly and becomes steadily harder without sudden jumps', () => {
@@ -56,6 +56,8 @@ describe('first-time guide', () => {
     expect(onboardingStorageKey()).toContain('guest')
     expect(onboardingStorageKey('player-1')).toContain('user:player-1')
     expect(onboardingStorageKey('player-1')).not.toBe(onboardingStorageKey('player-2'))
+    expect(onboardingSessionKey()).toContain('guest')
+    expect(onboardingSessionKey('player-1')).toContain('user:player-1')
   })
 
   it('appears only in the playable and help areas', () => {

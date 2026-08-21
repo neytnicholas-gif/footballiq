@@ -5,13 +5,13 @@ import { usePathname, useRouter } from 'next/navigation'
 import { ArrowLeft, ArrowRight, BarChart3, BookOpenCheck, Gamepad2, LineChart, Trophy } from 'lucide-react'
 import { useAuth } from '@/components/auth-provider'
 import { supabase } from '@/lib/supabase'
-import { SITE_ONBOARDING_VERSION, START_SITE_TOUR_EVENT, isOnboardingRoute, onboardingStorageKey } from '@/lib/onboarding'
+import { SITE_ONBOARDING_VERSION, START_SITE_TOUR_EVENT, isOnboardingRoute, onboardingSessionKey, onboardingStorageKey } from '@/lib/onboarding'
 
 const steps = [
   {
     eyebrow: 'Welcome',
     title: 'Ready to build your team?',
-    copy: 'Start with 100m free game credits. Pick players from England, Spain and France, then follow how their game values move—or take the short tour first.',
+    copy: 'Start with 100m free game credits. Choose players from the Premier League, La Liga and Ligue 1, then follow how their game values move—or take the short tour first.',
     tip: 'Market Credits are only for the game. They are not real money.',
     icon: LineChart,
     colours: 'from-emerald-400 to-cyan-400',
@@ -78,10 +78,11 @@ export function OnboardingTour() {
   useEffect(() => {
     if (loading || profileLoading || !isOnboardingRoute(pathname)) return
 
-    const storageKey = onboardingStorageKey(user?.id)
-    const rememberedHere = window.localStorage.getItem(storageKey) === 'done'
+    const explicitlyRequested = new URLSearchParams(window.location.search).get('guide') === '1'
+    const rememberedHere = window.localStorage.getItem(onboardingStorageKey(user?.id)) === 'done'
     const rememberedByAccount = Boolean(user && (profile?.onboarding_version ?? 0) >= SITE_ONBOARDING_VERSION)
-    if (rememberedHere || rememberedByAccount) return
+    const dismissedThisSession = window.sessionStorage.getItem(onboardingSessionKey(user?.id)) === 'done'
+    if (!explicitlyRequested && (rememberedHere || rememberedByAccount || dismissedThisSession)) return
 
     const timer = window.setTimeout(() => setOpen(true), 550)
     return () => window.clearTimeout(timer)
@@ -103,14 +104,20 @@ export function OnboardingTour() {
     }
   }
 
-  function dismiss() {
-    rememberCompletion()
+  function dismissForNow() {
+    window.sessionStorage.setItem(onboardingSessionKey(user?.id), 'done')
     setOpen(false)
   }
 
+  function dismissForever() {
+    rememberCompletion()
+    dismissForNow()
+  }
+
   function startPlaying() {
-    dismiss()
-    router.push('/market')
+    if (user) rememberCompletion()
+    dismissForNow()
+    router.push('/market/players')
   }
 
   const step = steps[stepIndex]
@@ -120,7 +127,7 @@ export function OnboardingTour() {
   return (
     <dialog
       ref={dialogRef}
-      onCancel={(event) => { event.preventDefault(); dismiss() }}
+      onCancel={(event) => { event.preventDefault(); dismissForNow() }}
       className="m-auto max-h-[calc(100dvh-2rem)] w-[min(44rem,calc(100%-1.5rem))] overflow-y-auto rounded-[2rem] border border-white/15 bg-[#071b18] p-0 text-white shadow-[0_35px_100px_-25px_rgba(0,0,0,.8)] backdrop:bg-slate-950/75 backdrop:backdrop-blur-sm"
       aria-labelledby="site-tour-title"
       aria-describedby="site-tour-description"
@@ -130,7 +137,7 @@ export function OnboardingTour() {
         <div className="relative p-5 sm:p-8">
           <div className="flex items-center justify-between gap-4">
             <p className="text-xs font-bold uppercase tracking-[0.24em] text-emerald-300">Quick tour · {stepIndex + 1} of {steps.length}</p>
-            <button onClick={dismiss} className="min-h-11 rounded-xl px-3 text-sm font-semibold text-slate-100 underline decoration-white/40 underline-offset-4 transition hover:text-white">Skip tour</button>
+            <button onClick={dismissForNow} className="min-h-11 rounded-xl px-3 text-sm font-semibold text-slate-100 underline decoration-white/40 underline-offset-4 transition hover:text-white">Not now</button>
           </div>
 
           <div className="mt-3 flex gap-1.5" role="progressbar" aria-label="Tour progress" aria-valuemin={1} aria-valuemax={steps.length} aria-valuenow={stepIndex + 1}>
@@ -157,18 +164,25 @@ export function OnboardingTour() {
             </button>
             {stepIndex === 0 ? (
               <div className="flex flex-wrap gap-2">
-                <button onClick={() => setStepIndex(1)} className="min-h-12 rounded-xl border border-white/15 px-4 font-bold text-white transition hover:bg-white/10">Show me around</button>
-                <button autoFocus onClick={startPlaying} className="inline-flex min-h-12 items-center gap-2 rounded-xl bg-emerald-400 px-5 font-black text-slate-950 shadow-[0_16px_36px_-18px_rgba(52,211,153,.95)] transition hover:-translate-y-0.5 hover:bg-emerald-300"><LineChart className="size-4" /> Open Player Market <ArrowRight className="size-4" /></button>
+                <button onClick={() => setStepIndex(1)} className="min-h-12 rounded-xl border border-white/15 px-4 font-bold text-white transition hover:bg-white/10">Show me the steps</button>
+                <button autoFocus onClick={startPlaying} className="inline-flex min-h-12 items-center gap-2 rounded-xl bg-emerald-400 px-5 font-black text-slate-950 shadow-[0_16px_36px_-18px_rgba(52,211,153,.95)] transition hover:-translate-y-0.5 hover:bg-emerald-300"><LineChart className="size-4" /> Build my team <ArrowRight className="size-4" /></button>
               </div>
             ) : isLast ? (
               <div className="flex flex-wrap gap-2">
-                <button onClick={() => { dismiss(); router.push('/how-to-play') }} className="min-h-12 rounded-xl border border-white/15 px-4 font-bold text-white transition hover:bg-white/10">See all instructions</button>
+                <button onClick={() => { dismissForNow(); router.push('/how-to-play') }} className="min-h-12 rounded-xl border border-white/15 px-4 font-bold text-white transition hover:bg-white/10">See all instructions</button>
                 <button autoFocus onClick={startPlaying} className="inline-flex min-h-12 items-center gap-2 rounded-xl bg-emerald-400 px-5 font-black text-slate-950 transition hover:bg-emerald-300">Build my team <ArrowRight className="size-4" /></button>
               </div>
             ) : (
               <button autoFocus onClick={() => setStepIndex((current) => Math.min(steps.length - 1, current + 1))} className="inline-flex min-h-12 items-center gap-2 rounded-xl bg-emerald-400 px-5 font-black text-slate-950 transition hover:bg-emerald-300">Next <ArrowRight className="size-4" /></button>
             )}
           </div>
+          {user ? (
+            <button onClick={dismissForever} className="mt-4 min-h-11 text-xs font-semibold text-slate-400 underline decoration-white/25 underline-offset-4 transition hover:text-slate-200">
+              Do not show this automatically again
+            </button>
+          ) : (
+            <p className="mt-4 text-xs leading-5 text-slate-400">You can open this guide again from “How to play”.</p>
+          )}
         </div>
       </div>
     </dialog>

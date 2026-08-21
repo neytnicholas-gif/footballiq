@@ -1,8 +1,12 @@
-export const SITE_ONBOARDING_VERSION = 1
+export const SITE_ONBOARDING_VERSION = 2
 export const START_SITE_TOUR_EVENT = 'early-shout:start-site-tour'
 
 export function onboardingStorageKey(userId?: string | null) {
   return `early-shout:onboarding:v${SITE_ONBOARDING_VERSION}:${userId ? `user:${userId}` : 'guest'}`
+}
+
+export function onboardingSessionKey(userId?: string | null) {
+  return `early-shout:onboarding-session:v${SITE_ONBOARDING_VERSION}:${userId ? `user:${userId}` : 'guest'}`
 }
 
 export function isOnboardingRoute(pathname: string) {
