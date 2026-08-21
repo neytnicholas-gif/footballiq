@@ -330,7 +330,7 @@ describe('Player Market launch gates', () => {
     expect(finderIndex).toBeGreaterThan(-1)
     expect(rosterIndex).toBeGreaterThan(finderIndex)
     expect(resultsIndex).toBeGreaterThan(rosterIndex)
-    expect(browser).toContain('placeholder="Type a player name, e.g. Lamine Yamal"')
+    expect(browser).toContain('placeholder="Player or club, e.g. Lamine Yamal"')
   })
 
   it('returns from a player card directly to the live roster', () => {

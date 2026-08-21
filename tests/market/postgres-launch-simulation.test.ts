@@ -185,6 +185,15 @@ describe('executed PostgreSQL launch simulation', () => {
       await db.query(`insert into public.market_portfolios(user_id,season_id,starting_balance_minor,cash_balance_minor,total_portfolio_value_minor)
         values($1,$2,100000000,100000000,100000000)`, [userId, seasonId])
     }
+    // Keep chip simulations deterministic on every day of the week. The live
+    // deadline prefers the first tracked kickoff; without one, its conservative
+    // Friday fallback can correctly be in the past when CI runs on a weekend.
+    await db.query(`insert into public.prediction_fixtures(
+      fixture_id,home_provider_team_id,away_provider_team_id,kickoff_at,status
+    )
+    select 'fixture-upcoming-chip-test','provider-club-1',null,
+      now() + ((gameweek.closes_at - now()) / 2),'scheduled'
+    from public.market_ensure_current_gameweek() gameweek`)
     await socketServer.start()
   }, 30_000)
 

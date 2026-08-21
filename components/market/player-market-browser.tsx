@@ -13,7 +13,7 @@ import { canBuyPosition, countFormation, MARKET_FORMATIONS } from '@/lib/market/
 import { marketChipName } from '@/lib/market/chips'
 import { createMarketRequestKey, formatFiqCompact, MARKET_MAX_PORTFOLIO_SIZE } from '@/lib/market/format'
 import type { MarketGameweekChipStatus, MarketHolding, MarketPlayer, MarketSeasonStats } from '@/lib/market/types'
-import { matchesPlayerSearch } from '@/lib/market/player-search'
+import { scorePlayerSearch } from '@/lib/market/player-search'
 
 type SortKey = 'value-desc' | 'value-asc' | 'change-desc' | 'change-asc' | 'form-desc' | 'name-asc'
 type CatalogueScope = 'all' | 'squad' | 'watchlist' | 'affordable'
@@ -103,8 +103,16 @@ export function PlayerMarketBrowser({
   const previewExperimentActive = useMemo(() => players.some((player) => player.data_source_label?.includes('preview valuation experiment')), [players])
   const filtered = useMemo(() => {
     let rows = [...players]
+    const searchScores = new Map<number, number>()
+    const normalizedSearch = deferredSearch.trim()
 
-    if (deferredSearch.trim()) rows = rows.filter((player) => matchesPlayerSearch(player, deferredSearch))
+    if (normalizedSearch) {
+      rows = rows.filter((player) => {
+        const score = scorePlayerSearch(player, normalizedSearch)
+        if (score > 0) searchScores.set(player.id, score)
+        return score > 0
+      })
+    }
 
     if (position !== 'ALL') {
       rows = rows.filter((player) => player.position === position)
@@ -130,6 +138,10 @@ export function PlayerMarketBrowser({
     if (scope === 'affordable') rows = rows.filter((player) => !holdingsSet.has(player.id) && player.current_value <= availableCash && canBuyPosition(player.position, formation, activeFormation))
 
     rows.sort((a, b) => {
+      if (normalizedSearch) {
+        const relevanceDifference = (searchScores.get(b.id) ?? 0) - (searchScores.get(a.id) ?? 0)
+        if (relevanceDifference) return relevanceDifference
+      }
       switch (sortKey) {
         case 'value-asc':
           return a.current_value - b.current_value
@@ -284,7 +296,7 @@ export function PlayerMarketBrowser({
             <div>
               <p className="text-[10px] font-black uppercase tracking-[.2em] text-emerald-300">Player finder</p>
               <h2 id="player-finder-title" className="mt-1 text-xl font-black text-white">Find any player in seconds.</h2>
-              <p id="player-search-help" className="mt-1 text-xs text-slate-400">Type a player’s name. Use the filters only when you want to narrow the list further.</p>
+              <p id="player-search-help" className="mt-1 text-xs text-slate-400">Type a player or club. Small spelling mistakes are okay; filters can narrow the list further.</p>
             </div>
             <p id="player-search-results" aria-live="polite" className="rounded-full border border-white/10 bg-white/[.06] px-3 py-1.5 text-xs font-bold text-emerald-200">
               {filtered.length} {filtered.length === 1 ? 'player found' : 'players found'}
@@ -299,7 +311,7 @@ export function PlayerMarketBrowser({
                 type="search"
                 value={search}
                 onChange={(event) => { onSearchChange(event.target.value); resetCatalogueWindow() }}
-                placeholder="Type a player name, e.g. Lamine Yamal"
+                placeholder="Player or club, e.g. Lamine Yamal"
                 autoComplete="off"
                 spellCheck={false}
                 aria-describedby="player-search-help player-search-results"
@@ -354,6 +366,11 @@ export function PlayerMarketBrowser({
               </a>
             </div>
           </div>
+          {search.trim() ? (
+            <p className="mt-3 rounded-xl border border-sky-300/15 bg-sky-300/[.07] px-3 py-2 text-[11px] leading-5 text-sky-100/80">
+              Searching current Premier League, La Liga and Ligue 1 players. A former player—or someone now playing in another league—will not appear as a player you can buy.
+            </p>
+          ) : null}
         </section>
 
         <MarketRosterBoard
@@ -387,8 +404,9 @@ export function PlayerMarketBrowser({
           <p className="text-xs font-semibold text-slate-400">Showing {Math.min(visibleCount, filtered.length)} now</p>
         </div>
         {filtered.length === 0 ? (
-          <div className="rounded-2xl border border-border bg-background/60 p-5 text-sm text-muted-foreground">
-            No players match these filters. Clear filters or adjust your search to find other squad options.
+          <div className="rounded-2xl border border-white/10 bg-[#0c262b] p-5 text-sm text-slate-300">
+            <p className="font-black text-white">We could not find that player in the live market.</p>
+            <p className="mt-1 text-xs leading-5 text-slate-400">Check the spelling, try the player’s club, or clear the filters. Only current Premier League, La Liga and Ligue 1 players can be bought.</p>
           </div>
         ) : null}
         <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
