@@ -130,7 +130,7 @@ export default function HomePage() {
                   </span>
                   <ArrowRight className="size-5 shrink-0 transition group-hover:translate-x-1" aria-hidden="true" />
                 </Link>
-                <Link href="/quizzes" className="mt-3 inline-flex min-h-10 items-center gap-2 text-sm font-semibold text-slate-200 outline-none transition hover:text-emerald-200 focus-visible:rounded-lg focus-visible:ring-2 focus-visible:ring-emerald-300">
+                <Link href="/games" className="mt-3 inline-flex min-h-10 items-center gap-2 text-sm font-semibold text-slate-200 outline-none transition hover:text-emerald-200 focus-visible:rounded-lg focus-visible:ring-2 focus-visible:ring-emerald-300">
                   I want to choose a different game
                   <ArrowRight className="size-4" aria-hidden="true" />
                 </Link>
@@ -183,7 +183,7 @@ export default function HomePage() {
               <p className="text-xs font-semibold uppercase tracking-[0.2em] text-emerald-300">Featured experiences</p>
               <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-100 sm:text-3xl">Pick a game and have a go.</h2>
             </div>
-            <Link href="/quizzes" className="text-sm font-semibold text-emerald-300 transition hover:text-emerald-200">See all games</Link>
+            <Link href="/games" className="text-sm font-semibold text-emerald-300 transition hover:text-emerald-200">See all games</Link>
           </div>
           <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-5">
             {featuredModes.map((mode) => {

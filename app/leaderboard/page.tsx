@@ -40,7 +40,7 @@ export default async function LeaderboardPage({ searchParams }: { searchParams: 
           <CallToAction
             title="Want to move up the table?"
             copy="Play another game, earn XP and come back to check your place."
-            primary={<Link href="/quizzes" className="inline-flex rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground">Back to modes</Link>}
+            primary={<Link href="/games" className="inline-flex rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground">Back to games</Link>}
             secondary={<Link href="/profile" className="inline-flex rounded-xl border border-border bg-background px-4 py-2.5 text-sm font-semibold text-foreground">Open profile</Link>}
           />
         </div>

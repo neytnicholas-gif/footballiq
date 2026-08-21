@@ -72,6 +72,18 @@ describe('Early Shout identity', () => {
     expect(predictions).toContain('primaryActionLabel="Start predicting"')
   })
 
+  it('keeps game discovery links and mobile prediction controls consistent', () => {
+    const home = read('app/page.tsx')
+    const leaderboard = read('app/leaderboard/page.tsx')
+    const predictions = read('components/predictions-game.tsx')
+
+    expect(home).toContain('href="/games" className="mt-3')
+    expect(home).toContain('href="/games" className="text-sm font-semibold text-emerald-300')
+    expect(leaderboard).toContain('href="/games"')
+    expect(leaderboard).toContain('Back to games')
+    expect(predictions).toContain('className="h-11 w-full cursor-pointer accent-sky-300"')
+  })
+
   it('explains profile accuracy with its complete answer sample', () => {
     const profile = read('app/profile/page.tsx')
     const home = read('app/page.tsx')
