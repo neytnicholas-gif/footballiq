@@ -9,6 +9,7 @@ describe('Make the Call product integration', () => {
   const client = readFileSync('components/start-bench-sell-game.tsx', 'utf8')
   const route = readFileSync('app/api/quizzes/start-bench-sell/route.ts', 'utf8')
   const globalStyles = readFileSync('app/globals.css', 'utf8')
+  const syncAdapter = readFileSync('lib/market/server/make-call-catalogue-sync.ts', 'utf8')
 
   it('is discoverable with the required route and metadata', () => {
     expect(catalogue).toContain("title: 'Make the Call'")
@@ -39,5 +40,11 @@ describe('Make the Call product integration', () => {
     expect(client).toContain("track('player_assignment_changed'")
     expect(client).toContain('player_id: player.id')
     expect(client).not.toMatch(/track\([^\n]+display_name/)
+  })
+
+  it('uses the player id returned by the live public-catalogue RPC contract', () => {
+    expect(syncAdapter).toContain('app_player_id: number')
+    expect(syncAdapter).toContain('`${player.competition_key}:${player.app_player_id}`')
+    expect(syncAdapter).not.toContain('player.provider_player_id')
   })
 })

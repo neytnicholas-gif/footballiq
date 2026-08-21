@@ -15,7 +15,7 @@ const COMPETITIONS = [
 const WRITE_BATCH = 100
 
 type CatalogueRow = {
-  provider_player_id: string
+  app_player_id: number
   slug: string
   display_name: string
   club_name: string
@@ -31,7 +31,7 @@ export async function syncMakeCallCatalogueToSupabase(admin: SupabaseClient) {
     const { data, error } = await admin.rpc('market_public_catalogue_v1', { p_competition_key: competitionKey })
     if (error) throw new Error(`Make the Call source catalogue failed for ${competitionName}: ${error.message}`)
     sourcePlayers.push(...((data ?? []) as CatalogueRow[]).map((player) => ({
-      sourceId: `${player.competition_key}:${player.provider_player_id}`,
+      sourceId: `${player.competition_key}:${player.app_player_id}`,
       stablePlayerId: player.slug,
       displayName: player.display_name,
       clubName: player.club_name,
